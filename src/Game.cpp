@@ -8,25 +8,23 @@
 #include <thread>
 #include <fstream>
 
-Game::Game(GLFWwindow *window) : App(window) {}
+Game::Game(GLFWwindow *window) : App(window), playerCollider(2.0) {}
 
 void Game::init(int paramSample)
 {
     setIcon("ressources/icon.png");
 
-    setController(&spectator);
+    setController(&playerControl);
 
     scene.useBindlessTextures = true;
 
     ambientLight = vec3(0.1);
 
     finalProcessingStage = ShaderProgram(
-        "shader/post-process/final composing.frag",
+        "game shader/final composing.frag",
         "shader/post-process/basic.vert",
         "",
         globals.standartShaderUniform2D());
-
-    finalProcessingStage.addUniform(ShaderUniform(Bloom.getIsEnableAddr(), 10));
 
     camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f);
     // camera.setMouseFollow(false);
@@ -120,6 +118,8 @@ void Game::init(int paramSample)
     globals.fpsLimiter.activate();
     globals.fpsLimiter.freq = 144.f;
     glfwSwapInterval(0);
+
+    App::init();
 }
 
 bool Game::userInput(GLFWKeyInfo input)
@@ -135,6 +135,13 @@ bool Game::userInput(GLFWKeyInfo input)
             state = quit;
             break;
 
+        case GLFW_KEY_F12 :
+            if(globals.getController() == &playerControl)
+                setController(&spectator);
+            else
+                setController(&playerControl);
+            break;
+
         case GLFW_KEY_F2:
             globals.currentCamera->toggleMouseFollow();
             break;
@@ -147,8 +154,6 @@ bool Game::userInput(GLFWKeyInfo input)
             SSAO.toggle();
             break;
         
-
-
         case GLFW_KEY_F5:
             #ifdef _WIN32
             system("cls");
@@ -191,7 +196,7 @@ void Game::physicsLoop()
         physicsTicks.start();
 
         physicsMutex.lock();
-        physicsEngine.update(1.f / physicsTicks.freq);
+        physicsEngine.update(globals.simulationTime.speed / physicsTicks.freq);
         physicsMutex.unlock();
 
         physicsTicks.waitForEnd();
@@ -200,7 +205,30 @@ void Game::physicsLoop()
 
 void Game::mainloop()
 {
-    /* Loading Models and setting up the scene */
+/****** FPS demo initialization ******/
+    RigidBody::gravity = vec3(0, -80, 0);
+
+    AABBCollider aabbCollider = 
+        AABBCollider(vec3(-1e3, -.15, -1e3), vec3(1e3, 0.1, 1e3));
+
+    RigidBodyRef FloorBody = newRigidBody(
+        vec3(0), vec3(0), quat(0, 0, 0, 1), vec3(0),
+        &aabbCollider, PhysicsMaterial(), 0.f, false);
+
+    physicsEngine.addObject(FloorBody);
+
+    playerCollider = SphereCollider(2.0);
+    playerControl.body = newRigidBody(
+        vec3(0, 8, 0), vec3(0), quat(0, 0, 0, 1), vec3(0),
+        &playerCollider,
+        PhysicsMaterial(0.f, 0.5f, 0.f, 0.f),
+        1.0,
+        true);
+
+    physicsEngine.addObject(playerControl.body);
+    playerControl.thingsYouCanStandOn.push_back(FloorBody);
+
+/****** Loading Models and setting up the scene ******/
     ModelRef skybox = newModel(skyboxMaterial);
     skybox->loadFromFolder("ressources/models/skybox/", true, false);
 
@@ -225,6 +253,14 @@ void Game::mainloop()
             scene.add(f);
         }
 
+
+    ModelRef lantern = newModel(GameGlobals::PBRstencil);
+    lantern->loadFromFolder("ressources/models/lantern/");
+    lantern->state.scaleScalar(0.04).setPosition(vec3(10, 5, 0));
+    lantern->noBackFaceCulling = true;
+    scene.add(lantern);
+
+
     SceneDirectionalLight sun = newDirectionLight(
         DirectionLight()
             .setColor(vec3(143, 107, 71) / vec3(255))
@@ -240,34 +276,59 @@ void Game::mainloop()
     glEnable(GL_DEPTH_TEST);
     glLineWidth(3.0);
 
-    /* Setting up the UI */
+/****** Setting Up Debug UI *******/
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     FastUI_valueMenu menu(ui, {});
 
     menu->state.setPosition(vec3(-0.9, 0.5, 0)).scaleScalar(0.8);
     globals.appTime.setMenuConst(menu);
+    globals.simulationTime.setMenu(menu);
     // globals.cpuTime.setMenu(menu);
     // globals.gpuTime.setMenu(menu);
     // globals.fpsLimiter.setMenu(menu);
     // physicsTicks.setMenu(menu);
     // sun->setMenu(menu, U"Sun");
 
+/****** Creating Demo Player *******/
+    Player player1;
+    GameGlobals::currentPlayer = &player1;
+    player1.setMenu(menu);
+
+
+/****** Last Pre Loop Routines ******/
+    state = AppState::run;
+    std::thread physicsThreads(&Game::physicsLoop, this);
+
     menu.batch();
     scene2D.updateAllObjects();
     fuiBatch->batch();
 
-    state = AppState::run;
-    std::thread physicsThreads(&Game::physicsLoop, this);
 
-    /* Main Loop */
+/******  Main Loop ******/
     while (state != AppState::quit)
     {
         mainloopStartRoutine();
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
 
+        float maxSlow = player1.getStats().reflexMaxSlowFactor;
+        float reflex = player1.getInfos().state.reflex;
+        globals.simulationTime.speed = maxSlow + (1.f-maxSlow)*(1.f-reflex*0.01);
+
+        float simTime = globals.simulationTime.getElapsedTime();
+        lantern->state.setPosition(vec3(10, 5, 10*cos(5*simTime)));
+
+        float scroll = globals.mouseScrollOffset().y;
+        float &preflex = GameGlobals::currentPlayer->infos.state.reflex;
+        if(GameGlobals::currentPlayer)
+            preflex = clamp(preflex+scroll*5.f, 0.f, 100.f);
+        globals.clearMouseScroll();
+
+
         menu.trackCursor();
         menu.updateText();
+
+        effects.update();
 
         mainloopPreRenderRoutine();
 

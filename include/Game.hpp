@@ -5,6 +5,9 @@
 #include <FastUI.hpp>
 
 #include <GameGlobals.hpp>
+#include <PlayerController.hpp>
+#include <EffectHandler.hpp>
+
 class Game final : public App
 {
 private:
@@ -26,7 +29,12 @@ private:
     LimitTimer physicsTicks;
     void physicsLoop();
 
+    /* Player Controller */
     SpectatorController spectator;
+    PlayerController playerControl;
+    SphereCollider playerCollider;
+
+    EffectHandler effects;
 
 public:
     Game(GLFWwindow *window);

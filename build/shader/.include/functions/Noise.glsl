@@ -1,6 +1,8 @@
 #ifndef FNCT_NOISE_GLSL
 #define FNCT_NOISE_GLSL
 
+#include globals/Constants.glsl
+
 // https://www.shadertoy.com/view/wtsSW4
 float gold_noise3(in vec3 coordinate, in float seed){
     return 0.5 - fract(tan(distance(coordinate*(seed+PHI*00000.1), vec3(PHI*00000.1, PI*00000.1, E)))*SQR2*10000.0);
@@ -21,11 +23,11 @@ vec2 random2(vec3 st){
   return fract(sin(S)*43758.5453123);
 }
 
-// float random (in vec2 st) {
-//     return fract(sin(dot(st.xy,
-//                          vec2(12.9898,78.233)))
-//                  * 43758.5453123);
-// }
+float random (in vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))
+                 * 43758.5453123);
+}
 
 
 #endif

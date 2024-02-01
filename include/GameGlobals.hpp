@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Mesh.hpp>
+#include <Player.hpp>
 
 class GameGlobals
 {
@@ -8,4 +9,6 @@ class GameGlobals
         static MeshMaterial PBR;
         static MeshMaterial PBRstencil;
         static MeshMaterial PBRinstanced;
+
+        static Player* currentPlayer;
 };

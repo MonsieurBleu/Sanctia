@@ -1,5 +1,6 @@
 #pragma once 
 #include <CharacterInfos.hpp>
+#include <Entity.hpp>
 
 class FastUI_valueMenu;
 
@@ -10,7 +11,7 @@ struct PlayerStatistics
 
 class Game;
 
-class Player
+class Player : public Entity
 {
     friend Game;
 
@@ -22,5 +23,5 @@ class Player
         const CharacterInfos &getInfos(){return infos;};
         const PlayerStatistics &getStats(){return stats;};
 
-        void setMenu(FastUI_valueMenu &menu);        
+        void setMenu(FastUI_valueMenu &menu);
 };

@@ -2,6 +2,7 @@
 
 #include <Mesh.hpp>
 #include <Player.hpp>
+#include <GameConditions.hpp>
 
 class GameGlobals
 {
@@ -11,4 +12,6 @@ class GameGlobals
         static MeshMaterial PBRinstanced;
 
         static Player* currentPlayer;
+
+        static GameConditionsHandler currentConditions;
 };

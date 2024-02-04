@@ -12,6 +12,8 @@ Game::Game(GLFWwindow *window) : App(window), playerCollider(2.0) {}
 
 void Game::init(int paramSample)
 {
+    GameGlobals::currentConditions.saveTxt("saves/gameConditions.txt");
+
     setIcon("ressources/icon.png");
 
     setController(&playerControl);

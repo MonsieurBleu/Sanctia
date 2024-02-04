@@ -2,6 +2,8 @@
 
 #include <GameObject.hpp>
 
+class Entity;
+
 enum EntityDeathType
 {
     command,

@@ -22,9 +22,9 @@ Events
 
 Synthax
 ```
-\#  				for character unique name/id
-\##					for categorie
-\### 				for unique name/id
+#\  				for character unique name/id
+##\					for categorie
+###\ 				for unique name/id
 > 					condition required for appending
 [LANGUAGE]: 		appending on string output
 [LANGUAGE]- 		appending on dialogue output
@@ -40,8 +40,9 @@ Synthax
 
 # FARIAH
 ## NAME
+### FULL_NAME
 
-> ALL
+>ALL
 
 FR: Fariah Grisnier
 
@@ -52,27 +53,27 @@ FR: Fariah Grisnier
 
 FR- Qu'est-ce {qu'une jeune femme}{qu'un jeune homme} sans défense vient faire ici ?
 
-> !NPC_KNOWN
-> HIGHT-EQUIPEMENT
+>!NPC_KNOWN
+>HIGHT-EQUIPEMENT
 
 FR- Ma parole vous êtes {prête}{prêt} pour la guerre vous ! Faites attention avec ça.
 
-> NPC_KNOWN
+>NPC_KNOWN
 
 FR- Ah, encore vous... Qu'il y a t-il ? 
 
-> NPC_KNOWN 
-> FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
+>NPC_KNOWN 
+>FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
 
 FR- Bon, vous en avez fini avec ces vermines ? J'ai une *affaire* à faire tourner.
 
-> ALL
+>ALL
 
 FR_ Parlez-moi de vous. 
 - +NPC_KNOWN
 - @PRESENTATION 
 
-> KNOW_RAT_PROBLEM
+>KNOW_RAT_PROBLEM
 
 FR_ Je viens vous aidez pour vos problèmes de rats
 - +NPC_KNOWN 
@@ -81,21 +82,21 @@ FR_ Je viens vous aidez pour vos problèmes de rats
 - @@RAT_PROBLEM
 
 ### PRESENTATION 
-> !FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
+>!FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
 
 FR- A l'heure qu'il est je pourrait tout aussi bien être une mendiante. Trois semaines que je n'ai pas pus ouvrir boutique à cause **d'une infestation de rats**... Foutus vermines. Si vous n'avez pas peur de chopper un truc et que vous vous sentez {courageuse}{courageux} vous pouvez toujours y jeter un œil... Contre **récompense** bien-sûr.
 
-> FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
-> !FARIAH_RAT_PLOBEM_SOLVED
+>FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
+>!FARIAH_RAT_PLOBEM_SOLVED
 
 FR- Je peut être une excellente amie et partenaire d'affaires si vous m'aidez.
 
-> FARIAH_RAT_PLOBEM_SOLVED 
+>FARIAH_RAT_PLOBEM_SOLVED 
 
 FR- Je m'appelle Fariah Grisnier, j'ai repris ce taudis il y a de cela une bonne poignée de printemps après que ma mère ait succombe à la maladie. *Pas de condoléances* s'il vous plait, c'était une vraie sorcière, mon plus grand plaisir a été de tout refaire à neuf ici... Enfin, l'enseigne n'a pas brillé très longtemps. Mais grâce à vous, je peu enfin regagner ma croute.
 - +NPC_NAME_KNOWN
 
-> FARIAH_RAT_PLOBEM_SOLVED 
+>FARIAH_RAT_PLOBEM_SOLVED 
 
 FR_ C'était un plaisir d'avoir pus aider.
 - APPRECIATION_UP

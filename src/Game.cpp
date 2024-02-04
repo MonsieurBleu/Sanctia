@@ -12,8 +12,6 @@ Game::Game(GLFWwindow *window) : App(window), playerCollider(2.0) {}
 
 void Game::init(int paramSample)
 {
-    GameGlobals::currentConditions.saveTxt("saves/gameConditions.txt");
-
     setIcon("ressources/icon.png");
 
     setController(&playerControl);
@@ -295,6 +293,10 @@ void Game::mainloop()
     Player player1;
     GameGlobals::currentPlayer = &player1;
     player1.setMenu(menu);
+
+/****** Loading Game Specific Elements *******/
+    // GameGlobals::currentConditions.saveTxt("saves/gameConditions.txt");
+    GameGlobals::currentConditions.readTxt("saves/gameConditions.txt");
 
 
 /****** Last Pre Loop Routines ******/

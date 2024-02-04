@@ -3,8 +3,6 @@
 #include <Fonts.hpp>
 #include <GameConditions.hpp>
 
-#include <unordered_map>
-
 class Dialogue
 {
     private : 
@@ -22,6 +20,10 @@ class Dialogue
         const std::u32string& getText();
 };
 
-typedef std::unordered_map<std::string, Dialogue> CharacterDialogue;
+typedef std::unordered_map<std::string, Dialogue> CharacterDialogues;
 
-typedef std::unordered_map<std::string, CharacterDialogue> CharacterDialogueMap;
+typedef std::unordered_map<std::string, CharacterDialogues> CharacterDialogueMap;
+
+// bool getCharacterDialogues(CharacterDialogues& cd, const std::string& idName);
+
+

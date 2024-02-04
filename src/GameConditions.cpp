@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <string.h>
+
 GameConditionState GameConditionsHandler::get(GameCondition condition) const
 {
     return states[condition];
@@ -37,11 +39,21 @@ void GameConditionsHandler::saveTxt(const std::string& filname)
     file.close();
 }
 
-    // auto myfile = std::fstream("saves/cameraState.bin", std::ios::in | std::ios::binary);
-    // if(myfile)
-    // {
-    //     CameraState buff;
-    //     myfile.read((char*)&buff, sizeof(CameraState));
-    //     myfile.close();
-    //     camera.setState(buff);
-    // }
+void GameConditionsHandler::readTxt(const std::string& filname)
+{
+    auto file = std::fstream(filname, std::ios::in);
+
+    char buff[1024];
+
+    while(file.getline(buff, 1024))
+    {
+        char *cut = strchr(buff, '\t');
+        cut[0] = '\0';
+        cut ++;
+
+        states[GameConditionMap[cut]] = GameConditionStateMap[buff];
+    }
+
+    file.close();
+}
+

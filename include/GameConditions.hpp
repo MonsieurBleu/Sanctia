@@ -34,5 +34,6 @@ class GameConditionsHandler
         GameConditionsHandler& set(GameCondition condition, GameConditionState value);
 
         void saveTxt(const std::string& filname);
+        void readTxt(const std::string& filname);
 };
 

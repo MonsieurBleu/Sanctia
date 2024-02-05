@@ -7,7 +7,9 @@
 
 GENERATE_ENUM(GameCondition,
 	ALL,
+    FEMALE_PC,
 	RANDOM,
+    NPC_KNOWN,
 	HIGHT_EQUIPEMENT,
     END
 );

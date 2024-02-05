@@ -6,7 +6,7 @@ Conditions
 	ALL
 	RANDOM
 	FEMALE 
-	HIGHT-EQUIPEMENT
+	HIGHT_EQUIPEMENT
 	FARIAH_PLAYER_KNOW_RATPROBLEM
 	FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
 	FARIAH_RAT_PLOBEM_SOLVED
@@ -49,12 +49,12 @@ FR: Fariah Grisnier
 ## DIALOGUE
 ### TALK
 >!NPC_KNOWN
->!HIGHT-EQUIPEMENT
+>!HIGHT_EQUIPEMENT
 
 FR- Qu'est-ce {qu'une jeune femme}{qu'un jeune homme} sans défense vient faire ici ?
 
 >!NPC_KNOWN
->HIGHT-EQUIPEMENT
+>HIGHT_EQUIPEMENT
 
 FR- Ma parole vous êtes {prête}{prêt} pour la guerre vous ! Faites attention avec ça.
 
@@ -70,8 +70,8 @@ FR- Bon, vous en avez fini avec ces vermines ? J'ai une *affaire* à faire tourn
 >ALL
 
 FR_ Parlez-moi de vous. 
-- +NPC_KNOWN
-- @PRESENTATION 
+-	+NPC_KNOWN
+-	@PRESENTATION 
 
 >KNOW_RAT_PROBLEM
 

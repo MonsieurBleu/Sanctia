@@ -18,12 +18,15 @@ class Dialogue
         void applyConsequences();
 
         const std::u32string& getText();
+
+        void loadFromStream(std::fstream& file, char* buff);
 };
 
 typedef std::unordered_map<std::string, Dialogue> CharacterDialogues;
 
 typedef std::unordered_map<std::string, CharacterDialogues> CharacterDialogueMap;
 
-// bool getCharacterDialogues(CharacterDialogues& cd, const std::string& idName);
+
+
 
 

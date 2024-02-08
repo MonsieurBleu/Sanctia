@@ -12,19 +12,28 @@ Game::Game(GLFWwindow *window) : App(window), playerCollider(2.0) {}
 
 void Game::init(int paramSample)
 {
-    setIcon("ressources/icon.png");
+    // activateMainSceneBindlessTextures();
 
-    setController(&playerControl);
-
-    scene.useBindlessTextures = true;
-
-    ambientLight = vec3(0.1);
+    App::init();
 
     finalProcessingStage = ShaderProgram(
         "game shader/final composing.frag",
         "shader/post-process/basic.vert",
         "",
         globals.standartShaderUniform2D());
+
+    finalProcessingStage
+        .addUniform(ShaderUniform(Bloom.getIsEnableAddr(), 10))
+        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor1, 16))
+        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor2, 17))
+        .addUniform(ShaderUniform(&globals.sceneChromaticAbbAngleAmplitude, 18))
+        .addUniform(ShaderUniform(&globals.sceneVignette, 19))
+        .addUniform(ShaderUniform(&globals.sceneHsvShift, 20));
+
+    setIcon("ressources/icon.png");
+    setController(&playerControl);
+
+    ambientLight = vec3(0.1);
 
     camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f);
     // camera.setMouseFollow(false);
@@ -118,8 +127,6 @@ void Game::init(int paramSample)
     globals.fpsLimiter.activate();
     globals.fpsLimiter.freq = 144.f;
     glfwSwapInterval(0);
-
-    App::init();
 }
 
 bool Game::userInput(GLFWKeyInfo input)

@@ -12,7 +12,7 @@
  *  - mainloop method of type (any)[void].
  */
 
-int main()
+int _main()
 {
     Game *game = nullptr;
     std::string winname =  "Vulpine Engine Game Demo";
@@ -22,46 +22,30 @@ int main()
 }
 
 
-// #include <Dialogue.hpp>
-// #include <GameGlobals.hpp>
+#include <Dialogue.hpp>
+#include <GameGlobals.hpp>
 
-// #include <iostream>
-// #include <fstream>
-// #include <string.h>
+#include <iostream>
+#include <fstream>
+#include <string.h>
 
-// int main()
-// {
-//     char buff[1024];
-//     auto file = std::fstream("../tests/dialogue_test2.md", std::ios::in);
+int main()
+{
+    char buff[4096];
+    auto file = std::fstream("../tests/dialogue_test2.md", std::ios::in);
 
+    GameGlobals::currentLanguage = LANGUAGE_FRENCH;
+    GameGlobals::currentConditions.set(COND_FEMALE_PC, GameConditionState::TRUE);
     
+    // for(int i = 0; i < 3; i++)
+    // {
+    //     Dialogue d;
+    //     std::cout << d.loadFromStream(file, buff) << "\n";
+    //     // std::cout << "\n";
+    // }
 
-//     Dialogue d;
+    DialogueScreen ds;
+    ds.loadFromStream(file, buff);
 
-    
-//     GameGlobals::currentLanguage = LANGUAGE_ENGLISH;
-//         GameGlobals::currentConditions.set(GameCondition::FEMALE_PC, GameConditionState::TRUE);
-//         std::cout << "\nenglish and female PC\n";
-//         d.loadFromStream(file, buff);
-//         file.clear();
-//         file.seekg(0, std::ios::beg);
-
-//         std::cout << "\nenglish and male PC\n";
-//         GameGlobals::currentConditions.set(GameCondition::FEMALE_PC, GameConditionState::FALSE);
-//         d.loadFromStream(file, buff);
-//         file.clear();
-//         file.seekg(0, std::ios::beg);
-
-//     GameGlobals::currentLanguage = LANGUAGE_FRENCH;
-//         std::cout << "\nfrench and female PC\n";
-//         GameGlobals::currentConditions.set(GameCondition::FEMALE_PC, GameConditionState::TRUE);
-//         d.loadFromStream(file, buff);
-//         file.clear();
-//         file.seekg(0, std::ios::beg);
-
-//         std::cout << "\nfrench and male PC\n";
-//         GameGlobals::currentConditions.set(GameCondition::FEMALE_PC, GameConditionState::FALSE);
-//         d.loadFromStream(file, buff);
-//         file.clear();
-//         file.seekg(0, std::ios::beg);
-// }
+    file.close();
+}

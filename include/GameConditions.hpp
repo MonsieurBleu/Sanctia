@@ -5,13 +5,20 @@
 
 #include <MappedEnum.hpp>
 
+GENERATE_ENUM(GameEvent,
+    EVENT_UNKNOWN,
+	EVENT_APPRECIATION_UP,
+    EVENT_END
+);
+
 GENERATE_ENUM(GameCondition,
-	ALL,
-    FEMALE_PC,
-	RANDOM,
-    NPC_KNOWN,
-	HIGHT_EQUIPEMENT,
-    END
+    COND_UNKNOWN,
+	COND_ALL,
+    COND_FEMALE_PC,
+	COND_RANDOM,
+    COND_NPC_KNOWN,
+	COND_HIGHT_EQUIPEMENT,
+    COND_END
 );
 
 GENERATE_ENUM(GameConditionState,
@@ -28,7 +35,7 @@ struct GameConditionTrigger
 class GameConditionsHandler
 {
     private : 
-        GameConditionState states[GameCondition::END];
+        GameConditionState states[COND_END];
 
     public : 
 

@@ -24,7 +24,7 @@ void GameConditionsHandler::saveTxt(const std::string& filname)
 
     for(auto &i : GameConditionMap)
     {
-        if(i.second == GameCondition::END) continue;
+        if(i.second == COND_END) continue;
 
         for(auto &s : GameConditionStateMap)
             if(s.second == states[i.second])

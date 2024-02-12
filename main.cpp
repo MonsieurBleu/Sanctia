@@ -12,7 +12,7 @@
  *  - mainloop method of type (any)[void].
  */
 
-int _main()
+int main()
 {
     Game *game = nullptr;
     std::string winname =  "Vulpine Engine Game Demo";
@@ -29,7 +29,7 @@ int _main()
 #include <fstream>
 #include <string.h>
 
-int main()
+int _main()
 {
     char buff[4096];
     auto file = std::fstream("../tests/dialogue_test2.md", std::ios::in);

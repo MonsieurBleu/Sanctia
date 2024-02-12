@@ -13,6 +13,7 @@ Game::Game(GLFWwindow *window) : App(window), playerCollider(2.0) {}
 void Game::init(int paramSample)
 {
     // activateMainSceneBindlessTextures();
+    activateMainSceneClusteredLighting(ivec3(16, 9, 24));
 
     App::init();
 

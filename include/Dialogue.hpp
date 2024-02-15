@@ -50,6 +50,8 @@ struct DialogueScreen
 
 typedef std::unordered_map<std::string, DialogueScreen> CharacterDialogues;
 
+bool loadCharacterDialogues(CharacterDialogues& dialogues, const std::string& name, std::fstream& file, char* buff);
+
 typedef std::unordered_map<std::string, CharacterDialogues> CharacterDialogueMap;
 
 

@@ -23,6 +23,8 @@
 #define SET_CONDITION_FALSE  (char)'-'
 #define CHANGE_DIALOGUE      (char)'@'
 #define NO_CONSEQUENCE       (char)'~'
+#define NEW_DIALOGUE         (char)'#'
+#define NEW_CHARACTER        (uint16)0x2323
 #define BUFF_SIZE 4096
 
 /*
@@ -34,11 +36,14 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
 {
     // std::cout << TERMINAL_WARNING;
 
-    while(*buff != NEW_PREREQUESITE)
+    while(*buff != NEW_PREREQUESITE && !file.eof() && *buff != NEW_DIALOGUE)
         file.read(buff, 1);
 
+    if(file.eof() || *buff == NEW_DIALOGUE)
+        return false;
+
     /* Load Prerequisites */
-    while (true)
+    while (!file.eof())
     {
         GameConditionTrigger trigger;
 
@@ -76,7 +81,7 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
     }
 
     /* Find correct language */
-    while(true)
+    while(!file.eof())
     {
         while(*buff != LANGUAGE_BEGIN)
         {
@@ -212,27 +217,74 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
         file.read(buff, 1);
     }
 
+    // std::cout << TERMINAL_RESET << "\n";
+
     return true;
 }
 
 bool DialogueScreen::loadFromStream(std::fstream& file, char* buff)
 {
-    while (true)
+    bool succes = true;
+    while (succes && !file.eof())
     {
         Dialogue d;
-        bool succes = d.loadFromStream(file, buff);
-        if(!succes) return false;
+        succes = d.loadFromStream(file, buff);
 
         switch (d.getType())
         {
-        case DialogueType::NPC_SPEAK : NPC = d; break;
-        
-        case DialogueType::PLAYER_CHOICE : choices.push_back(d); break;
-        
-        default : break;
+            case DialogueType::NPC_SPEAK : NPC = d; break;
+            
+            case DialogueType::PLAYER_CHOICE : choices.push_back(d); break;
+            
+            default : break;
         }
+    }   
+
+    // std::cout << TERMINAL_RESET << "\n";
+
+    return true;
+}
+
+bool loadCharacterDialogues(
+    CharacterDialogues& dialogues, 
+    const std::string& name, 
+    std::fstream& file, 
+    char* buff)
+{
+    file.seekg( 0 );
+
+    std::string id = "# " + name;
+
+    while(!file.eof())
+    {
+        file.getline(buff, BUFF_SIZE);
+        if(!strcmp(buff, id.c_str()))
+            break;
     }
-    
+
+    file.read(buff, 1);
+
+    bool sucess = true;
+    while(sucess && !file.eof())
+    {
+        while(*buff != NEW_DIALOGUE && !file.eof())
+            file.read(buff, 1);
+
+        file.read(buff, 1);
+
+        if(*buff != NEW_DIALOGUE) break;
+        
+        file.get(buff, BUFF_SIZE, '\n');
+
+        dialogues.insert({buff+1, DialogueScreen()});
+        DialogueScreen& ds = dialogues[buff+1];
+
+        // std::cout << (buff+1) << "\n";
+
+        sucess = ds.loadFromStream(file, buff);
+    }
+
+    return sucess;
 }
 
 void loadAllCharactersDialogues(const std::string filename, const std::string language)

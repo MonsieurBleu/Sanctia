@@ -12,7 +12,7 @@
  *  - mainloop method of type (any)[void].
  */
 
-int main()
+int _main()
 {
     Game *game = nullptr;
     std::string winname =  "Vulpine Engine Game Demo";
@@ -29,7 +29,7 @@ int main()
 #include <fstream>
 #include <string.h>
 
-int _main()
+int main()
 {
     char buff[4096];
     auto file = std::fstream("../tests/dialogue_test2.md", std::ios::in);
@@ -44,8 +44,18 @@ int _main()
     //     // std::cout << "\n";
     // }
 
-    DialogueScreen ds;
-    ds.loadFromStream(file, buff);
+    // DialogueScreen ds;
+    // ds.loadFromStream(file, buff);
+
+    // DialogueScreen ds2;
+    // ds2.loadFromStream(file, buff);
+
+    BenchTimer t("file parsing time");
+    t.start();
+    CharacterDialogues cd;
+    loadCharacterDialogues(cd, "FARIAH", file, buff);
+    t.end();
+    std::cout << t << "\n";
 
     file.close();
 }

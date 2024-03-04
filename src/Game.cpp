@@ -1,14 +1,17 @@
 #include <Game.hpp>
-#include <../Engine/include/Globals.hpp>
-#include <GameObject.hpp>
+#include <Globals.hpp>
+// #include <GameObject.hpp>
 #include <CompilingOptions.hpp>
 #include <MathsUtils.hpp>
 #include <Audio.hpp>
+#include <Helpers.hpp>
+
+#include <Constants.hpp>
 
 #include <thread>
 #include <fstream>
 
-Game::Game(GLFWwindow *window) : App(window), playerCollider(2.0) {}
+Game::Game(GLFWwindow *window) : App(window){}
 
 void Game::init(int paramSample)
 {
@@ -147,7 +150,11 @@ bool Game::userInput(GLFWKeyInfo input)
             if(globals.getController() == &playerControl)
                 setController(&spectator);
             else
-                setController(&playerControl);
+                {
+                    setController(&playerControl);
+                    // playerControl.body->setPosition(globals.currentCamera->getPosition());
+                    playerControl.body->position = globals.currentCamera->getPosition();
+                }
             break;
 
         case GLFW_KEY_F2:
@@ -202,11 +209,14 @@ void Game::physicsLoop()
     while (state != quit)
     {
         physicsTicks.start();
+        physicsTimer.start();
 
         physicsMutex.lock();
-        physicsEngine.update(globals.simulationTime.speed / physicsTicks.freq);
+        // physicsEngine.update(globals.simulationTime.speed / physicsTicks.freq);
+        physics.update(globals.simulationTime.speed / physicsTicks.freq);
         physicsMutex.unlock();
 
+        physicsTimer.end();
         physicsTicks.waitForEnd();
     }
 }
@@ -214,27 +224,20 @@ void Game::physicsLoop()
 void Game::mainloop()
 {
 /****** FPS demo initialization ******/
-    RigidBody::gravity = vec3(0, -80, 0);
+    vec3 gravity = vec3(0, -G, 0);
+    B_BodyRef ground(new B_Body);
+    ground->boundingCollider.settAABB(vec3(-2e2, -50, -2e2), vec3(2e2, 0.0, 2e2));
+    scene.add(CubeHelperRef(new CubeHelper(
+            ground->boundingCollider.AABB_getMin(), 
+            ground->boundingCollider.AABB_getMax())));
 
-    AABBCollider aabbCollider = 
-        AABBCollider(vec3(-1e3, -.15, -1e3), vec3(1e3, 0.1, 1e3));
+    playerControl.body->boundingCollider.setSphere(1.0);
+    playerControl.body->position = vec3(0, 10, 0);
+    playerControl.body->applyForce(gravity);
 
-    RigidBodyRef FloorBody = newRigidBody(
-        vec3(0), vec3(0), quat(0, 0, 0, 1), vec3(0),
-        &aabbCollider, PhysicsMaterial(), 0.f, false);
+    physics.dynamics.push_back(playerControl.body);
+    physics.level.push_back(ground);
 
-    physicsEngine.addObject(FloorBody);
-
-    playerCollider = SphereCollider(2.0);
-    playerControl.body = newRigidBody(
-        vec3(0, 8, 0), vec3(0), quat(0, 0, 0, 1), vec3(0),
-        &playerCollider,
-        PhysicsMaterial(0.f, 0.5f, 0.f, 0.f),
-        1.0,
-        true);
-
-    physicsEngine.addObject(playerControl.body);
-    playerControl.thingsYouCanStandOn.push_back(FloorBody);
 
 /****** Loading Models and setting up the scene ******/
     ModelRef skybox = newModel(skyboxMaterial);
@@ -249,15 +252,15 @@ void Game::mainloop()
     ModelRef floor = newModel(GameGlobals::PBR);
     floor->loadFromFolder("ressources/models/ground/");
 
-    int gridSize = 10;
-    int gridScale = 10;
+    int gridSize = 25;
+    int gridScale = 5;
     for (int i = -gridSize; i < gridSize; i++)
         for (int j = -gridSize; j < gridSize; j++)
         {
             ModelRef f = floor->copyWithSharedMesh();
             f->state
                 .scaleScalar(gridScale)
-                .setPosition(vec3(i * gridScale * 1.80, 0, j * gridScale * 1.80));
+                .setPosition(vec3(i * gridScale , 0, j * gridScale ));
             scene.add(f);
         }
 
@@ -291,10 +294,11 @@ void Game::mainloop()
     menu->state.setPosition(vec3(-0.9, 0.5, 0)).scaleScalar(0.8);
     globals.appTime.setMenuConst(menu);
     globals.simulationTime.setMenu(menu);
+    physicsTimer.setMenu(menu);
     // globals.cpuTime.setMenu(menu);
     // globals.gpuTime.setMenu(menu);
-    // globals.fpsLimiter.setMenu(menu);
-    // physicsTicks.setMenu(menu);
+    globals.fpsLimiter.setMenu(menu);
+    physicsTicks.setMenu(menu);
     // sun->setMenu(menu, U"Sun");
 
 /****** Creating Demo Player *******/

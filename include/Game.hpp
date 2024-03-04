@@ -1,6 +1,5 @@
 #pragma once
-#include <../Engine/include/App.hpp>
-#include <demos/FPS/FPSController.hpp>
+#include <App.hpp>
 #include <Fonts.hpp>
 #include <FastUI.hpp>
 
@@ -25,14 +24,15 @@ private:
 
     /* Physics */
     // std::shared_ptr<FPSController> playerControler;
-    PhysicsEngine physicsEngine;
+    // PhysicsEngine physicsEngine;
+    B_PhysicsScene physics;
     LimitTimer physicsTicks;
+    BenchTimer physicsTimer = BenchTimer("Physics Timer");
     void physicsLoop();
 
     /* Player Controller */
     SpectatorController spectator;
     PlayerController playerControl;
-    SphereCollider playerCollider;
 
     EffectHandler effects;
 

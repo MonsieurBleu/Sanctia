@@ -12,7 +12,7 @@
  *  - mainloop method of type (any)[void].
  */
 
-int _main()
+int main()
 {
     Game *game = nullptr;
     std::string winname =  "Vulpine Engine Game Demo";
@@ -21,6 +21,7 @@ int _main()
     return ret; 
 }
 
+/*
 
 #include <Dialogue.hpp>
 #include <GameGlobals.hpp>
@@ -37,19 +38,6 @@ int main()
     GameGlobals::currentLanguage = LANGUAGE_FRENCH;
     GameGlobals::currentConditions.set(COND_FEMALE_PC, GameConditionState::TRUE);
     
-    // for(int i = 0; i < 3; i++)
-    // {
-    //     Dialogue d;
-    //     std::cout << d.loadFromStream(file, buff) << "\n";
-    //     // std::cout << "\n";
-    // }
-
-    // DialogueScreen ds;
-    // ds.loadFromStream(file, buff);
-
-    // DialogueScreen ds2;
-    // ds2.loadFromStream(file, buff);
-
     BenchTimer t("file parsing time");
     t.start();
     CharacterDialogues cd;
@@ -59,3 +47,4 @@ int main()
 
     file.close();
 }
+*/

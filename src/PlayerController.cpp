@@ -1,56 +1,87 @@
 #include <PlayerController.hpp>
 #include <Globals.hpp>
+#include <Constants.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+PlayerController::PlayerController() : body(new B_DynamicBody)
+{
+}
 
 void PlayerController::update()
 {
-    // const vec3 cpos = globals.currentCamera->getPosition();
+    /*
+        Fastest way possible to see if the player is grounded.
+            If the player comes into contact with a surface 
+            exerting an opposing force to gravity, their 
+            vertical velocity will be canceled out.
+
+            This method can lead to a 1 in a million or billion
+            chance to have a double jump occurs if the player
+            spam the jum button for enough time.
+    */
+    grounded = abs(body->v.y) < 1e-6f;
+
     const float delta = globals.appTime.getDelta();
-    const float dspeed = speed * (sprintActivated ? sprintFactor : 1.f);
+    float daccel = airAcceleration;
+    float maxSpeed = airMaxSpeed;
 
-    vec3 front = globals.currentCamera->getDirection();
-    front = normalize(front * vec3(1, 0, 1));
-    const vec3 up = vec3(0, 1, 0);
-    const vec3 right = cross(up, front);
-    deplacementDir = front*(float)frontFactor + up*(float)upFactor + right*(float)rightFactor;
-    // deplacementDir = normalize(deplacementDir);
-
-    /* move */
-    // globals.currentCamera->setPosition(cpos + dspeed*deplacementDir);
     if(grounded)
-        accelerate(deplacementDir, dspeed, acceleration, delta);
+    {
+        daccel = sprintActivated ? sprintAacceleration : walkAcceleration;
+        maxSpeed = sprintActivated ? sprintMaxSpeed : walkMaxSpeed;
+    }
 
-    /* Grounded Test */
-    Ray ray{body->getPosition() + vec3(0, -1.95, 0), vec3(0.0f, -1.0f, 0.0f)};
-    float t;
-    RigidBodyRef bodyIntersect;
-    grounded = raycast(ray, thingsYouCanStandOn, 0.2f, t, bodyIntersect);
-    if (!grounded)
-        lockJump = false;
 
-    if (doJump && !lockJump)
-        jump(delta);
+/****** Horizontal Deplacement******/
+    const vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
+    const vec3 hUp = vec3(0, 1, 0);
+    const vec3 hRight = cross(hUp, hFront);
+    const vec3 hFrontDep = hFront*(float)frontFactor;
+    const vec3 hRightDep = hRight*(float)rightFactor;
 
-/*
-    TODO : remove when the physics shakes are fixed
-*/
-    vec3 pos = body->getPosition() * vec3(1, 0, 1) + vec3(0, 2, 0);
+    vec3 vel = body->getVelocity();
+    vec3 hVel = vec3(vel.x, 0, vel.z);
+    float hSpeed = length(hVel);
+    vec3 hDir = hVel/hSpeed;
 
-    this->friction(delta);
+    vec3 dirDec;
 
-    if(doJump && !lockJump) this->jump(delta);
+    if(!grounded) dirDec = vec3(0);
+    else if(frontFactor == 0 && rightFactor == 0) dirDec = -hVel;
+    else
+    {
+        vec3 wantedDir = normalize(hFrontDep+hRightDep);
+        float deltaDir = hSpeed <= 1e-5 ? 0.f : 1.f - dot(hDir, wantedDir);
+        deltaDir = sign(deltaDir)*pow(abs(deltaDir), 0.5);
+        dirDec = hSpeed >= 0.f ? hDir*-2.f*deltaDir : vec3(0);
+    }
 
-    // head bobbing
-    float bob = sin(globals.simulationTime.getElapsedTime() * 10.0f) * 0.1f;
-    float speed = length(vec2(body->getVelocity().x, body->getVelocity().z));
-    if (speed > 0)
-        pos.y += bob;
+    deplacementDir = hSpeed <= maxSpeed ? hFrontDep + hRightDep + dirDec : dirDec;
 
-    float diffBias = 0.0001;
-    vec3 diff = globals.currentCamera->getPosition()-pos;
-    if(dot(diff, diff) > diffBias)
-        globals.currentCamera->setPosition(pos);
+    static B_Force& playerMovementForce = body->applyForce(vec3(0));
+    playerMovementForce.x = daccel * deplacementDir.x;
+    playerMovementForce.z = daccel * deplacementDir.z;
 
-    deplacementDir = vec3(0.f);
+
+/****** Jump ******/
+    if(doJump)
+    {
+        body->v.y = sqrt(2.f*G*jumpHeight);
+        doJump = false;
+    }
+
+
+/****** Camera handling & Head bobbing ******/
+    vec3 pos = body->position + vec3(0, 0.75, 0);
+    if(grounded)
+    {
+        static float bobTime = 0.f;
+        bobTime += pow(hSpeed, 0.85)*delta;
+        vec3 bob = hUp*abs(sin(bobTime)) * 0.2f;
+        vec3 bobLR = cos(bobTime) * hRight * 0.1f;
+        pos += smoothstep(0.f, 0.5f, hSpeed)*(bobLR + bob);
+    }
+    globals.currentCamera->setPosition(pos);
 }
 
 bool PlayerController::inputs(GLFWKeyInfo& input)
@@ -64,7 +95,7 @@ bool PlayerController::inputs(GLFWKeyInfo& input)
         case GLFW_KEY_S : frontFactor --; break;
         case GLFW_KEY_A : rightFactor ++; break;
         case GLFW_KEY_D : rightFactor --; break;
-        case GLFW_KEY_SPACE : doJump = true;
+        case GLFW_KEY_SPACE : doJump = grounded; break;
         case GLFW_KEY_LEFT_SHIFT : sprintActivated = true; break;
         default: break;
         }
@@ -88,47 +119,8 @@ bool PlayerController::inputs(GLFWKeyInfo& input)
     return false;
 }
 
-void PlayerController::friction(float deltaTime)
-{
-    vec3 vel = body->getVelocity();
-    float speed = length(vel);
-
-    if (speed < 0.1f) return;
-
-    float drop = 0.0f;
-
-    if (grounded)
-    {
-        float control = speed < stopSpeed ? stopSpeed : speed;
-        drop = control * .6 * deltaTime;
-    }
-
-    vel *= max(speed-drop, 0.f)/speed;
-
-    body->setVelocity(vel);
-}
 
 void PlayerController::jump(float deltaTime)
 {
-    vec3 vel = body->getVelocity();
-    vel.y += jumpForce;
 
-    body->setVelocity(vel);
-
-    grounded = false;
-    lockJump = true;
-}
-
-void PlayerController::accelerate(vec3 wishDirection, float wishSpeed, float accel, float deltaTime)
-{
-    vec3 vel = body->getVelocity();
-    float currentSpeed = dot(vel, wishDirection);
-    float addSpeed = wishSpeed - currentSpeed;
-
-    if (addSpeed <= 0)return;
-
-    float accelSpeed = accel * deltaTime * wishSpeed;
-    vel += min(accelSpeed, addSpeed) * wishDirection;
-
-    body->setVelocity(vel);
 }

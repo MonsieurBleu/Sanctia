@@ -91,7 +91,7 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
                 std::cerr << TERMINAL_ERROR 
                 << "Dialogue Parsing Error : Couldn't find lanugage [" 
                 << TERMINAL_WARNING
-                << (char)(GameGlobals::currentLanguage%256) << (char)(GameGlobals::currentLanguage>>8)
+                << (char)(GG::currentLanguage%256) << (char)(GG::currentLanguage>>8)
                 << TERMINAL_ERROR
                 << "] when loading dialogue\n"
                 << TERMINAL_RESET;
@@ -100,7 +100,7 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
         }
         
         file.read(buff, 2);
-        if(*(uint16*)buff == GameGlobals::currentLanguage)
+        if(*(uint16*)buff == GG::currentLanguage)
             break;
     }
 
@@ -126,7 +126,7 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
     char c = buff[2];
 
     bool write = true;
-    bool useFemaleVersion = GameGlobals::currentConditions.get(COND_FEMALE_PC) == GameConditionState::TRUE;
+    bool useFemaleVersion = GG::currentConditions.get(COND_FEMALE_PC) == GameConditionState::TRUE;
     bool femaleVersion = false;
 
     for(int i = 2; i < BUFF_SIZE && c != '\0'; i++)
@@ -291,7 +291,7 @@ void loadAllCharactersDialogues(const std::string filename, const std::string la
 {
     auto file = std::fstream(filename, std::ios::in);
 
-    char buff[BUFF_SIZE];
+    // char buff[BUFF_SIZE];
 
     /*
         for all "# " found

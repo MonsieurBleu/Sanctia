@@ -17,6 +17,8 @@ using namespace glm;
     the expected result.
 */
 
+#include <mutex>
+extern std::mutex physicsMutex;
 
 struct CollisionInfo;
 
@@ -37,8 +39,8 @@ class B_Collider
         B_ColliderType type;
 
     public : 
-        void setSphere(float radius);
-        void setCapsule(vec3 p1, vec3 p2);
+        void setSphere(float radius, vec3 position = vec3(0));
+        void setCapsule(float radius, vec3 p1, vec3 p2);
         void settAABB(vec3 min, vec3 max);
         void setOBB(vec3 p1, vec3 p2, vec3 p3);
 
@@ -97,6 +99,14 @@ class B_DynamicBody : public B_Body
 
         vec3 getAcceleration() const {return a;};
         vec3 getVelocity() const {return v;};
+};
+
+/*
+    TODO : implement
+*/
+class B_ListenerBody : public B_Body
+{
+    
 };
 
 typedef std::shared_ptr<B_Body> B_BodyRef;

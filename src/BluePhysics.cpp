@@ -1,5 +1,6 @@
 #include <BluePhysics.hpp>
 #include <iostream>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
 B_Force& B_DynamicBody::applyForce(vec3 force)
@@ -25,8 +26,12 @@ void B_DynamicBody::update(float delta)
         if(!f.clear)
             a += (vec3)f;
 
-    v += a*delta*imass;
+    /*
+        https://www.youtube.com/watch?v=yGhfUcPjXuE
+    */
+    v += a*delta*imass*0.5f;
     position += v*delta;
+    v += a*delta*imass*0.5f;
 
     // std::cout << to_string(v) << "\n";
 }
@@ -76,13 +81,25 @@ void B_PhysicsScene::manageCollisions()
         if(!c.db1) continue;
 
         vec3 relativeVelocity = c.db1->v - (c.db2 ? c.db2->v : vec3(0));
-        float normalVelocity = max(dot(c.normal, relativeVelocity), 0.f);
+        float normalVelocity = relativeVelocity.length() > 0.f ? max(dot(c.normal, relativeVelocity), 0.f) : 1.0;
 
+        // std::cout 
+        // << to_string(c.db1->v) << "\t" 
+        // << to_string(c.normal) << "\t" 
+        // << to_string(vec2(normalVelocity, c.penetration)) << "\t"
+        // << c.db1 << "\t" 
+        // << c.db2 << "\t" 
+        // << "\n" ;
+        
         c.db1->position -= c.normal * c.penetration;
-
         c.db1->v -= c.normal * normalVelocity;
 
-        // std::cout << to_string(c.db1->v) << "\t" << to_string(c.normal) << "\t" << to_string(vec2(normalVelocity, c.penetration)) << "\n";
+        if(c.db2)
+        {
+            c.db2->position += c.normal * c.penetration;
+            c.db2->v += c.normal * normalVelocity;
+        }
+
     }
 
     collisions.clear();

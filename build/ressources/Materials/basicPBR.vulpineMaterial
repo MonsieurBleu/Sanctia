@@ -1,0 +1,10 @@
+basicPBR
+:   basicPBRgeometry
+    :   shader/foward/PBR.frag
+    :   shader/foward/basic.vert
+    ;
+:   basicPBRDepthOnly
+    :   shader/depthOnly.frag
+    :   shader/foward/basic.vert
+    ;
+;

@@ -9,7 +9,7 @@ class PlayerController : public Controller
         // static constexpr float stopSpeed = 20.0f;
         // static constexpr float jumpForce = 60.0f;
 
-        static constexpr float jumpHeight = 1.5;
+        static constexpr float jumpHeight = 1;
 
         bool sprintActivated = false;
         int upFactor = 0;

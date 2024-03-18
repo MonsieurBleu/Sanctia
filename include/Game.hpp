@@ -25,7 +25,7 @@ private:
     /* Physics */
     // std::shared_ptr<FPSController> playerControler;
     // PhysicsEngine physicsEngine;
-    B_PhysicsScene physics;
+    // B_PhysicsScene physics;
     LimitTimer physicsTicks;
     BenchTimer physicsTimer = BenchTimer("Physics Timer");
     void physicsLoop();

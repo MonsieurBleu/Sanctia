@@ -20,31 +20,3 @@ int main()
     if(game) delete game;
     return ret; 
 }
-
-/*
-
-#include <Dialogue.hpp>
-#include <GameGlobals.hpp>
-
-#include <iostream>
-#include <fstream>
-#include <string.h>
-
-int main()
-{
-    char buff[4096];
-    auto file = std::fstream("../tests/dialogue_test2.md", std::ios::in);
-
-    GameGlobals::currentLanguage = LANGUAGE_FRENCH;
-    GameGlobals::currentConditions.set(COND_FEMALE_PC, GameConditionState::TRUE);
-    
-    BenchTimer t("file parsing time");
-    t.start();
-    CharacterDialogues cd;
-    loadCharacterDialogues(cd, "FARIAH", file, buff);
-    t.end();
-    std::cout << t << "\n";
-
-    file.close();
-}
-*/

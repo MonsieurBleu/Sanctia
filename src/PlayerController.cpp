@@ -72,14 +72,14 @@ void PlayerController::update()
 
 
 /****** Camera handling & Head bobbing ******/
-    vec3 pos = body->position + vec3(0, 0.75, 0);
+    vec3 pos = body->position + vec3(0, 1.65, 0);
     if(grounded)
     {
         static float bobTime = 0.f;
         bobTime += pow(hSpeed, 0.85)*delta;
-        vec3 bob = hUp*abs(sin(bobTime)) * 0.2f;
+        vec3 bob = hUp*abs(sin(bobTime)) * 0.1f;
         vec3 bobLR = cos(bobTime) * hRight * 0.1f;
-        pos += smoothstep(0.f, 0.5f, hSpeed)*(bobLR + bob);
+        pos += smoothstep(0.f, 0.5f, hSpeed)*(bobLR - bob);
     }
     globals.currentCamera->setPosition(pos);
 }

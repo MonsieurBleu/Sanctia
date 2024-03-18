@@ -12,7 +12,7 @@ void EffectHandler::update()
     globals.sceneVignette = vec4(0, 0, 0, 1);
     globals.sceneHsvShift = vec3(0);
 
-    if(!GameGlobals::currentPlayer) return;
+    if(!GG::currentPlayer) return;
 
     float effectTime = globals.appTime.getElapsedTime();
 
@@ -24,7 +24,7 @@ void EffectHandler::update()
 
 void EffectHandler::updateReflex(float t)
 {
-    const float level = 0.01*GameGlobals::currentPlayer->getInfos().state.reflex;
+    const float level = 0.01*GG::currentPlayer->getInfos().state.reflex;
     const float caColorShiftBegin = 0.25;
     const vec3 caColor1 = vec3(0.0, 0.5, 0.5);
     const vec3 caColor2 = vec3(0.0, 0.5, 0.5);
@@ -45,7 +45,7 @@ void EffectHandler::updateReflex(float t)
 
 void EffectHandler::updateStress(float t)
 {
-    const float level = 0.01*GameGlobals::currentPlayer->getInfos().state.stress;
+    const float level = 0.01*GG::currentPlayer->getInfos().state.stress;
     const float shackingSpeed = 10.0;
     const float shackingAmpl = 10.0;
     const float maxVignette = 3.0;

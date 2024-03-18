@@ -1,3 +1,6 @@
+#include <fstream>
+#include <thread>
+
 #include <Game.hpp>
 #include <Globals.hpp>
 // #include <GameObject.hpp>
@@ -5,20 +8,22 @@
 #include <MathsUtils.hpp>
 #include <Audio.hpp>
 #include <Helpers.hpp>
-
 #include <Constants.hpp>
+#include <AssetManager.hpp>
+#include <EntityBlueprint.hpp>
 
-#include <thread>
-#include <fstream>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
 
 Game::Game(GLFWwindow *window) : App(window){}
 
 void Game::init(int paramSample)
 {
+    App::init();
+
     // activateMainSceneBindlessTextures();
     activateMainSceneClusteredLighting(ivec3(16, 9, 24), 5e3);
 
-    App::init();
 
     finalProcessingStage = ShaderProgram(
         "game shader/final composing.frag",
@@ -38,6 +43,8 @@ void Game::init(int paramSample)
     setController(&playerControl);
 
     ambientLight = vec3(0.1);
+
+    
 
     camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f);
     // camera.setMouseFollow(false);
@@ -72,21 +79,21 @@ void Game::init(int paramSample)
             "shader/foward/basicInstance.vert",
             ""));
 
-    GameGlobals::PBR = MeshMaterial(
+    GG::PBR = MeshMaterial(
         new ShaderProgram(
             "shader/foward/PBR.frag",
             "shader/foward/basic.vert",
             "",
             globals.standartShaderUniform3D()));
 
-    GameGlobals::PBRstencil = MeshMaterial(
+    GG::PBRstencil = MeshMaterial(
         new ShaderProgram(
             "shader/foward/PBR.frag",
             "shader/foward/basic.vert",
             "",
             globals.standartShaderUniform3D()));
 
-    GameGlobals::PBRinstanced = MeshMaterial(
+    GG::PBRinstanced = MeshMaterial(
         new ShaderProgram(
             "shader/foward/PBR.frag",
             "shader/foward/basicInstance.vert",
@@ -100,8 +107,8 @@ void Game::init(int paramSample)
             "",
             globals.standartShaderUniform3D()));
 
-    GameGlobals::PBRstencil.depthOnly = depthOnlyStencilMaterial;
-    GameGlobals::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;
+    GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
+    GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;
     scene.depthOnlyMaterial = depthOnlyMaterial;
 
     /* UI */
@@ -180,9 +187,11 @@ bool Game::userInput(GLFWKeyInfo input)
             Bloom.getShader().reset();
             SSAO.getShader().reset();
             depthOnlyMaterial->reset();
-            GameGlobals::PBR->reset();
-            GameGlobals::PBRstencil->reset();
+            GG::PBR->reset();
+            GG::PBRstencil->reset();
             skyboxMaterial->reset();
+            for(auto &m : Loader<MeshMaterial>::loadedAssets)
+                m.second->reset();
             break;
 
         case GLFW_KEY_F8:
@@ -192,6 +201,18 @@ bool Game::userInput(GLFWKeyInfo input)
                 myfile.close();
             }
                 break;
+
+        case GLFW_KEY_F :
+            GG::entities.clear();
+            break;
+
+        case GLFW_KEY_KP_ADD :
+            Blueprint::TestManequin();
+            break;
+        
+        case GLFW_KEY_KP_SUBTRACT :
+            if(GG::entities.size()) GG::entities.pop_back();
+            break;
 
         default:
             break;
@@ -203,7 +224,7 @@ bool Game::userInput(GLFWKeyInfo input)
 
 void Game::physicsLoop()
 {
-    physicsTicks.freq = 45.f;
+    physicsTicks.freq = 100.f;
     physicsTicks.activate();
 
     while (state != quit)
@@ -213,8 +234,10 @@ void Game::physicsLoop()
 
         physicsMutex.lock();
         // physicsEngine.update(globals.simulationTime.speed / physicsTicks.freq);
-        physics.update(globals.simulationTime.speed / physicsTicks.freq);
+        GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
         physicsMutex.unlock();
+
+        ManageGarbage<B_DynamicBodyRef>();
 
         physicsTimer.end();
         physicsTicks.waitForEnd();
@@ -227,17 +250,31 @@ void Game::mainloop()
     vec3 gravity = vec3(0, -G, 0);
     B_BodyRef ground(new B_Body);
     ground->boundingCollider.settAABB(vec3(-2e2, -50, -2e2), vec3(2e2, 0.0, 2e2));
-    scene.add(CubeHelperRef(new CubeHelper(
-            ground->boundingCollider.AABB_getMin(), 
-            ground->boundingCollider.AABB_getMax())));
+    // scene.add(CubeHelperRef(new CubeHelper(
+    //         ground->boundingCollider.AABB_getMin(), 
+    //         ground->boundingCollider.AABB_getMax())));
 
-    playerControl.body->boundingCollider.setSphere(1.0);
+    // playerControl.body->boundingCollider.setSphere(0.85); 
+    playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
     playerControl.body->position = vec3(0, 10, 0);
     playerControl.body->applyForce(gravity);
 
-    physics.dynamics.push_back(playerControl.body);
-    physics.level.push_back(ground);
+    GG::physics.dynamics.push_back(playerControl.body);
+    GG::physics.level.push_back(ground);
 
+    B_BodyRef wall(new B_Body);
+    wall->boundingCollider.settAABB(vec3(10, 0.01, 10), vec3(20, 10, 20));
+    scene.add(CubeHelperRef(new CubeHelper(
+            wall->boundingCollider.AABB_getMin(), 
+            wall->boundingCollider.AABB_getMax())));
+    GG::physics.level.push_back(wall);
+
+    B_BodyRef wall2(new B_Body);
+    wall2->boundingCollider.settAABB(vec3(30, 2, 10), vec3(40, 10, 20));
+    scene.add(CubeHelperRef(new CubeHelper(
+            wall2->boundingCollider.AABB_getMin(), 
+            wall2->boundingCollider.AABB_getMax())));
+    GG::physics.level.push_back(wall2);
 
 /****** Loading Models and setting up the scene ******/
     ModelRef skybox = newModel(skyboxMaterial);
@@ -249,11 +286,13 @@ void Game::mainloop()
     skybox->state.scaleScalar(1E6);
     scene.add(skybox);
 
-    ModelRef floor = newModel(GameGlobals::PBR);
+    Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
+
+    ModelRef floor = newModel(GG::PBR);
     floor->loadFromFolder("ressources/models/ground/");
 
-    int gridSize = 25;
-    int gridScale = 5;
+    int gridSize = 5;
+    int gridScale = 15;
     for (int i = -gridSize; i < gridSize; i++)
         for (int j = -gridSize; j < gridSize; j++)
         {
@@ -265,7 +304,7 @@ void Game::mainloop()
         }
 
 
-    ModelRef lantern = newModel(GameGlobals::PBRstencil);
+    ModelRef lantern = newModel(GG::PBRstencil);
     lantern->loadFromFolder("ressources/models/lantern/");
     lantern->state.scaleScalar(0.04).setPosition(vec3(10, 5, 0));
     lantern->noBackFaceCulling = true;
@@ -279,7 +318,7 @@ void Game::mainloop()
             .setIntensity(1.0));
 
     sun->cameraResolution = vec2(2048);
-    sun->shadowCameraSize = vec2(90, 90);
+    sun->shadowCameraSize = vec2(50, 50);
     sun->activateShadows();
     scene.add(sun);
 
@@ -291,24 +330,41 @@ void Game::mainloop()
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     FastUI_valueMenu menu(ui, {});
 
+    BenchTimer ECStimer("ECS timer");
+
     menu->state.setPosition(vec3(-0.9, 0.5, 0)).scaleScalar(0.8);
     globals.appTime.setMenuConst(menu);
     globals.simulationTime.setMenu(menu);
     physicsTimer.setMenu(menu);
-    // globals.cpuTime.setMenu(menu);
-    // globals.gpuTime.setMenu(menu);
+    ECStimer.setMenu(menu);
+    globals.cpuTime.setMenu(menu);
+    globals.gpuTime.setMenu(menu);
     globals.fpsLimiter.setMenu(menu);
     physicsTicks.setMenu(menu);
     // sun->setMenu(menu, U"Sun");
 
 /****** Creating Demo Player *******/
     Player player1;
-    GameGlobals::currentPlayer = &player1;
+    GG::currentPlayer = &player1;
     player1.setMenu(menu);
 
 /****** Loading Game Specific Elements *******/
-    // GameGlobals::currentConditions.saveTxt("saves/gameConditions.txt");
-    GameGlobals::currentConditions.readTxt("saves/gameConditions.txt");
+    // GG::currentConditions.saveTxt("saves/gameConditions.txt");
+    GG::currentConditions.readTxt("saves/gameConditions.txt");
+    GG::currentLanguage = LANGUAGE_FRENCH;
+
+    Loader<MeshMaterial>::addInfos("ressources/Materials/basicPBR.vulpineMaterial");
+    // scene.add(Loader<ObjectGroupRef>::addInfos("ressources/models/HumanMale.vulpineMesh").loadFromInfos());
+
+    Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineMesh");
+
+    for(int i = 0; i < 128; i++)
+        Blueprint::TestManequin();
+
+    // System<EntityModel>([](Entity &entity)
+    // {
+    //     std::cout << entity.toStr();
+    // });
 
 
 /****** Last Pre Loop Routines ******/
@@ -331,12 +387,12 @@ void Game::mainloop()
         float reflex = player1.getInfos().state.reflex;
         globals.simulationTime.speed = maxSlow + (1.f-maxSlow)*(1.f-reflex*0.01);
 
-        float simTime = globals.simulationTime.getElapsedTime();
-        lantern->state.setPosition(vec3(10, 5, 10*cos(5*simTime)));
+        // float simTime = globals.simulationTime.getElapsedTime();
+        // lantern->state.setPosition(vec3(10, 5, 10*cos(5*simTime)));
 
         float scroll = globals.mouseScrollOffset().y;
-        float &preflex = GameGlobals::currentPlayer->infos.state.reflex;
-        if(GameGlobals::currentPlayer)
+        float &preflex = GG::currentPlayer->infos.state.reflex;
+        if(GG::currentPlayer)
             preflex = clamp(preflex+scroll*5.f, 0.f, 100.f);
         globals.clearMouseScroll();
 
@@ -368,17 +424,19 @@ void Game::mainloop()
 
         scene.updateAllObjects();
         scene.generateShadowMaps();
+        globals.currentCamera = &camera;
         renderBuffer.activate();
 
         scene.cull();
 
         /* 3D Early Depth Testing */
-        scene.depthOnlyDraw(*globals.currentCamera, true);
-        glDepthFunc(GL_EQUAL);
+        // scene.depthOnlyDraw(*globals.currentCamera, true);
+        // glDepthFunc(GL_EQUAL);
 
         /* 3D Render */
-        skybox->bindMap(0, 4);
+        EnvironementMap.bind(4);
         scene.genLightBuffer();
+        
         scene.draw();
         renderBuffer.deactivate();
 
@@ -393,6 +451,57 @@ void Game::mainloop()
         sun->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();
+
+        
+        ECStimer.start();
+
+        ManageGarbage<EntityModel>();
+
+        System<EntityState3D>([](Entity &entity)
+        {
+            auto &s = entity.comp<EntityState3D>();
+            // s.direction = normalize(s.position - globals.currentCamera->getPosition());
+            float time = globals.simulationTime.getElapsedTime();
+            float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
+            s.direction.x = cos(angle);
+            s.direction.z = sin(angle);
+        });
+
+        physicsMutex.lock();
+        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
+        {
+            auto &s = entity.comp<EntityState3D>();
+            const float speed = 1;
+            // s.position.x -= speed*s.direction.x;
+            // s.position.z -= speed*s.direction.z;
+
+            auto &b = entity.comp<B_DynamicBodyRef>();
+
+            b->v = -speed*vec3(s.direction.x, 0, s.direction.z) + vec3(0, b->v.y, 0);
+        });
+
+        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
+        {
+            auto &b = entity.comp<B_DynamicBodyRef>();
+            auto &s = entity.comp<EntityState3D>();
+            s.position = b->position;
+            // std::cout << to_string(s.position) << "\n";
+        });
+
+        System<EntityModel, EntityState3D>([](Entity &entity)
+        {
+            EntityModel& model = entity.comp<EntityModel>();
+            auto &s = entity.comp<EntityState3D>();
+            vec3& dir = s.direction;
+
+            vec2 dir2D = normalize(vec2(dir.x, dir.z));
+
+            model->state.setRotation(vec3(model->state.rotation.x, atan2f(dir2D.x, dir2D.y), model->state.rotation.z));
+            model->state.setPosition(s.position);
+        });
+        physicsMutex.unlock();
+        ECStimer.end();
+        
 
         /* Main loop End */
         mainloopEndRoutine();

@@ -206,11 +206,11 @@ bool Game::userInput(GLFWKeyInfo input)
             GG::entities.clear();
             break;
 
-        case GLFW_KEY_KP_ADD :
+        case GLFW_KEY_P :
             Blueprint::TestManequin();
             break;
         
-        case GLFW_KEY_KP_SUBTRACT :
+        case GLFW_KEY_M :
             if(GG::entities.size()) GG::entities.pop_back();
             break;
 
@@ -235,7 +235,7 @@ void Game::physicsLoop()
         physicsMutex.lock();
         // physicsEngine.update(globals.simulationTime.speed / physicsTicks.freq);
         GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
-        physicsMutex.unlock();
+        
 
     /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
         System<Effect, EntityState3D>([](Entity &entity)
@@ -278,8 +278,10 @@ void Game::physicsLoop()
         });
 
 
-        ManageGarbage<B_DynamicBodyRef>();
         ManageGarbage<Effect>();
+        ManageGarbage<B_DynamicBodyRef>();
+
+        physicsMutex.unlock();
 
         physicsTimer.end();
         physicsTicks.waitForEnd();
@@ -297,11 +299,7 @@ void Game::mainloop()
     //         ground->boundingCollider.AABB_getMax())));
 
     // playerControl.body->boundingCollider.setSphere(0.85); 
-    playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
-    playerControl.body->position = vec3(0, 10, 0);
-    playerControl.body->applyForce(gravity);
 
-    GG::physics.dynamics.push_back(playerControl.body);
     GG::physics.level.push_back(ground);
 
     B_BodyRef wall(new B_Body);
@@ -387,8 +385,26 @@ void Game::mainloop()
 
 /****** Creating Demo Player *******/
     Player player1;
-    GG::currentPlayer = &player1;
+    GG::playerUniqueInfos = &player1;
     player1.setMenu(menu);
+
+    playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
+    playerControl.body->position = vec3(0, 10, 0);
+    playerControl.body->applyForce(gravity);
+    GG::physics.dynamics.push_back(playerControl.body);
+
+    Effect testEffectZone;
+    testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
+    testEffectZone.type = EffectType::Damage;
+    testEffectZone.valtype = DamageType::Pure;
+    testEffectZone.value = 100;
+    testEffectZone.maxTrigger = 5;
+
+
+    GG::playerEntity = newEntity("PLayer",
+        EntityState3D(), testEffectZone
+    );
+
 
 /****** Loading Game Specific Elements *******/
     // GG::currentConditions.saveTxt("saves/gameConditions.txt");
@@ -403,14 +419,7 @@ void Game::mainloop()
     for(int i = 0; i < 128; i++)
         Blueprint::TestManequin();
 
-    Blueprint::DamageBox(vec3(0), 3);
-
-    // System<EntityModel>([](Entity &entity)
-    // {
-    //     std::cout << entity.toStr();
-    // });
-
-    EntityStats et;
+    // Blueprint::DamageBox(vec3(0), 3);
 
 
 /****** Last Pre Loop Routines ******/
@@ -437,8 +446,8 @@ void Game::mainloop()
         // lantern->state.setPosition(vec3(10, 5, 10*cos(5*simTime)));
 
         float scroll = globals.mouseScrollOffset().y;
-        float &preflex = GG::currentPlayer->infos.state.reflex;
-        if(GG::currentPlayer)
+        float &preflex = GG::playerUniqueInfos->infos.state.reflex;
+        if(GG::playerUniqueInfos)
             preflex = clamp(preflex+scroll*5.f, 0.f, 100.f);
         globals.clearMouseScroll();
 
@@ -501,16 +510,31 @@ void Game::mainloop()
         
         ECStimer.start();
 
+        GG::playerEntity->comp<EntityState3D>() = EntityState3D{globals.currentCamera->getPosition(), globals.currentCamera->getDirection()};
+
     /***** DEMO DEPLACEMENT SYSTEM *****/
         System<EntityState3D>([](Entity &entity)
         {
+            auto &s = entity.comp<EntityState3D>();
             if(entity.hasComp<Effect>())
             {
-                entity.comp<EntityState3D>().direction = vec3(0.f);
-                entity.comp<EntityState3D>().position = globals.currentCamera->getPosition();
+                // entity.comp<EntityState3D>().direction = vec3(0.f);
+                // entity.comp<EntityState3D>().position = globals.currentCamera->getPosition();
+                B_Collider &b = entity.comp<Effect>().zone;
+
+                switch (b.type)
+                {
+                case B_ColliderType::Sphere :
+                    b.v2 = b.v3 + s.position + s.direction*b.v3.x;
+                    std::cout << to_string(b.v2) << "\n";
+                    break;
+                
+                default:
+                    break;
+                }
+
                 return;
             }   
-            auto &s = entity.comp<EntityState3D>();
             // s.direction = normalize(s.position - globals.currentCamera->getPosition());
             float time = globals.simulationTime.getElapsedTime();
             float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];

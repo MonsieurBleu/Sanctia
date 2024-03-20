@@ -62,7 +62,7 @@ void B_PhysicsScene::update(float deltaTime)
     for(auto i : dynamics)
         i->update(deltaTime);
 
-    manageCollisions();
+    
 
     for(auto i = dynamics.begin(); i != dynamics.end(); i++)
     {
@@ -72,6 +72,8 @@ void B_PhysicsScene::update(float deltaTime)
         for(auto j = i+1; j != dynamics.end(); j++)
             checkCollision(i->get(), j->get());
     }
+
+    manageCollisions();
 }
 
 void B_PhysicsScene::manageCollisions()

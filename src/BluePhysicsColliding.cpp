@@ -9,6 +9,7 @@ void B_Collider::setSphere(float radius, vec3 position)
 {
     v1.x = radius;
     v2 = position;
+    v3 = position;
     type = B_ColliderType::Sphere;
 }
 

@@ -18,7 +18,7 @@ class GG
         static inline MeshMaterial PBRstencil;
         static inline MeshMaterial PBRinstanced;
 
-        static inline Player* currentPlayer;
+        static inline Player* playerUniqueInfos;
 
         static inline GameConditionsHandler currentConditions;
 
@@ -27,6 +27,8 @@ class GG
         static inline BenchTimer EntityTime;
 
         static inline std::deque<EntityRef> entities;
+
+        static inline EntityRef playerEntity;
 
         static inline B_PhysicsScene physics;
 };

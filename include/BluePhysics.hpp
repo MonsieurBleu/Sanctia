@@ -33,12 +33,13 @@ enum B_ColliderType
 class B_Collider
 {
     private : 
+
+    public : 
         vec3 v1 = vec3(0);
         vec3 v2 = vec3(0);
         vec3 v3 = vec3(0);
         B_ColliderType type;
 
-    public : 
         void setSphere(float radius, vec3 position = vec3(0));
         void setCapsule(float radius, vec3 p1, vec3 p2);
         void settAABB(vec3 min, vec3 max);

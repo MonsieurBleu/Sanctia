@@ -12,7 +12,8 @@ void Component<EntityModel>::ComponentElem::init()
 template<>
 void Component<EntityModel>::ComponentElem::clean()
 {
-    globals.getScene()->remove(data);
+    if(data.get())
+        globals.getScene()->remove(data);
 };
 
 template<>

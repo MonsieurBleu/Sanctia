@@ -9,6 +9,7 @@
 #include <GameGlobals.hpp>
 #include <Globals.hpp>
 #include <BluePhysics.hpp>
+#include <EntityStats.hpp>
 
 struct EntityModel : public ObjectGroupRef
 {   
@@ -38,3 +39,8 @@ void Component<B_DynamicBodyRef>::ComponentElem::init();
 
 template<>
 void Component<B_DynamicBodyRef>::ComponentElem::clean();
+
+
+COMPONENT(EntityStats, DATA, MAX_ENTITY);
+
+COMPONENT(Effect, PHYSIC, MAX_ENTITY);

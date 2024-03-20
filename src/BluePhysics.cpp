@@ -41,20 +41,20 @@ void B_PhysicsScene::checkCollision(B_DynamicBody *b1, B_DynamicBody *b2)
     CollisionInfo c = B_Collider::collide(b1->boundingCollider, b1->position, b2->boundingCollider, b2->position);
     c.db1 = b1;
     c.db2 = b2;
-    if(c.penetration > 1e-5) collisions.push_back(c);
+    if(c.penetration > 1e-6) collisions.push_back(c);
 }
 
 void B_PhysicsScene::checkCollision(B_DynamicBody *b1, B_Body *b2)
 {
     CollisionInfo c = B_Collider::collide(b1->boundingCollider, b1->position, b2->boundingCollider, b2->position);
     c.db1 = b1;
-    if(c.penetration > 1e-5) collisions.push_back(c);
+    if(c.penetration > 1e-6) collisions.push_back(c);
 }
 
 void B_PhysicsScene::checkCollision(B_Body *b1, B_Body *b2)
 {
     CollisionInfo c = B_Collider::collide(b1->boundingCollider, b1->position, b2->boundingCollider, b2->position);
-    if(c.penetration > 1e-5) collisions.push_back(c);
+    if(c.penetration > 1e-6) collisions.push_back(c);
 }
 
 void B_PhysicsScene::update(float deltaTime)

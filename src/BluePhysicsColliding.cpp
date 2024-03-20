@@ -35,7 +35,7 @@ void B_Collider::setOBB(vec3 p1, vec3 p2, vec3 p3)
     type = B_ColliderType::OBB;
 }
 
-CollisionInfo B_Collider::collide(B_Collider& c1, vec3 p1, B_Collider &c2, vec3 p2)
+CollisionInfo B_Collider::collide(const B_Collider& c1, vec3 p1, const B_Collider &c2, vec3 p2)
 {
     B_Collider a = c1.type < c2.type ? c1 : c2;
     B_Collider b = c1.type < c2.type ? c2 : c1;
@@ -85,7 +85,7 @@ CollisionInfo B_Collider::collide(B_Collider& c1, vec3 p1, B_Collider &c2, vec3 
     return CollisionInfo();
 }
 
-CollisionInfo B_Collider::collideSphereSphere(B_Collider& sphere, vec3 ps, B_Collider& sphere2, vec3 ps2)
+CollisionInfo B_Collider::collideSphereSphere(const B_Collider& sphere, vec3 ps, const B_Collider& sphere2, vec3 ps2)
 {
     ps += sphere.v2;
     ps2 += sphere2.v2;
@@ -99,7 +99,7 @@ CollisionInfo B_Collider::collideSphereSphere(B_Collider& sphere, vec3 ps, B_Col
     return res;
 }
 
-CollisionInfo B_Collider::collideSphereAABB(B_Collider& sphere, vec3 ps, B_Collider& AABB, vec3 paabb)
+CollisionInfo B_Collider::collideSphereAABB(const B_Collider& sphere, vec3 ps, const B_Collider& AABB, vec3 paabb)
 {
     vec3 minP = AABB.v1 + paabb;
     vec3 maxP = AABB.v2 + paabb;
@@ -124,7 +124,7 @@ CollisionInfo B_Collider::collideSphereAABB(B_Collider& sphere, vec3 ps, B_Colli
     return res;
 }
 
-CollisionInfo B_Collider::collideSphereCapsule(B_Collider& sphere, vec3 ps, B_Collider& Capsule, vec3 pc)
+CollisionInfo B_Collider::collideSphereCapsule(const B_Collider& sphere, vec3 ps, const B_Collider& Capsule, vec3 pc)
 {
     vec3 origin = Capsule.v2 + pc;
     vec3 direction = normalize(Capsule.v3-Capsule.v2);
@@ -141,9 +141,9 @@ CollisionInfo B_Collider::collideSphereCapsule(B_Collider& sphere, vec3 ps, B_Co
     return res;
 }
 
-CollisionInfo B_Collider::collideSphereOBB(B_Collider& sphere, vec3 ps, B_Collider& OBB, vec3 pobb){return CollisionInfo();}
+CollisionInfo B_Collider::collideSphereOBB(const B_Collider& sphere, vec3 ps, const B_Collider& OBB, vec3 pobb){return CollisionInfo();}
 
-CollisionInfo B_Collider::collideCapsuleCapsule(B_Collider& Capsule, vec3 pc, B_Collider& Capsule2, vec3 pc2)
+CollisionInfo B_Collider::collideCapsuleCapsule(const B_Collider& Capsule, vec3 pc, const B_Collider& Capsule2, vec3 pc2)
 {
     vec3 origin1_1 = Capsule.v2 + pc;
     vec3 origin1_2 = Capsule.v3 + pc;
@@ -178,7 +178,7 @@ CollisionInfo B_Collider::collideCapsuleCapsule(B_Collider& Capsule, vec3 pc, B_
     return res;
 }
 
-CollisionInfo B_Collider::collideCapsuleAABB(B_Collider& Capsule, vec3 pc, B_Collider AABB, vec3 paabb)
+CollisionInfo B_Collider::collideCapsuleAABB(const B_Collider& Capsule, vec3 pc, const B_Collider AABB, vec3 paabb)
 {
     vec3 minP = AABB.v1 + paabb;
     vec3 maxP = AABB.v2 + paabb;
@@ -198,10 +198,10 @@ CollisionInfo B_Collider::collideCapsuleAABB(B_Collider& Capsule, vec3 pc, B_Col
     return res;
 }
 
-CollisionInfo B_Collider::collideCapsuleOBB(B_Collider& Capsule, vec3 pc, B_Collider OBB, vec3 poob){return CollisionInfo();}
+CollisionInfo B_Collider::collideCapsuleOBB(const B_Collider& Capsule, vec3 pc, const B_Collider OBB, vec3 poob){return CollisionInfo();}
 
-CollisionInfo B_Collider::collideAABBAABB(B_Collider AABB, vec3 paabb, B_Collider AABB2, vec3 paabb2){return CollisionInfo();}
+CollisionInfo B_Collider::collideAABBAABB(const B_Collider AABB, vec3 paabb, const B_Collider AABB2, vec3 paabb2){return CollisionInfo();}
 
-CollisionInfo B_Collider::collideAABBOBB(B_Collider AABB, vec3 paabb, B_Collider OBB, vec3 poob){return CollisionInfo();}
+CollisionInfo B_Collider::collideAABBOBB(const B_Collider AABB, vec3 paabb, const B_Collider OBB, vec3 poob){return CollisionInfo();}
 
-CollisionInfo B_Collider::collideOBBOBB(B_Collider OBB, vec3 poob, B_Collider OBB2, vec3 poob2){return CollisionInfo();}
+CollisionInfo B_Collider::collideOBBOBB(const B_Collider OBB, vec3 poob, const B_Collider OBB2, vec3 poob2){return CollisionInfo();}

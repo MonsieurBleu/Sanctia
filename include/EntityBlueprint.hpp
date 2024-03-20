@@ -5,4 +5,5 @@ namespace Blueprint
 {
     EntityRef TestManequin();
 
+    EntityRef DamageBox(vec3 position, float size);
 };

@@ -41,9 +41,9 @@ HumanMale
             ;
         ;
     *
+    *
     :   pointLights
-        :   FFFFFF  2   2   "0 2 0"
+        :   FF0000  10  3  "0 2 0"
         ;
     ;
-    *
 ;

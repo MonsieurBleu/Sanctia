@@ -30,13 +30,13 @@ class PlayerController : public Controller
         B_DynamicBodyRef body;
 
         float walkAcceleration = 20;
-        float walkMaxSpeed = 7;
+        float walkMaxSpeed = 5;
 
         float sprintAacceleration = 16;
-        float sprintMaxSpeed = 20;
+        float sprintMaxSpeed = 15;
 
         float airAcceleration = 8;
-        float airMaxSpeed = 5;
+        float airMaxSpeed = 4;
 
         void update();
         bool inputs(GLFWKeyInfo& input);

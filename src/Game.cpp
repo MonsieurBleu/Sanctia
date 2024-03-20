@@ -237,7 +237,49 @@ void Game::physicsLoop()
         GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
         physicsMutex.unlock();
 
+    /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
+        System<Effect, EntityState3D>([](Entity &entity)
+        {
+            // static Effect *e;
+            // static EntityState3D *se;
+            Effect *e = &entity.comp<Effect>();
+            EntityState3D *se = &entity.comp<EntityState3D>();
+            
+            System<B_DynamicBodyRef, EntityStats, EntityState3D>([se, e](Entity &entity)
+            {
+                if(e->curTrigger < e->maxTrigger)
+                {
+                    auto &b = entity.comp<B_DynamicBodyRef>();
+                    auto &s = entity.comp<EntityState3D>();
+                    CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, se->position);
+                    if(c.penetration > 0.f)
+                    {
+                        // std::cout << "Touche !\n";
+                        e->apply(entity.comp<EntityStats>());
+                    }
+                }
+            });
+        });
+
+    /***** APPLYING VELOCITY TO MANEQUIN *****/
+        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
+        {
+            auto &s = entity.comp<EntityState3D>();
+            const float speed = 1;
+            auto &b = entity.comp<B_DynamicBodyRef>();
+
+            b->v = -speed*vec3(s.direction.x, 0, s.direction.z) + vec3(0, b->v.y, 0);
+        });
+
+    /***** ATTACH ENTITY POSITION TO BODY POSITION *****/
+        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
+        {
+            entity.comp<EntityState3D>().position = entity.comp<B_DynamicBodyRef>()->position;
+        });
+
+
         ManageGarbage<B_DynamicBodyRef>();
+        ManageGarbage<Effect>();
 
         physicsTimer.end();
         physicsTicks.waitForEnd();
@@ -361,10 +403,14 @@ void Game::mainloop()
     for(int i = 0; i < 128; i++)
         Blueprint::TestManequin();
 
+    Blueprint::DamageBox(vec3(0), 3);
+
     // System<EntityModel>([](Entity &entity)
     // {
     //     std::cout << entity.toStr();
     // });
+
+    EntityStats et;
 
 
 /****** Last Pre Loop Routines ******/
@@ -455,10 +501,15 @@ void Game::mainloop()
         
         ECStimer.start();
 
-        ManageGarbage<EntityModel>();
-
+    /***** DEMO DEPLACEMENT SYSTEM *****/
         System<EntityState3D>([](Entity &entity)
         {
+            if(entity.hasComp<Effect>())
+            {
+                entity.comp<EntityState3D>().direction = vec3(0.f);
+                entity.comp<EntityState3D>().position = globals.currentCamera->getPosition();
+                return;
+            }   
             auto &s = entity.comp<EntityState3D>();
             // s.direction = normalize(s.position - globals.currentCamera->getPosition());
             float time = globals.simulationTime.getElapsedTime();
@@ -467,41 +518,40 @@ void Game::mainloop()
             s.direction.z = sin(angle);
         });
 
-        physicsMutex.lock();
-        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
-        {
-            auto &s = entity.comp<EntityState3D>();
-            const float speed = 1;
-            // s.position.x -= speed*s.direction.x;
-            // s.position.z -= speed*s.direction.z;
-
-            auto &b = entity.comp<B_DynamicBodyRef>();
-
-            b->v = -speed*vec3(s.direction.x, 0, s.direction.z) + vec3(0, b->v.y, 0);
-        });
-
-        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
-        {
-            auto &b = entity.comp<B_DynamicBodyRef>();
-            auto &s = entity.comp<EntityState3D>();
-            s.position = b->position;
-            // std::cout << to_string(s.position) << "\n";
-        });
-
+    /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
         System<EntityModel, EntityState3D>([](Entity &entity)
         {
             EntityModel& model = entity.comp<EntityModel>();
             auto &s = entity.comp<EntityState3D>();
             vec3& dir = s.direction;
 
-            vec2 dir2D = normalize(vec2(dir.x, dir.z));
+            if(dir.x != 0.f || dir.z != 0.f)
+            {
+                vec2 dir2D = normalize(vec2(dir.x, dir.z));
+                model->state.setRotation(vec3(model->state.rotation.x, atan2f(dir2D.x, dir2D.y), model->state.rotation.z));
+            }
 
-            model->state.setRotation(vec3(model->state.rotation.x, atan2f(dir2D.x, dir2D.y), model->state.rotation.z));
             model->state.setPosition(s.position);
         });
-        physicsMutex.unlock();
+    
+    /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
+        System<EntityStats>([](Entity &entity)
+        {
+            void *ptr = &entity;
+            if(!entity.comp<EntityStats>().alive)
+            {
+                GG::entities.erase(
+                    std::remove_if(
+                    GG::entities.begin(), 
+                    GG::entities.end(),
+                    [ptr](EntityRef &e){return e.get() == ptr;}
+                ), GG::entities.end());
+            }
+        }); 
+
         ECStimer.end();
         
+        ManageGarbage<EntityModel>();
 
         /* Main loop End */
         mainloopEndRoutine();

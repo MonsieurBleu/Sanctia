@@ -44,21 +44,21 @@ class B_Collider
         void settAABB(vec3 min, vec3 max);
         void setOBB(vec3 p1, vec3 p2, vec3 p3);
 
-        static CollisionInfo collideSphereSphere(B_Collider& sphere, vec3 ps, B_Collider& sphere2, vec3 ps2);
-        static CollisionInfo collideSphereAABB(B_Collider& sphere, vec3 ps, B_Collider& AABB, vec3 paabb);
-        static CollisionInfo collideSphereCapsule(B_Collider& sphere, vec3 ps, B_Collider& Capsule, vec3 pc);
-        static CollisionInfo collideSphereOBB(B_Collider& sphere, vec3 ps, B_Collider& OBB, vec3 pobb);
+        static CollisionInfo collideSphereSphere    (const B_Collider& sphere, vec3 ps,  const B_Collider& sphere2, vec3 ps2);
+        static CollisionInfo collideSphereAABB      (const B_Collider& sphere, vec3 ps, const B_Collider& AABB, vec3 paabb);
+        static CollisionInfo collideSphereCapsule   (const B_Collider& sphere, vec3 ps,  const B_Collider& Capsule, vec3 pc);
+        static CollisionInfo collideSphereOBB       (const B_Collider& sphere, vec3 ps,  const B_Collider& OBB, vec3 pobb);
 
-        static CollisionInfo collideCapsuleCapsule(B_Collider& Capsule, vec3 pc, B_Collider& Capsule2, vec3 pc2);
-        static CollisionInfo collideCapsuleAABB(B_Collider& Capsule, vec3 pc, B_Collider AABB, vec3 paabb);
-        static CollisionInfo collideCapsuleOBB(B_Collider& Capsule, vec3 pc, B_Collider OBB, vec3 poob);
+        static CollisionInfo collideCapsuleCapsule  (const B_Collider& Capsule, vec3 pc,  const B_Collider& Capsule2, vec3 pc2);
+        static CollisionInfo collideCapsuleAABB     (const B_Collider& Capsule, vec3 pc,  const B_Collider AABB, vec3 paabb);
+        static CollisionInfo collideCapsuleOBB      (const B_Collider& Capsule, vec3 pc,  const B_Collider OBB, vec3 poob);
 
-        static CollisionInfo collideAABBAABB(B_Collider AABB, vec3 paabb, B_Collider AABB2, vec3 paabb2);
-        static CollisionInfo collideAABBOBB(B_Collider AABB, vec3 paabb, B_Collider OBB, vec3 poob);
+        static CollisionInfo collideAABBAABB        (const B_Collider AABB, vec3 paabb,  const B_Collider AABB2, vec3 paabb2);
+        static CollisionInfo collideAABBOBB         (const B_Collider AABB, vec3 paabb,  const B_Collider OBB, vec3 poob);
 
-        static CollisionInfo collideOBBOBB(B_Collider OBB, vec3 poob, B_Collider OBB2, vec3 poob2);
+        static CollisionInfo collideOBBOBB          (const B_Collider OBB, vec3 poob,  const B_Collider OBB2, vec3 poob2);
 
-        static CollisionInfo collide(B_Collider& c1, vec3 p1, B_Collider &c2, vec3 p2);
+        static CollisionInfo collide(const B_Collider& c1, vec3 p1, const B_Collider &c2, vec3 p2);
 
         vec3 AABB_getMin(){return v1;};
         vec3 AABB_getMax(){return v2;};

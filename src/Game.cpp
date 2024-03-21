@@ -526,7 +526,7 @@ void Game::mainloop()
                 {
                 case B_ColliderType::Sphere :
                     b.v2 = b.v3 + s.position + s.direction*b.v3.x;
-                    std::cout << to_string(b.v2) << "\n";
+                    // std::cout << to_string(b.v2) << "\n";
                     break;
                 
                 default:

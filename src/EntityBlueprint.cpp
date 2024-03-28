@@ -11,7 +11,7 @@ EntityRef Blueprint::TestManequin()
     B_DynamicBodyRef body(new B_DynamicBody);
     vec3 position = vec3(-5*i/20, 5, -5*i%20) + vec3(-5, 0, 0);
 
-    float radius = 0.85;
+    // float radius = 0.85;
     body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
     body->position = position;
     body->applyForce(vec3(0, -G, 0));

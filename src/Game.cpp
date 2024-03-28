@@ -416,7 +416,7 @@ void Game::mainloop()
 
     Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineMesh");
 
-    for(int i = 0; i < 128; i++)
+    for(int i = 0; i < 5; i++)
         Blueprint::TestManequin();
 
     // Blueprint::DamageBox(vec3(0), 3);

@@ -274,7 +274,16 @@ void Game::physicsLoop()
     /***** ATTACH ENTITY POSITION TO BODY POSITION *****/
         System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
         {
-            entity.comp<EntityState3D>().position = entity.comp<B_DynamicBodyRef>()->position;
+            auto &b = entity.comp<B_DynamicBodyRef>();
+
+            b->boundingCollider.applyTranslation(b->position, vec3(0));
+
+            entity.comp<EntityState3D>().position = b->position;
+        });
+        System<Effect, EntityState3D>([](Entity &entity)
+        {
+            auto &s = entity.comp<EntityState3D>();
+            entity.comp<Effect>().zone.applyTranslation(s.position, s.direction);
         });
 
 
@@ -517,30 +526,17 @@ void Game::mainloop()
         System<EntityState3D>([](Entity &entity)
         {
             auto &s = entity.comp<EntityState3D>();
-            if(entity.hasComp<Effect>())
-            {
-                // entity.comp<EntityState3D>().direction = vec3(0.f);
-                // entity.comp<EntityState3D>().position = globals.currentCamera->getPosition();
+            // if(entity.hasComp<Effect>())
+            // {
+            //     // entity.comp<EntityState3D>().direction = vec3(0.f);
+            //     // entity.comp<EntityState3D>().position = globals.currentCamera->getPosition();
 
-                B_Collider &b = entity.comp<Effect>().zone;
+            //     B_Collider &b = entity.comp<Effect>().zone;
 
-                switch (b.type)
-                {
-                case B_ColliderType::Sphere :
-                    b.v2 = b.v3 + s.position + s.direction*b.v3.x;
-                    // std::cout << to_string(b.v2) << "\n";
-                    break;
                 
-                case B_ColliderType::Capsule : 
 
-                    break;
-                
-                default:
-                    break;
-                }
-
-                return;
-            }   
+            //     return;
+            // }   
 
             // s.direction = normalize(s.position - globals.currentCamera->getPosition());
             float time = globals.simulationTime.getElapsedTime();
@@ -566,15 +562,15 @@ void Game::mainloop()
         });
     
     /***** UPDATE PHYSICS HELPERS *****/
-    System<PhysicsHelpers>([](Entity &entity)
-    {
-        auto &ph = entity.comp<PhysicsHelpers>();
+    // System<PhysicsHelpers>([](Entity &entity)
+    // {
+    //     auto &ph = entity.comp<PhysicsHelpers>();
 
-        for(auto i : ph.dbodies)
-        {
-            i.second->state.setPosition(i.first->position);
-        }
-    });
+    //     for(auto i : ph.dbodies)
+    //     {
+    //         i.second->state.setPosition(i.first->position);
+    //     }
+    // });
 
 
     /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/

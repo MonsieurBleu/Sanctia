@@ -36,6 +36,26 @@ void B_Collider::setOBB(vec3 p1, vec3 p2, vec3 p3)
     type = B_ColliderType::OBB;
 }
 
+void B_Collider::applyTranslation(vec3 pos, vec3 direction)
+{
+    switch (type)
+    {
+    case B_ColliderType::Sphere :
+        v2 = v3 + pos + direction*v3.x;
+        // std::cout << to_string(b.v2) << "\n";
+        break;
+    
+    case B_ColliderType::Capsule : 
+        v4 = v2 + pos + direction*v2.x;
+        v5 = v3 + pos + direction*v3.x;
+        break;
+    
+    default:
+        break;
+    }
+
+}
+
 CollisionInfo B_Collider::collide(const B_Collider& c1, vec3 p1, const B_Collider &c2, vec3 p2)
 {
     B_Collider a = c1.type < c2.type ? c1 : c2;
@@ -47,6 +67,7 @@ CollisionInfo B_Collider::collide(const B_Collider& c1, vec3 p1, const B_Collide
     switch (a.type)
     {
         case B_ColliderType::Sphere :
+    
             switch(b.type)
             {
                 case B_ColliderType::Sphere : return collideSphereSphere(a, pa, b, pb);

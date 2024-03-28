@@ -38,12 +38,16 @@ class B_Collider
         vec3 v1 = vec3(0);
         vec3 v2 = vec3(0);
         vec3 v3 = vec3(0);
+        vec3 v4 = vec3(0);
+        vec3 v5 = vec3(0);
         B_ColliderType type;
 
         void setSphere(float radius, vec3 position = vec3(0));
         void setCapsule(float radius, vec3 p1, vec3 p2);
         void settAABB(vec3 min, vec3 max);
         void setOBB(vec3 p1, vec3 p2, vec3 p3);
+
+        void applyTranslation(vec3 pos, vec3 direction);
 
         static CollisionInfo collideSphereSphere    (const B_Collider& sphere, vec3 ps,  const B_Collider& sphere2, vec3 ps2);
         static CollisionInfo collideSphereAABB      (const B_Collider& sphere, vec3 ps, const B_Collider& AABB, vec3 paabb);

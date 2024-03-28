@@ -24,7 +24,7 @@ void Component<EntityModel>::ComponentElem::clean()
         WARNING_MESSAGE("Trying to clean null component from entity " << entity->ids[ENTITY_LIST] << " named " << entity->comp<EntityInfos>().name)
 };
 
-ModelRef getModelFromCollider(B_Collider c, vec3 color)
+ModelRef getModelFromCollider(B_Collider &c, vec3 color)
 {
     switch (c.type)
     {
@@ -33,7 +33,7 @@ ModelRef getModelFromCollider(B_Collider c, vec3 color)
 
     case B_ColliderType::Capsule :
         std::cout << "Yooo capsule\t" << to_string(c.v2) << to_string(c.v3) <<"\n";
-        return CapsuleHelperRef(new CapsuleHelper(c.v2, c.v3, c.v1.x));
+        return CapsuleHelperRef(new CapsuleHelper(&c.v4, &c.v5, &c.v1.x));
         break;
     
     default:

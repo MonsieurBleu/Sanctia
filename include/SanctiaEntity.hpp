@@ -11,9 +11,7 @@
 #include <BluePhysics.hpp>
 #include <EntityStats.hpp>
 
-struct EntityModel : public ObjectGroupRef
-{   
-};
+struct EntityModel : public ObjectGroupRef{};
 
 COMPONENT(EntityModel, GRAPHIC, MAX_ENTITY);
 
@@ -31,7 +29,6 @@ struct EntityState3D
 
 COMPONENT(EntityState3D, DATA, MAX_ENTITY);
 
-
 COMPONENT(B_DynamicBodyRef, PHYSIC, MAX_ENTITY);
 
 template<>
@@ -44,3 +41,19 @@ void Component<B_DynamicBodyRef>::ComponentElem::clean();
 COMPONENT(EntityStats, DATA, MAX_ENTITY);
 
 COMPONENT(Effect, PHYSIC, MAX_ENTITY);
+
+
+struct PhysicsHelpers : public ObjectGroupRef
+{
+
+    std::vector<std::pair<B_DynamicBodyRef, ObjectGroupRef>> dbodies;
+    std::vector<std::pair<B_Body, ObjectGroupRef>> bodies;
+};
+
+COMPONENT(PhysicsHelpers, GRAPHIC, MAX_ENTITY);
+
+template<>
+void Component<PhysicsHelpers>::ComponentElem::init();
+
+template<>
+void Component<PhysicsHelpers>::ComponentElem::clean();

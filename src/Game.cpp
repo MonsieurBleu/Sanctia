@@ -394,7 +394,8 @@ void Game::mainloop()
     GG::physics.dynamics.push_back(playerControl.body);
 
     Effect testEffectZone;
-    testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
+    // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
+    testEffectZone.zone.setCapsule(0.1, vec3(1, 0, -1), vec3(1, 0, 1));
     testEffectZone.type = EffectType::Damage;
     testEffectZone.valtype = DamageType::Pure;
     testEffectZone.value = 100;
@@ -419,7 +420,7 @@ void Game::mainloop()
     for(int i = 0; i < 5; i++)
         Blueprint::TestManequin();
 
-    // Blueprint::DamageBox(vec3(0), 3);
+    // EntityRef playerDamageBox = Blueprint::DamageBox(vec3(0), 3);
 
 
 /****** Last Pre Loop Routines ******/
@@ -520,6 +521,7 @@ void Game::mainloop()
             {
                 // entity.comp<EntityState3D>().direction = vec3(0.f);
                 // entity.comp<EntityState3D>().position = globals.currentCamera->getPosition();
+
                 B_Collider &b = entity.comp<Effect>().zone;
 
                 switch (b.type)
@@ -529,12 +531,17 @@ void Game::mainloop()
                     // std::cout << to_string(b.v2) << "\n";
                     break;
                 
+                case B_ColliderType::Capsule : 
+
+                    break;
+                
                 default:
                     break;
                 }
 
                 return;
             }   
+
             // s.direction = normalize(s.position - globals.currentCamera->getPosition());
             float time = globals.simulationTime.getElapsedTime();
             float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
@@ -558,6 +565,18 @@ void Game::mainloop()
             model->state.setPosition(s.position);
         });
     
+    /***** UPDATE PHYSICS HELPERS *****/
+    System<PhysicsHelpers>([](Entity &entity)
+    {
+        auto &ph = entity.comp<PhysicsHelpers>();
+
+        for(auto i : ph.dbodies)
+        {
+            i.second->state.setPosition(i.first->position);
+        }
+    });
+
+
     /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
         System<EntityStats>([](Entity &entity)
         {
@@ -576,6 +595,7 @@ void Game::mainloop()
         ECStimer.end();
         
         ManageGarbage<EntityModel>();
+        ManageGarbage<PhysicsHelpers>();
 
         /* Main loop End */
         mainloopEndRoutine();

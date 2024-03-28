@@ -28,7 +28,8 @@ EntityRef Blueprint::TestManequin()
             EntityModel{newGroup}, 
             EntityState3D({position, vec3(0)}),
             B_DynamicBodyRef(body),
-            stats
+            stats,
+            PhysicsHelpers{}
             ));
 
 

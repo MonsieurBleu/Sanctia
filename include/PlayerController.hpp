@@ -21,12 +21,14 @@ class PlayerController : public Controller
         bool grounded = false;
         bool doJump = false;
         bool lockJump;
+
+        Camera *playerCam;
         
 
     public : 
         // RigidBodyRef body;
 
-        PlayerController();
+        PlayerController(Camera *playerCam);
         B_DynamicBodyRef body;
 
         float walkAcceleration = 20;

@@ -11,6 +11,7 @@ void EntityStats::damage(float val, DamageType type)
 
 void Effect::apply(EntityStats &s)
 {
+    curTrigger ++;
     switch (type)
     {
     case EffectType::Damage :

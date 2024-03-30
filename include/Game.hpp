@@ -26,8 +26,6 @@ private:
     // std::shared_ptr<FPSController> playerControler;
     // PhysicsEngine physicsEngine;
     // B_PhysicsScene physics;
-    LimitTimer physicsTicks;
-    BenchTimer physicsTimer = BenchTimer("Physics Timer");
     void physicsLoop();
 
     /* Player Controller */
@@ -37,6 +35,9 @@ private:
     EffectHandler effects;
 
 public:
+    static inline LimitTimer physicsTicks;
+    static inline BenchTimer physicsTimer = BenchTimer("Physics Timer");
+    
     Game(GLFWwindow *window);
     void init(int paramSample);
     bool userInput(GLFWKeyInfo input);

@@ -32,8 +32,7 @@ ModelRef getModelFromCollider(B_Collider &c, vec3 color)
         return SphereHelperRef(new SphereHelper(color, c.v1.x));
 
     case B_ColliderType::Capsule :
-        std::cout << "Yooo capsule\t" << to_string(c.v2) << to_string(c.v3) <<"\n";
-        return CapsuleHelperRef(new CapsuleHelper(&c.v4, &c.v5, &c.v1.x));
+        return CapsuleHelperRef(new CapsuleHelper(&c.v4, &c.v5, &c.v1.x, color));
         break;
     
     default:
@@ -50,19 +49,18 @@ void Component<PhysicsHelpers>::ComponentElem::init()
 
     if(entity->hasComp<B_DynamicBodyRef>())
     {
-        auto g = newObjectGroup();
-        auto b = entity->comp<B_DynamicBodyRef>();
-        g->add(getModelFromCollider(b->boundingCollider, vec3(1, 1, 0)));
-
-        data.dbodies.push_back({b, g});
-
-        data->add(g);
+        auto &b = entity->comp<B_DynamicBodyRef>();
+        data->add(getModelFromCollider(b->boundingCollider, vec3(1, 1, 0)));
     }
 
-    // if(entity->hasComp<Effect>())
-    // {
-    //     data.bodies
-    // }
+    if(entity->hasComp<Effect>())
+    // if(entity->ids[PHYSIC] != NO_ENTITY)
+    {
+        auto &c = entity->comp<Effect>().zone;
+        data->add(getModelFromCollider(c, vec3(1, 0, 0)));
+    }
+
+
 
     globals.getScene()->add(data);
     // entity->comp<EntityModel>()->add(data);
@@ -72,13 +70,52 @@ void Component<PhysicsHelpers>::ComponentElem::init()
 template<>
 void Component<PhysicsHelpers>::ComponentElem::clean()
 {
-    std::cout << "deleting entity model " << entity->toStr();
-
     if(data.get())
         globals.getScene()->remove(data);
     else
         WARNING_MESSAGE("Trying to clean null component from entity " << entity->ids[ENTITY_LIST] << " named " << entity->comp<EntityInfos>().name)
 };
+
+template<>
+void Component<InfosStatsHelpers>::ComponentElem::init()
+{
+    if(!entity->hasComp<EntityModel>()) return;
+
+    ValueHelperRef<std::string> N(new ValueHelper(entity->comp<EntityInfos>().name, U"", vec3(0.85)));
+    N->state.setPosition(vec3(0, 2.0, 0)).scaleScalar(5);
+    entity->comp<EntityModel>()->add(N);
+    globals.getScene()->add(N);
+    data.models.push_back(N);
+
+    if(entity->hasComp<EntityStats>() && entity->hasComp<EntityModel>())
+    {
+        auto &s = entity->comp<EntityStats>();
+        ValueHelperRef<float> HP(new ValueHelper(s.health.cur, U"Health ", vec3(0, 1, 0)));
+        HP->state.setPosition(vec3(0, 2.2, 0)).scaleScalar(5);
+        entity->comp<EntityModel>()->add(HP);
+        globals.getScene()->add(HP);
+
+        ValueHelperRef<float> ST(new ValueHelper(s.stamina.cur, U"Stamina ", vec3(1, 1, 0)));
+        ST->state.setPosition(vec3(0, 2.4, 0)).scaleScalar(5);
+        entity->comp<EntityModel>()->add(ST);
+        globals.getScene()->add(ST);
+
+        data.models.push_back(HP);
+        data.models.push_back(ST);
+    }
+}
+
+template<>
+void Component<InfosStatsHelpers>::ComponentElem::clean()
+{
+    if(!entity || !entity->hasComp<EntityModel>()) return;
+
+    for(auto &i : data.models)
+    {
+        entity->comp<EntityModel>()->remove(i);
+        globals.getScene()->remove(i);
+    }
+}
 
 template<>
 void Component<B_DynamicBodyRef>::ComponentElem::init()

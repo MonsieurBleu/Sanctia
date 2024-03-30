@@ -2,8 +2,9 @@
 #include <Globals.hpp>
 #include <Constants.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <Game.hpp>
 
-PlayerController::PlayerController() : body(new B_DynamicBody)
+PlayerController::PlayerController(Camera *playerCam) : playerCam(playerCam), body(new B_DynamicBody)
 {
 }
 
@@ -19,9 +20,14 @@ void PlayerController::update()
             chance to have a double jump occurs if the player
             spam the jum button for enough time.
     */
+    static int inAirFrameCount = 0;
     grounded = abs(body->v.y) < 1e-6f;
 
+    inAirFrameCount = grounded ? 0 : inAirFrameCount+1;
+    if(inAirFrameCount <= 1) grounded = true; 
+
     const float delta = globals.appTime.getDelta();
+    // const float delta = globals.simulationTime.speed / Game::physicsTicks.freq;
     float daccel = airAcceleration;
     float maxSpeed = airMaxSpeed;
 
@@ -68,6 +74,7 @@ void PlayerController::update()
     {
         body->v.y = sqrt(2.f*G*jumpHeight);
         doJump = false;
+        // inAirFrameCount = 1e3;
     }
 
 
@@ -80,12 +87,14 @@ void PlayerController::update()
         bobTime += pow(hSpeed, 0.85)*delta;
         vec3 bob = hUp*abs(sin(bobTime)) * 0.1f;
         vec3 bobLR = cos(bobTime) * hRight * 0.1f;
+        
         pos += smoothstep(0.f, 0.5f, maxSpeed/10.f)*(bobLR - bob);
     }
 
     // std::cout << to_string(pos) << "\n",
     
-    globals.currentCamera->setPosition(pos);
+    // globals.currentCamera->setPosition(pos);
+    playerCam->setPosition(pos);
 }
 
 bool PlayerController::inputs(GLFWKeyInfo& input)

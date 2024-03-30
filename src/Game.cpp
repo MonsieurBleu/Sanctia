@@ -15,7 +15,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
-Game::Game(GLFWwindow *window) : App(window){}
+Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
 
 void Game::init(int paramSample)
 {
@@ -115,12 +115,16 @@ void Game::init(int paramSample)
     FUIfont = FontRef(new FontUFT8);
     FUIfont->readCSV("ressources/fonts/Roboto/out.csv");
     FUIfont->setAtlas(Texture2D().loadFromFileKTX("ressources/fonts/Roboto/out.ktx"));
+
+    globals.baseFont = FUIfont;
+
     defaultFontMaterial = MeshMaterial(
         new ShaderProgram(
             "shader/2D/sprite.frag",
             "shader/2D/sprite.vert",
             "",
             globals.standartShaderUniform2D()));
+
 
     defaultSUIMaterial = MeshMaterial(
         new ShaderProgram(
@@ -213,6 +217,41 @@ bool Game::userInput(GLFWKeyInfo input)
         case GLFW_KEY_M :
             if(GG::entities.size()) GG::entities.pop_back();
             break;
+        
+        case GLFW_KEY_F6 : 
+            GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+            break;
+
+        case GLFW_KEY_F7 : 
+            GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
+            break;
+
+        case GLFW_MOUSE_BUTTON_RIGHT : 
+        {
+            Effect testEffectZone;
+            testEffectZone.zone.setCapsule(0.1, vec3(-1, 0, -1), vec3(1, 0, -1));
+            testEffectZone.type = EffectType::Damage;
+            testEffectZone.valtype = DamageType::Pure;
+            testEffectZone.value = 20;
+            testEffectZone.maxTrigger = 1;
+            GG::playerEntity->set<Effect>(testEffectZone);
+        }
+            break;
+
+
+
+        default:
+            break;
+        }
+    }
+
+    if (input.action == GLFW_RELEASE)
+    {
+        switch (input.key)
+        {
+        case GLFW_MOUSE_BUTTON_RIGHT : 
+            GG::playerEntity->removeComp<Effect>();
+            break;
 
         default:
             break;
@@ -233,33 +272,20 @@ void Game::physicsLoop()
         physicsTimer.start();
 
         physicsMutex.lock();
-        // physicsEngine.update(globals.simulationTime.speed / physicsTicks.freq);
-        GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
         
+        playerControl.body->boundingCollider.applyTranslation(playerControl.body->position, vec3(1, 0, 0));
 
-    /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
-        System<Effect, EntityState3D>([](Entity &entity)
+    /***** ATTACH ENTITY POSITION TO BODY POSITION *****/
+        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
         {
-            // static Effect *e;
-            // static EntityState3D *se;
-            Effect *e = &entity.comp<Effect>();
-            EntityState3D *se = &entity.comp<EntityState3D>();
-            
-            System<B_DynamicBodyRef, EntityStats, EntityState3D>([se, e](Entity &entity)
-            {
-                if(e->curTrigger < e->maxTrigger)
-                {
-                    auto &b = entity.comp<B_DynamicBodyRef>();
-                    auto &s = entity.comp<EntityState3D>();
-                    CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, se->position);
-                    if(c.penetration > 0.f)
-                    {
-                        // std::cout << "Touche !\n";
-                        e->apply(entity.comp<EntityStats>());
-                    }
-                }
-            });
+            auto &b = entity.comp<B_DynamicBodyRef>();
+            auto &s = entity.comp<EntityState3D>();
+            s.position = b->position;
+
+            b->boundingCollider.applyTranslation(b->position, s.direction);
         });
+
+        GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
 
     /***** APPLYING VELOCITY TO MANEQUIN *****/
         System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
@@ -271,21 +297,42 @@ void Game::physicsLoop()
             b->v = -speed*vec3(s.direction.x, 0, s.direction.z) + vec3(0, b->v.y, 0);
         });
 
-    /***** ATTACH ENTITY POSITION TO BODY POSITION *****/
-        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
-        {
-            auto &b = entity.comp<B_DynamicBodyRef>();
-
-            b->boundingCollider.applyTranslation(b->position, vec3(0));
-
-            entity.comp<EntityState3D>().position = b->position;
-        });
+    /***** ATTACH EFFECT TO ENTITY STATE *****/
         System<Effect, EntityState3D>([](Entity &entity)
         {
             auto &s = entity.comp<EntityState3D>();
             entity.comp<Effect>().zone.applyTranslation(s.position, s.direction);
+            // entity.comp<Effect>().zone.applyTranslation(s.position, vec3(0));
         });
 
+        
+
+    /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
+        System<Effect, EntityState3D>([](Entity &entity)
+        {
+            // static Effect *e;
+            // static EntityState3D *se;
+            Effect *e = &entity.comp<Effect>();
+            EntityState3D *se = &entity.comp<EntityState3D>();
+            
+            if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
+
+            System<B_DynamicBodyRef, EntityStats, EntityState3D>([se, e](Entity &entity)
+            {
+                if(e->curTrigger < e->maxTrigger)
+                {
+                    auto &b = entity.comp<B_DynamicBodyRef>();
+                    auto &s = entity.comp<EntityState3D>();
+                    CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, se->position);
+                    if(c.penetration > 0.f)
+                    {
+                        e->apply(entity.comp<EntityStats>());
+                    }
+                }
+            });
+
+            if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
+        });
 
         ManageGarbage<Effect>();
         ManageGarbage<B_DynamicBodyRef>();
@@ -330,9 +377,9 @@ void Game::mainloop()
     skybox->loadFromFolder("ressources/models/skybox/", true, false);
 
     // skybox->invertFaces = true;
-    skybox->depthWrite = true;
+    // skybox->depthWrite = false;
     skybox->state.frustumCulled = false;
-    skybox->state.scaleScalar(1E6);
+    skybox->state.scaleScalar(1E6); 
     scene.add(skybox);
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
@@ -403,16 +450,18 @@ void Game::mainloop()
     GG::physics.dynamics.push_back(playerControl.body);
 
     Effect testEffectZone;
-    // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
-    testEffectZone.zone.setCapsule(0.1, vec3(1, 0, -1), vec3(1, 0, 1));
-    testEffectZone.type = EffectType::Damage;
-    testEffectZone.valtype = DamageType::Pure;
-    testEffectZone.value = 100;
-    testEffectZone.maxTrigger = 5;
+    // // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
+    testEffectZone.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(0, 0, 0));
+    // testEffectZone.type = EffectType::Damage;
+    // testEffectZone.valtype = DamageType::Pure;
+    // testEffectZone.value = 100;
+    // testEffectZone.maxTrigger = 5;
 
 
     GG::playerEntity = newEntity("PLayer",
-        EntityState3D(), testEffectZone
+        EntityState3D(), 
+        testEffectZone, 
+        PhysicsHelpers{}
     );
 
 
@@ -421,15 +470,14 @@ void Game::mainloop()
     GG::currentConditions.readTxt("saves/gameConditions.txt");
     GG::currentLanguage = LANGUAGE_FRENCH;
 
-    Loader<MeshMaterial>::addInfos("ressources/Materials/basicPBR.vulpineMaterial");
+    // Loader<MeshMaterial>::addInfos("ressources/Materials/BasicFont3D.vulpineMaterial");
+    // Loader<MeshMaterial>::addInfos("ressources/Materials/basicPBR.vulpineMaterial");
     // scene.add(Loader<ObjectGroupRef>::addInfos("ressources/models/HumanMale.vulpineMesh").loadFromInfos());
 
     Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineMesh");
 
-    for(int i = 0; i < 5; i++)
+    for(int i = 0; i < 50; i++)
         Blueprint::TestManequin();
-
-    // EntityRef playerDamageBox = Blueprint::DamageBox(vec3(0), 3);
 
 
 /****** Last Pre Loop Routines ******/
@@ -439,6 +487,9 @@ void Game::mainloop()
     menu.batch();
     scene2D.updateAllObjects();
     fuiBatch->batch();
+
+    SSAO.disable();
+    Bloom.disable();
 
 
 /******  Main Loop ******/
@@ -523,22 +574,10 @@ void Game::mainloop()
         GG::playerEntity->comp<EntityState3D>() = EntityState3D{globals.currentCamera->getPosition(), globals.currentCamera->getDirection()};
 
     /***** DEMO DEPLACEMENT SYSTEM *****/
-        System<EntityState3D>([](Entity &entity)
+        System<EntityState3D, DeplacementBehaviour>([](Entity &entity)
         {
             auto &s = entity.comp<EntityState3D>();
-            // if(entity.hasComp<Effect>())
-            // {
-            //     // entity.comp<EntityState3D>().direction = vec3(0.f);
-            //     // entity.comp<EntityState3D>().position = globals.currentCamera->getPosition();
 
-            //     B_Collider &b = entity.comp<Effect>().zone;
-
-                
-
-            //     return;
-            // }   
-
-            // s.direction = normalize(s.position - globals.currentCamera->getPosition());
             float time = globals.simulationTime.getElapsedTime();
             float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
             s.direction.x = cos(angle);
@@ -592,6 +631,8 @@ void Game::mainloop()
         
         ManageGarbage<EntityModel>();
         ManageGarbage<PhysicsHelpers>();
+        GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
+        GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
 
         /* Main loop End */
         mainloopEndRoutine();

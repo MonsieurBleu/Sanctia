@@ -1,0 +1,10 @@
+BasicFont3D
+:   BasicFont3D
+    :   shader/2D/sprite.frag
+    :   shader/2D/sprite3D.vert
+    ;
+:   BasicFont3DdepthOnly
+    :   shader/2D/sprite.frag
+    :   shader/2D/sprite3D.vert
+    ;
+;

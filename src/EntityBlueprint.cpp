@@ -9,7 +9,7 @@ EntityRef Blueprint::TestManequin()
     ObjectGroupRef newGroup = Loader<ObjectGroup>::get("HumanMale").copy();
     int i = GG::entities.size();
     B_DynamicBodyRef body(new B_DynamicBody);
-    vec3 position = vec3(-5*i/20, 5, -5*i%20) + vec3(-5, 0, 0);
+    vec3 position = vec3(-5*(i/10), 5, -5*(i%10)) + vec3(-5, 0, 0);
 
     // float radius = 0.85;
     body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
@@ -20,6 +20,16 @@ EntityRef Blueprint::TestManequin()
     // sh->state.setPosition(vec3(0, radius, 0));
     // newGroup->add(sh);
 
+
+    Effect testEffectZone;
+    // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
+    testEffectZone.zone.setCapsule(0.1, vec3(-1, 1, 1), vec3(1, 1, 1));
+    testEffectZone.type = EffectType::Damage;
+    testEffectZone.valtype = DamageType::Pure;
+    testEffectZone.value = 100;
+    testEffectZone.maxTrigger = 5;
+
+
     EntityStats stats;
 
     GG::entities.push_back(
@@ -29,7 +39,9 @@ EntityRef Blueprint::TestManequin()
             EntityState3D({position, vec3(0)}),
             B_DynamicBodyRef(body),
             stats,
-            PhysicsHelpers{}
+            // testEffectZone,
+            // PhysicsHelpers{},
+            DeplacementBehaviour{DEMO}
             ));
 
 

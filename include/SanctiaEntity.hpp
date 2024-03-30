@@ -30,12 +30,8 @@ struct EntityState3D
 COMPONENT(EntityState3D, DATA, MAX_ENTITY);
 
 COMPONENT(B_DynamicBodyRef, PHYSIC, MAX_ENTITY);
-
-template<>
-void Component<B_DynamicBodyRef>::ComponentElem::init();
-
-template<>
-void Component<B_DynamicBodyRef>::ComponentElem::clean();
+template<> void Component<B_DynamicBodyRef>::ComponentElem::init();
+template<> void Component<B_DynamicBodyRef>::ComponentElem::clean();
 
 
 COMPONENT(EntityStats, DATA, MAX_ENTITY);
@@ -43,17 +39,32 @@ COMPONENT(EntityStats, DATA, MAX_ENTITY);
 COMPONENT(Effect, PHYSIC, MAX_ENTITY);
 
 
-struct PhysicsHelpers : public ObjectGroupRef
-{
-
-    std::vector<std::pair<B_DynamicBodyRef, ObjectGroupRef>> dbodies;
-    std::vector<std::pair<B_Body, ObjectGroupRef>> bodies;
-};
+struct PhysicsHelpers : public ObjectGroupRef{};
 
 COMPONENT(PhysicsHelpers, GRAPHIC, MAX_ENTITY);
+template<> void Component<PhysicsHelpers>::ComponentElem::clean();
+template<> void Component<PhysicsHelpers>::ComponentElem::init();
 
-template<>
-void Component<PhysicsHelpers>::ComponentElem::init();
+enum DeplacementBehaviour
+{
+    DEMO
+};
 
-template<>
-void Component<PhysicsHelpers>::ComponentElem::clean();
+COMPONENT(DeplacementBehaviour, AI, MAX_ENTITY);
+
+
+/***************** HELPERS *****************/
+struct InfosStatsHelpers
+{
+    // uint8 TODO_ADD_LATER;
+    std::vector<ModelRef> models;
+    // ~InfosStatsHelpers()
+    // {
+    //     std::cout << "yoooooo\n";
+    //     for(auto &i : models) globals.getScene()->remove(i);
+    // }
+};
+
+COMPONENT(InfosStatsHelpers, GRAPHIC, MAX_ENTITY);
+template<> void Component<InfosStatsHelpers>::ComponentElem::init();
+template<> void Component<InfosStatsHelpers>::ComponentElem::clean();

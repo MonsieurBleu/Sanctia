@@ -218,11 +218,11 @@ bool Game::userInput(GLFWKeyInfo input)
             if(GG::entities.size()) GG::entities.pop_back();
             break;
         
-        case GLFW_KEY_F6 : 
+        case GLFW_KEY_9 : 
             GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
             break;
 
-        case GLFW_KEY_F7 : 
+        case GLFW_KEY_0 : 
             GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
             break;
 

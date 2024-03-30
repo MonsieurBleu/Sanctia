@@ -108,7 +108,7 @@ void Component<InfosStatsHelpers>::ComponentElem::init()
 template<>
 void Component<InfosStatsHelpers>::ComponentElem::clean()
 {
-    if(!entity || !entity->hasComp<EntityModel>()) return;
+    if(!entity || entity->ids[GRAPHIC] < 0 || entity->ids[GRAPHIC] > MAX_ENTITY || !entity->hasComp<EntityModel>()) return;
 
     for(auto &i : data.models)
     {

@@ -142,6 +142,10 @@ void Game::init(int paramSample)
     globals.fpsLimiter.activate();
     globals.fpsLimiter.freq = 144.f;
     glfwSwapInterval(0);
+
+
+    Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineModel");
+    Loader<ObjectGroup>::addInfos("ressources/models/Zweihander.vulpineModel");
 }
 
 bool Game::userInput(GLFWKeyInfo input)
@@ -229,7 +233,7 @@ bool Game::userInput(GLFWKeyInfo input)
         case GLFW_MOUSE_BUTTON_RIGHT : 
         {
             Effect testEffectZone;
-            testEffectZone.zone.setCapsule(0.1, vec3(-1, 0, -1), vec3(1, 0, -1));
+            testEffectZone.zone.setCapsule(0.25, vec3(-1, 1.5, 1), vec3(1, 1.5, 1));
             testEffectZone.type = EffectType::Damage;
             testEffectZone.valtype = DamageType::Pure;
             testEffectZone.value = 20;
@@ -273,7 +277,14 @@ void Game::physicsLoop()
 
         physicsMutex.lock();
         
-        playerControl.body->boundingCollider.applyTranslation(playerControl.body->position, vec3(1, 0, 0));
+        // playerControl.body->boundingCollider.applyTranslation(playerControl.body->position, vec3(1, 0, 0));
+        // GG::playerEntity->comp<EntityState3D>().position = playerControl.body->position;
+
+        if(globals._currentController != &playerControl)
+        {
+            playerControl.body->position = camera.getPosition() - vec3(0, 1.5, 0);
+            playerControl.body->v = vec3(0);
+        }
 
     /***** ATTACH ENTITY POSITION TO BODY POSITION *****/
         System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
@@ -281,14 +292,14 @@ void Game::physicsLoop()
             auto &b = entity.comp<B_DynamicBodyRef>();
             auto &s = entity.comp<EntityState3D>();
             s.position = b->position;
-
+                
             b->boundingCollider.applyTranslation(b->position, s.direction);
         });
 
         GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
 
-    /***** APPLYING VELOCITY TO MANEQUIN *****/
-        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
+    /***** APPLYING VELOCITY FROM DEPLACEMENT DIRECTION *****/
+        System<B_DynamicBodyRef, EntityState3D, DeplacementBehaviour>([](Entity &entity)
         {
             auto &s = entity.comp<EntityState3D>();
             const float speed = 1;
@@ -437,7 +448,7 @@ void Game::mainloop()
     globals.gpuTime.setMenu(menu);
     globals.fpsLimiter.setMenu(menu);
     physicsTicks.setMenu(menu);
-    // sun->setMenu(menu, U"Sun");
+    sun->setMenu(menu, U"Sun");
 
 /****** Creating Demo Player *******/
     Player player1;
@@ -447,7 +458,7 @@ void Game::mainloop()
     playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
     playerControl.body->position = vec3(0, 10, 0);
     playerControl.body->applyForce(gravity);
-    GG::physics.dynamics.push_back(playerControl.body);
+    // GG::physics.dynamics.push_back(playerControl.body);
 
     Effect testEffectZone;
     // // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
@@ -457,24 +468,25 @@ void Game::mainloop()
     // testEffectZone.value = 100;
     // testEffectZone.maxTrigger = 5;
 
+    scene.add(Loader<ObjectGroup>::get("Zweihander").copy());
+
+
+    ObjectGroupRef playerModel(new ObjectGroup);
+    playerModel->add(Loader<ObjectGroup>::get("Zweihander").copy());
+    playerModel->state.frustumCulled = false;
 
     GG::playerEntity = newEntity("PLayer",
-        EntityState3D(), 
-        testEffectZone, 
-        PhysicsHelpers{}
+        EntityModel{playerModel},
+        playerControl.body,
+        EntityState3D{}, 
+        testEffectZone
+        // PhysicsHelpers{}
     );
-
-
+    
 /****** Loading Game Specific Elements *******/
     // GG::currentConditions.saveTxt("saves/gameConditions.txt");
     GG::currentConditions.readTxt("saves/gameConditions.txt");
     GG::currentLanguage = LANGUAGE_FRENCH;
-
-    // Loader<MeshMaterial>::addInfos("ressources/Materials/BasicFont3D.vulpineMaterial");
-    // Loader<MeshMaterial>::addInfos("ressources/Materials/basicPBR.vulpineMaterial");
-    // scene.add(Loader<ObjectGroupRef>::addInfos("ressources/models/HumanMale.vulpineMesh").loadFromInfos());
-
-    Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineMesh");
 
     for(int i = 0; i < 50; i++)
         Blueprint::TestManequin();
@@ -487,10 +499,6 @@ void Game::mainloop()
     menu.batch();
     scene2D.updateAllObjects();
     fuiBatch->batch();
-
-    SSAO.disable();
-    Bloom.disable();
-
 
 /******  Main Loop ******/
     while (state != AppState::quit)
@@ -512,11 +520,65 @@ void Game::mainloop()
             preflex = clamp(preflex+scroll*5.f, 0.f, 100.f);
         globals.clearMouseScroll();
 
-
         menu.trackCursor();
         menu.updateText();
 
         effects.update();
+
+        ECStimer.start();
+
+        vec3 camdir = globals.currentCamera->getDirection();
+        GG::playerEntity->comp<EntityState3D>().direction = -normalize(vec3(camdir.x, 0, camdir.z));
+
+    /***** DEMO DEPLACEMENT SYSTEM *****/
+        System<EntityState3D, DeplacementBehaviour>([](Entity &entity)
+        {
+            auto &s = entity.comp<EntityState3D>();
+
+            float time = globals.simulationTime.getElapsedTime();
+            float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
+            s.direction.x = cos(angle);
+            s.direction.z = sin(angle);
+        });
+
+    /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
+        System<EntityModel, EntityState3D>([](Entity &entity)
+        {
+            EntityModel& model = entity.comp<EntityModel>();
+            auto &s = entity.comp<EntityState3D>();
+            vec3& dir = s.direction;
+
+            if(dir.x != 0.f || dir.z != 0.f)
+            {
+                vec2 dir2D = normalize(vec2(dir.x, dir.z));
+                model->state.setRotation(vec3(model->state.rotation.x, atan2f(dir2D.x, dir2D.y), model->state.rotation.z));
+            }
+
+            model->state.setPosition(s.position);
+        });
+
+    /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
+        System<EntityStats>([](Entity &entity)
+        {
+            void *ptr = &entity;
+            if(!entity.comp<EntityStats>().alive)
+            {
+                GG::entities.erase(
+                    std::remove_if(
+                    GG::entities.begin(), 
+                    GG::entities.end(),
+                    [ptr](EntityRef &e){return e.get() == ptr;}
+                ), GG::entities.end());
+            }
+        }); 
+
+        
+        ManageGarbage<EntityModel>();
+        ManageGarbage<PhysicsHelpers>();
+        GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
+        GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
+        
+        ECStimer.end();
 
         mainloopPreRenderRoutine();
 
@@ -567,72 +629,6 @@ void Game::mainloop()
         sun->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();
-
-        
-        ECStimer.start();
-
-        GG::playerEntity->comp<EntityState3D>() = EntityState3D{globals.currentCamera->getPosition(), globals.currentCamera->getDirection()};
-
-    /***** DEMO DEPLACEMENT SYSTEM *****/
-        System<EntityState3D, DeplacementBehaviour>([](Entity &entity)
-        {
-            auto &s = entity.comp<EntityState3D>();
-
-            float time = globals.simulationTime.getElapsedTime();
-            float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
-            s.direction.x = cos(angle);
-            s.direction.z = sin(angle);
-        });
-
-    /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
-        System<EntityModel, EntityState3D>([](Entity &entity)
-        {
-            EntityModel& model = entity.comp<EntityModel>();
-            auto &s = entity.comp<EntityState3D>();
-            vec3& dir = s.direction;
-
-            if(dir.x != 0.f || dir.z != 0.f)
-            {
-                vec2 dir2D = normalize(vec2(dir.x, dir.z));
-                model->state.setRotation(vec3(model->state.rotation.x, atan2f(dir2D.x, dir2D.y), model->state.rotation.z));
-            }
-
-            model->state.setPosition(s.position);
-        });
-    
-    /***** UPDATE PHYSICS HELPERS *****/
-    // System<PhysicsHelpers>([](Entity &entity)
-    // {
-    //     auto &ph = entity.comp<PhysicsHelpers>();
-
-    //     for(auto i : ph.dbodies)
-    //     {
-    //         i.second->state.setPosition(i.first->position);
-    //     }
-    // });
-
-
-    /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
-        System<EntityStats>([](Entity &entity)
-        {
-            void *ptr = &entity;
-            if(!entity.comp<EntityStats>().alive)
-            {
-                GG::entities.erase(
-                    std::remove_if(
-                    GG::entities.begin(), 
-                    GG::entities.end(),
-                    [ptr](EntityRef &e){return e.get() == ptr;}
-                ), GG::entities.end());
-            }
-        }); 
-
-        ECStimer.end();
-        
-        ManageGarbage<EntityModel>();
-        ManageGarbage<PhysicsHelpers>();
-        GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
-        GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
 
         /* Main loop End */
         mainloopEndRoutine();

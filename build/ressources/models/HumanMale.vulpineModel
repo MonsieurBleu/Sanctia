@@ -1,7 +1,7 @@
 
 HumanMale
     :   meshes 
-        :   HumanMaleJoints
+        :   HumanMale1
             :   mesh HumanMaleJoints
                 *:   ressources/Meshes/Ybot_Joints.vulpineMesh*
                 :   ressources/Meshes/Paladin_J_Nordstrom.vulpineMesh
@@ -13,26 +13,22 @@ HumanMale
                 :   source ressources/Textures/PaladinCE.ktx2
                 ;
             :   texture 1 Plastic006_NRM
-                *:   source ressources/Textures/Plastic006_4K-PNGNRM.ktx2*
                 :   source ressources/Textures/PaladinNRM.ktx2
                 ;
             :   state 
                 :   rotation    "0  180  0"
                 ;
             ;
-        :   HumanMaleSurface
+        :   HumanMale2
             :   mesh HumanMaleSurface
-                *:   ressources/Meshes/Ybot_Surface.vulpineMesh*
                 :   ressources/Meshes/Paladin_J_Nordstrom_Helmet.vulpineMesh
                 ;
             :   material
                 |   basicPBR
-            :   texture 0 Plastic015B_CE
-                *:   source ressources/Textures/Plastic015B_4K-PNGCE.ktx2*
+            :   texture 0 HumanMaleCE
                 : source ressources/Textures/PaladinCE.ktx2
                 ;
-            :   texture 1 Plastic015B_NRM
-                *:   source ressources/Textures/Plastic015B_4K-PNGNRM.ktx2*
+            :   texture 1 HumanMaleNRM
                 : source ressources/Textures/PaladinNRM.ktx2
                 ;
             :   state 
@@ -40,8 +36,6 @@ HumanMale
                 ;
             ;
         ;
-    *
-    *
     :   pointLights
         :   FF0000  10  3  "0 2 0"
         ;

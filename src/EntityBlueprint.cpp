@@ -7,6 +7,7 @@
 EntityRef Blueprint::TestManequin()
 {
     ObjectGroupRef newGroup = Loader<ObjectGroup>::get("HumanMale").copy();
+    // newGroup->add(Loader<ObjectGroup>::get("Zweihander").copy());
     int i = GG::entities.size();
     B_DynamicBodyRef body(new B_DynamicBody);
     vec3 position = vec3(-5*(i/10), 5, -5*(i%10)) + vec3(-5, 0, 0);

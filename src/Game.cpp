@@ -15,6 +15,9 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+#include <Skeleton.hpp>
+#include <Animation.hpp>
+
 Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
 
 void Game::init(int paramSample)
@@ -146,6 +149,7 @@ void Game::init(int paramSample)
 
     Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineModel");
     Loader<ObjectGroup>::addInfos("ressources/models/Zweihander.vulpineModel");
+    Loader<ObjectGroup>::addInfos("ressources/models/PlayerFemale.vulpineModel");
 }
 
 bool Game::userInput(GLFWKeyInfo input)
@@ -292,7 +296,7 @@ void Game::physicsLoop()
             auto &b = entity.comp<B_DynamicBodyRef>();
             auto &s = entity.comp<EntityState3D>();
             s.position = b->position;
-                
+            
             b->boundingCollider.applyTranslation(b->position, s.direction);
         });
 
@@ -315,8 +319,6 @@ void Game::physicsLoop()
             entity.comp<Effect>().zone.applyTranslation(s.position, s.direction);
             // entity.comp<Effect>().zone.applyTranslation(s.position, vec3(0));
         });
-
-        
 
     /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
         System<Effect, EntityState3D>([](Entity &entity)
@@ -474,14 +476,40 @@ void Game::mainloop()
     ObjectGroupRef playerModel(new ObjectGroup);
     playerModel->add(Loader<ObjectGroup>::get("Zweihander").copy());
     playerModel->state.frustumCulled = false;
+    playerModel->add(Loader<ObjectGroup>::get("PlayerFemale").copy());
+
+    // /* SQUELETON */
+    // SkeletonRef humanSkeleton(new Skeleton);
+    // humanSkeleton->load("ressources/animations/skeletons/Human.vulpineSkeleton");
+
+    // /* ANIMATIONS */
+    // std::cout << "loading animation yo\n";
+    // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/2HSword_IDLE.vulpineAnimation");
+    // std::cout << "finished yo\n";
+
+    // /* ANIMATIONS LIST */
+    // std::vector<std::pair<AnimationRef, float>> animations;
+    // animations.push_back({idleTest, 1.0});
+
+    // /* ANIMATION STATES */
+    // SkeletonAnimationState idleTestState;
+    // idleTestState.resize(humanSkeleton->getSize());
+    // idleTestState.skeleton = humanSkeleton;
+    // for(auto &m : idleTestState) m = mat4(1);
+    // idleTestState.send(); 
+    
+
 
     GG::playerEntity = newEntity("PLayer",
         EntityModel{playerModel},
         playerControl.body,
         EntityState3D{}, 
         testEffectZone
-        // PhysicsHelpers{}
+        // ,PhysicsHelpers{}
     );
+
+
+    scene.add(Loader<ObjectGroup>::get("PlayerFemale").copy());
     
 /****** Loading Game Specific Elements *******/
     // GG::currentConditions.saveTxt("saves/gameConditions.txt");
@@ -504,6 +532,14 @@ void Game::mainloop()
     while (state != AppState::quit)
     {
         mainloopStartRoutine();
+
+        // for(auto &m : idleTestState) m = mat4(1);
+        // idleTestState.applyAnimations(globals.appTime.getElapsedTime(), animations);
+        // humanSkeleton->applyGraph(idleTestState);
+
+        // idleTestState.update();
+        // idleTestState.activate(2);
+
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
 
@@ -542,7 +578,7 @@ void Game::mainloop()
         });
 
     /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
-        System<EntityModel, EntityState3D>([](Entity &entity)
+        System<EntityModel, EntityState3D>([&, this](Entity &entity)
         {
             EntityModel& model = entity.comp<EntityModel>();
             auto &s = entity.comp<EntityState3D>();
@@ -555,6 +591,11 @@ void Game::mainloop()
             }
 
             model->state.setPosition(s.position);
+
+            if(&entity == GG::playerEntity.get() && globals._currentController == &this->playerControl)
+            {
+                this->camera.setPosition(s.position + this->playerControl.cameraShiftPos);
+            }
         });
 
     /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/

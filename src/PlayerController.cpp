@@ -79,7 +79,7 @@ void PlayerController::update()
 
 
 /****** Camera handling & Head bobbing ******/
-    vec3 pos = body->position + vec3(0, 1.65, 0);
+    vec3 pos = vec3(0, 1.65, 0);
 
     if(grounded)
     {
@@ -94,7 +94,8 @@ void PlayerController::update()
     // std::cout << to_string(pos) << "\n",
     
     // globals.currentCamera->setPosition(pos);
-    playerCam->setPosition(pos);
+    // playerCam->setPosition(pos);
+    cameraShiftPos = pos;
 }
 
 bool PlayerController::inputs(GLFWKeyInfo& input)

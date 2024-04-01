@@ -26,6 +26,7 @@ class PlayerController : public Controller
         
 
     public : 
+        vec3 cameraShiftPos;
         // RigidBodyRef body;
 
         PlayerController(Camera *playerCam);

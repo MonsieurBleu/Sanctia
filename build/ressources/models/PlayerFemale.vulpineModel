@@ -1,0 +1,43 @@
+
+PlayerFemale
+    :   meshes 
+        :   PlayerFemaleJoints
+            :   mesh PlayerFemaleJoints
+                :   ressources/Meshes/Ybot_Joints_headless.vulpineMesh
+                ;
+            :   material
+                |   animatedPBR
+            :   texture 0 Plastic_BLACK_CE
+                :   source ressources/Textures/Plastic_BLACK_CE.ktx2
+                ;
+            :   texture 1 Plastic_BLACK_NRM
+                :   source ressources/Textures/Plastic_BLACK_NRM.ktx2
+                ;
+            :   state
+                :   frustum 0
+                ;
+            ;
+
+        :   PlayerFemaleSurface
+            :   mesh PlayerFemaleSurface
+                :   ressources/Meshes/Ybot_Surface_headless.vulpineMesh
+                ;
+            :   material
+                |   animatedPBR
+            :   texture 0 Plastic_BLUE_CE
+                :   source ressources/Textures/Plastic_BLUE_CE.ktx2
+                ;
+            :   texture 1 Plastic_BLUE_NRM
+                :   source ressources/Textures/Plastic_BLUE_NRM.ktx2
+                ;
+            :   state
+                :   frustum 0
+                ;
+            ;
+        ;
+    :   state 
+        :   scalev1  0.85
+        :   rotation "0 180 0"
+        ;
+    ;
+;

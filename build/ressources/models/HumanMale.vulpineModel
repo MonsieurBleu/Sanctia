@@ -19,6 +19,7 @@ HumanMale
                 :   rotation    "0  180  0"
                 ;
             ;
+            
         :   HumanMale2
             :   mesh HumanMaleSurface
                 :   ressources/Meshes/Paladin_J_Nordstrom_Helmet.vulpineMesh

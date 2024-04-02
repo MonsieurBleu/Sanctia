@@ -79,7 +79,7 @@ void PlayerController::update()
 
 
 /****** Camera handling & Head bobbing ******/
-    vec3 pos = vec3(0, 1.65, 0);
+    vec3 pos = vec3(0, 1.55, 0);
 
     if(grounded)
     {

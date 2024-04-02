@@ -3,7 +3,8 @@ PlayerFemale
     :   meshes 
         :   PlayerFemaleJoints
             :   mesh PlayerFemaleJoints
-                :   ressources/Meshes/Ybot_Joints_headless.vulpineMesh
+                :   ressources/Meshes/Xbot_Joints.vulpineMesh
+                *:   ressources/Meshes/Paladin_J_Nordstrom.vulpineMesh*
                 ;
             :   material
                 |   animatedPBR
@@ -20,7 +21,8 @@ PlayerFemale
 
         :   PlayerFemaleSurface
             :   mesh PlayerFemaleSurface
-                :   ressources/Meshes/Ybot_Surface_headless.vulpineMesh
+                :   ressources/Meshes/Xbot_Surface.vulpineMesh
+                *:   ressources/Meshes/Paladin_J_Nordstrom_Helmet.vulpineMesh*
                 ;
             :   material
                 |   animatedPBR
@@ -36,8 +38,12 @@ PlayerFemale
             ;
         ;
     :   state 
-        :   scalev1  0.85
-        :   rotation "0 180 0"
+        :   scalev1  0.87
+        :   rotation "0 189 0"
+        :   position "0 0 0.2"
+        *
+        :   position "0 0 -3"
+        *
         ;
     ;
 ;

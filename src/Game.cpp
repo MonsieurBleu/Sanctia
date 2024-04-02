@@ -61,6 +61,7 @@ void Game::init(int paramSample)
         myfile.close();
         camera.setState(buff);
     }
+    camera.state.FOV = radians(90.0);
 
 
     /* Loading 3D Materials */
@@ -474,29 +475,33 @@ void Game::mainloop()
 
 
     ObjectGroupRef playerModel(new ObjectGroup);
-    playerModel->add(Loader<ObjectGroup>::get("Zweihander").copy());
+    auto playerModelBody = Loader<ObjectGroup>::get("PlayerFemale").copy();
+    auto Sword = Loader<ObjectGroup>::get("Zweihander").copy();
+    playerModelBody->add(Sword);
     playerModel->state.frustumCulled = false;
-    playerModel->add(Loader<ObjectGroup>::get("PlayerFemale").copy());
+    playerModel->add(playerModelBody );
 
     // /* SQUELETON */
-    // SkeletonRef humanSkeleton(new Skeleton);
-    // humanSkeleton->load("ressources/animations/skeletons/Human.vulpineSkeleton");
+    SkeletonRef humanSkeleton(new Skeleton);
+    humanSkeleton->load("ressources/animations/skeletons/Human.vulpineSkeleton");
 
-    // /* ANIMATIONS */
+    /* ANIMATIONS */
     // std::cout << "loading animation yo\n";
+    AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/2HSword_SLASH.vulpineAnimation");
     // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/2HSword_IDLE.vulpineAnimation");
+    // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/Dance.vulpineAnimation");
     // std::cout << "finished yo\n";
 
-    // /* ANIMATIONS LIST */
-    // std::vector<std::pair<AnimationRef, float>> animations;
-    // animations.push_back({idleTest, 1.0});
+    /* ANIMATIONS LIST */
+    std::vector<std::pair<AnimationRef, float>> animations;
+    animations.push_back({idleTest, 1});
 
-    // /* ANIMATION STATES */
-    // SkeletonAnimationState idleTestState;
-    // idleTestState.resize(humanSkeleton->getSize());
-    // idleTestState.skeleton = humanSkeleton;
-    // for(auto &m : idleTestState) m = mat4(1);
-    // idleTestState.send(); 
+    /* ANIMATION STATES */
+    static SkeletonAnimationState idleTestState;
+    idleTestState.resize(humanSkeleton->getSize());
+    idleTestState.skeleton = humanSkeleton;
+    for(auto &m : idleTestState) m = mat4(1);
+    idleTestState.send(); 
     
 
 
@@ -524,6 +529,8 @@ void Game::mainloop()
     state = AppState::run;
     std::thread physicsThreads(&Game::physicsLoop, this);
 
+    // Sword->meshes[0]->setMenu(menu, U"sword");
+
     menu.batch();
     scene2D.updateAllObjects();
     fuiBatch->batch();
@@ -533,13 +540,12 @@ void Game::mainloop()
     {
         mainloopStartRoutine();
 
-        // for(auto &m : idleTestState) m = mat4(1);
-        // idleTestState.applyAnimations(globals.appTime.getElapsedTime(), animations);
-        // humanSkeleton->applyGraph(idleTestState);
+        for(auto &m : idleTestState) m = mat4(1);
+        idleTestState.applyAnimations(globals.appTime.getElapsedTime(), animations);
+        humanSkeleton->applyGraph(idleTestState);
 
-        // idleTestState.update();
-        // idleTestState.activate(2);
-
+        idleTestState.update();
+        idleTestState.activate(2);
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
 
@@ -594,7 +600,19 @@ void Game::mainloop()
 
             if(&entity == GG::playerEntity.get() && globals._currentController == &this->playerControl)
             {
-                this->camera.setPosition(s.position + this->playerControl.cameraShiftPos);
+
+                vec3 pos = this->playerControl.cameraShiftPos;
+                // vec3 pos = vec3(0);
+
+                // model->state.update();
+                pos = vec3(model->state.modelMatrix * idleTestState[20]*vec4(pos + vec3(0, 0, -0.1), 1.0));
+
+                // pos += s.position;
+
+                this->camera.setPosition(pos);
+                // idleTestState
+
+
             }
         });
 
@@ -642,11 +660,25 @@ void Game::mainloop()
         glEnable(GL_DEPTH_TEST);
 
         scene.updateAllObjects();
+
+        mat4 bindTrans = humanSkeleton->at(37).t;
+        // mat4 boneTrans = inverse(bindTrans) * idleTestState[37];
+        // mat4 boneTrans = idleTestState[37] * inverse(humanSkeleton->at(37).t);
+        mat4 boneTrans = idleTestState[37];
+
+
+    
+        Sword->state.modelMatrix = Sword->state.modelMatrix *  boneTrans * inverse(bindTrans);
+        
+
+        Sword->update(true);
+        // std::cout << to_string(Sword->state.modelMatrix) << "\n";
+
         scene.generateShadowMaps();
         globals.currentCamera = &camera;
         renderBuffer.activate();
-
         scene.cull();
+
 
         /* 3D Early Depth Testing */
         // scene.depthOnlyDraw(*globals.currentCamera, true);

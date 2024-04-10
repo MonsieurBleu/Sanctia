@@ -26,6 +26,9 @@ class PlayerController : public Controller
         
 
     public : 
+
+        B_Force *playerMovementForce = nullptr;
+
         vec3 cameraShiftPos;
         // RigidBodyRef body;
 
@@ -36,11 +39,12 @@ class PlayerController : public Controller
         float walkMaxSpeed = 5;
 
         float sprintAacceleration = 16;
-        float sprintMaxSpeed = 15;
+        float sprintMaxSpeed = 10;
 
         float airAcceleration = 8;
         float airMaxSpeed = 4;
 
         void update();
         bool inputs(GLFWKeyInfo& input);
+        void clean();
 };

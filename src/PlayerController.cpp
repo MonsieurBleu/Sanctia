@@ -64,9 +64,8 @@ void PlayerController::update()
 
     deplacementDir = hSpeed <= maxSpeed ? hFrontDep + hRightDep + dirDec : dirDec;
 
-    static B_Force& playerMovementForce = body->applyForce(vec3(0));
-    playerMovementForce.x = daccel * deplacementDir.x;
-    playerMovementForce.z = daccel * deplacementDir.z;
+    playerMovementForce->x = daccel * deplacementDir.x;
+    playerMovementForce->z = daccel * deplacementDir.z;
 
 
 /****** Jump ******/
@@ -74,12 +73,12 @@ void PlayerController::update()
     {
         body->v.y = sqrt(2.f*G*jumpHeight);
         doJump = false;
-        // inAirFrameCount = 1e3;
     }
 
 
 /****** Camera handling & Head bobbing ******/
-    vec3 pos = vec3(0, 1.55, 0);
+    // vec3 pos = vec3(0, 1.55, 0);
+    vec3 pos = vec3(0, 0, 0);
 
     if(grounded)
     {
@@ -137,4 +136,15 @@ bool PlayerController::inputs(GLFWKeyInfo& input)
 void PlayerController::jump(float deltaTime)
 {
 
+}
+
+void PlayerController::clean()
+{
+    playerMovementForce->x = 0;
+    playerMovementForce->y = 0;
+    playerMovementForce->z = 0;
+    body->v.x = 0;
+    body->v.z = 0;
+
+    upFactor = rightFactor = frontFactor = 0;
 }

@@ -15,14 +15,16 @@ GENERATE_ENUM(GameCondition,
     COND_FEMALE_PC,
 	COND_RANDOM,
     COND_NPC_KNOWN,
-	COND_HIGHT_EQUIPEMENT,
     COND_END
 );
 
 GENERATE_ENUM(GameConditionState,
     FALSE,
-    TRUE
+    TRUE,
+    RANDOM
 );
+
+class GameConditionsHandler;
 
 struct GameConditionTrigger
 {
@@ -37,10 +39,12 @@ class GameConditionsHandler
 
     public : 
 
-        GameConditionState get(GameCondition condition) const;
+        GameConditionState & get(GameCondition condition);
         GameConditionsHandler& set(GameCondition condition, GameConditionState value);
 
         void saveTxt(const std::string& filname);
         void readTxt(const std::string& filname);
+
+        GameConditionState check(GameConditionTrigger p);
 };
 

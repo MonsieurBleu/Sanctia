@@ -34,15 +34,16 @@ EntityRef Blueprint::TestManequin()
     EntityStats stats;
 
     GG::entities.push_back(
-        newEntity(
-            "HumanMale number " + std::to_string(i), 
-            EntityModel{newGroup}, 
-            EntityState3D({position, vec3(0)}),
-            B_DynamicBodyRef(body),
-            stats,
+        newEntity("HumanMale number " + std::to_string(i)
+            ,EntityModel{newGroup}
+            ,EntityState3D({position, vec3(-1, 0, 0), 1.f})
+            ,B_DynamicBodyRef(body)
+            ,stats
             // testEffectZone,
             // PhysicsHelpers{},
-            DeplacementBehaviour{DEMO}
+            ,CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
+            ,DeplacementBehaviour{DEMO}
+            ,SkeletonAnimationState(Loader<SkeletonRef>::get("Biped52"))
             ));
 
 

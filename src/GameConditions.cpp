@@ -5,7 +5,9 @@
 
 #include <string.h>
 
-GameConditionState GameConditionsHandler::get(GameCondition condition) const
+#include <DialogueController.hpp>
+
+GameConditionState & GameConditionsHandler::get(GameCondition condition)
 {
     return states[condition];
 };
@@ -57,3 +59,26 @@ void GameConditionsHandler::readTxt(const std::string& filname)
     file.close();
 }
 
+GameConditionState GameConditionsHandler::check(GameConditionTrigger p)
+{
+    std::cout << "> " << p.condition << "\n";
+
+    switch (p.condition)
+    {
+        case COND_UNKNOWN : return FALSE;
+
+        case COND_ALL : return TRUE;
+        
+        case COND_RANDOM : return RANDOM;
+
+        case COND_NPC_KNOWN : 
+        {
+            auto &i = DialogueController::interlocutor;
+            return (i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known) == p.value? TRUE : FALSE;
+        }
+
+        default:
+            return p.value == (states[p.condition] == TRUE) ? TRUE : FALSE;
+    }
+
+}

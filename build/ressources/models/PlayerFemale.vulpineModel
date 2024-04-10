@@ -3,26 +3,14 @@ PlayerFemale
     :   meshes 
         :   PlayerFemaleJoints
             :   mesh PlayerFemaleJoints
-                :   ressources/Meshes/Xbot_Joints.vulpineMesh
-                *:   ressources/Meshes/Paladin_J_Nordstrom.vulpineMesh*
-                ;
-            :   material
-                |   animatedPBR
-            :   texture 0 Plastic_BLACK_CE
-                :   source ressources/Textures/Plastic_BLACK_CE.ktx2
-                ;
-            :   texture 1 Plastic_BLACK_NRM
-                :   source ressources/Textures/Plastic_BLACK_NRM.ktx2
-                ;
-            :   state
-                :   frustum 0
-                ;
-            ;
-
-        :   PlayerFemaleSurface
-            :   mesh PlayerFemaleSurface
+                :   ressources/Meshes/Akai.vulpineMesh
+                *
+                :   ressources/Meshes/Beta_Surface.vulpineMesh
+                :   ressources/Meshes/PlaceholderFemale.vulpineMesh
+                :   ressources/Meshes/lowPolyFemale.vulpineMesh
                 :   ressources/Meshes/Xbot_Surface.vulpineMesh
-                *:   ressources/Meshes/Paladin_J_Nordstrom_Helmet.vulpineMesh*
+                :   ressources/Meshes/Paladin_J_Nordstrom.vulpineMesh
+                *
                 ;
             :   material
                 |   animatedPBR
@@ -36,11 +24,28 @@ PlayerFemale
                 :   frustum 0
                 ;
             ;
+        *
+        :   PlayerFemaleSurface
+            :   mesh PlayerFemaleSurface
+                :   ressources/Meshes/Beta_Joints.vulpineMesh
+                ;
+            :   material    | animatedPBR
+            :   texture 0 Plastic_BLACK_CE
+                :   source ressources/Textures/Plastic_BLACK_CE.ktx2
+                ;
+            :   texture 1 Plastic_BLACK_NRM
+                :   source ressources/Textures/Plastic_BLACK_NRM.ktx2
+                ;
+            :   state
+                :   frustum 0
+                ;
+            ;
+        *
         ;
     :   state 
         :   scalev1  0.87
-        :   rotation "0 189 0"
-        :   position "0 0 0.2"
+        :   rotation "0 180 0"
+        :   position "0 0 0"
         *
         :   position "0 0 -3"
         *

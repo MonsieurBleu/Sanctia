@@ -4,19 +4,15 @@
     "type": "split",
     "children": [
       {
-        "id": "7e2f828997908b52",
+        "id": "f102529b0257f391",
         "type": "tabs",
         "children": [
           {
-            "id": "ca5cec40e8d8ec81",
+            "id": "ec48b5b3154afbdb",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "dialogue_test2.md",
-                "mode": "source",
-                "source": false
-              }
+              "type": "empty",
+              "state": {}
             }
           }
         ]
@@ -65,13 +61,11 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "1bbd0b0b50ba55f8",
@@ -87,7 +81,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "dialogue_test2.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +97,6 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "dialogue_test2.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -126,9 +118,7 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {
-                "file": "dialogue_test2.md"
-              }
+              "state": {}
             }
           }
         ]
@@ -148,8 +138,13 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "ca5cec40e8d8ec81",
+  "active": "ec48b5b3154afbdb",
   "lastOpenFiles": [
-    "dialogues - test1.md"
+    "Fariah Grisnier.md",
+    "Fariah Grisnier",
+    "Untitled.md",
+    "2024-04-08.md",
+    "dialogues - test1.md",
+    "dialogue_test2.md"
   ]
 }

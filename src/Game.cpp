@@ -18,140 +18,7 @@
 #include <Skeleton.hpp>
 #include <Animation.hpp>
 
-Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
-
-void Game::init(int paramSample)
-{
-    App::init();
-
-    // activateMainSceneBindlessTextures();
-    activateMainSceneClusteredLighting(ivec3(16, 9, 24), 5e3);
-
-
-    finalProcessingStage = ShaderProgram(
-        "game shader/final composing.frag",
-        "shader/post-process/basic.vert",
-        "",
-        globals.standartShaderUniform2D());
-
-    finalProcessingStage
-        .addUniform(ShaderUniform(Bloom.getIsEnableAddr(), 10))
-        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor1, 16))
-        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor2, 17))
-        .addUniform(ShaderUniform(&globals.sceneChromaticAbbAngleAmplitude, 18))
-        .addUniform(ShaderUniform(&globals.sceneVignette, 19))
-        .addUniform(ShaderUniform(&globals.sceneHsvShift, 20));
-
-    setIcon("ressources/icon.png");
-    setController(&playerControl);
-
-    ambientLight = vec3(0.1);
-
-    
-
-    camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f);
-    // camera.setMouseFollow(false);
-    // camera.setPosition(vec3(0, 1, 0));
-    // camera.setDirection(vec3(1, 0, 0));
-    auto myfile = std::fstream("saves/cameraState.bin", std::ios::in | std::ios::binary);
-    if(myfile)
-    {
-        CameraState buff;
-        myfile.read((char*)&buff, sizeof(CameraState));
-        myfile.close();
-        camera.setState(buff);
-    }
-    camera.state.FOV = radians(90.0);
-
-
-    /* Loading 3D Materials */
-    depthOnlyMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/depthOnly.frag",
-            "shader/foward/basic.vert",
-            ""));
-
-    depthOnlyStencilMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/depthOnlyStencil.frag",
-            "shader/foward/basic.vert",
-            ""));
-
-    depthOnlyInstancedMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/depthOnlyStencil.frag",
-            "shader/foward/basicInstance.vert",
-            ""));
-
-    GG::PBR = MeshMaterial(
-        new ShaderProgram(
-            "shader/foward/PBR.frag",
-            "shader/foward/basic.vert",
-            "",
-            globals.standartShaderUniform3D()));
-
-    GG::PBRstencil = MeshMaterial(
-        new ShaderProgram(
-            "shader/foward/PBR.frag",
-            "shader/foward/basic.vert",
-            "",
-            globals.standartShaderUniform3D()));
-
-    GG::PBRinstanced = MeshMaterial(
-        new ShaderProgram(
-            "shader/foward/PBR.frag",
-            "shader/foward/basicInstance.vert",
-            "",
-            globals.standartShaderUniform3D()));
-
-    skyboxMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/foward/Skybox.frag",
-            "shader/foward/basic.vert",
-            "",
-            globals.standartShaderUniform3D()));
-
-    GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
-    GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;
-    scene.depthOnlyMaterial = depthOnlyMaterial;
-
-    /* UI */
-    FUIfont = FontRef(new FontUFT8);
-    FUIfont->readCSV("ressources/fonts/Roboto/out.csv");
-    FUIfont->setAtlas(Texture2D().loadFromFileKTX("ressources/fonts/Roboto/out.ktx"));
-
-    globals.baseFont = FUIfont;
-
-    defaultFontMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/2D/sprite.frag",
-            "shader/2D/sprite.vert",
-            "",
-            globals.standartShaderUniform2D()));
-
-
-    defaultSUIMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/2D/fastui.frag",
-            "shader/2D/fastui.vert",
-            "",
-            globals.standartShaderUniform2D()));
-
-    fuiBatch = SimpleUiTileBatchRef(new SimpleUiTileBatch);
-    fuiBatch->setMaterial(defaultSUIMaterial);
-    fuiBatch->state.position.z = 0.0;
-    fuiBatch->state.forceUpdate();
-
-    /* VSYNC and fps limit */
-    globals.fpsLimiter.activate();
-    globals.fpsLimiter.freq = 144.f;
-    glfwSwapInterval(0);
-
-
-    Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineModel");
-    Loader<ObjectGroup>::addInfos("ressources/models/Zweihander.vulpineModel");
-    Loader<ObjectGroup>::addInfos("ressources/models/PlayerFemale.vulpineModel");
-}
+float animTime = 0.f;
 
 bool Game::userInput(GLFWKeyInfo input)
 {
@@ -170,11 +37,19 @@ bool Game::userInput(GLFWKeyInfo input)
             if(globals.getController() == &playerControl)
                 setController(&spectator);
             else
+            if(globals.getController() == &spectator)
                 {
                     setController(&playerControl);
-                    // playerControl.body->setPosition(globals.currentCamera->getPosition());
                     playerControl.body->position = globals.currentCamera->getPosition();
                 }
+            break;
+
+        case GLFW_KEY_E :
+            if(globals.getController() == &playerControl)
+                setController(&dialogueControl);
+            else 
+            if(globals.getController() == &dialogueControl)
+                setController(&playerControl);
             break;
 
         case GLFW_KEY_F2:
@@ -207,7 +82,7 @@ bool Game::userInput(GLFWKeyInfo input)
                 m.second->reset();
             break;
 
-        case GLFW_KEY_F8:
+        case GLFW_KEY_F8 :
             {
                 auto myfile = std::fstream("saves/cameraState.bin", std::ios::out | std::ios::binary);
                 myfile.write((char*)&camera.getState(), sizeof(CameraState));
@@ -237,13 +112,15 @@ bool Game::userInput(GLFWKeyInfo input)
 
         case GLFW_MOUSE_BUTTON_RIGHT : 
         {
-            Effect testEffectZone;
-            testEffectZone.zone.setCapsule(0.25, vec3(-1, 1.5, 1), vec3(1, 1.5, 1));
-            testEffectZone.type = EffectType::Damage;
-            testEffectZone.valtype = DamageType::Pure;
-            testEffectZone.value = 20;
-            testEffectZone.maxTrigger = 1;
-            GG::playerEntity->set<Effect>(testEffectZone);
+            // Effect testEffectZone;
+            // testEffectZone.zone.setCapsule(0.25, vec3(-1, 1.5, 1), vec3(1, 1.5, 1));
+            // testEffectZone.type = EffectType::Damage;
+            // testEffectZone.valtype = DamageType::Pure;
+            // testEffectZone.value = 20;
+            // testEffectZone.maxTrigger = 1;
+            // GG::playerEntity->set<Effect>(testEffectZone);
+            
+            animTime = 0.f;
         }
             break;
 
@@ -259,7 +136,7 @@ bool Game::userInput(GLFWKeyInfo input)
         switch (input.key)
         {
         case GLFW_MOUSE_BUTTON_RIGHT : 
-            GG::playerEntity->removeComp<Effect>();
+            // GG::playerEntity->removeComp<Effect>();
             break;
 
         default:
@@ -270,93 +147,6 @@ bool Game::userInput(GLFWKeyInfo input)
     return true;
 };
 
-void Game::physicsLoop()
-{
-    physicsTicks.freq = 100.f;
-    physicsTicks.activate();
-
-    while (state != quit)
-    {
-        physicsTicks.start();
-        physicsTimer.start();
-
-        physicsMutex.lock();
-        
-        // playerControl.body->boundingCollider.applyTranslation(playerControl.body->position, vec3(1, 0, 0));
-        // GG::playerEntity->comp<EntityState3D>().position = playerControl.body->position;
-
-        if(globals._currentController != &playerControl)
-        {
-            playerControl.body->position = camera.getPosition() - vec3(0, 1.5, 0);
-            playerControl.body->v = vec3(0);
-        }
-
-    /***** ATTACH ENTITY POSITION TO BODY POSITION *****/
-        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
-        {
-            auto &b = entity.comp<B_DynamicBodyRef>();
-            auto &s = entity.comp<EntityState3D>();
-            s.position = b->position;
-            
-            b->boundingCollider.applyTranslation(b->position, s.direction);
-        });
-
-        GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
-
-    /***** APPLYING VELOCITY FROM DEPLACEMENT DIRECTION *****/
-        System<B_DynamicBodyRef, EntityState3D, DeplacementBehaviour>([](Entity &entity)
-        {
-            auto &s = entity.comp<EntityState3D>();
-            const float speed = 1;
-            auto &b = entity.comp<B_DynamicBodyRef>();
-
-            b->v = -speed*vec3(s.direction.x, 0, s.direction.z) + vec3(0, b->v.y, 0);
-        });
-
-    /***** ATTACH EFFECT TO ENTITY STATE *****/
-        System<Effect, EntityState3D>([](Entity &entity)
-        {
-            auto &s = entity.comp<EntityState3D>();
-            entity.comp<Effect>().zone.applyTranslation(s.position, s.direction);
-            // entity.comp<Effect>().zone.applyTranslation(s.position, vec3(0));
-        });
-
-    /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
-        System<Effect, EntityState3D>([](Entity &entity)
-        {
-            // static Effect *e;
-            // static EntityState3D *se;
-            Effect *e = &entity.comp<Effect>();
-            EntityState3D *se = &entity.comp<EntityState3D>();
-            
-            if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
-
-            System<B_DynamicBodyRef, EntityStats, EntityState3D>([se, e](Entity &entity)
-            {
-                if(e->curTrigger < e->maxTrigger)
-                {
-                    auto &b = entity.comp<B_DynamicBodyRef>();
-                    auto &s = entity.comp<EntityState3D>();
-                    CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, se->position);
-                    if(c.penetration > 0.f)
-                    {
-                        e->apply(entity.comp<EntityStats>());
-                    }
-                }
-            });
-
-            if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
-        });
-
-        ManageGarbage<Effect>();
-        ManageGarbage<B_DynamicBodyRef>();
-
-        physicsMutex.unlock();
-
-        physicsTimer.end();
-        physicsTicks.waitForEnd();
-    }
-}
 
 void Game::mainloop()
 {
@@ -442,7 +232,7 @@ void Game::mainloop()
 
     BenchTimer ECStimer("ECS timer");
 
-    menu->state.setPosition(vec3(-0.9, 0.5, 0)).scaleScalar(0.8);
+    menu->state.setPosition(vec3(-0.9, 0.5, 0)).scaleScalar(0.7);
     globals.appTime.setMenuConst(menu);
     globals.simulationTime.setMenu(menu);
     physicsTimer.setMenu(menu);
@@ -453,6 +243,21 @@ void Game::mainloop()
     physicsTicks.setMenu(menu);
     sun->setMenu(menu, U"Sun");
 
+
+    std::vector<FastUI_value> GameConditionsValues;
+
+    for(auto &i : GameConditionMap)
+        GameConditionsValues.push_back(
+            FastUI_value(
+                (bool*)&GG::currentConditions.get(i.second),
+                UFTconvert.from_bytes(i.first) + U"\t"
+            ));
+
+    menu.push_back(
+        {FastUI_menuTitle(menu.ui, U"Games Conditions"), FastUI_valueTab(menu.ui, GameConditionsValues)}
+    );
+
+
 /****** Creating Demo Player *******/
     Player player1;
     GG::playerUniqueInfos = &player1;
@@ -461,15 +266,16 @@ void Game::mainloop()
     playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
     playerControl.body->position = vec3(0, 10, 0);
     playerControl.body->applyForce(gravity);
+    playerControl.playerMovementForce = &playerControl.body->applyForce(vec3(0));
     // GG::physics.dynamics.push_back(playerControl.body);
 
     Effect testEffectZone;
     // // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
     testEffectZone.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(0, 0, 0));
-    // testEffectZone.type = EffectType::Damage;
+    testEffectZone.type = EffectType::Damage;
     // testEffectZone.valtype = DamageType::Pure;
-    // testEffectZone.value = 100;
-    // testEffectZone.maxTrigger = 5;
+    testEffectZone.value = 30;
+    testEffectZone.maxTrigger = 1e6;
 
     scene.add(Loader<ObjectGroup>::get("Zweihander").copy());
 
@@ -477,18 +283,16 @@ void Game::mainloop()
     ObjectGroupRef playerModel(new ObjectGroup);
     auto playerModelBody = Loader<ObjectGroup>::get("PlayerFemale").copy();
     auto Sword = Loader<ObjectGroup>::get("Zweihander").copy();
+    Sword->setMenu(menu, U"Sword");
     playerModelBody->add(Sword);
     playerModel->state.frustumCulled = false;
-    playerModel->add(playerModelBody );
-
-    // /* SQUELETON */
-    SkeletonRef humanSkeleton(new Skeleton);
-    humanSkeleton->load("ressources/animations/skeletons/Human.vulpineSkeleton");
+    playerModel->add(playerModelBody);
 
     /* ANIMATIONS */
     // std::cout << "loading animation yo\n";
-    AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/2HSword_SLASH.vulpineAnimation");
-    // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/2HSword_IDLE.vulpineAnimation");
+    // AnimationRef idleTest = Animation::load(Loader<SkeletonRef>::get("Human"), "ressources/animations/2HSword_SLASH.vulpineAnimation");
+    AnimationRef idleTest = Animation::load(Loader<SkeletonRef>::get("Biped52"), "ressources/animations/65_2HSword_SLASH.vulpineAnimation");
+    // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/2HSword_RUN.vulpineAnimation");
     // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/Dance.vulpineAnimation");
     // std::cout << "finished yo\n";
 
@@ -497,32 +301,29 @@ void Game::mainloop()
     animations.push_back({idleTest, 1});
 
     /* ANIMATION STATES */
-    static SkeletonAnimationState idleTestState;
-    idleTestState.resize(humanSkeleton->getSize());
-    idleTestState.skeleton = humanSkeleton;
-    for(auto &m : idleTestState) m = mat4(1);
-    idleTestState.send(); 
+    // static SkeletonAnimationState idleTestState(humanSkeleton);
     
-
-
     GG::playerEntity = newEntity("PLayer",
         EntityModel{playerModel},
         playerControl.body,
-        EntityState3D{}, 
-        testEffectZone
-        // ,PhysicsHelpers{}
+        EntityState3D{vec3(0), vec3(1, 0, 0)}
+        ,SkeletonAnimationState(Loader<SkeletonRef>::get("Biped52"))
+        ,testEffectZone
+        ,PhysicsHelpers{}
     );
 
-
     scene.add(Loader<ObjectGroup>::get("PlayerFemale").copy());
+    // playerModel->setAnimation(&idleTestState);
+    scene.add(SkeletonHelperRef(new SkeletonHelper(GG::playerEntity->comp<SkeletonAnimationState>())));
     
 /****** Loading Game Specific Elements *******/
     // GG::currentConditions.saveTxt("saves/gameConditions.txt");
     GG::currentConditions.readTxt("saves/gameConditions.txt");
-    GG::currentLanguage = LANGUAGE_FRENCH;
 
     for(int i = 0; i < 50; i++)
         Blueprint::TestManequin();
+    
+    // dialogueControl.interlocutor = GG::entities.front();
 
 
 /****** Last Pre Loop Routines ******/
@@ -534,18 +335,30 @@ void Game::mainloop()
     menu.batch();
     scene2D.updateAllObjects();
     fuiBatch->batch();
+    SSAO.disable();
 
 /******  Main Loop ******/
     while (state != AppState::quit)
     {
         mainloopStartRoutine();
 
-        for(auto &m : idleTestState) m = mat4(1);
-        idleTestState.applyAnimations(globals.appTime.getElapsedTime(), animations);
-        humanSkeleton->applyGraph(idleTestState);
+        auto &idleTestState = GG::playerEntity->comp<SkeletonAnimationState>();
+        // for(auto &m : idleTestState) m = mat4(1);
+        // idleTestState.applyAnimations(animTime, animations);
+        // idleTestState.skeleton->applyGraph(idleTestState);
 
-        idleTestState.update();
-        idleTestState.activate(2);
+        // idleTestState.update();
+        // idleTestState.activate(2);
+
+        System<SkeletonAnimationState>([&, animations](Entity &entity)
+        {
+            auto &s = entity.comp<SkeletonAnimationState>();
+            s.applyAnimations(animTime, animations);
+            // std::fill(s.begin(), s.end(), mat4(1));
+            s.skeleton->applyGraph(s);
+            s.update();
+        });
+
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
 
@@ -569,18 +382,44 @@ void Game::mainloop()
 
         ECStimer.start();
 
+        /* Make the player body follow the camera smoothly */
         vec3 camdir = globals.currentCamera->getDirection();
-        GG::playerEntity->comp<EntityState3D>().direction = -normalize(vec3(camdir.x, 0, camdir.z));
+        // vec3 boddir = GG::playerEntity->comp<B_DynamicBodyRef>()->v;
+        vec3 camdir2 = -normalize(vec3(camdir.x, 0, camdir.z));
+        // vec3 boddir2 = -normalize(vec3(boddir.x, 0, boddir.z));
+        vec3 &entdir = GG::playerEntity->comp<EntityState3D>().direction;
+        camdir2 = normalize(mix(entdir, camdir2, clamp(globals.appTime.getDelta()*10.f, 0.f, 1.f)));
+        entdir = camdir2;
 
-    /***** DEMO DEPLACEMENT SYSTEM *****/
-        System<EntityState3D, DeplacementBehaviour>([](Entity &entity)
+
+        // animTime += globals.appTime.getDelta()*length(vec3(boddir.x, 0, boddir.z))/7.5f;
+        if(animTime >= idleTest->getLength())
+            animTime = idleTest->getLength();
+        else
+            animTime += globals.appTime.getDelta();
+
+    /***** DEMO DEPLACEMENT SYSTEM 
+    *****/
+        System<EntityState3D, DeplacementBehaviour>([&, this](Entity &entity)
         {
             auto &s = entity.comp<EntityState3D>();
+            
+            if(&entity == this->dialogueControl.interlocutor.get())
+            {
+                vec3 dir = s.position - GG::playerEntity->comp<EntityState3D>().position;
+                float dist = length(dir); 
+                s.direction = dir/dist;
+                s.speed = dist < 2.5f ? 0.f : s.speed;
+
+                return;    
+            }
+
 
             float time = globals.simulationTime.getElapsedTime();
             float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
             s.direction.x = cos(angle);
             s.direction.z = sin(angle);
+            s.speed = 1;
         });
 
     /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
@@ -598,21 +437,21 @@ void Game::mainloop()
 
             model->state.setPosition(s.position);
 
-            if(&entity == GG::playerEntity.get() && globals._currentController == &this->playerControl)
+            if(
+                &entity == GG::playerEntity.get() 
+                && globals._currentController != &this->spectator
+                )
             {
+                // vec3 pos = this->playerControl.cameraShiftPos;
 
-                vec3 pos = this->playerControl.cameraShiftPos;
-                // vec3 pos = vec3(0);
+                model->state.update();
+                model->state.setPosition(s.position);
 
-                // model->state.update();
-                pos = vec3(model->state.modelMatrix * idleTestState[20]*vec4(pos + vec3(0, 0, -0.1), 1.0));
+                const int headBone = 18;
+                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0, 0, 1);
+                animPos.z *= -1; animPos.x *= -1;
 
-                // pos += s.position;
-
-                this->camera.setPosition(pos);
-                // idleTestState
-
-
+                this->camera.setPosition(vec3(model->state.modelMatrix * animPos));
             }
         });
 
@@ -636,7 +475,10 @@ void Game::mainloop()
         ManageGarbage<PhysicsHelpers>();
         GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
         GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
-        
+        std::vector<EntityRef> p = {GG::playerEntity};
+        GlobalComponentToggler<InfosStatsHelpers>::update(p);
+        GlobalComponentToggler<PhysicsHelpers>::update(p);
+
         ECStimer.end();
 
         mainloopPreRenderRoutine();
@@ -661,14 +503,12 @@ void Game::mainloop()
 
         scene.updateAllObjects();
 
-        mat4 bindTrans = humanSkeleton->at(37).t;
-        // mat4 boneTrans = inverse(bindTrans) * idleTestState[37];
-        // mat4 boneTrans = idleTestState[37] * inverse(humanSkeleton->at(37).t);
-        mat4 boneTrans = idleTestState[37];
-
-
-    
+        mat4 bindTrans = idleTestState.skeleton->at(31).t;
+        mat4 boneTrans = idleTestState[31];
         Sword->state.modelMatrix = Sword->state.modelMatrix *  boneTrans * inverse(bindTrans);
+
+        GG::playerEntity->comp<Effect>().zone.v4 = Sword->state.modelMatrix * vec4(0, 0, 0, 1);
+        GG::playerEntity->comp<Effect>().zone.v5 = Sword->state.modelMatrix * vec4(1.5, 0, 0, 1);
         
 
         Sword->update(true);

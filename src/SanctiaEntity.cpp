@@ -24,6 +24,14 @@ void Component<EntityModel>::ComponentElem::clean()
         WARNING_MESSAGE("Trying to clean null component from entity " << entity->ids[ENTITY_LIST] << " named " << entity->comp<EntityInfos>().name)
 };
 
+template<>void Component<SkeletonAnimationState>::ComponentElem::init()
+{
+    if(entity->hasComp<EntityModel>())
+    {
+        entity->comp<EntityModel>()->setAnimation(&data);
+    }
+}
+
 ModelRef getModelFromCollider(B_Collider &c, vec3 color)
 {
     switch (c.type)
@@ -65,7 +73,6 @@ void Component<PhysicsHelpers>::ComponentElem::init()
     globals.getScene()->add(data);
     // entity->comp<EntityModel>()->add(data);
 };
-
 
 template<>
 void Component<PhysicsHelpers>::ComponentElem::clean()

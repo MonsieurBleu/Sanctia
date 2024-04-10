@@ -1,3 +1,6 @@
+
+
+
 Conditions
 ```
 	ALL
@@ -73,10 +76,10 @@ FR_ Parlez-moi de vous.
 >KNOW_RAT_PROBLEM
 
 FR_ Je viens vous aidez pour vos problèmes de rats
-- +NPC_KNOWN 
-- +FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
-- APPRECIATION_UP
-- @@RAT_PROBLEM
+-   +NPC_KNOWN 
+-   +FARIAH_NPC_PLAYER_KNOW_RATPROBLEM
+-   APPRECIATION_UP
+-   @@RAT_PROBLEM
 
 ### PRESENTATION 
 >!FARIAH_NPC_PLAYER_KNOW_RATPROBLEM

@@ -7,10 +7,7 @@
 #include <string.h>
 
 
-// bool getCharacterDialogues(CharacterDialogues& cd, const std::string& idName)
-// {
-
-// }
+#define DO_DEBUG_PRINTS
 
 #define NEW_PREREQUESITE     (char)'>'
 #define INV_PREREQUESITE     (char)'!'
@@ -25,16 +22,39 @@
 #define NO_CONSEQUENCE       (char)'~'
 #define NEW_DIALOGUE         (char)'#'
 #define NEW_CHARACTER        (uint16)0x2323
-#define BUFF_SIZE 4096
+#define BUFF_SIZE DIALOGUE_FILE_BUFF_SIZE
 
 /*
     Usefull Links :
         - https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes
 */
 
+GameConditionState Dialogue::checkPrerequisites()
+{
+    static GameConditionsHandler &cur = GG::currentConditions;
+
+    GameConditionState r = TRUE;
+
+    for(auto p : prerequisites)
+    {
+        switch (cur.check(p))
+        {
+            case FALSE : return FALSE;
+
+            case RANDOM : r = RANDOM; break;
+            
+            default: break;
+        }
+    }
+
+    return r;
+};
+
 bool Dialogue::loadFromStream(std::fstream& file, char* buff)
 {
-    // std::cout << TERMINAL_WARNING;
+    #ifdef DO_DEBUG_PRINTS
+    std::cout << TERMINAL_WARNING;
+    #endif
 
     while(*buff != NEW_PREREQUESITE && !file.eof() && *buff != NEW_DIALOGUE)
         file.read(buff, 1);
@@ -72,8 +92,10 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
 
         prerequisites.push_back(trigger);
 
-        // std::cout << "New prerequisite found (" << trigger.condition << ") '" << buff << "' of type " << trigger.value << "\n";
-    
+        #ifdef DO_DEBUG_PRINTS
+        std::cout << "New prerequisite found (" << trigger.condition << ") '" << buff << "' of type " << trigger.value << "\n";
+        #endif
+
         file.read(buff, 1);
         file.read(buff, 1);
         if(*buff != NEW_PREREQUESITE)
@@ -151,7 +173,10 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
     }
     
     text = UFTconvert.from_bytes(s.str());
-    // std::cout << TERMINAL_OK << s.str() << TERMINAL_FILENAME <<"\n";
+    
+    #ifdef DO_DEBUG_PRINTS
+    std::cout << TERMINAL_OK << s.str() << TERMINAL_FILENAME <<"\n";
+    #endif
 
     while(*buff != NEW_CONSEQUENCE)
         file.read(buff, 1);
@@ -170,14 +195,22 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
             case SET_CONDITION_TRUE :
                 b++;
                 consequences.push_back({GameConditionMap[b], GameConditionState::TRUE});
-                // std::cout << "new true condition '" << b << "'\n";
+                
+                #ifdef DO_DEBUG_PRINTS
+                std::cout << "new true condition '" << b << "'\n";
+                #endif
+
                 error = consequences.back().condition == COND_UNKNOWN;
                 break;
 
             case SET_CONDITION_FALSE :
                 b++;    
                 consequences.push_back({GameConditionMap[b], GameConditionState::FALSE});
-                // std::cout << "new false condition '" << b << "'\n";
+
+                #ifdef DO_DEBUG_PRINTS
+                std::cout << "new false condition '" << b << "'\n";
+                #endif
+
                 error = consequences.back().condition == COND_UNKNOWN;
                 break;
             
@@ -189,14 +222,21 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
                     b++;
                 }
                 next.id = std::string(b);
-                // std::cout << next.clearChoices << " new next dialogue '" << b << "'\n";
+
+                #ifdef DO_DEBUG_PRINTS
+                std::cout << next.clearChoices << " new next dialogue '" << b << "'\n";
+                #endif
+
                 break;
             
             case NO_CONSEQUENCE : continue; break;
 
             default:
                 events.push_back(GameEventMap[b]);
-                // std::cout << "new event '" << b << "'\n";
+                #ifdef DO_DEBUG_PRINTS
+                std::cout << "new event '" << b << "'\n";
+                #endif
+
                 error = events.back() == EVENT_UNKNOWN;
                 break;
         }
@@ -217,7 +257,9 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
         file.read(buff, 1);
     }
 
-    // std::cout << TERMINAL_RESET << "\n";
+    #ifdef DO_DEBUG_PRINTS
+    std::cout << TERMINAL_RESET << "\n";
+    #endif
 
     return true;
 }
@@ -232,7 +274,7 @@ bool DialogueScreen::loadFromStream(std::fstream& file, char* buff)
 
         switch (d.getType())
         {
-            case DialogueType::NPC_SPEAK : NPC = d; break;
+            case DialogueType::NPC_SPEAK : NPC.push_back(d); break;
             
             case DialogueType::PLAYER_CHOICE : choices.push_back(d); break;
             
@@ -240,7 +282,9 @@ bool DialogueScreen::loadFromStream(std::fstream& file, char* buff)
         }
     }   
 
-    // std::cout << TERMINAL_RESET << "\n";
+    #ifdef DO_DEBUG_PRINTS
+    std::cout << TERMINAL_RESET << "\n";
+    #endif
 
     return true;
 }
@@ -258,6 +302,7 @@ bool loadCharacterDialogues(
     while(!file.eof())
     {
         file.getline(buff, BUFF_SIZE);
+
         if(!strcmp(buff, id.c_str()))
             break;
     }
@@ -279,7 +324,9 @@ bool loadCharacterDialogues(
         dialogues.insert({buff+1, DialogueScreen()});
         DialogueScreen& ds = dialogues[buff+1];
 
-        // std::cout << (buff+1) << "\n";
+        #ifdef DO_DEBUG_PRINTS
+        std::cout << "New dialogue : " << TERMINAL_UNDERLINE << (buff+1) << "\n" << TERMINAL_RESET;
+        #endif
 
         sucess = ds.loadFromStream(file, buff);
     }

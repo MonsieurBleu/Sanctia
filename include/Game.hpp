@@ -5,6 +5,7 @@
 
 #include <GameGlobals.hpp>
 #include <PlayerController.hpp>
+#include <DialogueController.hpp>
 #include <EffectHandler.hpp>
 
 class Game final : public App
@@ -31,6 +32,7 @@ private:
     /* Player Controller */
     SpectatorController spectator;
     PlayerController playerControl;
+    DialogueController dialogueControl;
 
     EffectHandler effects;
 

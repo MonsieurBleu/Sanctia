@@ -3,6 +3,8 @@
 #include <Fonts.hpp>
 #include <GameConditions.hpp>
 
+#define DIALOGUE_FILE_BUFF_SIZE 4096
+
 enum DialogueType
 {
     UNKNOWN,
@@ -31,30 +33,38 @@ class Dialogue
 
     public : 
 
-        bool checkPrerequisites();
+        GameConditionState checkPrerequisites();
         void applyConsequences();
 
-        const std::u32string& getText();
+        const std::u32string& getText(){return text;};
 
         bool loadFromStream(std::fstream& file, char* buff);
 
         DialogueType getType(){return type;};
 };
 
+/*
+    TODO : NPC should also be a vector
+*/
 struct DialogueScreen
 {
-    Dialogue NPC;
+    std::vector<Dialogue> NPC;
     std::vector<Dialogue> choices;
-    bool loadFromStream(std::fstream& file, char* buff);
+    bool loadFromStream(std::fstream& file, char* buff);    
 };
 
-typedef std::unordered_map<std::string, DialogueScreen> CharacterDialogues;
+struct CharacterDialogues : std::unordered_map<std::string, DialogueScreen>
+{
+    std::string filename;
+    std::string name;
+    CharacterDialogues(const std::string &filename, const std::string &name) : filename(filename), name(name){};
+    CharacterDialogues(){};
+};
 
 bool loadCharacterDialogues(CharacterDialogues& dialogues, const std::string& name, std::fstream& file, char* buff);
 
-typedef std::unordered_map<std::string, CharacterDialogues> CharacterDialogueMap;
 
-
-
-
-
+struct CharactersDialogues
+{
+    inline static std::unordered_map<std::string, CharacterDialogues> map;
+};

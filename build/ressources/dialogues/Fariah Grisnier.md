@@ -65,22 +65,22 @@
 
 ## RANDOM_TEST
 
->RANDOM
+>COND_RANDOM
 [fr- 1]
 = ~
 
->RANDOM
+>COND_RANDOM
 [fr- 2]
 = ~
 
->RANDOM
+>COND_RANDOM
 [fr- 3]
 = ~
 
->RANDOM
+>COND_RANDOM
 [fr- 4]
 = ~
 
->RANDOM
+>COND_RANDOM
 [fr- 5]
 = ~

@@ -47,4 +47,5 @@ class PlayerController : public Controller
         void update();
         bool inputs(GLFWKeyInfo& input);
         void clean();
+        void init();
 };

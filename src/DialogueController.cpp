@@ -25,8 +25,11 @@ void DialogueController::update()
 
         const vec3 camPos = globals.currentCamera->getPosition();
         const vec3 front = -normalize(destination - camPos);
-        const vec3 right = cross(vec3(0, 1, 0), front);
-        const float qfov = 0.25*globals.currentCamera->state.FOV;
+        vec3 right = cross(vec3(0, 1, 0), front);
+        const vec3 up = cross(front, right);
+        right = cross(front, up);
+
+        const float qfov = -0.25*globals.currentCamera->state.FOV;
 
         const vec3 newDir = cos(qfov)*front - sin(qfov)*right;
         const vec3 curDir = -globals.currentCamera->getDirection();

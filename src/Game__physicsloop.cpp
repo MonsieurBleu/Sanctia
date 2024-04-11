@@ -27,7 +27,7 @@ void Game::physicsLoop()
 
         if(globals._currentController == &spectator)
         {
-            playerControl.body->position = camera.getPosition() - vec3(0, 1.5, 0);
+            playerControl.body->position = camera.getPosition();
             playerControl.body->v = vec3(0);
         }
 
@@ -41,7 +41,8 @@ void Game::physicsLoop()
             b->boundingCollider.applyTranslation(b->position, s.direction);
         });
 
-        GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
+        if(!globals.simulationTime.isPaused())
+            GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
 
     /***** APPLYING VELOCITY FROM DEPLACEMENT DIRECTION 
     *****/

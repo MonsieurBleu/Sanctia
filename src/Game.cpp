@@ -35,12 +35,16 @@ bool Game::userInput(GLFWKeyInfo input)
 
         case GLFW_KEY_F12 :
             if(globals.getController() == &playerControl)
+            {
+                GG::playerEntity->comp<EntityModel>()->state.hide = HIDE;
                 setController(&spectator);
+            }
             else
             if(globals.getController() == &spectator)
                 {
                     setController(&playerControl);
                     playerControl.body->position = globals.currentCamera->getPosition();
+                    GG::playerEntity->comp<EntityModel>()->state.hide = SHOW;
                 }
             break;
 

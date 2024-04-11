@@ -7,7 +7,7 @@
 #include <string.h>
 
 
-#define DO_DEBUG_PRINTS
+// #define DO_DEBUG_PRINTS
 
 #define NEW_PREREQUESITE     (char)'>'
 #define INV_PREREQUESITE     (char)'!'

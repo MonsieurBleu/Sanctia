@@ -148,3 +148,21 @@ void PlayerController::clean()
 
     upFactor = rightFactor = frontFactor = 0;
 }
+
+void PlayerController::init()
+{
+    if(playerMovementForce)
+    {
+        playerMovementForce->y = 0.f;
+        playerMovementForce->z = 0.f;
+        playerMovementForce->x = 0.f;
+    }
+
+    if(body.get())
+    {
+        body->v.x = 0;
+        body->v.z = 0;
+    }
+
+    upFactor = rightFactor = frontFactor = 0;
+}

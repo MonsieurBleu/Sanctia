@@ -61,8 +61,6 @@ void GameConditionsHandler::readTxt(const std::string& filname)
 
 GameConditionState GameConditionsHandler::check(GameConditionTrigger p)
 {
-    std::cout << "> " << p.condition << "\n";
-
     switch (p.condition)
     {
         case COND_UNKNOWN : return FALSE;

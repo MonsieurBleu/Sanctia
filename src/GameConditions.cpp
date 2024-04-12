@@ -78,5 +78,17 @@ GameConditionState GameConditionsHandler::check(GameConditionTrigger p)
         default:
             return p.value == (states[p.condition] == TRUE) ? TRUE : FALSE;
     }
+}
 
+void GameConditionsHandler::applyEvent(GameEvent event)
+{
+    switch (event)
+    {
+    case EVENT_UNKNOWN :
+        
+        break;
+    
+    default:
+        break;
+    }
 }

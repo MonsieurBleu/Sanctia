@@ -46,5 +46,7 @@ class GameConditionsHandler
         void readTxt(const std::string& filname);
 
         GameConditionState check(GameConditionTrigger p);
+
+        void applyEvent(GameEvent event);
 };
 

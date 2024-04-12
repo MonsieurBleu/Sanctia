@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string.h>
 
+#include <DialogueController.hpp>
 
 // #define DO_DEBUG_PRINTS
 
@@ -48,6 +49,17 @@ GameConditionState Dialogue::checkPrerequisites()
     }
 
     return r;
+};
+
+void Dialogue::applyConsequences()
+{
+    for(auto &c : consequences)
+        GG::currentConditions.set(c.condition, c.value ? TRUE : FALSE);
+
+    for(auto &e : events)
+        GG::currentConditions.applyEvent(e);
+    
+    DialogueController::nextDialogue(next);
 };
 
 bool Dialogue::loadFromStream(std::fstream& file, char* buff)

@@ -1,0 +1,24 @@
+tonneau01
+:	mesh tonneau01
+	:	data/models/meubles/tonneaux/tonneau01.vulpineMesh
+	;
+
+:   material 
+    |   basicPBR
+
+:	texture 0 tonneauCE
+	:	source data/models/meubles/tonneaux/tonneau01CE.ktx2
+	;
+
+:	texture 1 tonneauNRM
+	:	source data/models/meubles/tonneaux/tonneau01NRM.ktx2
+	;
+
+: state
+    :   position    "0 0 10"
+    *
+    :   scalev1     10
+    *
+    ;
+
+;

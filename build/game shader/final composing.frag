@@ -85,8 +85,8 @@ void main()
 
 
 /******* Blomm & Exposure Tonemapping *******/
-    float exposure = 2.0;
-    float gamma = 2.2;
+    float exposure = 2.5;
+    float gamma = 1.8;
 
     vec3 bloom = texture(bEmmisive, uv).rgb;
     if(bloomEnable != 0) 

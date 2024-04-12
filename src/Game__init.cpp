@@ -146,15 +146,15 @@ void Game::init(int paramSample)
     fuiBatch->state.position.z = 0.0;
     fuiBatch->state.forceUpdate();
 
-    dialogueControl.dialogueFont = FUIfont;
-    dialogueControl.dialogueMaterial = defaultFontMaterial;
-
-
     /* VSYNC and fps limit */
     globals.fpsLimiter.activate();
     globals.fpsLimiter.freq = 144.f;
     glfwSwapInterval(0);
 
+
+    dialogueControl.dialogueFont = FUIfont;
+    // dialogueControl.dialogueMaterial = defaultFontMaterial;
+    dialogueControl.dialogueMaterial = Loader<MeshMaterial>::get("mdFont");
 
     Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineModel");
     Loader<ObjectGroup>::addInfos("ressources/models/Zweihander.vulpineModel");
@@ -163,6 +163,8 @@ void Game::init(int paramSample)
     // Loader<SkeletonRef>::addInfos(skeletons);
     // Loader<SkeletonRef>::addInfos(skeletons);
     Loader<SkeletonRef>::addInfos("ressources/animations/skeletons/skeletonsList.vulpineAsset");
+
+    Loader<MeshModel3D>::addInfos("data/models/meubles/tonneaux/tonneau01.vulpineModel");
 
     GG::currentLanguage = LANGUAGE_FRENCH;
 

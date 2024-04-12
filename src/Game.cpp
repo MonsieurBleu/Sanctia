@@ -217,7 +217,7 @@ void Game::mainloop()
 
     SceneDirectionalLight sun = newDirectionLight(
         DirectionLight()
-            .setColor(vec3(143, 107, 71) / vec3(255))
+            .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
             .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
             .setIntensity(1.0));
 
@@ -328,6 +328,10 @@ void Game::mainloop()
         Blueprint::TestManequin();
     
     // dialogueControl.interlocutor = GG::entities.front();
+
+    scene.add(
+        Loader<MeshModel3D>::get("tonneau01").copyWithSharedMesh()
+    );
 
 
 /****** Last Pre Loop Routines ******/

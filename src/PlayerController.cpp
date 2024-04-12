@@ -10,6 +10,8 @@ PlayerController::PlayerController(Camera *playerCam) : playerCam(playerCam), bo
 
 void PlayerController::update()
 {
+    updateDirectionStateWASD();
+
     /*
         Fastest way possible to see if the player is grounded.
             If the player comes into contact with a surface 
@@ -104,27 +106,27 @@ bool PlayerController::inputs(GLFWKeyInfo& input)
     case GLFW_PRESS:
         switch (input.key)
         {
-        case GLFW_KEY_W : frontFactor ++; break;
-        case GLFW_KEY_S : frontFactor --; break;
-        case GLFW_KEY_A : rightFactor ++; break;
-        case GLFW_KEY_D : rightFactor --; break;
+        // case GLFW_KEY_W : frontFactor ++; break;
+        // case GLFW_KEY_S : frontFactor --; break;
+        // case GLFW_KEY_A : rightFactor ++; break;
+        // case GLFW_KEY_D : rightFactor --; break;
         case GLFW_KEY_SPACE : doJump = grounded; break;
-        case GLFW_KEY_LEFT_SHIFT : sprintActivated = true; break;
+        // case GLFW_KEY_LEFT_SHIFT : sprintActivated = true; break;
         default: break;
         }
         break;
 
-    case GLFW_RELEASE:
-        switch (input.key)
-        {
-        case GLFW_KEY_W : frontFactor --; break;
-        case GLFW_KEY_S : frontFactor ++; break;
-        case GLFW_KEY_A : rightFactor --; break;
-        case GLFW_KEY_D : rightFactor ++; break;
-        case GLFW_KEY_LEFT_SHIFT : sprintActivated = false; break;
-        default: break;
-        }
-        break;
+    // case GLFW_RELEASE:
+    //     switch (input.key)
+    //     {
+    //     case GLFW_KEY_W : frontFactor --; break;
+    //     case GLFW_KEY_S : frontFactor ++; break;
+    //     case GLFW_KEY_A : rightFactor --; break;
+    //     case GLFW_KEY_D : rightFactor ++; break;
+    //     case GLFW_KEY_LEFT_SHIFT : sprintActivated = false; break;
+    //     default: break;
+    //     }
+    //     break;
 
     default:break;
     }

@@ -3,7 +3,7 @@
 // #include <PhysicsEngine.hpp>
 #include <BluePhysics.hpp>
 
-class PlayerController : public Controller
+class PlayerController : public SpectatorController
 {
     private : 
         // static constexpr float stopSpeed = 20.0f;
@@ -11,10 +11,10 @@ class PlayerController : public Controller
 
         static constexpr float jumpHeight = 1;
 
-        bool sprintActivated = false;
-        int upFactor = 0;
-        int frontFactor = 0;
-        int rightFactor = 0;
+        // bool sprintActivated = false;
+        // int upFactor = 0;
+        // int frontFactor = 0;
+        // int rightFactor = 0;
 
         void jump(float deltaTime);
         

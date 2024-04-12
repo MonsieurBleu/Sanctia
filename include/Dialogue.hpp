@@ -36,7 +36,7 @@ class Dialogue
         GameConditionState checkPrerequisites();
         void applyConsequences();
 
-        const std::u32string& getText(){return text;};
+        const std::u32string& getText() const {return text;};
 
         bool loadFromStream(std::fstream& file, char* buff);
 

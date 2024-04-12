@@ -189,7 +189,7 @@ void DialogueController::pushNewDialogue(const std::string &id)
         {
             case TRUE : selected = &i; break;
 
-            case RANDOM : randomDialogue.push_back(&i);
+            case RANDOM : randomDialogue.push_back(&i); break;
             
             default: break;
         }
@@ -199,12 +199,10 @@ void DialogueController::pushNewDialogue(const std::string &id)
 
     assert(selected || randomDialogue.size());
 
-    if(!selected)
-    {
-        selected = randomDialogue[rand()%randomDialogue.size()];
-    }
+    if(!selected) selected = randomDialogue[std::rand()%randomDialogue.size()];
 
-    NPC->text = d.NPC[0].getText();
+    NPC->text = selected->getText();
+    selected->applyConsequences();
 
     NPC->align = CENTERED;
     NPC->batchText();

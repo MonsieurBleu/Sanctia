@@ -46,7 +46,7 @@
 
 >COND_ALL
 [fr_ Un chiffre aléatoire entre 1 et 5.]
-= @RANDOM_TEST
+= @@RANDOM_TEST
 
 ## PRESENTATION
 

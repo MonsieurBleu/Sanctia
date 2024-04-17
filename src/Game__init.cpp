@@ -29,7 +29,7 @@ void Game::init(int paramSample)
     App::init();
 
     // activateMainSceneBindlessTextures();
-    activateMainSceneClusteredLighting(ivec3(16, 9, 24), 5e3);
+    activateMainSceneClusteredLighting(ivec3(16, 9, 24), 1024);
 
 
     finalProcessingStage = ShaderProgram(
@@ -66,7 +66,7 @@ void Game::init(int paramSample)
         camera.setState(buff);
     }
     camera.state.FOV = radians(90.0);
-    camera.state.nearPlane = 0.25;
+    camera.state.nearPlane = 0.2;
 
     /* Loading 3D Materials */
     depthOnlyMaterial = MeshMaterial(
@@ -164,21 +164,11 @@ void Game::init(int paramSample)
     // Loader<SkeletonRef>::addInfos(skeletons);
     Loader<SkeletonRef>::addInfos("ressources/animations/skeletons/skeletonsList.vulpineAsset");
 
-    Loader<MeshModel3D>::addInfos("data/models/meubles/tonneaux/tonneau01.vulpineModel");
+    // Loader<MeshModel3D>::addInfos("data/models/meubles/barrel/barrel01.vulpineModel");
 
     GG::currentLanguage = LANGUAGE_FRENCH;
 
-    // char buff[4096];
-    // for (const auto & entry : std::filesystem::recursive_directory_iterator("ressources/dialogues/"))
-    // {
-    //     if(entry.is_directory()) continue;
+    loadAllAssetsInfos("data");
 
-
-    //     const auto s = entry.path().string();
-    //     const auto n = getNameOnlyFromPath(s.c_str());
-    //     std::fstream file(s, std::ios::in);
-
-    //     loadCharacterDialogues(CharactersDialogues::map[n], n, file, buff);
-    //     file.close();
-    // }
+    
 }

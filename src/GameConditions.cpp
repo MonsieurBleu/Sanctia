@@ -7,6 +7,8 @@
 
 #include <DialogueController.hpp>
 
+#include <Utils.hpp>
+
 GameConditionState & GameConditionsHandler::get(GameCondition condition)
 {
     return states[condition];
@@ -16,7 +18,24 @@ GameConditionsHandler& GameConditionsHandler::set(
     GameCondition condition, 
     GameConditionState value)
 {
-    states[condition] = value;
+    switch (condition)
+    {
+    case INTERLOCUTOR_KNOWN :
+        {
+        auto &i = DialogueController::interlocutor;
+
+        if(i->hasComp<NpcPcRelation>())
+            i->comp<NpcPcRelation>().known = value == TRUE;
+        else
+            WARNING_MESSAGE("Script or dialogue is trying to set COND_NPC_KNOW to the entity '" << i->comp<EntityInfos>().name << "' who has no components relative to player relation.");
+        }
+        break;
+    
+    default:
+        states[condition] = value;
+        break;
+    }
+
     return *this;
 }
 
@@ -61,19 +80,25 @@ void GameConditionsHandler::readTxt(const std::string& filname)
 
 GameConditionState GameConditionsHandler::check(GameConditionTrigger p)
 {
+    auto &i = DialogueController::interlocutor;
+
     switch (p.condition)
     {
         case COND_UNKNOWN : return FALSE;
-
         case COND_ALL : return TRUE;
-        
         case COND_RANDOM : return RANDOM;
 
-        case COND_NPC_KNOWN : 
-        {
-            auto &i = DialogueController::interlocutor;
-            return (i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known) == p.value? TRUE : FALSE;
-        }
+        case INTERLOCUTOR_NEMESIS           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -16 ? TRUE : FALSE;
+        case INTERLOCUTOR_HOSTILE           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -8  ? TRUE : FALSE;
+        case INTERLOCUTOR_DESPISED          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -4  ? TRUE : FALSE;
+        case INTERLOCUTOR_BAD_ACQUAINTANCE  : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -1  ? TRUE : FALSE;
+        case INTERLOCUTOR_GOOD_ACQUAINTANCE : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 1  ? TRUE : FALSE;
+        case INTERLOCUTOR_FRIENDLY          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 4  ? TRUE : FALSE;
+        case INTERLOCUTOR_TRUSTED           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 8  ? TRUE : FALSE;
+        case INTERLOCUTOR_MAX_AFFINITY      : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 16 ? TRUE : FALSE;
+
+        case INTERLOCUTOR_KNOWN : 
+            return (i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known) == p.value ? TRUE : FALSE;
 
         default:
             return p.value == (states[p.condition] == TRUE) ? TRUE : FALSE;
@@ -82,12 +107,22 @@ GameConditionState GameConditionsHandler::check(GameConditionTrigger p)
 
 void GameConditionsHandler::applyEvent(GameEvent event)
 {
+    auto &i = DialogueController::interlocutor;
+
     switch (event)
     {
     case EVENT_UNKNOWN :
         
         break;
     
+        case EVENT_APPRECIATION_UP    : i->comp<NpcPcRelation>().affinity += 1; break;
+        case EVENT_APPRECIATION_UP_x4 : i->comp<NpcPcRelation>().affinity += 4; break;
+        case EVENT_APPRECIATION_UP_x8 : i->comp<NpcPcRelation>().affinity += 8; break;
+
+        case EVENT_APPRECIATION_DOWN    : i->comp<NpcPcRelation>().affinity -= 1; break;
+        case EVENT_APPRECIATION_DOWN_x4 : i->comp<NpcPcRelation>().affinity -= 4; break;
+        case EVENT_APPRECIATION_DOWN_x8 : i->comp<NpcPcRelation>().affinity -= 8; break;
+
     default:
         break;
     }

@@ -14,9 +14,11 @@ Zweihander
                 :   source ressources/Textures/ZweihanderNRM.ktx2
                 ;
             :   state 
-                :   position    "0.2 0.015 -0.12"
+                :   position    "-0.1 0 0"
+                *
                 :   rotation    "0 0 355"
                 :   scalev1     0.3
+                *
                 ;
             ;
         ;

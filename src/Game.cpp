@@ -330,8 +330,12 @@ void Game::mainloop()
     // dialogueControl.interlocutor = GG::entities.front();
 
     scene.add(
-        Loader<MeshModel3D>::get("tonneau01").copyWithSharedMesh()
+        Loader<MeshModel3D>::get("barrel01").copyWithSharedMesh()
     );
+
+    // scene.add(
+    //     ClusteredFrustumHelperRef(new ClusteredFrustumHelper(camera))
+    // );
 
 
 /****** Last Pre Loop Routines ******/
@@ -343,7 +347,8 @@ void Game::mainloop()
     menu.batch();
     scene2D.updateAllObjects();
     fuiBatch->batch();
-    SSAO.disable();
+    fuiBatch->state.frustumCulled = false;
+    // SSAO.disable();
 
 /******  Main Loop ******/
     while (state != AppState::quit)
@@ -456,8 +461,8 @@ void Game::mainloop()
                 model->state.setPosition(s.position);
 
                 const int headBone = 18;
-                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0, 0, 1);
-                animPos.z *= -1; animPos.x *= -1;
+                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0.1, 0, 1);
+                animPos.z *= -0.8; animPos.x *= -0.8; animPos.y *= 0.8;
 
                 this->camera.setPosition(vec3(model->state.modelMatrix * animPos));
             }
@@ -498,7 +503,7 @@ void Game::mainloop()
         scene2D.updateAllObjects();
         fuiBatch->batch();
         screenBuffer2D.activate();
-        fuiBatch->draw();
+        // fuiBatch->draw();
         scene2D.cull();
         scene2D.draw();
         screenBuffer2D.deactivate();
@@ -516,7 +521,7 @@ void Game::mainloop()
         Sword->state.modelMatrix = Sword->state.modelMatrix *  boneTrans * inverse(bindTrans);
 
         GG::playerEntity->comp<Effect>().zone.v4 = Sword->state.modelMatrix * vec4(0, 0, 0, 1);
-        GG::playerEntity->comp<Effect>().zone.v5 = Sword->state.modelMatrix * vec4(1.5, 0, 0, 1);
+        GG::playerEntity->comp<Effect>().zone.v5 = Sword->state.modelMatrix * vec4(1.23, 0, 0, 1);
         
 
         Sword->update(true);

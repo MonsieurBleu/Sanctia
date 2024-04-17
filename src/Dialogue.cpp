@@ -68,8 +68,39 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
     std::cout << TERMINAL_WARNING;
     #endif
 
-    while(*buff != NEW_PREREQUESITE && !file.eof() && *buff != NEW_DIALOGUE)
+    while(*buff != NEW_PREREQUESITE && !file.eof() && file.good() && *buff != NEW_DIALOGUE)
+    {
         file.read(buff, 1);
+
+        if(*buff == NEW_DIALOGUE)
+        {
+            if((char)file.peek() == NEW_DIALOGUE)
+            {
+                file.read(buff, 1);
+
+                if((char)file.peek() == NEW_DIALOGUE)
+                    while(*buff == NEW_DIALOGUE)
+                        file.read(buff, 1);
+            }
+        }
+
+        if(*buff == '-')
+        {
+            file.read(buff, 1);
+            
+            if(*buff == '-')
+            {
+                file.read(buff, 1);
+
+                if(*buff == '>')
+                {
+                    file.read(buff, 1);
+                }
+            }
+        }
+
+        buff[2] = *buff;
+    }
 
     if(file.eof() || *buff == NEW_DIALOGUE)
         return false;
@@ -231,7 +262,14 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
                 if(*b == CHANGE_DIALOGUE)
                 {
                     next.clearChoices = true;
+                    next.showNPCline = false;
                     b++;
+
+                    if(*b == CHANGE_DIALOGUE)
+                    {
+                        next.showNPCline = true;
+                        b++;
+                    }
                 }
                 next.id = std::string(b);
 
@@ -324,12 +362,16 @@ bool loadCharacterDialogues(
     bool sucess = true;
     while(sucess && !file.eof())
     {
-        while(*buff != NEW_DIALOGUE && !file.eof())
+        if(!(buff[0] == NEW_DIALOGUE && buff[2] == NEW_DIALOGUE))
+        {
+            while(*buff != NEW_DIALOGUE && !file.eof())
+                file.read(buff, 1);
+
             file.read(buff, 1);
 
-        file.read(buff, 1);
+            if(*buff != NEW_DIALOGUE) break;
+        }
 
-        if(*buff != NEW_DIALOGUE) break;
         
         file.get(buff, BUFF_SIZE, '\n');
 

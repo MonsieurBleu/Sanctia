@@ -27,13 +27,11 @@ void B_DynamicBody::update(float delta)
             a += (vec3)f;
 
     /*
-        https://www.youtube.com/watch?v=yGhfUcPjXuE
+        Leapfrog integration because we have constante physics ticks
     */
     v += a*delta*imass*0.5f;
     position += v*delta;
     v += a*delta*imass*0.5f;
-
-    // std::cout << to_string(v) << "\n";
 }
 
 void B_PhysicsScene::checkCollision(B_DynamicBody *b1, B_DynamicBody *b2)
@@ -62,8 +60,6 @@ void B_PhysicsScene::update(float deltaTime)
     for(auto i : dynamics)
         i->update(deltaTime);
 
-    
-
     for(auto i = dynamics.begin(); i != dynamics.end(); i++)
     {
         for(auto j = level.begin(); j != level.end(); j++)
@@ -84,14 +80,6 @@ void B_PhysicsScene::manageCollisions()
 
         vec3 relativeVelocity = c.db1->v - (c.db2 ? c.db2->v : vec3(0));
         float normalVelocity = relativeVelocity.length() > 0.f ? max(dot(c.normal, relativeVelocity), 0.f) : 1.0;
-
-        // std::cout 
-        // << to_string(c.db1->v) << "\t" 
-        // << to_string(c.normal) << "\t" 
-        // << to_string(vec2(normalVelocity, c.penetration)) << "\t"
-        // << c.db1 << "\t" 
-        // << c.db2 << "\t" 
-        // << "\n" ;
         
         c.db1->position -= c.normal * c.penetration;
         c.db1->v -= c.normal * normalVelocity;

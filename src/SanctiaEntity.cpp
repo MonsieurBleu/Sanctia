@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <Utils.hpp>
 #include <Helpers.hpp>
+#include <MathsUtils.hpp>
 
 #include <glm/gtx/string_cast.hpp>
 
@@ -88,27 +89,39 @@ void Component<InfosStatsHelpers>::ComponentElem::init()
 {
     if(!entity->hasComp<EntityModel>()) return;
 
-    ValueHelperRef<std::string> N(new ValueHelper(entity->comp<EntityInfos>().name, U"", vec3(0.85)));
-    N->state.setPosition(vec3(0, 2.0, 0)).scaleScalar(5);
-    entity->comp<EntityModel>()->add(N);
-    globals.getScene()->add(N);
-    data.models.push_back(N);
+    float textScale = 3.0;
+    float curHeight = 2.0;
+    float offHeight = 0.11;
 
-    if(entity->hasComp<EntityStats>() && entity->hasComp<EntityModel>())
+    #define ADD_VALUE_HELPER(Helper) \
+        Helper->state.setPosition(vec3(0, curHeight, 0)).scaleScalar(textScale); \
+        entity->comp<EntityModel>()->add(Helper); \
+        globals.getScene()->add(Helper); \
+        data.models.push_back(Helper); \
+        curHeight += offHeight; 
+
+    ValueHelperRef<std::string> N(new ValueHelper(entity->comp<EntityInfos>().name, U"Name ", vec3(0.85)));
+    ADD_VALUE_HELPER(N)
+
+
+    if(entity->hasComp<EntityStats>())
     {
         auto &s = entity->comp<EntityStats>();
         ValueHelperRef<float> HP(new ValueHelper(s.health.cur, U"Health ", vec3(0, 1, 0)));
-        HP->state.setPosition(vec3(0, 2.2, 0)).scaleScalar(5);
-        entity->comp<EntityModel>()->add(HP);
-        globals.getScene()->add(HP);
+        ADD_VALUE_HELPER(HP)
 
         ValueHelperRef<float> ST(new ValueHelper(s.stamina.cur, U"Stamina ", vec3(1, 1, 0)));
-        ST->state.setPosition(vec3(0, 2.4, 0)).scaleScalar(5);
-        entity->comp<EntityModel>()->add(ST);
-        globals.getScene()->add(ST);
+        ADD_VALUE_HELPER(ST)
+    }
 
-        data.models.push_back(HP);
-        data.models.push_back(ST);
+    if(entity->hasComp<NpcPcRelation>())
+    {
+        auto &r = entity->comp<NpcPcRelation>();
+        ValueHelperRef<safeBoolOverload> K(new ValueHelper(*(safeBoolOverload*)&r.known, U"Know Player ", ColorHexToV(0x6668DE))); 
+        ADD_VALUE_HELPER(K)
+
+        ValueHelperRef<short> A(new ValueHelper(r.affinity, U"Affinity ", ColorHexToV(0x66B4DE)));
+        ADD_VALUE_HELPER(A)
     }
 }
 

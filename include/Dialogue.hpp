@@ -16,6 +16,7 @@ struct DialogueSwitch
 {
     std::string id;
     bool clearChoices = false;
+    bool showNPCline = true;
 };
 
 class Dialogue

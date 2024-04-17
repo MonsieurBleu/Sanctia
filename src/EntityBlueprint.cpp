@@ -44,6 +44,7 @@ EntityRef Blueprint::TestManequin()
             ,CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             ,DeplacementBehaviour{DEMO}
             ,SkeletonAnimationState(Loader<SkeletonRef>::get("Biped52"))
+            ,NpcPcRelation()
             ));
 
 

@@ -7,6 +7,7 @@
 #include <MathsUtils.hpp>
 
 #include <Helpers.hpp>
+#include <FastUI.hpp>
 
 void DialogueController::update()
 {
@@ -16,7 +17,7 @@ void DialogueController::update()
     {
         if(next.clearChoices) clearChoices();
 
-        pushNewDialogue(next.id);
+        pushNewDialogue(next.id, next.showNPCline);
 
         next.id.clear();
     }
@@ -80,11 +81,11 @@ bool DialogueController::inputs(GLFWKeyInfo& input)
         switch (input.key)
         {
             case GLFW_KEY_UP :
-                nextChoice();
+                prevChoice();
                 break;
 
             case GLFW_KEY_DOWN :
-                prevChoice();
+                nextChoice();
                 break;
             
             case GLFW_KEY_ENTER :
@@ -117,6 +118,9 @@ void DialogueController::clean()
 {
     globals.getScene2D()->remove(NPC);
 
+    interface->state.hide = HIDE;
+    interface->update(true);
+
     clearChoices();
 
     interlocutor->comp<CharacterDialogues>().clear();
@@ -127,17 +131,36 @@ void DialogueController::addChoice(const Dialogue &d)
 {
     SingleStringBatchRef c(new SingleStringBatch());
 
+    // choices.erase(
+    //     std::remove_if(
+    //         choices.begin(),
+    //         choices.end(),
+    //         [](std::pair<Dialogue, SingleStringBatchRef> &d)
+    //         {
+    //             return d.first.checkPrerequisites() != TRUE;
+    //         }
+    //     ),
+    //     choices.end()
+    // );
+
+    for(auto &i : choices)
+        if(i.first.getText() == d.getText())
+            return;
+
     c->setMaterial(dialogueMaterial);
     c->setFont(dialogueFont);
 
     c->text = d.getText();
     c->batchText();
 
-    float verticalShift = choices.empty() ? 0.f : choices.back().second->getSize().y + 0.02;
+    float verticalShift = 
+    choices.empty() ? 
+        screenPosToModel({0.f, 0.5f}).y : 
+        choices.back().second->state.position.y - choices.back().second->getSize().y;
 
     c->state.setPosition(
-        vec3(0, verticalShift, 0) +    
-        screenPosToModel({-0.9, 0})
+        vec3(0.f, verticalShift - 0.02f, 0.f) +
+        screenPosToModel({-0.9, 0.f})
         );
 
     globals.getScene2D()->add(c);
@@ -151,6 +174,37 @@ void DialogueController::init()
 {
     interlocutor = GG::entities.front();
 
+    if(!interface.get()) interface = newObjectGroup();
+
+    /****** CREATING A FUI BACKGROUND FOR THE DIALOGUES ******/
+    static bool tmpFUIAdded = false;
+
+    if(!tmpFUIAdded)
+    {
+        static SimpleUiTileBatchRef fuiBatch(new SimpleUiTileBatch);
+        fuiBatch->setMaterial(Loader<MeshMaterial>::get("defaultFUI"));
+        static FastUI_context ui(fuiBatch, dialogueFont, *globals.getScene2D(), dialogueMaterial);
+
+        ui.colorTitleBackground = vec4(vec3(0.2), 0.85);
+
+        static SimpleUiTileRef background(new SimpleUiTile(
+            ModelState3D()
+                .setPosition(screenPosToModel(vec2(-0.95, 0.75)))
+                .setScale(screenPosToModel(vec2(0.75, 1.5))),
+            UiTileType::SQUARE,
+            ui.colorTitleBackground));
+
+        fuiBatch->add(background);
+        ui.scene.updateAllObjects();
+        fuiBatch->batch();
+
+        interface->add(fuiBatch);
+        tmpFUIAdded = true;
+    }
+
+    interface->state.hide = SHOW;
+    interface->update(true);
+
     auto &cd = interlocutor->comp<CharacterDialogues>();
     std::fstream file(cd.filename, std::ios::in);
     char buff[DIALOGUE_FILE_BUFF_SIZE];
@@ -162,6 +216,7 @@ void DialogueController::init()
         NPC = SingleStringBatchRef(new SingleStringBatch);
         NPC->setFont(dialogueFont);
         NPC->setMaterial(dialogueMaterial);
+        NPC->baseUniforms.add(ShaderUniform(&NPC->color, 32));
     }
     clearChoices();
     globals.getScene2D()->add(NPC);
@@ -176,38 +231,41 @@ void DialogueController::nextDialogue(DialogueSwitch s)
     next = s;
 }
 
-void DialogueController::pushNewDialogue(const std::string &id)
+void DialogueController::pushNewDialogue(const std::string &id, bool changeNPCline)
 {
     auto &cd = interlocutor->comp<CharacterDialogues>();
     auto &d = cd[id];
 
     std::vector<Dialogue*> randomDialogue;
     Dialogue* selected = nullptr;
-    for(auto &i : d.NPC)
-    {
-        switch (i.checkPrerequisites())
-        {
-            case TRUE : selected = &i; break;
 
-            case RANDOM : randomDialogue.push_back(&i); break;
-            
-            default: break;
+    if(changeNPCline)
+    {
+        for(auto &i : d.NPC)
+        {
+            switch (i.checkPrerequisites())
+            {
+                case TRUE : selected = &i; break;
+
+                case RANDOM : randomDialogue.push_back(&i); break;
+                
+                default: break;
+            }
+
+            if(selected) break;
         }
 
-        if(selected) break;
+        assert(selected || randomDialogue.size());
+
+        if(!selected) selected = randomDialogue[std::rand()%randomDialogue.size()];
+
+        NPC->text = selected->getText();
+        selected->applyConsequences();
+
+        NPC->align = CENTERED;
+        NPC->batchText();
+        NPC->state.setPosition(screenPosToModel(vec2(0.0, -0.85)));
     }
-
-    assert(selected || randomDialogue.size());
-
-    if(!selected) selected = randomDialogue[std::rand()%randomDialogue.size()];
-
-    NPC->text = selected->getText();
-    selected->applyConsequences();
-
-    NPC->align = CENTERED;
-    NPC->batchText();
-    NPC->state.setPosition(screenPosToModel(vec2(0.0, -0.85)));
-    NPC->baseUniforms.add(ShaderUniform(&NPC->color, 32));
 
     for(auto &i : d.choices)
         if(i.checkPrerequisites() != FALSE)

@@ -21,7 +21,7 @@ class DialogueController : public Controller
         void render_ClearSelectedChoice();
         void render_HightlightSelectedChoice();
 
-        void pushNewDialogue(const std::string &id);
+        void pushNewDialogue(const std::string &id, bool changeNPCline = true);
 
         int selectedChoice = 0;
 
@@ -29,6 +29,8 @@ class DialogueController : public Controller
         const vec3 selectionChoiceColor = vec3(1, 0.75, 0.3);
 
         static inline DialogueSwitch next;
+
+        ObjectGroupRef interface;
 
     public : 
         static inline EntityRef interlocutor;

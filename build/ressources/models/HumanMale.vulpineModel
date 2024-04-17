@@ -18,6 +18,7 @@ HumanMale
                 ;
             :   state 
                 :   rotation    "0  180  0"
+                :   scalev1     0.8
                 ;
             ;
         ;

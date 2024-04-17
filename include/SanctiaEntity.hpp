@@ -31,6 +31,7 @@
     struct NpcPcRelation
     {
         bool known = false;
+        short affinity = 0; 
     };
 
     COMPONENT(NpcPcRelation, DATA, MAX_DATA_COMP_USAGE);

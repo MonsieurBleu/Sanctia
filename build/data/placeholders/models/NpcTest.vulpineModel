@@ -1,0 +1,17 @@
+NpcTest
+    :   meshes 
+        :   NpcTest
+            :   mesh      | Akai
+            :   material  |   animatedPBR
+            :   texture 0 | Plastic_BLACK_CE
+            :   texture 1 | Plastic_BLACK_NRM
+            :   state 
+                :   rotation    "0  180  0"
+                ;
+            ;
+        ;
+    :   pointLights
+        :   FF0000  10  3  "0 2 0"
+        ;
+    ;
+;

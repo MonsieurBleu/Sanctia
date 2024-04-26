@@ -70,7 +70,7 @@ void Game::physicsLoop()
             Effect *e = &entity.comp<Effect>();
             EntityState3D *se = &entity.comp<EntityState3D>();
             
-            if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
+            if(!e->enable || e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
 
             System<B_DynamicBodyRef, EntityStats, EntityState3D>([se, e](Entity &entity)
             {

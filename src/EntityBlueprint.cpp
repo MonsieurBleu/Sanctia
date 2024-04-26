@@ -6,7 +6,7 @@
 
 EntityRef Blueprint::TestManequin()
 {
-    ObjectGroupRef newGroup = Loader<ObjectGroup>::get("HumanMale").copy();
+    ObjectGroupRef newGroup = Loader<ObjectGroup>::get("NpcTest").copy();
     // newGroup->add(Loader<ObjectGroup>::get("Zweihander").copy());
     int i = GG::entities.size();
     B_DynamicBodyRef body(new B_DynamicBody);
@@ -43,7 +43,7 @@ EntityRef Blueprint::TestManequin()
             // PhysicsHelpers{},
             ,CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             ,DeplacementBehaviour{DEMO}
-            ,SkeletonAnimationState(Loader<SkeletonRef>::get("Biped52"))
+            ,SkeletonAnimationState(Loader<SkeletonRef>::get("Akai"))
             ,NpcPcRelation()
             ));
 

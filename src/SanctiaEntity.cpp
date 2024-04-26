@@ -4,18 +4,17 @@
 #include <Utils.hpp>
 #include <Helpers.hpp>
 #include <MathsUtils.hpp>
+#include <GameGlobals.hpp>
 
 #include <glm/gtx/string_cast.hpp>
 
-template<>
-void Component<EntityModel>::ComponentElem::init()
+template<> void Component<EntityModel>::ComponentElem::init()
 {
     // std::cout << "creating entity model " << entity->toStr();
     globals.getScene()->add(data);
 };
 
-template<>
-void Component<EntityModel>::ComponentElem::clean()
+template<> void Component<EntityModel>::ComponentElem::clean()
 {
     // std::cout << "deleting entity model " << entity->toStr();
 
@@ -25,12 +24,43 @@ void Component<EntityModel>::ComponentElem::clean()
         WARNING_MESSAGE("Trying to clean null component from entity " << entity->ids[ENTITY_LIST] << " named " << entity->comp<EntityInfos>().name)
 };
 
-template<>void Component<SkeletonAnimationState>::ComponentElem::init()
+template<> void Component<SkeletonAnimationState>::ComponentElem::init()
 {
     if(entity->hasComp<EntityModel>())
     {
         entity->comp<EntityModel>()->setAnimation(&data);
     }
+}
+
+void ItemsModel::switchIem(SkeletonAttachedModel& cur, const SkeletonAttachedModel &newItem)
+{
+    auto &m = usr->comp<EntityModel>();
+    auto &s = *globals.getScene();
+
+    if(cur.model.get())
+    {
+        m->remove(cur.model);
+        s.remove(cur.model);
+    }
+
+    cur = newItem;
+
+    m->add(cur.model);
+    s.add(cur.model);
+}
+
+void ItemsModel::SkeletonAttachedModel::followSkeleton(SkeletonAnimationState& s)
+{
+    if(!model.get()) return;
+
+    model->state.modelMatrix = model->state.modelMatrix * s[bone] * inverse(s.skeleton->at(bone).t);
+
+    model->update(true);
+}
+
+template<> void Component<ItemsModel>::ComponentElem::init()
+{
+    data = ItemsModel(entity);
 }
 
 ModelRef getModelFromCollider(B_Collider &c, vec3 color)
@@ -51,32 +81,28 @@ ModelRef getModelFromCollider(B_Collider &c, vec3 color)
     return newModel();
 }
 
-template<>
-void Component<PhysicsHelpers>::ComponentElem::init()
+template<> void Component<PhysicsHelpers>::ComponentElem::init()
 {
     data = {newObjectGroup()};
 
-    if(entity->hasComp<B_DynamicBodyRef>())
+    if(entity->hasComp<B_DynamicBodyRef>() && entity != GG::playerEntity.get())
     {
         auto &b = entity->comp<B_DynamicBodyRef>();
         data->add(getModelFromCollider(b->boundingCollider, vec3(1, 1, 0)));
     }
 
-    if(entity->hasComp<Effect>())
-    // if(entity->ids[PHYSIC] != NO_ENTITY)
+    // if(entity->hasComp<Effect>())
+    if(entity->ids[PHYSIC] != NO_ENTITY)
     {
         auto &c = entity->comp<Effect>().zone;
         data->add(getModelFromCollider(c, vec3(1, 0, 0)));
     }
 
-
-
     globals.getScene()->add(data);
     // entity->comp<EntityModel>()->add(data);
 };
 
-template<>
-void Component<PhysicsHelpers>::ComponentElem::clean()
+template<> void Component<PhysicsHelpers>::ComponentElem::clean()
 {
     if(data.get())
         globals.getScene()->remove(data);
@@ -84,8 +110,7 @@ void Component<PhysicsHelpers>::ComponentElem::clean()
         WARNING_MESSAGE("Trying to clean null component from entity " << entity->ids[ENTITY_LIST] << " named " << entity->comp<EntityInfos>().name)
 };
 
-template<>
-void Component<InfosStatsHelpers>::ComponentElem::init()
+template<> void Component<InfosStatsHelpers>::ComponentElem::init()
 {
     if(!entity->hasComp<EntityModel>()) return;
 
@@ -125,8 +150,7 @@ void Component<InfosStatsHelpers>::ComponentElem::init()
     }
 }
 
-template<>
-void Component<InfosStatsHelpers>::ComponentElem::clean()
+template<> void Component<InfosStatsHelpers>::ComponentElem::clean()
 {
     if(!entity || entity->ids[GRAPHIC] < 0 || entity->ids[GRAPHIC] > MAX_ENTITY || !entity->hasComp<EntityModel>()) return;
 
@@ -137,16 +161,14 @@ void Component<InfosStatsHelpers>::ComponentElem::clean()
     }
 }
 
-template<>
-void Component<B_DynamicBodyRef>::ComponentElem::init()
+template<> void Component<B_DynamicBodyRef>::ComponentElem::init()
 {
     physicsMutex.lock();
     GG::physics.dynamics.push_back(data);
     physicsMutex.unlock();
 }
 
-template<>
-void Component<B_DynamicBodyRef>::ComponentElem::clean()
+template<> void Component<B_DynamicBodyRef>::ComponentElem::clean()
 {
     static void* ptr = nullptr;
     ptr = data.get();

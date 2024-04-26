@@ -66,7 +66,7 @@ void Game::init(int paramSample)
         camera.setState(buff);
     }
     camera.state.FOV = radians(90.0);
-    camera.state.nearPlane = 0.2;
+    // camera.state.nearPlane = 0.17;
 
     /* Loading 3D Materials */
     depthOnlyMaterial = MeshMaterial(
@@ -155,15 +155,6 @@ void Game::init(int paramSample)
     dialogueControl.dialogueFont = FUIfont;
     // dialogueControl.dialogueMaterial = defaultFontMaterial;
     dialogueControl.dialogueMaterial = Loader<MeshMaterial>::get("mdFont");
-
-    Loader<ObjectGroup>::addInfos("ressources/models/HumanMale.vulpineModel");
-    Loader<ObjectGroup>::addInfos("ressources/models/Zweihander.vulpineModel");
-    Loader<ObjectGroup>::addInfos("ressources/models/PlayerFemale.vulpineModel");
-    // VulpineTextBuffRef skeletons(new VulpineTextBuff("ressources/animations/skeletons/skeletonsList.vulpineAsset"));
-    // Loader<SkeletonRef>::addInfos(skeletons);
-    // Loader<SkeletonRef>::addInfos(skeletons);
-    Loader<SkeletonRef>::addInfos("ressources/animations/skeletons/skeletonsList.vulpineAsset");
-
     // Loader<MeshModel3D>::addInfos("data/models/meubles/barrel/barrel01.vulpineModel");
 
     GG::currentLanguage = LANGUAGE_FRENCH;

@@ -39,6 +39,13 @@ class Effect
 {
     public :
 
+        Effect()
+        {
+            zone.setCapsule(0.f, vec3(0), vec3(0));
+        }
+
+        bool enable = true;
+
         EffectType type;
 
         int maxTrigger = 1e9;

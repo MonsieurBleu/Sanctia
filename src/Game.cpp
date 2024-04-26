@@ -17,8 +17,7 @@
 
 #include <Skeleton.hpp>
 #include <Animation.hpp>
-
-float animTime = 0.f;
+#include <AnimationBlueprint.hpp>
 
 bool Game::userInput(GLFWKeyInfo input)
 {
@@ -124,7 +123,8 @@ bool Game::userInput(GLFWKeyInfo input)
             // testEffectZone.maxTrigger = 1;
             // GG::playerEntity->set<Effect>(testEffectZone);
             
-            animTime = 0.f;
+            // animTime = 0.f;
+            GG::playerEntity->comp<EntityActionState>().isTryingToAttack = true;
         }
             break;
 
@@ -273,50 +273,72 @@ void Game::mainloop()
     playerControl.playerMovementForce = &playerControl.body->applyForce(vec3(0));
     // GG::physics.dynamics.push_back(playerControl.body);
 
-    Effect testEffectZone;
-    // // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
-    testEffectZone.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(0, 0, 0));
-    testEffectZone.type = EffectType::Damage;
-    // testEffectZone.valtype = DamageType::Pure;
-    testEffectZone.value = 30;
-    testEffectZone.maxTrigger = 1e6;
+    static Effect swordEffectZone;
+    swordEffectZone.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(0, 0, 0));
+    swordEffectZone.type = EffectType::Damage;
+    swordEffectZone.value = 30;
+    swordEffectZone.maxTrigger = 1e6;
 
     scene.add(Loader<ObjectGroup>::get("Zweihander").copy());
 
 
     ObjectGroupRef playerModel(new ObjectGroup);
-    auto playerModelBody = Loader<ObjectGroup>::get("PlayerFemale").copy();
+    auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
     auto Sword = Loader<ObjectGroup>::get("Zweihander").copy();
     Sword->setMenu(menu, U"Sword");
-    playerModelBody->add(Sword);
+    // playerModelBody->add(Sword);
     playerModel->state.frustumCulled = false;
     playerModel->add(playerModelBody);
 
-    /* ANIMATIONS */
-    // std::cout << "loading animation yo\n";
-    // AnimationRef idleTest = Animation::load(Loader<SkeletonRef>::get("Human"), "ressources/animations/2HSword_SLASH.vulpineAnimation");
-    AnimationRef idleTest = Animation::load(Loader<SkeletonRef>::get("Biped52"), "ressources/animations/65_2HSword_SLASH.vulpineAnimation");
-    // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/2HSword_RUN.vulpineAnimation");
-    // AnimationRef idleTest = Animation::load(humanSkeleton, "ressources/animations/Dance.vulpineAnimation");
-    // std::cout << "finished yo\n";
 
-    /* ANIMATIONS LIST */
-    std::vector<std::pair<AnimationRef, float>> animations;
-    animations.push_back({idleTest, 1});
-
-    /* ANIMATION STATES */
-    // static SkeletonAnimationState idleTestState(humanSkeleton);
-    
-    GG::playerEntity = newEntity("PLayer",
-        EntityModel{playerModel},
-        playerControl.body,
-        EntityState3D{vec3(0), vec3(1, 0, 0)}
-        ,SkeletonAnimationState(Loader<SkeletonRef>::get("Biped52"))
-        ,testEffectZone
-        ,PhysicsHelpers{}
+    GG::playerEntity = newEntity("PLayer"
+        , EntityModel{playerModel}
+        , playerControl.body
+        , EntityState3D{vec3(0), vec3(1, 0, 0)}
+        , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
+        // , swordEffectZone*
+        , ItemsModel()
+        , PhysicsHelpers{}
     );
 
-    scene.add(Loader<ObjectGroup>::get("PlayerFemale").copy());
+    GG::playerEntity->comp<ItemsModel>().switchWeapon({24, Loader<ObjectGroup>::get("Zweihander").copy()});
+
+    /* ANIMATION STATES */
+    AnimationRef slashTest = Loader<AnimationRef>::get("65_2HSword_ATTACK");
+
+
+    slashTest->onExitAnimation = [](void * usr){
+        Entity *e = (Entity*)usr;
+        e->comp<EntityActionState>().isTryingToAttack = false;
+        e->comp<Effect>().enable = false;
+    };
+
+    slashTest->speedCallback = [](float prct, void* usr)
+    {
+        float begin = 37.5f;
+        float end = 70.f;
+
+        Entity *e = (Entity*)usr;
+        if(prct >= end && e->hasComp<Effect>() && e->comp<Effect>().enable)
+        {
+            e->comp<Effect>().enable = false;
+        }
+        if(prct >= begin && prct < end && !e->hasComp<Effect>())
+        {
+
+            e->set<Effect>(swordEffectZone);
+        }
+
+        return 1.f;
+    };
+    
+    GG::playerEntity->set<AnimationControllerRef>(
+        AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get())
+    );
+
+    
+
+    scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
     // playerModel->setAnimation(&idleTestState);
     scene.add(SkeletonHelperRef(new SkeletonHelper(GG::playerEntity->comp<SkeletonAnimationState>())));
     
@@ -363,14 +385,14 @@ void Game::mainloop()
         // idleTestState.update();
         // idleTestState.activate(2);
 
-        System<SkeletonAnimationState>([&, animations](Entity &entity)
-        {
-            auto &s = entity.comp<SkeletonAnimationState>();
-            s.applyAnimations(animTime, animations);
-            // std::fill(s.begin(), s.end(), mat4(1));
-            s.skeleton->applyGraph(s);
-            s.update();
-        });
+        // System<SkeletonAnimationState>([&, animations](Entity &entity)
+        // {
+        //     auto &s = entity.comp<SkeletonAnimationState>();
+        //     s.applyAnimations(animTime, animations);
+        //     // std::fill(s.begin(), s.end(), mat4(1));
+        //     s.skeleton->applyGraph(s);
+        //     s.update();
+        // });
 
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
@@ -404,12 +426,20 @@ void Game::mainloop()
         camdir2 = normalize(mix(entdir, camdir2, clamp(globals.appTime.getDelta()*10.f, 0.f, 1.f)));
         entdir = camdir2;
 
+        GG::playerEntity->comp<EntityState3D>().speed = length(GG::playerEntity->comp<B_DynamicBodyRef>()->v * vec3(1, 0, 1));
 
-        // animTime += globals.appTime.getDelta()*length(vec3(boddir.x, 0, boddir.z))/7.5f;
-        if(animTime >= idleTest->getLength())
-            animTime = idleTest->getLength();
-        else
-            animTime += globals.appTime.getDelta();
+    /***** Updating animations
+    *****/
+        System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity)
+        {
+            auto &s = entity.comp<SkeletonAnimationState>();
+            auto &c = entity.comp<AnimationControllerRef>();
+
+            c->update(globals.simulationTime.getDelta());
+            c->applyKeyframes(s);
+            s.skeleton->applyGraph(s);
+            s.update();
+        });
 
     /***** DEMO DEPLACEMENT SYSTEM 
     *****/
@@ -461,10 +491,10 @@ void Game::mainloop()
                 model->state.setPosition(s.position);
 
                 const int headBone = 18;
-                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0.1, 0, 1);
-                animPos.z *= -0.8; animPos.x *= -0.8; animPos.y *= 0.8;
+                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0.05, 0, 1);
+                animPos.z *= -1; animPos.x *= -1; animPos.y *= 1;
 
-                this->camera.setPosition(vec3(model->state.modelMatrix * animPos));
+                this->camera.setPosition(vec3(model->state.modelMatrix * animPos) + vec3(0, 0.1, 0));
             }
         });
 
@@ -516,15 +546,26 @@ void Game::mainloop()
 
         scene.updateAllObjects();
 
-        mat4 bindTrans = idleTestState.skeleton->at(31).t;
-        mat4 boneTrans = idleTestState[31];
-        Sword->state.modelMatrix = Sword->state.modelMatrix *  boneTrans * inverse(bindTrans);
+        // mat4 bindTrans = idleTestState.skeleton->at(24).t;
+        // mat4 boneTrans = idleTestState[24];
+        // Sword->state.modelMatrix = Sword->state.modelMatrix *  boneTrans * inverse(bindTrans);
+        // Sword->update(true);
 
-        GG::playerEntity->comp<Effect>().zone.v4 = Sword->state.modelMatrix * vec4(0, 0, 0, 1);
-        GG::playerEntity->comp<Effect>().zone.v5 = Sword->state.modelMatrix * vec4(1.23, 0, 0, 1);
-        
+        mat4 swordMatrix = Sword->getMeshes()[0]->state.modelMatrix;
+        GG::playerEntity->comp<Effect>().zone.v4 = swordMatrix * vec4(0, 0, 0, 1);
+        GG::playerEntity->comp<Effect>().zone.v5 = swordMatrix * vec4(1.23, 0, 0, 1);
 
-        Sword->update(true);
+        /***** Items follow the skeleton
+        *****/        
+        System<EntityModel, ItemsModel, SkeletonAnimationState>([](Entity &entity)
+        {
+            auto &s = entity.comp<SkeletonAnimationState>();
+            auto &i = entity.comp<ItemsModel>();
+
+            i.Weapon.followSkeleton(s);
+            i.Lantern.followSkeleton(s);
+        });
+
         // std::cout << to_string(Sword->state.modelMatrix) << "\n";
 
         scene.generateShadowMaps();

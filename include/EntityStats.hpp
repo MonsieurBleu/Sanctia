@@ -1,6 +1,7 @@
 #pragma once
 
 #include <BluePhysics.hpp>
+#include <ObjectGroup.hpp>
 
 enum DamageType
 {
@@ -56,9 +57,14 @@ class Effect
         float value;
         int valtype;
 
+        ObjectGroupRef attachement;
+
         void apply(EntityStats &s);
 };
 
-
+struct EffectList
+{
+    Effect weapon;
+};
 
 

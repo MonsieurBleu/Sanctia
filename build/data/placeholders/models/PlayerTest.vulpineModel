@@ -23,8 +23,8 @@ PlayerTest
             ;
         ;
     :   state 
-        :   position "0 0 0.075"
-        :   rotation "0 180 0"
+        :   position "0 0 -0.075"
+        *:   rotation "0 180 0"*
         ;
     ;
 ;

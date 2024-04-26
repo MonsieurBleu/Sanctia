@@ -63,6 +63,25 @@ void B_Collider::applyTranslation(vec3 pos, vec3 direction)
 
 }
 
+void B_Collider::applyTranslation(const mat4 &m)
+{
+    switch (type)
+    {
+    case B_ColliderType::Sphere :
+        v2 = m * vec4(v2, 1);
+        break;
+    
+    case B_ColliderType::Capsule : 
+        v4 = m * vec4(v2, 1);
+        v5 = m * vec4(v3, 1);
+        break;
+    
+    default:
+        break;
+    }
+
+}
+
 CollisionInfo B_Collider::collide(const B_Collider& c1, vec3 p1, const B_Collider &c2, vec3 p2)
 {
     B_Collider a = c1.type < c2.type ? c1 : c2;

@@ -63,33 +63,36 @@ void Game::physicsLoop()
         // });
 
     /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
-        System<Effect, EntityState3D>([](Entity &entity)
+        System<EffectList, EntityState3D>([](Entity &entity)
         {
-            // static Effect *e;
-            // static EntityState3D *se;
-            Effect *e = &entity.comp<Effect>();
-            EntityState3D *se = &entity.comp<EntityState3D>();
-            
-            if(!e->enable || e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
+            Effect *l = (Effect*)&entity.comp<EffectList>();
 
-            System<B_DynamicBodyRef, EntityStats, EntityState3D>([se, e](Entity &entity)
+            for(int i = 0; i < (int)(sizeof(EffectList)/sizeof(Effect)); i++)
             {
-                if(e->curTrigger < e->maxTrigger)
-                {
-                    auto &b = entity.comp<B_DynamicBodyRef>();
-                    auto &s = entity.comp<EntityState3D>();
-                    CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, se->position);
-                    if(c.penetration > 0.f)
-                    {
-                        e->apply(entity.comp<EntityStats>());
-                    }
-                }
-            });
+                Effect *e = &l[0];
+                EntityState3D *se = &entity.comp<EntityState3D>();
+                
+                if(!e->enable || e->curTrigger >= e->maxTrigger) entity.removeComp<EffectList>();
 
-            if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
+                System<B_DynamicBodyRef, EntityStats, EntityState3D>([se, e](Entity &entity)
+                {
+                    if(e->curTrigger < e->maxTrigger)
+                    {
+                        auto &b = entity.comp<B_DynamicBodyRef>();
+                        auto &s = entity.comp<EntityState3D>();
+                        CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, se->position);
+                        if(c.penetration > 0.f)
+                        {
+                            e->apply(entity.comp<EntityStats>());
+                        }
+                    }
+                });
+
+                if(e->curTrigger >= e->maxTrigger) entity.removeComp<EffectList>();
+            }
         });
 
-        ManageGarbage<Effect>();
+        ManageGarbage<EffectList>();
         ManageGarbage<B_DynamicBodyRef>();
 
         physicsMutex.unlock();

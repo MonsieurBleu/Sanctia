@@ -273,11 +273,11 @@ void Game::mainloop()
     playerControl.playerMovementForce = &playerControl.body->applyForce(vec3(0));
     // GG::physics.dynamics.push_back(playerControl.body);
 
-    static Effect swordEffectZone;
-    swordEffectZone.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(0, 0, 0));
-    swordEffectZone.type = EffectType::Damage;
-    swordEffectZone.value = 30;
-    swordEffectZone.maxTrigger = 1e6;
+    static EffectList swordEffectZone;
+    swordEffectZone.weapon.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0));
+    swordEffectZone.weapon.type = EffectType::Damage;
+    swordEffectZone.weapon.value = 30;
+    swordEffectZone.weapon.maxTrigger = 1e6;
 
     scene.add(Loader<ObjectGroup>::get("Zweihander").copy());
 
@@ -285,7 +285,7 @@ void Game::mainloop()
     ObjectGroupRef playerModel(new ObjectGroup);
     auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
     auto Sword = Loader<ObjectGroup>::get("Zweihander").copy();
-    Sword->setMenu(menu, U"Sword");
+    // Sword->setMenu(menu, U"Sword");
     // playerModelBody->add(Sword);
     playerModel->state.frustumCulled = false;
     playerModel->add(playerModelBody);
@@ -303,6 +303,8 @@ void Game::mainloop()
 
     GG::playerEntity->comp<ItemsModel>().switchWeapon({24, Loader<ObjectGroup>::get("Zweihander").copy()});
 
+    GG::playerEntity->comp<ItemsModel>().Weapon.model->setMenu(menu, U"Sword");
+
     /* ANIMATION STATES */
     AnimationRef slashTest = Loader<AnimationRef>::get("65_2HSword_ATTACK");
 
@@ -310,7 +312,7 @@ void Game::mainloop()
     slashTest->onExitAnimation = [](void * usr){
         Entity *e = (Entity*)usr;
         e->comp<EntityActionState>().isTryingToAttack = false;
-        e->comp<Effect>().enable = false;
+        e->comp<EffectList>().weapon.enable = false;
     };
 
     slashTest->speedCallback = [](float prct, void* usr)
@@ -319,14 +321,14 @@ void Game::mainloop()
         float end = 70.f;
 
         Entity *e = (Entity*)usr;
-        if(prct >= end && e->hasComp<Effect>() && e->comp<Effect>().enable)
+        if(prct >= end && e->hasComp<EffectList>() && e->comp<EffectList>().weapon.enable)
         {
-            e->comp<Effect>().enable = false;
+            e->comp<EffectList>().weapon.enable = false;
         }
-        if(prct >= begin && prct < end && !e->hasComp<Effect>())
+        if(prct >= begin && prct < end && !e->hasComp<EffectList>())
         {
 
-            e->set<Effect>(swordEffectZone);
+            e->set<EffectList>(swordEffectZone);
         }
 
         return 1.f;
@@ -420,7 +422,7 @@ void Game::mainloop()
         /* Make the player body follow the camera smoothly */
         vec3 camdir = globals.currentCamera->getDirection();
         // vec3 boddir = GG::playerEntity->comp<B_DynamicBodyRef>()->v;
-        vec3 camdir2 = -normalize(vec3(camdir.x, 0, camdir.z));
+        vec3 camdir2 = normalize(vec3(camdir.x, 0, camdir.z));
         // vec3 boddir2 = -normalize(vec3(boddir.x, 0, boddir.z));
         vec3 &entdir = GG::playerEntity->comp<EntityState3D>().direction;
         camdir2 = normalize(mix(entdir, camdir2, clamp(globals.appTime.getDelta()*10.f, 0.f, 1.f)));
@@ -491,10 +493,9 @@ void Game::mainloop()
                 model->state.setPosition(s.position);
 
                 const int headBone = 18;
-                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0.05, 0, 1);
-                animPos.z *= -1; animPos.x *= -1; animPos.y *= 1;
+                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0, 0, 1);
 
-                this->camera.setPosition(vec3(model->state.modelMatrix * animPos) + vec3(0, 0.1, 0));
+                this->camera.setPosition(vec3(model->state.modelMatrix * animPos) + vec3(0, 0.2, 0));
             }
         });
 
@@ -551,9 +552,9 @@ void Game::mainloop()
         // Sword->state.modelMatrix = Sword->state.modelMatrix *  boneTrans * inverse(bindTrans);
         // Sword->update(true);
 
-        mat4 swordMatrix = Sword->getMeshes()[0]->state.modelMatrix;
-        GG::playerEntity->comp<Effect>().zone.v4 = swordMatrix * vec4(0, 0, 0, 1);
-        GG::playerEntity->comp<Effect>().zone.v5 = swordMatrix * vec4(1.23, 0, 0, 1);
+        // mat4 swordMatrix = Sword->getMeshes()[0]->state.modelMatrix;
+        // GG::playerEntity->comp<EffectList>().weapon.zone.v4 = swordMatrix * vec4(0, 0, 0, 1);
+        // GG::playerEntity->comp<EffectList>().weapon.zone.v5 = swordMatrix * vec4(1.23, 0, 0, 1);
 
         /***** Items follow the skeleton
         *****/        
@@ -564,6 +565,16 @@ void Game::mainloop()
 
             i.Weapon.followSkeleton(s);
             i.Lantern.followSkeleton(s);
+        });
+
+        /***** Effects follow the items
+        *****/        
+        System<EffectList, ItemsModel>([](Entity &entity)
+        {
+            auto &e = entity.comp<EffectList>();
+            auto &i = entity.comp<ItemsModel>();
+
+            e.weapon.zone.applyTranslation(i.Weapon.model->getChildren()[0]->state.modelMatrix);
         });
 
         // std::cout << to_string(Sword->state.modelMatrix) << "\n";

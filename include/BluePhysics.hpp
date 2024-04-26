@@ -48,6 +48,7 @@ class B_Collider
         void setOBB(vec3 p1, vec3 p2, vec3 p3);
 
         void applyTranslation(vec3 pos, vec3 direction);
+        void applyTranslation(const mat4 &m);
 
         static CollisionInfo collideSphereSphere    (const B_Collider& sphere, vec3 ps,  const B_Collider& sphere2, vec3 ps2);
         static CollisionInfo collideSphereAABB      (const B_Collider& sphere, vec3 ps, const B_Collider& AABB, vec3 paabb);

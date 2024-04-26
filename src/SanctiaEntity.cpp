@@ -44,6 +44,8 @@ void ItemsModel::switchIem(SkeletonAttachedModel& cur, const SkeletonAttachedMod
     }
 
     cur = newItem;
+    cur.model = newObjectGroup();
+    cur.model->add(newItem.model);
 
     m->add(cur.model);
     s.add(cur.model);
@@ -94,8 +96,14 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
     // if(entity->hasComp<Effect>())
     if(entity->ids[PHYSIC] != NO_ENTITY)
     {
-        auto &c = entity->comp<Effect>().zone;
-        data->add(getModelFromCollider(c, vec3(1, 0, 0)));
+
+        Effect *l = (Effect*)&entity->comp<EffectList>();
+
+        for(int i = 0; i < (int)(sizeof(EffectList)/sizeof(Effect)); i++)
+        {
+            auto &c = l[i].zone;
+            data->add(getModelFromCollider(c, vec3(1, 0, 0)));
+        }
     }
 
     globals.getScene()->add(data);

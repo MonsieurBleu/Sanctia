@@ -22,15 +22,6 @@ EntityRef Blueprint::TestManequin()
     // newGroup->add(sh);
 
 
-    Effect testEffectZone;
-    // testEffectZone.zone.setSphere(0.5, vec3(1, 0, 0));
-    testEffectZone.zone.setCapsule(0.1, vec3(-1, 1, 1), vec3(1, 1, 1));
-    testEffectZone.type = EffectType::Damage;
-    testEffectZone.valtype = DamageType::Pure;
-    testEffectZone.value = 100;
-    testEffectZone.maxTrigger = 5;
-
-
     EntityStats stats;
 
     GG::entities.push_back(
@@ -57,12 +48,12 @@ EntityRef Blueprint::DamageBox(vec3 position, float size)
     EntityState3D state;
     state.position = position;
 
-    Effect e;
-    e.zone.settAABB(vec3(-size/2), vec3(size/2));
-    e.type = EffectType::Damage;
-    e.valtype = DamageType::Pure;
-    e.value = 100;
-    e.maxTrigger = 5;
+    EffectList e;
+    e.weapon.zone.settAABB(vec3(-size/2), vec3(size/2));
+    e.weapon.type = EffectType::Damage;
+    e.weapon.valtype = DamageType::Pure;
+    e.weapon.value = 100;
+    e.weapon.maxTrigger = 5;
 
     ObjectGroupRef newGroup = newObjectGroup();
     newGroup->add(CubeHelperRef(new CubeHelper(vec3(-size/2), vec3(size/2), vec3(1, 0, 0))));

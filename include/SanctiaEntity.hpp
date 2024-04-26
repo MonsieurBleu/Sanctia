@@ -96,7 +96,7 @@
     template<> void Component<B_DynamicBodyRef>::ComponentElem::init();
     template<> void Component<B_DynamicBodyRef>::ComponentElem::clean();
 
-    COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE);
+    COMPONENT(EffectList, PHYSIC, MAX_PHYSIC_COMP_USAGE);
 
 
 /***************** IA *****************/

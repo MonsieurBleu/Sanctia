@@ -284,10 +284,6 @@ void Game::mainloop()
 
     ObjectGroupRef playerModel(new ObjectGroup);
     auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
-    auto Sword = Loader<ObjectGroup>::get("Zweihander").copy();
-    // Sword->setMenu(menu, U"Sword");
-    // playerModelBody->add(Sword);
-    playerModel->state.frustumCulled = false;
     playerModel->add(playerModelBody);
 
 
@@ -296,7 +292,6 @@ void Game::mainloop()
         , playerControl.body
         , EntityState3D{vec3(0), vec3(1, 0, 0)}
         , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
-        // , swordEffectZone*
         , ItemsModel()
         , PhysicsHelpers{}
     );
@@ -379,32 +374,11 @@ void Game::mainloop()
     {
         mainloopStartRoutine();
 
-        auto &idleTestState = GG::playerEntity->comp<SkeletonAnimationState>();
-        // for(auto &m : idleTestState) m = mat4(1);
-        // idleTestState.applyAnimations(animTime, animations);
-        // idleTestState.skeleton->applyGraph(idleTestState);
-
-        // idleTestState.update();
-        // idleTestState.activate(2);
-
-        // System<SkeletonAnimationState>([&, animations](Entity &entity)
-        // {
-        //     auto &s = entity.comp<SkeletonAnimationState>();
-        //     s.applyAnimations(animTime, animations);
-        //     // std::fill(s.begin(), s.end(), mat4(1));
-        //     s.skeleton->applyGraph(s);
-        //     s.update();
-        // });
-
-
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
 
         float maxSlow = player1.getStats().reflexMaxSlowFactor;
         float reflex = player1.getInfos().state.reflex;
         globals.simulationTime.speed = maxSlow + (1.f-maxSlow)*(1.f-reflex*0.01);
-
-        // float simTime = globals.simulationTime.getElapsedTime();
-        // lantern->state.setPosition(vec3(10, 5, 10*cos(5*simTime)));
 
         float scroll = globals.mouseScrollOffset().y;
         float &preflex = GG::playerUniqueInfos->infos.state.reflex;
@@ -492,8 +466,10 @@ void Game::mainloop()
                 model->state.update();
                 model->state.setPosition(s.position);
 
+                auto &s = entity.comp<SkeletonAnimationState>();
+
                 const int headBone = 18;
-                vec4 animPos = idleTestState[headBone] * inverse(idleTestState.skeleton->at(headBone).t) * vec4(0, 0, 0, 1);
+                vec4 animPos = s[headBone] * inverse(s.skeleton->at(headBone).t) * vec4(0, 0, 0, 1);
 
                 this->camera.setPosition(vec3(model->state.modelMatrix * animPos) + vec3(0, 0.2, 0));
             }
@@ -547,15 +523,6 @@ void Game::mainloop()
 
         scene.updateAllObjects();
 
-        // mat4 bindTrans = idleTestState.skeleton->at(24).t;
-        // mat4 boneTrans = idleTestState[24];
-        // Sword->state.modelMatrix = Sword->state.modelMatrix *  boneTrans * inverse(bindTrans);
-        // Sword->update(true);
-
-        // mat4 swordMatrix = Sword->getMeshes()[0]->state.modelMatrix;
-        // GG::playerEntity->comp<EffectList>().weapon.zone.v4 = swordMatrix * vec4(0, 0, 0, 1);
-        // GG::playerEntity->comp<EffectList>().weapon.zone.v5 = swordMatrix * vec4(1.23, 0, 0, 1);
-
         /***** Items follow the skeleton
         *****/        
         System<EntityModel, ItemsModel, SkeletonAnimationState>([](Entity &entity)
@@ -576,8 +543,6 @@ void Game::mainloop()
 
             e.weapon.zone.applyTranslation(i.Weapon.model->getChildren()[0]->state.modelMatrix);
         });
-
-        // std::cout << to_string(Sword->state.modelMatrix) << "\n";
 
         scene.generateShadowMaps();
         globals.currentCamera = &camera;

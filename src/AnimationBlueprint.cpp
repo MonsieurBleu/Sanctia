@@ -18,6 +18,7 @@ ANIMATION_SWITCH_ENTITY(switchRunCond,
     return e->comp<EntityState3D>().speed > 7.5;
 )
 
+
 float AnimBlueprint::weaponAttackCallback(float prct, Entity *e, float begin, float end, Effect effect)
 {
     auto &w = e->comp<Items>().equipped[WEAPON_SLOT].item;
@@ -38,6 +39,12 @@ float AnimBlueprint::weaponAttackCallback(float prct, Entity *e, float begin, fl
 
     return 1.f;
 }
+
+std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
+    Entity *e = (Entity*)usr;
+    e->comp<EntityActionState>().isTryingToAttack = false;
+    e->comp<Items>().equipped[WEAPON_SLOT].item->comp<Effect>().enable = false;
+};
 
 AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, Entity *e)
 {

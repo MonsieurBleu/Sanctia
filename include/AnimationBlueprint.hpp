@@ -8,6 +8,8 @@ namespace AnimBlueprint
     AnimationControllerRef bipedMoveset(const std::string & prefix, Entity *e);
 
     float weaponAttackCallback(float prct, Entity *e, float begin, float end, Effect effect);
+
+    extern std::function<void (void *)> weaponAttackExit;
 }
 
 
@@ -21,8 +23,8 @@ namespace AnimBlueprint
     }; \
     INV_ANIMATION_SWITCH(name)
 
-#define ANIMATION_CALLBACK(name, code) \
-    auto name = [](float prct, void * usr){\
+#define ANIMATION_CALLBACK(code) \
+    [](float prct, void * usr){\
     Entity *e = (Entity*)usr; \
     code \
     }; \

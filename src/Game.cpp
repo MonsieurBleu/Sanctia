@@ -320,51 +320,15 @@ void Game::mainloop()
     AnimationRef slashTest = Loader<AnimationRef>::get("65_2HSword_ATTACK");
 
 
-    slashTest->onExitAnimation = [](void * usr){
-        Entity *e = (Entity*)usr;
-        e->comp<EntityActionState>().isTryingToAttack = false;
-        // e->comp<EffectList>().weapon.enable = false;
+    slashTest->onExitAnimation = AnimBlueprint::weaponAttackExit;
+    slashTest->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, 37.5, 70, swordEffectZone););
 
-        e->comp<Items>().equipped[WEAPON_SLOT].item->comp<Effect>().enable = false;
-
-    };
-
-    slashTest->speedCallback = [](float prct, void* usr)
-    {
-        float begin = 37.5f;
-        float end = 70.f;
-
-        Entity *e = (Entity*)usr;
-
-        auto &w = e->comp<Items>().equipped[WEAPON_SLOT].item;
-
-        if(!w.get())
-            return 1.f;
-        
-        if( prct >= end && w->comp<Effect>().enable)
-        {
-            /* Disable effect componment and mark it for removal */
-            w->comp<Effect>().enable = false;
-        }
-        if(prct >= begin && prct < end && !w->comp<Effect>().enable)
-        {
-            /* Enable effect component */
-            w->set<Effect>(swordEffectZone);
-        }
-
-        return 1.f;
-    };
-
-    ANIMATION_CALLBACK(speedCallbackTest, return AnimBlueprint::weaponAttackCallback(prct, e, 37.5, 70, swordEffectZone););
-    slashTest->speedCallback = speedCallbackTest;
 
     // slashTest->speedCallback = [](float prct, void* usr){return AnimBlueprint::weaponAttackCallback(prct, , 37.5, 10, swordEffectZone)};
     
     GG::playerEntity->set<AnimationControllerRef>(
         AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get())
     );
-
-    
 
     scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
     // playerModel->setAnimation(&idleTestState);

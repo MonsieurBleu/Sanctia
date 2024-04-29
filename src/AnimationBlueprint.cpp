@@ -4,15 +4,6 @@
 #include <Animation.hpp>
 #include <Skeleton.hpp>
 
-#define INV_ANIMATION_SWITCH(func) \
-    auto inv_##func = [](void * usr) {return !func(usr);};
-
-#define ANIMATION_SWITCH_ENTITY(name, code) \
-    auto name = [](void * usr){\
-    Entity *e = (Entity*)usr; \
-    code \
-    }; \
-    INV_ANIMATION_SWITCH(name)
 
 /* ANIMATION SWITCH */
 ANIMATION_SWITCH_ENTITY(switchAttackCond, 
@@ -27,7 +18,26 @@ ANIMATION_SWITCH_ENTITY(switchRunCond,
     return e->comp<EntityState3D>().speed > 7.5;
 )
 
+float AnimBlueprint::weaponAttackCallback(float prct, Entity *e, float begin, float end, Effect effect)
+{
+    auto &w = e->comp<Items>().equipped[WEAPON_SLOT].item;
 
+    if(!w.get())
+        return 1.f;
+    
+    if( prct >= end && w->comp<Effect>().enable)
+    {
+        /* Disable effect componment and mark it for removal */
+        w->comp<Effect>().enable = false;
+    }
+    if(prct >= begin && prct < end && !w->comp<Effect>().enable)
+    {
+        /* Enable effect component */
+        w->set<Effect>(effect);
+    }
+
+    return 1.f;
+}
 
 AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, Entity *e)
 {

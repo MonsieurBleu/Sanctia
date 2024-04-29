@@ -32,39 +32,6 @@ template<> void Component<SkeletonAnimationState>::ComponentElem::init()
     }
 }
 
-void ItemsModel::switchIem(SkeletonAttachedModel& cur, const SkeletonAttachedModel &newItem)
-{
-    auto &m = usr->comp<EntityModel>();
-    auto &s = *globals.getScene();
-
-    if(cur.model.get())
-    {
-        m->remove(cur.model);
-        s.remove(cur.model);
-    }
-
-    cur = newItem;
-    cur.model = newObjectGroup();
-    cur.model->add(newItem.model);
-
-    m->add(cur.model);
-    s.add(cur.model);
-}
-
-void ItemsModel::SkeletonAttachedModel::followSkeleton(SkeletonAnimationState& s)
-{
-    if(!model.get()) return;
-
-    model->state.modelMatrix = model->state.modelMatrix * s[bone] * inverse(s.skeleton->at(bone).t);
-
-    model->update(true);
-}
-
-template<> void Component<ItemsModel>::ComponentElem::init()
-{
-    data = ItemsModel(entity);
-}
-
 ModelRef getModelFromCollider(B_Collider &c, vec3 color)
 {
     switch (c.type)
@@ -97,13 +64,9 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
     if(entity->ids[PHYSIC] != NO_ENTITY)
     {
 
-        Effect *l = (Effect*)&entity->comp<EffectList>();
+        Effect &l = entity->comp<Effect>();
 
-        for(int i = 0; i < (int)(sizeof(EffectList)/sizeof(Effect)); i++)
-        {
-            auto &c = l[i].zone;
-            data->add(getModelFromCollider(c, vec3(1, 0, 0)));
-        }
+        data->add(getModelFromCollider(l.zone, vec3(1, 0, 0)));
     }
 
     globals.getScene()->add(data);

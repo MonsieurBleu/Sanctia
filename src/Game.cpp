@@ -261,6 +261,17 @@ void Game::mainloop()
         {FastUI_menuTitle(menu.ui, U"Games Conditions"), FastUI_valueTab(menu.ui, GameConditionsValues)}
     );
 
+    
+/****** Loading Game Specific Elements *******/
+    GG::currentConditions.readTxt("saves/gameConditions.txt");
+
+    for(int i = 0; i < 50; i++)
+        Blueprint::TestManequin();
+    
+    scene.add(
+        Loader<MeshModel3D>::get("barrel01").copyWithSharedMesh()
+    );
+
 
 /****** Creating Demo Player *******/
     Player player1;
@@ -273,15 +284,6 @@ void Game::mainloop()
     playerControl.playerMovementForce = &playerControl.body->applyForce(vec3(0));
     // GG::physics.dynamics.push_back(playerControl.body);
 
-    static EffectList swordEffectZone;
-    swordEffectZone.weapon.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0));
-    swordEffectZone.weapon.type = EffectType::Damage;
-    swordEffectZone.weapon.value = 30;
-    swordEffectZone.weapon.maxTrigger = 1e6;
-
-    scene.add(Loader<ObjectGroup>::get("Zweihander").copy());
-
-
     ObjectGroupRef playerModel(new ObjectGroup);
     auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
     playerModel->add(playerModelBody);
@@ -292,13 +294,27 @@ void Game::mainloop()
         , playerControl.body
         , EntityState3D{vec3(0), vec3(1, 0, 0)}
         , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
-        , ItemsModel()
+        , Items{}
         , PhysicsHelpers{}
     );
 
-    GG::playerEntity->comp<ItemsModel>().switchWeapon({24, Loader<ObjectGroup>::get("Zweihander").copy()});
+    static Effect swordEffectZone;
+    swordEffectZone.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0));
+    swordEffectZone.type = EffectType::Damage;
+    swordEffectZone.value = 30;
+    swordEffectZone.maxTrigger = 1e6;
 
-    GG::playerEntity->comp<ItemsModel>().Weapon.model->setMenu(menu, U"Sword");
+    EntityRef Zweihander(new Entity("ZweiHander"
+        , Effect()
+        , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
+        , ItemTransform{}
+        , PhysicsHelpers{}
+    ));
+
+    GG::entities.push_back(Zweihander);
+
+    GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT] = {24, Zweihander};
+
 
     /* ANIMATION STATES */
     AnimationRef slashTest = Loader<AnimationRef>::get("65_2HSword_ATTACK");
@@ -307,7 +323,10 @@ void Game::mainloop()
     slashTest->onExitAnimation = [](void * usr){
         Entity *e = (Entity*)usr;
         e->comp<EntityActionState>().isTryingToAttack = false;
-        e->comp<EffectList>().weapon.enable = false;
+        // e->comp<EffectList>().weapon.enable = false;
+
+        e->comp<Items>().equipped[WEAPON_SLOT].item->comp<Effect>().enable = false;
+
     };
 
     slashTest->speedCallback = [](float prct, void* usr)
@@ -316,18 +335,30 @@ void Game::mainloop()
         float end = 70.f;
 
         Entity *e = (Entity*)usr;
-        if(prct >= end && e->hasComp<EffectList>() && e->comp<EffectList>().weapon.enable)
-        {
-            e->comp<EffectList>().weapon.enable = false;
-        }
-        if(prct >= begin && prct < end && !e->hasComp<EffectList>())
-        {
 
-            e->set<EffectList>(swordEffectZone);
+        auto &w = e->comp<Items>().equipped[WEAPON_SLOT].item;
+
+        if(!w.get())
+            return 1.f;
+        
+        if( prct >= end && w->comp<Effect>().enable)
+        {
+            /* Disable effect componment and mark it for removal */
+            w->comp<Effect>().enable = false;
+        }
+        if(prct >= begin && prct < end && !w->comp<Effect>().enable)
+        {
+            /* Enable effect component */
+            w->set<Effect>(swordEffectZone);
         }
 
         return 1.f;
     };
+
+    ANIMATION_CALLBACK(speedCallbackTest, return AnimBlueprint::weaponAttackCallback(prct, e, 37.5, 70, swordEffectZone););
+    slashTest->speedCallback = speedCallbackTest;
+
+    // slashTest->speedCallback = [](float prct, void* usr){return AnimBlueprint::weaponAttackCallback(prct, , 37.5, 10, swordEffectZone)};
     
     GG::playerEntity->set<AnimationControllerRef>(
         AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get())
@@ -338,24 +369,6 @@ void Game::mainloop()
     scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
     // playerModel->setAnimation(&idleTestState);
     scene.add(SkeletonHelperRef(new SkeletonHelper(GG::playerEntity->comp<SkeletonAnimationState>())));
-    
-/****** Loading Game Specific Elements *******/
-    // GG::currentConditions.saveTxt("saves/gameConditions.txt");
-    GG::currentConditions.readTxt("saves/gameConditions.txt");
-
-    for(int i = 0; i < 50; i++)
-        Blueprint::TestManequin();
-    
-    // dialogueControl.interlocutor = GG::entities.front();
-
-    scene.add(
-        Loader<MeshModel3D>::get("barrel01").copyWithSharedMesh()
-    );
-
-    // scene.add(
-    //     ClusteredFrustumHelperRef(new ClusteredFrustumHelper(camera))
-    // );
-
 
 /****** Last Pre Loop Routines ******/
     state = AppState::run;
@@ -525,23 +538,38 @@ void Game::mainloop()
 
         /***** Items follow the skeleton
         *****/        
-        System<EntityModel, ItemsModel, SkeletonAnimationState>([](Entity &entity)
+        System<Items, SkeletonAnimationState, EntityModel>([](Entity &entity)
         {
+            auto &it = entity.comp<Items>();
             auto &s = entity.comp<SkeletonAnimationState>();
-            auto &i = entity.comp<ItemsModel>();
+            auto &m = entity.comp<EntityModel>()->state.modelMatrix;
 
-            i.Weapon.followSkeleton(s);
-            i.Lantern.followSkeleton(s);
+            for(auto &i : it.equipped)
+                if(i.item.get())
+                {
+                    mat4 &t = i.item->comp<ItemTransform>().t;
+                    t = m * s[i.id] * inverse(s.skeleton->at(i.id).t);
+
+                    if(i.item->hasComp<EntityModel>())
+                    {
+                        auto &model = i.item->comp<EntityModel>();
+
+                        model->state.modelMatrix = t;
+                        
+                        model->update(true);
+
+                        t = model->getChildren()[0]->state.modelMatrix;
+                    }
+                }
         });
+        
 
-        /***** Effects follow the items
+        /***** Effects follow the transform
         *****/        
-        System<EffectList, ItemsModel>([](Entity &entity)
-        {
-            auto &e = entity.comp<EffectList>();
-            auto &i = entity.comp<ItemsModel>();
-
-            e.weapon.zone.applyTranslation(i.Weapon.model->getChildren()[0]->state.modelMatrix);
+        System<ItemTransform, Effect>([](Entity &entity){
+            entity.comp<Effect>().zone.applyTranslation(
+                entity.comp<ItemTransform>().t
+            );
         });
 
         scene.generateShadowMaps();

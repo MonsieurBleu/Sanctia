@@ -46,6 +46,32 @@
     COMPONENT(EntityActionState, DATA, MAX_DATA_COMP_USAGE);
 
 
+/***************** ITEMS *****************/
+
+    struct ItemInfos
+    {
+        std::string Name;
+    };
+
+    COMPONENT(ItemInfos, DATA, MAX_DATA_COMP_USAGE);
+
+    enum EquipementSlots
+    {
+        WEAPON_SLOT
+    };
+
+    struct Items
+    {
+        struct Equipement{int id = 0; EntityRef item;} equipped[16];
+    };
+
+    COMPONENT(Items, DATA, MAX_DATA_COMP_USAGE);
+
+    struct ItemTransform{mat4 t;};
+
+    COMPONENT(ItemTransform, DATA, MAX_DATA_COMP_USAGE);
+
+
 /***************** GRAPHICS *****************/
     const int MAX_GRAPHIC_COMP_USAGE = MAX_ENTITY;
 
@@ -60,35 +86,6 @@
 
     COMPONENT(AnimationControllerRef, GRAPHIC, MAX_GRAPHIC_COMP_USAGE);
 
-    
-    class ItemsModel 
-    {
-        private : 
-
-            struct SkeletonAttachedModel{
-                int bone = 0; ObjectGroupRef model; 
-                void followSkeleton(SkeletonAnimationState &);
-            };
-
-            void switchIem(SkeletonAttachedModel& cur, const SkeletonAttachedModel &newItem);
-            
-            Entity *usr = nullptr;
-
-            #define ITEM_MODEL(name) SkeletonAttachedModel name; \
-                ItemsModel& switch##name(const SkeletonAttachedModel &n){switchIem(name, n); return *this;};
-        
-        public : 
-            void FollowSkeleton(SkeletonAttachedModel& item);
-
-            ItemsModel(){};
-            ItemsModel(Entity *usr) : usr(usr){};
-            ITEM_MODEL(Weapon);
-            ITEM_MODEL(Lantern);
-    };
-
-    COMPONENT(ItemsModel, GRAPHIC, MAX_GRAPHIC_COMP_USAGE);
-    template<>void Component<ItemsModel>::ComponentElem::init();
-
 /***************** PHYSICS *****************/
     const int MAX_PHYSIC_COMP_USAGE = MAX_ENTITY;
 
@@ -96,7 +93,7 @@
     template<> void Component<B_DynamicBodyRef>::ComponentElem::init();
     template<> void Component<B_DynamicBodyRef>::ComponentElem::clean();
 
-    COMPONENT(EffectList, PHYSIC, MAX_PHYSIC_COMP_USAGE);
+    COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE);
 
 
 /***************** IA *****************/

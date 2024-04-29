@@ -62,9 +62,9 @@ class Effect
         void apply(EntityStats &s);
 };
 
-struct EffectList
-{
-    Effect weapon;
-};
+// struct EffectList
+// {
+//     // Effect weapon;
+// };
 
 

@@ -7,16 +7,54 @@
 #include <MathsUtils.hpp>
 #include <Constants.hpp>
 
+#define ACT(animA, animB, time, cond) AnimationControllerTransition(animA, animB, COND_CUSTOM, time, TRANSITION_SMOOTH, cond)
+
+#define ACT_TO_ALLDIR(animA, animB, time, cond) \
+    ACT(animA, animB##F, time, cond##_AND_switchDepFront),\
+    ACT(animA, animB##B, time, cond##_AND_switchDepBack),\
+    ACT(animA, animB##L, time, cond##_AND_switchDepLeft),\
+    ACT(animA, animB##R, time, cond##_AND_switchDepRight)
+
+#define ACT_FROM_ALLDIR(animA, animB, time, cond) \
+    ACT(animA##F, animB, time, cond),\
+    ACT(animA##B, animB, time, cond),\
+    ACT(animA##L, animB, time, cond),\
+    ACT(animA##R, animB, time, cond)
+
+#define ACT_TO_FROM_ALLDIR(animA, animB, time, cond) \
+    ACT_TO_ALLDIR(animA##F, animB, time, cond),\
+    ACT_TO_ALLDIR(animA##B, animB, time, cond),\
+    ACT_TO_ALLDIR(animA##L, animB, time, cond),\
+    ACT_TO_ALLDIR(animA##R, animB, time, cond)
+
+#define ACT_DEP_ALLDIR(anim, time, cond) \
+    ACT(anim##B, anim##F, time, cond##_AND_switchDepFront),\
+    ACT(anim##L, anim##F, time, cond##_AND_switchDepFront),\
+    ACT(anim##R, anim##F, time, cond##_AND_switchDepFront),\
+    \
+    ACT(anim##F, anim##B, time, cond##_AND_switchDepBack),\
+    ACT(anim##L, anim##B, time, cond##_AND_switchDepBack),\
+    ACT(anim##R, anim##B, time, cond##_AND_switchDepBack),\
+    \
+    ACT(anim##F, anim##L, time, cond##_AND_switchDepLeft),\
+    ACT(anim##B, anim##L, time, cond##_AND_switchDepLeft),\
+    ACT(anim##R, anim##L, time, cond##_AND_switchDepLeft),\
+    \
+    ACT(anim##F, anim##R, time, cond##_AND_switchDepRight),\
+    ACT(anim##B, anim##R, time, cond##_AND_switchDepRight),\
+    ACT(anim##L, anim##R, time, cond##_AND_switchDepRight)
+
+
 /* ANIMATION SWITCH */
 ANIMATION_SWITCH_ENTITY(switchAttackCond, 
     return e->comp<EntityActionState>().isTryingToAttack;
 )
 
-ANIMATION_SWITCH_ENTITY(switchWalkCond, 
+ANIMATION_SWITCH_ENTITY(switchWalk, 
     return e->comp<EntityState3D>().speed > 0.1;
 )
 
-ANIMATION_SWITCH_ENTITY(switchRunCond, 
+ANIMATION_SWITCH_ENTITY(switchRun, 
     return e->comp<EntityState3D>().speed > 7.5;
 )
 
@@ -48,6 +86,25 @@ ANIMATION_SWITCH_ENTITY(switchDepBack,
     return a < -3.f*PI/4.f || a > 3.f*PI/4.f;
 )
 
+ANIMATION_SWITCH_AND(switchWalk, switchDepFront)
+ANIMATION_SWITCH_AND(switchWalk, switchDepBack)
+ANIMATION_SWITCH_AND(switchWalk, switchDepLeft)
+ANIMATION_SWITCH_AND(switchWalk, switchDepRight)
+
+ANIMATION_SWITCH_AND(inv_switchWalk, switchDepFront)
+ANIMATION_SWITCH_AND(inv_switchWalk, switchDepBack)
+ANIMATION_SWITCH_AND(inv_switchWalk, switchDepLeft)
+ANIMATION_SWITCH_AND(inv_switchWalk, switchDepRight)
+
+ANIMATION_SWITCH_AND(switchRun, switchDepFront)
+ANIMATION_SWITCH_AND(switchRun, switchDepBack)
+ANIMATION_SWITCH_AND(switchRun, switchDepLeft)
+ANIMATION_SWITCH_AND(switchRun, switchDepRight)
+
+ANIMATION_SWITCH_AND(inv_switchRun, switchDepFront)
+ANIMATION_SWITCH_AND(inv_switchRun, switchDepBack)
+ANIMATION_SWITCH_AND(inv_switchRun, switchDepLeft)
+ANIMATION_SWITCH_AND(inv_switchRun, switchDepRight)
 
 float AnimBlueprint::weaponAttackCallback(float prct, Entity *e, float begin, float end, float dmgMult)
 {
@@ -98,46 +155,42 @@ AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, E
 
     AnimationRef idle   = Loader<AnimationRef>::get(prefix + "_IDLE");
     AnimationRef attack = Loader<AnimationRef>::get(prefix + "_ATTACK");
-    AnimationRef run    = Loader<AnimationRef>::get(prefix + "_RUN");
 
-    AnimationRef walkF   = Loader<AnimationRef>::get(prefix + "_WALK_F");
-    AnimationRef walkB   = Loader<AnimationRef>::get(prefix + "_WALK_B");
-    AnimationRef walkL   = Loader<AnimationRef>::get(prefix + "_WALK_L");
-    AnimationRef walkR   = Loader<AnimationRef>::get(prefix + "_WALK_R");
+    AnimationRef walkF = Loader<AnimationRef>::get(prefix + "_WALK_F");
+    AnimationRef walkB = Loader<AnimationRef>::get(prefix + "_WALK_B");
+    AnimationRef walkL = Loader<AnimationRef>::get(prefix + "_WALK_L");
+    AnimationRef walkR = Loader<AnimationRef>::get(prefix + "_WALK_R");
+
+    AnimationRef runF = Loader<AnimationRef>::get(prefix + "_RUN_F");
+    AnimationRef runB = Loader<AnimationRef>::get(prefix + "_RUN_B");
+    AnimationRef runL = Loader<AnimationRef>::get(prefix + "_RUN_L");
+    AnimationRef runR = Loader<AnimationRef>::get(prefix + "_RUN_R");
+
+    const float D_walkDep = 0.25;
+    const float D_runDep = 0.15;
+    const float D_idleWalk = 0.25; 
+    const float D_WalkRun = 0.25; 
+    const float D_toAttack = 0.025;
 
     AnimationControllerRef ac( new AnimationController(
-        0,
         {
-            AnimationControllerTransition(idle, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchWalkCond),
-            AnimationControllerTransition(idle, attack, COND_CUSTOM, 0.025f, TRANSITION_SMOOTH, switchAttackCond),
+            /* IDLE */
+            ACT_TO_ALLDIR(idle, walk, D_idleWalk, switchWalk),
+            ACT(idle, attack, D_toAttack, switchAttackCond),
 
-            AnimationControllerTransition(walkF, walkL, COND_CUSTOM, 0.1f, TRANSITION_SMOOTH, switchDepLeft),
-            AnimationControllerTransition(walkF, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
-            AnimationControllerTransition(walkF, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
-            AnimationControllerTransition(walkF, idle, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, inv_switchWalkCond), 
-            AnimationControllerTransition(walkF, run, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchRunCond), 
-            AnimationControllerTransition(walkF, attack, COND_CUSTOM, 0.025f, TRANSITION_SMOOTH, switchAttackCond),
+            /* WALK */
+            ACT_DEP_ALLDIR(walk, D_walkDep, switchWalk),
+            ACT_FROM_ALLDIR(walk, idle, D_idleWalk, inv_switchWalk),
+            ACT_TO_FROM_ALLDIR(walk, run, D_WalkRun, switchRun),
+            ACT_FROM_ALLDIR(walk, attack, D_toAttack, switchAttackCond),
 
-            AnimationControllerTransition(walkL, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
-            AnimationControllerTransition(walkL, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
-            AnimationControllerTransition(walkL, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
+            /* RUN */
+            ACT_DEP_ALLDIR(run, D_runDep, switchRun),
+            ACT_TO_FROM_ALLDIR(run, walk, D_WalkRun, inv_switchRun),
 
-            AnimationControllerTransition(walkR, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
-            AnimationControllerTransition(walkR, walkL, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepLeft),
-            AnimationControllerTransition(walkR, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
-
-            AnimationControllerTransition(walkB, walkL, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepLeft),
-            AnimationControllerTransition(walkB, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
-            AnimationControllerTransition(walkB, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
-
-            AnimationControllerTransition(run, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, inv_switchRunCond), 
-
+            /* ATTACK */
             AnimationControllerTransition(attack, idle, COND_ANIMATION_FINISHED, 0.f, TRANSITION_SMOOTH)
-        },
-        {   
-            idle, walkF, attack, run
-        },
-        e
+        }, idle, e
     ));
 
     return ac;

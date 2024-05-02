@@ -31,3 +31,6 @@ namespace AnimBlueprint
     code \
     }; \
 
+#define ANIMATION_SWITCH_AND(func1, func2) \
+    std::function<bool(void*)> func1##_AND_##func2 = [](void * usr) {return func1(usr) && func2(usr);};
+

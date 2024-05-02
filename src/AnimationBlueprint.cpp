@@ -109,30 +109,30 @@ AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, E
         0,
         {
             AnimationControllerTransition(idle, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchWalkCond),
-            // AnimationControllerTransition(idle, attack, COND_CUSTOM, 0.025f, TRANSITION_SMOOTH, switchAttackCond),
+            AnimationControllerTransition(idle, attack, COND_CUSTOM, 0.025f, TRANSITION_SMOOTH, switchAttackCond),
 
             AnimationControllerTransition(walkF, walkL, COND_CUSTOM, 0.1f, TRANSITION_SMOOTH, switchDepLeft),
-            // AnimationControllerTransition(walkF, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
-            // AnimationControllerTransition(walkF, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
-            // AnimationControllerTransition(walkF, idle, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, inv_switchWalkCond), 
-            // AnimationControllerTransition(walkF, run, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchRunCond), 
-            // AnimationControllerTransition(walkF, attack, COND_CUSTOM, 0.025f, TRANSITION_SMOOTH, switchAttackCond),
+            AnimationControllerTransition(walkF, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
+            AnimationControllerTransition(walkF, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
+            AnimationControllerTransition(walkF, idle, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, inv_switchWalkCond), 
+            AnimationControllerTransition(walkF, run, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchRunCond), 
+            AnimationControllerTransition(walkF, attack, COND_CUSTOM, 0.025f, TRANSITION_SMOOTH, switchAttackCond),
 
-            // AnimationControllerTransition(walkL, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
-            // AnimationControllerTransition(walkL, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
-            // AnimationControllerTransition(walkL, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
+            AnimationControllerTransition(walkL, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
+            AnimationControllerTransition(walkL, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
+            AnimationControllerTransition(walkL, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
 
-            // AnimationControllerTransition(walkR, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
-            // AnimationControllerTransition(walkR, walkL, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepLeft),
-            // AnimationControllerTransition(walkR, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
+            AnimationControllerTransition(walkR, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
+            AnimationControllerTransition(walkR, walkL, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepLeft),
+            AnimationControllerTransition(walkR, walkB, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepBack),
 
-            // AnimationControllerTransition(walkB, walkL, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepLeft),
-            // AnimationControllerTransition(walkB, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
-            // AnimationControllerTransition(walkB, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
+            AnimationControllerTransition(walkB, walkL, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepLeft),
+            AnimationControllerTransition(walkB, walkR, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepRight),
+            AnimationControllerTransition(walkB, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, switchDepFront),
 
-            // AnimationControllerTransition(run, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, inv_switchRunCond), 
+            AnimationControllerTransition(run, walkF, COND_CUSTOM, 0.25f, TRANSITION_SMOOTH, inv_switchRunCond), 
 
-            // AnimationControllerTransition(attack, idle, COND_ANIMATION_FINISHED, 0.f, TRANSITION_SMOOTH)
+            AnimationControllerTransition(attack, idle, COND_ANIMATION_FINISHED, 0.f, TRANSITION_SMOOTH)
         },
         {   
             idle, walkF, attack, run

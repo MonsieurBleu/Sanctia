@@ -7,9 +7,11 @@ namespace AnimBlueprint
 {
     AnimationControllerRef bipedMoveset(const std::string & prefix, Entity *e);
 
-    float weaponAttackCallback(float prct, Entity *e, float begin, float end, Effect effect);
+    float weaponAttackCallback(float prct, Entity *e, float begin, float end, float dmgMult);
 
     extern std::function<void (void *)> weaponAttackExit;
+
+    void PrepareAnimationsCallbacks();
 }
 
 

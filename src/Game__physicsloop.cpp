@@ -37,8 +37,9 @@ void Game::physicsLoop()
             auto &b = entity.comp<B_DynamicBodyRef>();
             auto &s = entity.comp<EntityState3D>();
             s.position = b->position;
+            s.deplacementDirection = b->v;
             
-            b->boundingCollider.applyTranslation(b->position, s.direction);
+            b->boundingCollider.applyTranslation(b->position, s.lookDirection);
         });
 
         if(!globals.simulationTime.isPaused())
@@ -51,7 +52,8 @@ void Game::physicsLoop()
             auto &s = entity.comp<EntityState3D>();
             auto &b = entity.comp<B_DynamicBodyRef>();
 
-            b->v = -s.speed*vec3(s.direction.x, 0, s.direction.z) + vec3(0, b->v.y, 0);
+            // b->v = s.speed*vec3(s.lookDirection.x, 0, s.lookDirection.z) + vec3(0, b->v.y, 0);
+            b->v = s.speed*vec3(s.wantedDepDirection.x, 0, s.wantedDepDirection.z) + vec3(0, b->v.y, 0);
         });
 
     /***** ATTACH EFFECT TO ENTITY STATE *****/

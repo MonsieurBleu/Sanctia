@@ -55,8 +55,9 @@ class Effect
         float duration;
 
         float value;
-        int valtype;
+        int valtype = (int)DamageType::Pure;
 
+        /* TODO : remove ? */
         ObjectGroupRef attachement;
 
         void apply(EntityStats &s);

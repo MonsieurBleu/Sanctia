@@ -298,13 +298,8 @@ void Game::mainloop()
         , PhysicsHelpers{}
     );
 
-    static Effect swordEffectZone;
-    swordEffectZone.zone.setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0));
-    swordEffectZone.type = EffectType::Damage;
-    swordEffectZone.value = 30;
-    swordEffectZone.maxTrigger = 1e6;
-
     EntityRef Zweihander(new Entity("ZweiHander"
+        , ItemInfos{100, 50, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
         , Effect()
         , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
         , ItemTransform{}
@@ -315,17 +310,6 @@ void Game::mainloop()
 
     GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT] = {24, Zweihander};
 
-
-    /* ANIMATION STATES */
-    AnimationRef slashTest = Loader<AnimationRef>::get("65_2HSword_ATTACK");
-
-
-    slashTest->onExitAnimation = AnimBlueprint::weaponAttackExit;
-    slashTest->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, 37.5, 70, swordEffectZone););
-
-
-    // slashTest->speedCallback = [](float prct, void* usr){return AnimBlueprint::weaponAttackCallback(prct, , 37.5, 10, swordEffectZone)};
-    
     GG::playerEntity->set<AnimationControllerRef>(
         AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get())
     );
@@ -375,7 +359,7 @@ void Game::mainloop()
         // vec3 boddir = GG::playerEntity->comp<B_DynamicBodyRef>()->v;
         vec3 camdir2 = normalize(vec3(camdir.x, 0, camdir.z));
         // vec3 boddir2 = -normalize(vec3(boddir.x, 0, boddir.z));
-        vec3 &entdir = GG::playerEntity->comp<EntityState3D>().direction;
+        vec3 &entdir = GG::playerEntity->comp<EntityState3D>().lookDirection;
         camdir2 = normalize(mix(entdir, camdir2, clamp(globals.appTime.getDelta()*10.f, 0.f, 1.f)));
         entdir = camdir2;
 
@@ -402,9 +386,9 @@ void Game::mainloop()
             
             if(&entity == this->dialogueControl.interlocutor.get())
             {
-                vec3 dir = s.position - GG::playerEntity->comp<EntityState3D>().position;
+                vec3 dir = GG::playerEntity->comp<EntityState3D>().position - s.position;
                 float dist = length(dir); 
-                s.direction = dir/dist;
+                s.lookDirection = dir/dist;
                 s.speed = dist < 2.5f ? 0.f : s.speed;
 
                 return;    
@@ -413,8 +397,10 @@ void Game::mainloop()
 
             float time = globals.simulationTime.getElapsedTime();
             float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
-            s.direction.x = cos(angle);
-            s.direction.z = sin(angle);
+            // s.lookDirection.x = cos(angle);
+            // s.lookDirection.z = sin(angle);
+            s.wantedDepDirection.x = cos(angle);
+            s.wantedDepDirection.z = sin(angle);
             s.speed = 1;
         });
 
@@ -423,7 +409,7 @@ void Game::mainloop()
         {
             EntityModel& model = entity.comp<EntityModel>();
             auto &s = entity.comp<EntityState3D>();
-            vec3& dir = s.direction;
+            vec3& dir = s.lookDirection;
 
             if(dir.x != 0.f || dir.z != 0.f)
             {
@@ -540,7 +526,6 @@ void Game::mainloop()
         globals.currentCamera = &camera;
         renderBuffer.activate();
         scene.cull();
-
 
         /* 3D Early Depth Testing */
         // scene.depthOnlyDraw(*globals.currentCamera, true);

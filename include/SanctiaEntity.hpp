@@ -21,9 +21,12 @@
     struct EntityState3D
     {
         vec3 position = vec3(0, 0, 0);
-        vec3 direction = vec3(1, 0, 0);
+        vec3 lookDirection = vec3(1, 0, 0);
         float speed = 0.f;
+        vec3 deplacementDirection = vec3(1, 0, 0);
+        vec3 wantedDepDirection = vec3(1, 0, 0);
     };
+
     COMPONENT(EntityState3D, DATA, MAX_DATA_COMP_USAGE);
 
     COMPONENT(EntityStats, DATA, MAX_DATA_COMP_USAGE);
@@ -47,10 +50,12 @@
 
 
 /***************** ITEMS *****************/
-
     struct ItemInfos
     {
-        std::string Name;
+        float price = 1.f;
+        float dmgMult = 20.f;
+        DamageType dmgType = DamageType::Pure;
+        B_Collider dmgZone;
     };
 
     COMPONENT(ItemInfos, DATA, MAX_DATA_COMP_USAGE);

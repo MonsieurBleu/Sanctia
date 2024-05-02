@@ -5,15 +5,16 @@
 #include <glm/gtx/string_cast.hpp>
 
 
-void B_Collider::setSphere(float radius, vec3 position)
+B_Collider& B_Collider::setSphere(float radius, vec3 position)
 {
     v1.x = radius;
     v2 = position;
     v3 = position;
     type = B_ColliderType::Sphere;
+    return *this;
 }
 
-void B_Collider::setCapsule(float radius, vec3 p1, vec3 p2)
+B_Collider& B_Collider::setCapsule(float radius, vec3 p1, vec3 p2)
 {
     v1.x = radius;
     v2 = p1;
@@ -21,21 +22,24 @@ void B_Collider::setCapsule(float radius, vec3 p1, vec3 p2)
     v4 = p1;
     v5 = p2;
     type = B_ColliderType::Capsule;
+    return *this;
 }
 
-void B_Collider::settAABB(vec3 min, vec3 max)
+B_Collider& B_Collider::settAABB(vec3 min, vec3 max)
 {
     v1 = min;
     v2 = max;
     type = B_ColliderType::AABB;
+    return *this;
 }
 
-void B_Collider::setOBB(vec3 p1, vec3 p2, vec3 p3)
+B_Collider& B_Collider::setOBB(vec3 p1, vec3 p2, vec3 p3)
 {
     v1 = p1;
     v2 = p2;
     v3 = p3;
     type = B_ColliderType::OBB;
+    return *this;
 }
 
 void B_Collider::applyTranslation(vec3 pos, vec3 direction)

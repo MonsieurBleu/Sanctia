@@ -1,9 +1,5 @@
-#include <fstream>
-#include <thread>
-
 #include <Game.hpp>
 #include <Globals.hpp>
-// #include <GameObject.hpp>
 #include <CompilingOptions.hpp>
 #include <MathsUtils.hpp>
 #include <Audio.hpp>
@@ -11,16 +7,7 @@
 #include <Constants.hpp>
 #include <AssetManager.hpp>
 #include <EntityBlueprint.hpp>
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/string_cast.hpp>
-
-#include <Skeleton.hpp>
-#include <Animation.hpp>
-
-#include <Dialogue.hpp>
-
-#include <filesystem>
+#include <AnimationBlueprint.hpp>
 
 Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
 
@@ -160,6 +147,5 @@ void Game::init(int paramSample)
     GG::currentLanguage = LANGUAGE_FRENCH;
 
     loadAllAssetsInfos("data");
-
-    
+    AnimBlueprint::PrepareAnimationsCallbacks();
 }

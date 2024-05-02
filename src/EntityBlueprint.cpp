@@ -3,6 +3,7 @@
 #include <Helpers.hpp>
 #include <Constants.hpp>
 #include <EntityStats.hpp>
+#include <AnimationBlueprint.hpp>
 
 EntityRef Blueprint::TestManequin()
 {
@@ -10,7 +11,7 @@ EntityRef Blueprint::TestManequin()
     // newGroup->add(Loader<ObjectGroup>::get("Zweihander").copy());
     int i = GG::entities.size();
     B_DynamicBodyRef body(new B_DynamicBody);
-    vec3 position = vec3(-5*(i/10), 5, -5*(i%10)) + vec3(-5, 0, 0);
+    vec3 position = vec3(-4*(i/10), 5, -4*(i%10)) + vec3(-5, 0, 0);
 
     // float radius = 0.85;
     body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
@@ -24,21 +25,21 @@ EntityRef Blueprint::TestManequin()
 
     EntityStats stats;
 
-    GG::entities.push_back(
-        newEntity("HumanMale number " + std::to_string(i)
-            ,EntityModel{newGroup}
-            ,EntityState3D({position, vec3(-1, 0, 0), 1.f})
-            ,B_DynamicBodyRef(body)
-            ,stats
-            // testEffectZone,
-            // PhysicsHelpers{},
-            ,CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
-            ,DeplacementBehaviour{DEMO}
-            ,SkeletonAnimationState(Loader<SkeletonRef>::get("Akai"))
-            ,NpcPcRelation()
-            ));
+    EntityRef e = newEntity("HumanMale number " + std::to_string(i)
+            , EntityModel{newGroup}
+            , EntityState3D({position, vec3(-1, 0, 0), 1.f})
+            , B_DynamicBodyRef(body)
+            , stats
+            , CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
+            , DeplacementBehaviour{DEMO}
+            , SkeletonAnimationState(Loader<SkeletonRef>::get("Akai"))
+            , NpcPcRelation()
+            , EntityActionState{}
+            );
 
+    e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset("65_2HSword", e.get()));
 
+    GG::entities.push_back(e);
 
     return GG::entities.back();
 }

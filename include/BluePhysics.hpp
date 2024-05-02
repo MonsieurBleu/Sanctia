@@ -42,10 +42,10 @@ class B_Collider
         vec3 v5 = vec3(0);
         B_ColliderType type;
 
-        void setSphere(float radius, vec3 position = vec3(0));
-        void setCapsule(float radius, vec3 p1, vec3 p2);
-        void settAABB(vec3 min, vec3 max);
-        void setOBB(vec3 p1, vec3 p2, vec3 p3);
+        B_Collider& setSphere(float radius, vec3 position = vec3(0));
+        B_Collider& setCapsule(float radius, vec3 p1, vec3 p2);
+        B_Collider& settAABB(vec3 min, vec3 max);
+        B_Collider& setOBB(vec3 p1, vec3 p2, vec3 p3);
 
         void applyTranslation(vec3 pos, vec3 direction);
         void applyTranslation(const mat4 &m);

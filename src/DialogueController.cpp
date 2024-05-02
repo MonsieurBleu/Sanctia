@@ -163,7 +163,7 @@ void DialogueController::addChoice(const Dialogue &d)
         screenPosToModel({-0.9, 0.f})
         );
 
-    globals.getScene2D()->add(c);
+    globals.getScene2D()->add(c, false);
 
     c->baseUniforms.add(ShaderUniform(&c->color, 32));
 

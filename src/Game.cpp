@@ -19,139 +19,6 @@
 #include <Animation.hpp>
 #include <AnimationBlueprint.hpp>
 
-bool Game::userInput(GLFWKeyInfo input)
-{
-    if (baseInput(input))
-        return true;
-
-    if (input.action == GLFW_PRESS)
-    {
-        switch (input.key)
-        {
-        case GLFW_KEY_ESCAPE:
-            state = quit;
-            break;
-
-        case GLFW_KEY_F12 :
-            if(globals.getController() == &playerControl)
-            {
-                GG::playerEntity->comp<EntityModel>()->state.hide = HIDE;
-                setController(&spectator);
-            }
-            else
-            if(globals.getController() == &spectator)
-                {
-                    setController(&playerControl);
-                    playerControl.body->position = globals.currentCamera->getPosition();
-                    GG::playerEntity->comp<EntityModel>()->state.hide = SHOW;
-                }
-            break;
-
-        case GLFW_KEY_E :
-            if(globals.getController() == &playerControl)
-                setController(&dialogueControl);
-            else 
-            if(globals.getController() == &dialogueControl)
-                setController(&playerControl);
-            break;
-
-        case GLFW_KEY_F2:
-            globals.currentCamera->toggleMouseFollow();
-            break;
-
-        case GLFW_KEY_1:
-            Bloom.toggle();
-            break;
-
-        case GLFW_KEY_2:
-            SSAO.toggle();
-            break;
-        
-        case GLFW_KEY_F5:
-            #ifdef _WIN32
-            system("cls");
-            #else
-            system("clear");
-            #endif
-
-            finalProcessingStage.reset();
-            Bloom.getShader().reset();
-            SSAO.getShader().reset();
-            depthOnlyMaterial->reset();
-            GG::PBR->reset();
-            GG::PBRstencil->reset();
-            skyboxMaterial->reset();
-            for(auto &m : Loader<MeshMaterial>::loadedAssets)
-                m.second->reset();
-            break;
-
-        case GLFW_KEY_F8 :
-            {
-                auto myfile = std::fstream("saves/cameraState.bin", std::ios::out | std::ios::binary);
-                myfile.write((char*)&camera.getState(), sizeof(CameraState));
-                myfile.close();
-            }
-                break;
-
-        case GLFW_KEY_F :
-            GG::entities.clear();
-            break;
-
-        case GLFW_KEY_P :
-            Blueprint::TestManequin();
-            break;
-        
-        case GLFW_KEY_M :
-            if(GG::entities.size()) GG::entities.pop_back();
-            break;
-        
-        case GLFW_KEY_9 : 
-            GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
-            break;
-
-        case GLFW_KEY_0 : 
-            GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
-            break;
-
-        case GLFW_MOUSE_BUTTON_RIGHT : 
-        {
-            // Effect testEffectZone;
-            // testEffectZone.zone.setCapsule(0.25, vec3(-1, 1.5, 1), vec3(1, 1.5, 1));
-            // testEffectZone.type = EffectType::Damage;
-            // testEffectZone.valtype = DamageType::Pure;
-            // testEffectZone.value = 20;
-            // testEffectZone.maxTrigger = 1;
-            // GG::playerEntity->set<Effect>(testEffectZone);
-            
-            // animTime = 0.f;
-            GG::playerEntity->comp<EntityActionState>().isTryingToAttack = true;
-        }
-            break;
-
-
-
-        default:
-            break;
-        }
-    }
-
-    if (input.action == GLFW_RELEASE)
-    {
-        switch (input.key)
-        {
-        case GLFW_MOUSE_BUTTON_RIGHT : 
-            // GG::playerEntity->removeComp<Effect>();
-            break;
-
-        default:
-            break;
-        }
-    }
-
-    return true;
-};
-
-
 void Game::mainloop()
 {
 /****** FPS demo initialization ******/
@@ -298,25 +165,36 @@ void Game::mainloop()
         , PhysicsHelpers{}
     );
 
-    EntityRef Zweihander(new Entity("ZweiHander"
-        , ItemInfos{100, 50, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
-        , Effect()
-        , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
-        , ItemTransform{}
-        , PhysicsHelpers{}
-    ));
+    // EntityRef Zweihander(new Entity("ZweiHander"
+    //     , ItemInfos{100, 50, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
+    //     , Effect()
+    //     , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
+    //     , ItemTransform{}
+    //     , PhysicsHelpers{}
+    // ));
+    // GG::entities.push_back(Zweihander);
 
-    GG::entities.push_back(Zweihander);
-
-    GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT] = {24, Zweihander};
+    GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT] = {24, Blueprint::Zweihander()};
 
     GG::playerEntity->set<AnimationControllerRef>(
         AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get())
     );
 
+    // System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity){
+    //     entity.comp<Items>().equipped[WEAPON_SLOT] = {24, Blueprint::Zweihander()};
+    // });
+
     scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
     // playerModel->setAnimation(&idleTestState);
     scene.add(SkeletonHelperRef(new SkeletonHelper(GG::playerEntity->comp<SkeletonAnimationState>())));
+
+    SingleStringBatchRef AttackDirectionHelper(new SingleStringBatch());
+    AttackDirectionHelper->setMaterial(Loader<MeshMaterial>::get("mdFont"));
+    AttackDirectionHelper->setFont(FUIfont);
+    AttackDirectionHelper->align = CENTERED;
+    AttackDirectionHelper->color = ColorHexToV(0xFFFFFF);
+    AttackDirectionHelper->baseUniforms.add(ShaderUniform(&AttackDirectionHelper->color, 32));
+    scene2D.add(AttackDirectionHelper);
 
 /****** Last Pre Loop Routines ******/
     state = AppState::run;
@@ -336,6 +214,24 @@ void Game::mainloop()
         mainloopStartRoutine();
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
+
+        switch (GG::playerEntity->comp<EntityActionState>().stance)
+        {
+            case EntityActionState::Stance::LEFT :
+                AttackDirectionHelper->text = U"**<==** V ==>";
+                break;
+            
+            case EntityActionState::Stance::RIGHT :
+                AttackDirectionHelper->text = U"<== V **==>**";
+                break;
+
+            case EntityActionState::Stance::SPECIAL :
+                AttackDirectionHelper->text = U"<== **V** ==>";
+                break;
+
+            default: break;
+        }
+        AttackDirectionHelper->batchText();
 
         float maxSlow = player1.getStats().reflexMaxSlowFactor;
         float reflex = player1.getInfos().state.reflex;
@@ -388,9 +284,8 @@ void Game::mainloop()
             {
                 vec3 dir = GG::playerEntity->comp<EntityState3D>().position - s.position;
                 float dist = length(dir); 
-                s.lookDirection = dir/dist;
-                s.speed = dist < 2.5f ? 0.f : s.speed;
-
+                s.lookDirection = s.wantedDepDirection = dir/dist;
+                s.speed = dist < 1.5f ? 0.f : s.speed;
                 return;    
             }
 

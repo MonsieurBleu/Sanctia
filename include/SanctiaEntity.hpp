@@ -43,6 +43,8 @@
 
     struct EntityActionState
     {
+        enum Stance {LEFT, RIGHT, SPECIAL} stance = Stance::LEFT;
+
         bool isTryingToAttack = false;
     };
 
@@ -52,9 +54,9 @@
 /***************** ITEMS *****************/
     struct ItemInfos
     {
-        float price = 1.f;
+        int price = 1.f;
         float dmgMult = 20.f;
-        DamageType dmgType = DamageType::Pure;
+        int dmgType = DamageType::Pure;
         B_Collider dmgZone;
     };
 

@@ -60,10 +60,8 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
         data->add(getModelFromCollider(b->boundingCollider, vec3(1, 1, 0)));
     }
 
-    // if(entity->hasComp<Effect>())
     if(entity->ids[PHYSIC] != NO_ENTITY)
     {
-
         Effect &l = entity->comp<Effect>();
 
         data->add(getModelFromCollider(l.zone, vec3(1, 0, 0)));
@@ -86,11 +84,32 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
     if(!entity->hasComp<EntityModel>()) return;
 
     float textScale = 3.0;
-    float curHeight = 2.0;
     float offHeight = 0.11;
 
+    auto minmax = entity->comp<EntityModel>()->getMeshesBoundingBox();
+    vec3 size = abs(minmax.first) + abs(minmax.second);
+    float curHeight = size.y + offHeight;
+    vec3 dir = vec3(0, 1, 0);
+
+    // if(size.x > size.y && size.x > size.z)
+    // {
+    //     curHeight = size.x + offHeight;
+    //     dir = vec3(1, 0, 0);
+    // }
+    // if(size.x > size.y)
+    // {
+    //     curHeight = size.x + offHeight;
+    //     dir = vec3(1, 0, 0);
+    // }
+    
+    if(entity->hasComp<ItemInfos>())
+    {
+        curHeight = 0;
+        dir = vec3(1, 0, 0);
+    }
+
     #define ADD_VALUE_HELPER(Helper) \
-        Helper->state.setPosition(vec3(0, curHeight, 0)).scaleScalar(textScale); \
+        Helper->state.setPosition(curHeight * dir).scaleScalar(textScale); \
         entity->comp<EntityModel>()->add(Helper); \
         globals.getScene()->add(Helper); \
         data.models.push_back(Helper); \
@@ -118,6 +137,19 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
 
         ValueHelperRef<short> A(new ValueHelper(r.affinity, U"Affinity ", ColorHexToV(0x66B4DE)));
         ADD_VALUE_HELPER(A)
+    }
+
+    if(entity->hasComp<ItemInfos>())
+    {
+        auto &i = entity->comp<ItemInfos>();
+
+        ValueHelperRef<int> P(new ValueHelper(i.price, U"Price ", ColorHexToV(0xffcf40)));
+        ValueHelperRef<float> M(new ValueHelper(i.dmgMult, U"Damage Mult ", ColorHexToV(0xf04a1d)));
+        ValueHelperRef<int> T(new ValueHelper(i.dmgType, U"Damage Type ", ColorHexToV(0xc0e81e)));
+
+        ADD_VALUE_HELPER(P)
+        ADD_VALUE_HELPER(M)
+        ADD_VALUE_HELPER(T)
     }
 }
 

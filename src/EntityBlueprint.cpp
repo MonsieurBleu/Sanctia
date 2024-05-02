@@ -27,14 +27,15 @@ EntityRef Blueprint::TestManequin()
 
     EntityRef e = newEntity("HumanMale number " + std::to_string(i)
             , EntityModel{newGroup}
-            , EntityState3D({position, vec3(-1, 0, 0), 1.f})
+            , EntityState3D({position, vec3(1, 0, 0), 1.f})
             , B_DynamicBodyRef(body)
             , stats
             , CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             , DeplacementBehaviour{DEMO}
-            , SkeletonAnimationState(Loader<SkeletonRef>::get("Akai"))
+            , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
             , NpcPcRelation()
             , EntityActionState{}
+            , Items{}
             );
 
     e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset("65_2HSword", e.get()));
@@ -42,6 +43,21 @@ EntityRef Blueprint::TestManequin()
     GG::entities.push_back(e);
 
     return GG::entities.back();
+}
+
+EntityRef Blueprint::Zweihander()
+{
+    EntityRef zweihander(new Entity("ZweiHander"
+        , ItemInfos{100, 50, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
+        , Effect()
+        , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
+        , ItemTransform{}
+        , PhysicsHelpers{}
+    ));
+
+    GG::entities.push_back(zweihander);
+
+    return zweihander;
 }
 
 EntityRef Blueprint::DamageBox(vec3 position, float size)

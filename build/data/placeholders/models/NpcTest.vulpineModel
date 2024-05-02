@@ -1,7 +1,7 @@
 NpcTest
     :   meshes 
         :   NpcTest
-            :   mesh      | Akai
+            :   mesh      | Beta_Surface
             :   material  | animatedPBR
             :   texture 0 | Plastic_BLACK_CE
             :   texture 1 | Plastic_BLACK_NRM

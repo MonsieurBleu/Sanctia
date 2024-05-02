@@ -46,8 +46,19 @@
 
 
 /* ANIMATION SWITCH */
-ANIMATION_SWITCH_ENTITY(switchAttackCond, 
-    return e->comp<EntityActionState>().isTryingToAttack;
+ANIMATION_SWITCH_ENTITY(switchAttackLeft, 
+    auto &s = e->comp<EntityActionState>();
+    return s.isTryingToAttack && s.stance == EntityActionState::Stance::LEFT;
+)
+
+ANIMATION_SWITCH_ENTITY(switchAttackRight, 
+    auto &s = e->comp<EntityActionState>();
+    return s.isTryingToAttack && s.stance == EntityActionState::Stance::RIGHT;
+)
+
+ANIMATION_SWITCH_ENTITY(switchAttackSpecial, 
+    auto &s = e->comp<EntityActionState>();
+    return s.isTryingToAttack && s.stance == EntityActionState::Stance::SPECIAL;
 )
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
@@ -154,7 +165,9 @@ AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, E
 {
 
     AnimationRef idle   = Loader<AnimationRef>::get(prefix + "_IDLE");
-    AnimationRef attack = Loader<AnimationRef>::get(prefix + "_ATTACK");
+    AnimationRef attackR = Loader<AnimationRef>::get(prefix + "_ATTACK_R");
+    AnimationRef attackL = Loader<AnimationRef>::get(prefix + "_ATTACK_L");
+    AnimationRef attackS = Loader<AnimationRef>::get(prefix + "_ATTACK_S");
 
     AnimationRef walkF = Loader<AnimationRef>::get(prefix + "_WALK_F");
     AnimationRef walkB = Loader<AnimationRef>::get(prefix + "_WALK_B");
@@ -170,26 +183,32 @@ AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, E
     const float D_runDep = 0.15;
     const float D_idleWalk = 0.25; 
     const float D_WalkRun = 0.25; 
-    const float D_toAttack = 0.025;
+    const float D_toAttack = 0.15;
 
     AnimationControllerRef ac( new AnimationController(
         {
             /* IDLE */
             ACT_TO_ALLDIR(idle, walk, D_idleWalk, switchWalk),
-            ACT(idle, attack, D_toAttack, switchAttackCond),
+            ACT(idle, attackL, D_toAttack, switchAttackLeft),
+            ACT(idle, attackR, D_toAttack, switchAttackRight),
+            ACT(idle, attackS, D_toAttack, switchAttackSpecial),
 
             /* WALK */
             ACT_DEP_ALLDIR(walk, D_walkDep, switchWalk),
             ACT_FROM_ALLDIR(walk, idle, D_idleWalk, inv_switchWalk),
             ACT_TO_FROM_ALLDIR(walk, run, D_WalkRun, switchRun),
-            ACT_FROM_ALLDIR(walk, attack, D_toAttack, switchAttackCond),
+            ACT_FROM_ALLDIR(walk, attackL, D_toAttack, switchAttackLeft),
+            ACT_FROM_ALLDIR(walk, attackR, D_toAttack, switchAttackRight),
+            ACT_FROM_ALLDIR(walk, attackS, D_toAttack, switchAttackSpecial),
 
             /* RUN */
             ACT_DEP_ALLDIR(run, D_runDep, switchRun),
             ACT_TO_FROM_ALLDIR(run, walk, D_WalkRun, inv_switchRun),
 
             /* ATTACK */
-            AnimationControllerTransition(attack, idle, COND_ANIMATION_FINISHED, 0.f, TRANSITION_SMOOTH)
+            AnimationControllerTransition(attackL, idle, COND_ANIMATION_FINISHED, D_toAttack, TRANSITION_SMOOTH),
+            AnimationControllerTransition(attackR, idle, COND_ANIMATION_FINISHED, D_toAttack, TRANSITION_SMOOTH),
+            AnimationControllerTransition(attackS, idle, COND_ANIMATION_FINISHED, D_toAttack, TRANSITION_SMOOTH),
         }, idle, e
     ));
 
@@ -201,9 +220,19 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
 
     /* 2H Moveset */
     {
-        AnimationRef slash = Loader<AnimationRef>::get("65_2HSword_ATTACK");
+        AnimationRef slash = Loader<AnimationRef>::get("65_2HSword_ATTACK_R");
         slash->onExitAnimation = AnimBlueprint::weaponAttackExit;
         slash->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, 37.5, 70, 1););
+    }
+    {
+        AnimationRef slash = Loader<AnimationRef>::get("65_2HSword_ATTACK_L");
+        slash->onExitAnimation = AnimBlueprint::weaponAttackExit;
+        slash->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, 37.5, 70, 1););
+    }
+    {
+        AnimationRef slash = Loader<AnimationRef>::get("65_2HSword_ATTACK_S");
+        slash->onExitAnimation = AnimBlueprint::weaponAttackExit;
+        slash->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, 37.5, 70, 2););
     }
 
 

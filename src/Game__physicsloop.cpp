@@ -77,13 +77,31 @@ void Game::physicsLoop()
                 {
                     auto &b = entity.comp<B_DynamicBodyRef>();
                     auto &s = entity.comp<EntityState3D>();
+
                     CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, vec3(0));
                     if(c.penetration > 1e-6)
                     {
-                        e->apply(entity.comp<EntityStats>());
+                        for(auto i : e->affectedEntities)
+                            if(i.e == &entity)
+                                return;
+
+                        e->affectedEntities.push_back({&entity, 0});
                     }
                 }
             });
+
+            for(auto &i : e->affectedEntities)
+                if(i.e && i.cnt < e->maxTriggerPerEntity)
+                {
+                    e->apply(i.e->comp<EntityStats>());
+
+                    if(e->type == EffectType::Damage)
+                    {
+                        i.e->comp<EntityActionState>().stun = true;
+                    }
+
+                    i.cnt ++;
+                }
 
             if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
         });

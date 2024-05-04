@@ -36,6 +36,8 @@ struct EntityStats
     void damage(float val, DamageType type);
 };
 
+class Entity;
+
 class Effect
 {
     public :
@@ -49,10 +51,14 @@ class Effect
 
         EffectType type;
 
+        int maxTriggerPerEntity = 1;
         int maxTrigger = 1e9;
         int curTrigger = 0;
         B_Collider zone;
-        float duration;
+        float duration = 0.f;
+
+        struct EntityTrigger { Entity *e = nullptr; int cnt = 0;};
+        std::vector<EntityTrigger> affectedEntities;
 
         float value;
         int valtype = (int)DamageType::Pure;

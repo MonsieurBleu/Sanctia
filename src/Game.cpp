@@ -162,6 +162,7 @@ void Game::mainloop()
         , EntityState3D{vec3(0), vec3(1, 0, 0)}
         , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
         , Items{}
+        // , EntityStats()
         , PhysicsHelpers{}
     );
 
@@ -250,16 +251,19 @@ void Game::mainloop()
 
         ECStimer.start();
 
-        /* Make the player body follow the camera smoothly */
-        vec3 camdir = globals.currentCamera->getDirection();
-        // vec3 boddir = GG::playerEntity->comp<B_DynamicBodyRef>()->v;
-        vec3 camdir2 = normalize(vec3(camdir.x, 0, camdir.z));
-        // vec3 boddir2 = -normalize(vec3(boddir.x, 0, boddir.z));
-        vec3 &entdir = GG::playerEntity->comp<EntityState3D>().lookDirection;
-        camdir2 = normalize(mix(entdir, camdir2, clamp(globals.appTime.getDelta()*10.f, 0.f, 1.f)));
-        entdir = camdir2;
+        if(GG::playerEntity->comp<EntityStats>().alive)
+        {
+            /* Make the player body follow the camera smoothly */
+            vec3 camdir = globals.currentCamera->getDirection();
+            // vec3 boddir = GG::playerEntity->comp<B_DynamicBodyRef>()->v;
+            vec3 camdir2 = normalize(vec3(camdir.x, 0, camdir.z));
+            // vec3 boddir2 = -normalize(vec3(boddir.x, 0, boddir.z));
+            vec3 &entdir = GG::playerEntity->comp<EntityState3D>().lookDirection;
+            camdir2 = normalize(mix(entdir, camdir2, clamp(globals.appTime.getDelta()*10.f, 0.f, 1.f)));
+            entdir = camdir2;
 
-        GG::playerEntity->comp<EntityState3D>().speed = length(GG::playerEntity->comp<B_DynamicBodyRef>()->v * vec3(1, 0, 1));
+            GG::playerEntity->comp<EntityState3D>().speed = length(GG::playerEntity->comp<B_DynamicBodyRef>()->v * vec3(1, 0, 1));
+        }
 
     /***** Updating animations
     *****/
@@ -336,15 +340,24 @@ void Game::mainloop()
     /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
         System<EntityStats>([](Entity &entity)
         {
-            void *ptr = &entity;
+            // void *ptr = &entity;
+            // if(!entity.comp<EntityStats>().alive)
+            // {
+            //     GG::entities.erase(
+            //         std::remove_if(
+            //         GG::entities.begin(), 
+            //         GG::entities.end(),
+            //         [ptr](EntityRef &e){return e.get() == ptr;}
+            //     ), GG::entities.end());
+            // }
             if(!entity.comp<EntityStats>().alive)
             {
-                GG::entities.erase(
-                    std::remove_if(
-                    GG::entities.begin(), 
-                    GG::entities.end(),
-                    [ptr](EntityRef &e){return e.get() == ptr;}
-                ), GG::entities.end());
+                entity.removeComp<DeplacementBehaviour>();
+                entity.comp<EntityActionState>().lockDirection = EntityActionState::LockedDeplacement::SPEED_ONLY;
+                entity.comp<EntityActionState>().lockedMaxSpeed = 0;
+                entity.comp<EntityActionState>().lockedAcceleration = 0;
+                entity.comp<EntityState3D>().speed = 0;
+                entity.removeComp<B_DynamicBodyRef>();
             }
         }); 
 

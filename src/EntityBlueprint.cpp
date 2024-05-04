@@ -11,7 +11,7 @@ EntityRef Blueprint::TestManequin()
     // newGroup->add(Loader<ObjectGroup>::get("Zweihander").copy());
     int i = GG::entities.size();
     B_DynamicBodyRef body(new B_DynamicBody);
-    vec3 position = vec3(-4*(i/10), 5, -4*(i%10)) + vec3(-5, 0, 0);
+    vec3 position = 4.f*vec3(-1*(i/10), 1, -1*(i%10)) + vec3(-5, 0, 0);
 
     // float radius = 0.85;
     body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));

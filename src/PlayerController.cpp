@@ -41,12 +41,29 @@ void PlayerController::update()
 
 
 /****** Horizontal Deplacement******/
-    const vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
+    vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
+
+    auto &actionState = GG::playerEntity->comp<EntityActionState>();
+
+    switch (actionState.lockDirection)
+    {
+    case EntityActionState::LockedDeplacement::DIRECTION :
+        frontFactor = 1;
+        rightFactor = 0;
+        hFront = actionState.lockedDirection;
+    
+    case EntityActionState::LockedDeplacement::SPEED_ONLY :
+        maxSpeed = actionState.lockedMaxSpeed;
+        daccel = actionState.lockedAcceleration;
+
+    default: break;
+    }
+
+    
     const vec3 hUp = vec3(0, 1, 0);
     const vec3 hRight = cross(hUp, hFront);
     const vec3 hFrontDep = hFront*(float)frontFactor;
     const vec3 hRightDep = hRight*(float)rightFactor;
-
     vec3 vel = body->getVelocity();
     vec3 hVel = vec3(vel.x, 0, vel.z);
     float hSpeed = length(hVel);

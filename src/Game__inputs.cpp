@@ -123,6 +123,10 @@ bool Game::userInput(GLFWKeyInfo input)
             GG::playerEntity->comp<EntityActionState>().stance = EntityActionState::Stance::SPECIAL;
             break;
 
+        case GLFW_KEY_BACKSPACE :
+            GG::playerEntity->comp<EntityStats>().alive = false;
+            break;
+
         default:
             break;
         }

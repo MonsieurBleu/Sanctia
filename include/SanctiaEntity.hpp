@@ -46,6 +46,14 @@
         enum Stance {LEFT, RIGHT, SPECIAL} stance = Stance::LEFT;
 
         bool isTryingToAttack = false;
+
+        bool stun = false;
+        bool blocking = false;
+
+        enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockDirection;
+        float lockedMaxSpeed = 0;
+        float lockedAcceleration = 0;
+        vec3 lockedDirection = vec3(1, 0, 0);
     };
 
     COMPONENT(EntityActionState, DATA, MAX_DATA_COMP_USAGE);

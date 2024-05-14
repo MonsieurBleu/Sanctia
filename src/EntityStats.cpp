@@ -9,13 +9,13 @@ void EntityStats::damage(float val, DamageType type)
 }
 
 
-void Effect::apply(EntityStats &s)
+void Effect::apply(EntityStats &s, float mult)
 {
     curTrigger ++;
     switch (type)
     {
     case EffectType::Damage :
-        s.damage(value, (DamageType)valtype);
+        s.damage(value*mult, (DamageType)valtype);
         break;
     
     default:

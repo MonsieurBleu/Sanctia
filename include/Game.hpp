@@ -36,6 +36,8 @@ private:
 
     EffectHandler effects;
 
+    bool hideHUD = false;
+
 public:
     static inline LimitTimer physicsTicks;
     static inline BenchTimer physicsTimer = BenchTimer("Physics Timer");

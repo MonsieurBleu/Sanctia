@@ -9,9 +9,11 @@
 #include <Helpers.hpp>
 #include <FastUI.hpp>
 
+#include <Utils.hpp>
+
 void DialogueController::update()
 {
-    interlocutor = GG::entities.front(); /* TODO : remove*/
+    // interlocutor = GG::entities.front(); /* TODO : remove*/
 
     if(next.id.size())
     {
@@ -172,7 +174,14 @@ void DialogueController::addChoice(const Dialogue &d)
 
 void DialogueController::init()
 {
-    interlocutor = GG::entities.front();
+    for(auto i : GG::entities)
+        if(i->hasComp<CharacterDialogues>())
+        {
+            interlocutor = i;
+            break;
+        }
+
+    // interlocutor = GG::entities.front();
 
     if(!interface.get()) interface = newObjectGroup();
 
@@ -234,7 +243,16 @@ void DialogueController::nextDialogue(DialogueSwitch s)
 void DialogueController::pushNewDialogue(const std::string &id, bool changeNPCline)
 {
     auto &cd = interlocutor->comp<CharacterDialogues>();
-    auto &d = cd[id];
+
+    // auto &d = cd[id];
+    auto it = cd.find(id);
+    if(it == cd.end())
+    {
+        FILE_ERROR_MESSAGE("Dialogue '" << id << "' from entity " << interlocutor->comp<EntityInfos>().name, "Can't find dialogue screen inside loaded dialogue file");
+        return;
+    }
+
+    auto &d = it->second;
 
     std::vector<Dialogue*> randomDialogue;
     Dialogue* selected = nullptr;

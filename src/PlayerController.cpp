@@ -43,22 +43,24 @@ void PlayerController::update()
 /****** Horizontal Deplacement******/
     vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
 
-    auto &actionState = GG::playerEntity->comp<EntityActionState>();
+    auto &actionState = GG::playerEntity->comp<ActionState>();
 
     switch (actionState.lockDirection)
     {
-    case EntityActionState::LockedDeplacement::DIRECTION :
+    case ActionState::LockedDeplacement::DIRECTION :
         frontFactor = 1;
         rightFactor = 0;
-        hFront = actionState.lockedDirection;
+        hFront = normalize(actionState.lockedDirection * vec3(1, 0, 1));
     
-    case EntityActionState::LockedDeplacement::SPEED_ONLY :
+    case ActionState::LockedDeplacement::SPEED_ONLY :
         maxSpeed = actionState.lockedMaxSpeed;
         daccel = actionState.lockedAcceleration;
 
     default: break;
     }
 
+    if(actionState.blocking || actionState.stun)
+        daccel = 0.f;
     
     const vec3 hUp = vec3(0, 1, 0);
     const vec3 hRight = cross(hUp, hFront);
@@ -184,4 +186,47 @@ void PlayerController::init()
     }
 
     upFactor = rightFactor = frontFactor = 0;
+}
+
+void PlayerController::mouseEvent(vec2 dir, GLFWwindow* window)
+{
+    static bool lastCameraFollow = !globals.currentCamera->getMouseFollow();
+    bool cameraFollow = globals.currentCamera->getMouseFollow();
+
+    if(!lastCameraFollow && cameraFollow)
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    else if(lastCameraFollow && !cameraFollow)
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    lastCameraFollow = cameraFollow;
+
+    if(globals.currentCamera->getMouseFollow())
+    {
+        vec2 center(globals.windowWidth()*0.5, globals.windowHeight()*0.5);
+        vec2 sensibility(50.0);
+        dir = sensibility * (dir-center)/center;
+
+        // std::cout << to_string(dir) << "\n";
+
+        auto &action = GG::playerEntity->comp<ActionState>();
+        if(abs(dir.x) > dir.y*3.0 && abs(dir.x) > 0.4)
+        {
+            action.setStance(dir.x < 0.f ? ActionState::Stance::LEFT : ActionState::Stance::RIGHT);
+        }
+        // else if(dir.y < -0.1)
+        //     action.setStance(ActionState::Stance::SPECIAL);
+
+        float yaw = radians(-dir.x);
+        float pitch = radians(-dir.y);
+
+        vec3 up = vec3(0,1,0);
+        vec3 front = mat3(rotate(mat4(1), yaw, up)) * globals.currentCamera->getDirection();
+        front = mat3(rotate(mat4(1), pitch, cross(front, up))) * front;
+        front = normalize(front);
+
+        front.y = clamp(front.y, -0.9f, 0.9f);
+        globals.currentCamera->setDirection(front);
+
+        glfwSetCursorPos(window, center.x, center.y);
+    }
 }

@@ -7,6 +7,15 @@ bool Game::userInput(GLFWKeyInfo input)
     if (baseInput(input))
         return true;
 
+    if(globals.mouseRightClickDown())
+    {
+        GG::playerEntity->comp<ActionState>().isTryingToBlock = true;
+    }
+    else
+    {
+        GG::playerEntity->comp<ActionState>().isTryingToBlock = false;
+    }
+
     if (input.action == GLFW_PRESS)
     {
         switch (input.key)
@@ -19,15 +28,26 @@ bool Game::userInput(GLFWKeyInfo input)
             if(globals.getController() == &playerControl)
             {
                 GG::playerEntity->comp<EntityModel>()->state.hide = HIDE;
+
+                for(auto &i : GG::playerEntity->comp<Items>().equipped)
+                    if(i.item.get() && i.item->hasComp<EntityModel>())
+                        i.item->comp<EntityModel>()->state.hide = HIDE;
                 setController(&spectator);
             }
             else
             if(globals.getController() == &spectator)
-                {
-                    setController(&playerControl);
-                    playerControl.body->position = globals.currentCamera->getPosition();
-                    GG::playerEntity->comp<EntityModel>()->state.hide = SHOW;
-                }
+            {
+                setController(&playerControl);
+                playerControl.body->position = globals.currentCamera->getPosition();
+                GG::playerEntity->comp<EntityModel>()->state.hide = SHOW;
+                for(auto &i : GG::playerEntity->comp<Items>().equipped)
+                    if(i.item.get() && i.item->hasComp<EntityModel>())
+                        i.item->comp<EntityModel>()->state.hide = SHOW;
+            }
+            break;
+        
+        case GLFW_KEY_F11 :
+            globals.simulationTime.toggle();
             break;
 
         case GLFW_KEY_E :
@@ -36,6 +56,20 @@ bool Game::userInput(GLFWKeyInfo input)
             else 
             if(globals.getController() == &dialogueControl)
                 setController(&playerControl);
+            break;
+        
+        case GLFW_KEY_F :
+            GG::playerEntity->comp<ActionState>().isTryingToBlock = true;
+            GG::playerEntity->comp<ActionState>().setStance(ActionState::SPECIAL);
+            break;
+
+        case GLFW_KEY_H :
+            hideHUD = !hideHUD;
+            break;
+
+        case GLFW_MOUSE_BUTTON_MIDDLE :
+            GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
+            GG::playerEntity->comp<ActionState>().setStance(ActionState::SPECIAL);
             break;
 
         case GLFW_KEY_F2:
@@ -76,12 +110,18 @@ bool Game::userInput(GLFWKeyInfo input)
             }
                 break;
 
-        case GLFW_KEY_F :
-            GG::entities.clear();
-            break;
+        // case GLFW_KEY_F :
+        //     GG::entities.clear();
+        //     break;
 
         case GLFW_KEY_P :
-            Blueprint::TestManequin();
+        {   auto e = Blueprint::TestManequin();
+            e->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+            e->set<AgentState>({AgentState::COMBAT_POSITIONING});
+            e->set<Target>(Target{GG::playerEntity});
+        }
+
+
             break;
         
         case GLFW_KEY_M :
@@ -96,7 +136,7 @@ bool Game::userInput(GLFWKeyInfo input)
             GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
             break;
 
-        case GLFW_MOUSE_BUTTON_RIGHT : 
+        case GLFW_MOUSE_BUTTON_LEFT : 
         {
             // Effect testEffectZone;
             // testEffectZone.zone.setCapsule(0.25, vec3(-1, 1.5, 1), vec3(1, 1.5, 1));
@@ -107,24 +147,28 @@ bool Game::userInput(GLFWKeyInfo input)
             // GG::playerEntity->set<Effect>(testEffectZone);
             
             // animTime = 0.f;
-            GG::playerEntity->comp<EntityActionState>().isTryingToAttack = true;
+            GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
         }
             break;
 
         case GLFW_KEY_LEFT :
-            GG::playerEntity->comp<EntityActionState>().stance = EntityActionState::Stance::LEFT;
+            GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::LEFT);
             break;
 
         case GLFW_KEY_RIGHT :
-            GG::playerEntity->comp<EntityActionState>().stance = EntityActionState::Stance::RIGHT;
+            GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::RIGHT);
             break;
 
         case GLFW_KEY_UP :
-            GG::playerEntity->comp<EntityActionState>().stance = EntityActionState::Stance::SPECIAL;
+            GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::SPECIAL);
             break;
 
         case GLFW_KEY_BACKSPACE :
             GG::playerEntity->comp<EntityStats>().alive = false;
+            break;
+
+        case GLFW_KEY_RIGHT_SHIFT :
+            GG::playerEntity->comp<ActionState>().stun = true;
             break;
 
         default:

@@ -147,5 +147,6 @@ void Game::init(int paramSample)
     GG::currentLanguage = LANGUAGE_FRENCH;
 
     loadAllAssetsInfos("data");
+    loadAllAssetsInfos("shader/vulpineMaterials");
     AnimBlueprint::PrepareAnimationsCallbacks();
 }

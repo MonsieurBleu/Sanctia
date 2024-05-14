@@ -1,7 +1,7 @@
 #pragma once
 
 #define MAX_COMP    64
-#define MAX_ENTITY  512
+#define MAX_ENTITY  1024
 
 #include <Entity.hpp>
 #include <ObjectGroup.hpp>
@@ -41,23 +41,45 @@
 
     COMPONENT(NpcPcRelation, DATA, MAX_DATA_COMP_USAGE);
 
-    struct EntityActionState
+    class ActionState
     {
-        enum Stance {LEFT, RIGHT, SPECIAL} stance = Stance::LEFT;
+        public : 
+            enum Stance {LEFT, RIGHT, SPECIAL};
 
-        bool isTryingToAttack = false;
+        private :
+            Stance _stance = Stance::LEFT;
 
-        bool stun = false;
-        bool blocking = false;
+        public :
 
-        enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockDirection;
-        float lockedMaxSpeed = 0;
-        float lockedAcceleration = 0;
-        vec3 lockedDirection = vec3(1, 0, 0);
+            void setStance(Stance s){if(!attacking && !stun && !(blocking && _stance == SPECIAL)) _stance = s;};
+            const Stance& stance() const {return _stance;};
+
+            bool isTryingToAttack = false;
+            bool isTryingToBlock = false;
+            bool hasBlockedAttack = false;
+
+            bool stun = false;
+            bool blocking = false;
+
+            bool attacking = false;
+
+            enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockDirection;
+            float lockedMaxSpeed = 0;
+            float lockedAcceleration = 0;
+            vec3 lockedDirection = vec3(1, 0, 0);
+
     };
 
-    COMPONENT(EntityActionState, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(ActionState, DATA, MAX_DATA_COMP_USAGE);
 
+    struct Faction
+    {
+        enum Type {NEUTRAL, ENVIRONEMENT, PLAYER, ENEMY, ENEMY2} type = Type::NEUTRAL;
+
+        static inline std::vector<std::pair<Type, Type>> canDamage;
+    };
+
+    COMPONENT(Faction, DATA, MAX_DATA_COMP_USAGE);
 
 /***************** ITEMS *****************/
     struct ItemInfos
@@ -72,7 +94,8 @@
 
     enum EquipementSlots
     {
-        WEAPON_SLOT
+        WEAPON_SLOT,
+        LEFT_FOOT_SLOT
     };
 
     struct Items
@@ -109,17 +132,41 @@
     template<> void Component<B_DynamicBodyRef>::ComponentElem::clean();
 
     COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE);
-
+    // template<> void Component<Effect>::ComponentElem::init();
 
 /***************** IA *****************/
     const int MAX_IA_COMP_USAGE = MAX_ENTITY;
 
     enum DeplacementBehaviour
     {
-        DEMO
+        STAND_STILL, DEMO, FOLLOW_WANTED_DIR
     };
     COMPONENT(DeplacementBehaviour, AI, MAX_IA_COMP_USAGE);
 
+    struct AgentState
+    {
+        enum State
+        {
+            COMBAT_POSITIONING,
+            COMBAT_ATTACKING,
+            COMBAT_BLOCKING
+        } state;
+
+        float timeSinceLastState = 0.f;
+        float randomTime = 0.f;
+
+        void TransitionTo(State newState, float minTime = 0.f, float maxTime = 0.f)
+        {
+            state = newState; 
+            timeSinceLastState = 0.f;
+            float r = (float)(std::rand()%1024)/1024.f;
+            randomTime = minTime + r*(maxTime-minTime);
+        }
+    };
+    COMPONENT(AgentState, AI, MAX_IA_COMP_USAGE);
+
+    struct Target : EntityRef {};
+    COMPONENT(Target, AI, MAX_IA_COMP_USAGE);
 
 /***************** HELPERS *****************/
     struct PhysicsHelpers : public ObjectGroupRef{};

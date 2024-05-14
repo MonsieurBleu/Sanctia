@@ -36,10 +36,10 @@ class PlayerController : public SpectatorController
         B_DynamicBodyRef body;
 
         float walkAcceleration = 20;
-        float walkMaxSpeed = 5;
+        float walkMaxSpeed = 2;
 
-        float sprintAacceleration = 16;
-        float sprintMaxSpeed = 10;
+        float sprintAacceleration = 20;
+        float sprintMaxSpeed = 7;
 
         float airAcceleration = 8;
         float airMaxSpeed = 4;
@@ -48,4 +48,6 @@ class PlayerController : public SpectatorController
         bool inputs(GLFWKeyInfo& input);
         void clean();
         void init();
+
+        void mouseEvent(vec2 dir, GLFWwindow* window);
 };

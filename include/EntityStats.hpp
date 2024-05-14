@@ -47,7 +47,8 @@ class Effect
             zone.setCapsule(0.f, vec3(0), vec3(0));
         }
 
-        bool enable = true;
+        // bool expired = true;
+        bool enable = false;
 
         EffectType type;
 
@@ -60,13 +61,17 @@ class Effect
         struct EntityTrigger { Entity *e = nullptr; int cnt = 0;};
         std::vector<EntityTrigger> affectedEntities;
 
+        Entity *usr = nullptr;
+
         float value;
         int valtype = (int)DamageType::Pure;
 
         /* TODO : remove ? */
         ObjectGroupRef attachement;
 
-        void apply(EntityStats &s);
+        void apply(EntityStats &s, float mult = 1.f);
+
+        void clear(){enable = false; affectedEntities.clear(); zone.v1 = zone.v2 = zone.v3 = zone.v4 = zone.v5 = vec3(0);};
 };
 
 // struct EffectList

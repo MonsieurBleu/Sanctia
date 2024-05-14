@@ -14,12 +14,19 @@ namespace AnimBlueprint
         float end, 
         float dmgMult, 
         int maxTrigger,
-        EntityActionState::LockedDeplacement lockDep,
+        ActionState::LockedDeplacement lockDep,
         float acceleration,
-        float maxSpeed);
+        float maxSpeed,
+        EquipementSlots slot = EquipementSlots::WEAPON_SLOT
+        );
 
     extern std::function<void (void *)> weaponAttackExit;
     extern std::function<void (void *)> weaponStunExit;
+    extern std::function<void (void *)> weaponGuardExit;
+    extern std::function<void (void *)> weaponGuardEnter;
+
+    extern std::function<void (void *)> weaponBlockExit;
+    // extern std::function<void (void *)> weaponBlockExit;
 
     void PrepareAnimationsCallbacks();
 }

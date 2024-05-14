@@ -9,10 +9,11 @@ EntityRef Blueprint::TestManequin()
 {
     ObjectGroupRef newGroup = Loader<ObjectGroup>::get("NpcTest").copy();
     // newGroup->add(Loader<ObjectGroup>::get("Zweihander").copy());
-    int i = GG::entities.size();
+    static int i = -1;
+    i++;
     B_DynamicBodyRef body(new B_DynamicBody);
-    vec3 position = 4.f*vec3(-1*(i/10), 1, -1*(i%10)) + vec3(-5, 0, 0);
-
+    vec3 position = 3.f*vec3(-1*(i/15), 1, -1*(i%15)) + vec3(-5, 0, 0);
+ 
     // float radius = 0.85;
     body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
     body->position = position;
@@ -34,11 +35,17 @@ EntityRef Blueprint::TestManequin()
             , DeplacementBehaviour{DEMO}
             , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
             , NpcPcRelation()
-            , EntityActionState{}
+            , ActionState{}
+            , Faction{Faction::Type::ENEMY}
             , Items{}
             );
 
+    // e->comp<EntityActionState>().isTryingToBlock = true;
+
     e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset("65_2HSword", e.get()));
+
+    e->comp<Items>().equipped[WEAPON_SLOT] = {24, Blueprint::Zweihander()};
+    e->comp<Items>().equipped[LEFT_FOOT_SLOT] = {7, Blueprint::Foot()};
 
     GG::entities.push_back(e);
 
@@ -48,7 +55,7 @@ EntityRef Blueprint::TestManequin()
 EntityRef Blueprint::Zweihander()
 {
     EntityRef zweihander(new Entity("ZweiHander"
-        , ItemInfos{100, 50, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
+        , ItemInfos{100, 10, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
         , Effect()
         , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
         , ItemTransform{}
@@ -60,28 +67,16 @@ EntityRef Blueprint::Zweihander()
     return zweihander;
 }
 
-EntityRef Blueprint::DamageBox(vec3 position, float size)
+EntityRef Blueprint::Foot()
 {
-    EntityState3D state;
-    state.position = position;
+    EntityRef feet(new Entity("right foot"
+        , ItemInfos{0, 5, DamageType::Blunt, B_Collider().setCapsule(0.2, vec3(0, 0, 0), vec3(0, 0, 0.2))}
+        , Effect()
+        , ItemTransform{}
+        , PhysicsHelpers{}
+    ));
 
-    // EffectList e;
-    // e.weapon.zone.settAABB(vec3(-size/2), vec3(size/2));
-    // e.weapon.type = EffectType::Damage;
-    // e.weapon.valtype = DamageType::Pure;
-    // e.weapon.value = 100;
-    // e.weapon.maxTrigger = 5;
+    GG::entities.push_back(feet);
 
-    // ObjectGroupRef newGroup = newObjectGroup();
-    // newGroup->add(CubeHelperRef(new CubeHelper(vec3(-size/2), vec3(size/2), vec3(1, 0, 0))));
-
-    // GG::entities.push_back(
-    //     newEntity(
-    //         "Damage Box",
-    //         EntityModel{newGroup},
-    //         state,
-    //         e
-    // ));
-
-    return GG::entities.back();
-};
+    return feet;
+}

@@ -195,3 +195,8 @@ template<> void Component<B_DynamicBodyRef>::ComponentElem::clean()
         }
     }
 }
+
+// template<> void Component<Effect>::ComponentElem::init()
+// {
+//     data.expired = false;
+// }

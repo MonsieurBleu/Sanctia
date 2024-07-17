@@ -19,10 +19,12 @@
 #include <Animation.hpp>
 #include <AnimationBlueprint.hpp>
 
+#include <PhysicsGlobals.hpp>
+
 void Game::mainloop()
 {
 /****** FPS demo initialization ******/
-    vec3 gravity = vec3(0, -G, 0);
+    // vec3 gravity = vec3(0, -G, 0);
     B_BodyRef ground(new B_Body);
     float groundSize = 100.f;
     ground->boundingCollider.settAABB(vec3(-groundSize, -50.0, -groundSize), vec3(groundSize, 0.0, groundSize));
@@ -137,13 +139,13 @@ void Game::mainloop()
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     FastUI_valueMenu menu(ui, {});
 
-    BenchTimer ECStimer("ECS timer");
+    BenchTimer tmpTimer("tmp timer");
 
     menu->state.setPosition(vec3(-0.9, 0.5, 0)).scaleScalar(0.7);
     globals.appTime.setMenuConst(menu);
     globals.simulationTime.setMenu(menu);
     physicsTimer.setMenu(menu);
-    ECStimer.setMenu(menu);
+    tmpTimer.setMenu(menu);
     globals.cpuTime.setMenu(menu);
     globals.gpuTime.setMenu(menu);
     globals.fpsLimiter.setMenu(menu);
@@ -189,10 +191,10 @@ void Game::mainloop()
     GG::playerUniqueInfos = &player1;
     player1.setMenu(menu);
 
-    playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
-    playerControl.body->position = vec3(0, 10, 10);
-    playerControl.body->applyForce(gravity);
-    playerControl.playerMovementForce = &playerControl.body->applyForce(vec3(0));
+    // playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
+    // playerControl.body->position = vec3(0, 10, 10);
+    // playerControl.body->applyForce(gravity);
+    // playerControl.playerMovementForce = &playerControl.body->applyForce(vec3(0));
     // GG::physics.dynamics.push_back(playerControl.body);
 
     ObjectGroupRef playerModel(new ObjectGroup);
@@ -202,7 +204,6 @@ void Game::mainloop()
 
     GG::playerEntity = newEntity("PLayer"
         , EntityModel{playerModel}
-        , playerControl.body
         , EntityState3D{vec3(0), vec3(1, 0, 0)}
         , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
         , Items{}
@@ -211,6 +212,8 @@ void Game::mainloop()
         , ActionState{}
         , PhysicsHelpers{}
     );
+
+    GG::playerEntity->set<rp3d::RigidBody*>(Blueprint::Assembly::CapsuleBody(1.75, vec3(5, 15, 5), GG::playerEntity));
 
     // EntityRef Zweihander(new Entity("ZweiHander"
     //     , ItemInfos{100, 50, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
@@ -234,7 +237,6 @@ void Game::mainloop()
 
     scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
     // playerModel->setAnimation(&idleTestState);
-    scene.add(SkeletonHelperRef(new SkeletonHelper(GG::playerEntity->comp<SkeletonAnimationState>())));
 
     SingleStringBatchRef AttackDirectionHelper(new SingleStringBatch());
     AttackDirectionHelper->setMaterial(Loader<MeshMaterial>::get("mdFont"));
@@ -265,28 +267,54 @@ void Game::mainloop()
         c1 = vec4(ColorHexToV(0x00FF00), c1.a);
     }
 
-    for(int i = 0; i < 5; i++)
-    {   
-        auto e1 = Blueprint::TestManequin();
-        auto e2 = Blueprint::TestManequin();
+    // for(int i = 0; i < 50; i++)
+    // {   
+    //     auto e1 = Blueprint::TestManequin();
+    //     auto e2 = Blueprint::TestManequin();
 
-        e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-        e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
-        e1->set<Target>(Target{e2});
-        e1->set<Faction>({Faction::ENEMY});
+    //     e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+    //     e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    //     e1->set<Target>(Target{e2});
+    //     e1->set<Faction>({Faction::ENEMY});
 
-        e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-        e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
-        e2->set<Target>(Target{e1});
-        e2->set<Faction>({Faction::ENEMY2});
+    //     e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+    //     e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    //     e2->set<Target>(Target{e1});
+    //     e2->set<Faction>({Faction::ENEMY2});
 
-        e2->comp<EntityState3D>().position.x += 50;
+    //     e2->comp<EntityState3D>().position.x += 50;
 
-        vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-        c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
+    //     vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
+    //     c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
 
-        vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-        c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
+    //     vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
+    //     c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
+    // }
+
+    for(int i = 0; i < 0; i++)
+    {
+        ObjectGroupRef model = newObjectGroup();
+        model->add(CubeHelperRef(new CubeHelper(vec3(1), vec3(-1))));
+
+        rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75, 15 + i*2.1, 0), rp3d::Quaternion::identity()));
+
+        body->addCollider(PG::common.createBoxShape(rp3d::Vector3(1, 1, 1)), rp3d::Transform::identity());
+
+        auto e = newEntity("physictest", EntityModel{model}, body, EntityState3D());
+        GG::entities.push_back(e);
+
+        e->comp<EntityState3D>().wantedDepDirection = vec3(0, 0, 1);
+        e->comp<EntityState3D>().wantedSpeed = 3.0;
+        e->comp<EntityState3D>().usequat = true;
+    }
+    {
+        rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, -15, 0), rp3d::Quaternion::identity()));
+        auto collider = body->addCollider(PG::common.createBoxShape(rp3d::Vector3(100, 15, 100)), rp3d::Transform::identity());
+        body->setType(rp3d::BodyType::STATIC);
+        collider->getMaterial().setBounciness(0.f);
+        collider->getMaterial().setFrictionCoefficient(0.5f);
+        collider->setCollisionCategoryBits(CollideCategory::ENVIRONEMENT);
+        collider->setCollideWithMaskBits(CollideCategory::ENVIRONEMENT);
     }
 
 
@@ -301,6 +329,10 @@ void Game::mainloop()
     fuiBatch->batch();
     fuiBatch->state.frustumCulled = false;
     // SSAO.disable();
+
+    glPointSize(3.f);
+
+    scene.add(SkeletonHelperRef(new SkeletonHelper(GG::playerEntity->comp<SkeletonAnimationState>())));
 
 /******  Main Loop ******/
     while (state != AppState::quit)
@@ -352,23 +384,11 @@ void Game::mainloop()
 
         effects.update();
 
-        ECStimer.start();
 
         if(GG::playerEntity->comp<EntityStats>().alive)
-        {
-            // /* Make the player body follow the camera smoothly */
-            // vec3 camdir = globals.currentCamera->getDirection();
-            // // vec3 boddir = GG::playerEntity->comp<B_DynamicBodyRef>()->v;
-            // vec3 camdir2 = normalize(vec3(camdir.x, 0, camdir.z));
-            // // vec3 boddir2 = -normalize(vec3(boddir.x, 0, boddir.z));
-            // vec3 &entdir = GG::playerEntity->comp<EntityState3D>().lookDirection;
-            // camdir2 = normalize(mix(entdir, camdir2, clamp(globals.appTime.getDelta()*10.f, 0.f, 1.f)));
-            // entdir = camdir2;
-
             GG::playerEntity->comp<EntityState3D>().lookDirection = camera.getDirection();
 
-            GG::playerEntity->comp<EntityState3D>().speed = length(GG::playerEntity->comp<B_DynamicBodyRef>()->v * vec3(1, 0, 1));
-        }
+        tmpTimer.start();
 
     /***** Updating animations
     *****/
@@ -383,6 +403,8 @@ void Game::mainloop()
                 s.skeleton->applyGraph(s);
                 s.update();
             });
+
+        tmpTimer.end();
 
     /***** DEMO DEPLACEMENT SYSTEM 
     *****/
@@ -421,17 +443,21 @@ void Game::mainloop()
 
         });
 
+        
     /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
         System<EntityModel, EntityState3D>([&, this](Entity &entity)
-        {
+        {            
             EntityModel& model = entity.comp<EntityModel>();
             auto &s = entity.comp<EntityState3D>();
             vec3& dir = s.lookDirection;
 
-            if(dir.x != 0.f || dir.z != 0.f)
+            if(s.usequat)
             {
-                // quat wantQuat = quat(vec3(model->state.rotation.x, atan2f(dir.x, dir.z), model->state.rotation.z));
-
+                // model->state.setRotation(glm::eulerAngles(s.quaternion));
+                model->state.setQuaternion(s.quaternion);
+            }
+            else if(dir.x != 0.f || dir.z != 0.f)
+            {
                 quat wantQuat = quatLookAt(normalize(dir * vec3(-1, 0, -1)), vec3(0, 1, 0));
                 quat currQuat = quat(model->state.rotation);
                 float a = min(1.f, globals.simulationTime.getDelta()*5.f);
@@ -439,24 +465,6 @@ void Game::mainloop()
                 quat resQuat = slerp(currQuat, wantQuat, a);
 
                 model->state.setRotation(glm::eulerAngles(resQuat));
-
-
-
-                // float a = globals.simulationTime.getDelta()*5.f;
-                // vec3 &d = model->state.rotation;
-                // vec3 currDir = -normalize(vec3(cos(d.x)*cos(d.y), 0, cos(d.x)*sin(d.y)));
-                // vec3 wantDir = normalize(dir * vec3(1, 0, 1));
-                // vec3 dir = slerpDirClamp(currDir, wantDir, a);
-                // // vec2 pitchYaw = getPhiTheta(dir);
-                // model->state.setRotation(vec3(model->state.rotation.x, atan2f(dir.x, dir.z), model->state.rotation.z));
-
-
-
-                // float a = min(1.f, globals.simulationTime.getDelta()*5.f);
-                // float currYaw = model->state.rotation.y;
-                // float wantYaw = atan2f(dir.x, dir.z);
-                // float yaw = mix(currYaw, wantYaw, a);
-                // model->state.setRotation(vec3(model->state.rotation.x, yaw, model->state.rotation.z));
             }
 
             model->state.setPosition(s.position);
@@ -480,9 +488,20 @@ void Game::mainloop()
             }
         });
 
+    /***** ATTACH PHYSICS HELPER TO ENTITY STATE *****/
+        System<PhysicsHelpers, EntityState3D>([&, this](Entity &entity)
+        {            
+            auto &model = entity.comp<PhysicsHelpers>();
+            auto &s = entity.comp<EntityState3D>();
+
+            model->state.setPosition(s.position);
+            model->state.setQuaternion(s.quaternion);
+        });
+
     /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
         System<EntityStats>([](Entity &entity)
         {
+            /* TODO : move entity despawn code elswhere*/
             // void *ptr = &entity;
             // if(!entity.comp<EntityStats>().alive)
             // {
@@ -496,15 +515,12 @@ void Game::mainloop()
             if(!entity.comp<EntityStats>().alive)
             {
                 entity.removeComp<DeplacementBehaviour>();
-                entity.comp<ActionState>().lockDirection = ActionState::LockedDeplacement::SPEED_ONLY;
+                entity.comp<ActionState>().lockType = ActionState::LockedDeplacement::SPEED_ONLY;
                 entity.comp<ActionState>().lockedMaxSpeed = 0;
-                entity.comp<ActionState>().lockedAcceleration = 0;
                 entity.comp<EntityState3D>().speed = 0;
-                entity.removeComp<B_DynamicBodyRef>();
                 entity.removeComp<AgentState>();
             }
         }); 
-
         
         ManageGarbage<EntityModel>();
         ManageGarbage<PhysicsHelpers>();
@@ -513,8 +529,6 @@ void Game::mainloop()
         std::vector<EntityRef> p = {GG::playerEntity};
         GlobalComponentToggler<InfosStatsHelpers>::update(p);
         GlobalComponentToggler<PhysicsHelpers>::update(p);
-
-        ECStimer.end();
 
         mainloopPreRenderRoutine();
 
@@ -545,14 +559,14 @@ void Game::mainloop()
         System<Items, SkeletonAnimationState, EntityModel>([](Entity &entity)
         {
             auto &it = entity.comp<Items>();
-            auto &s = entity.comp<SkeletonAnimationState>();
+            auto &sa = entity.comp<SkeletonAnimationState>();
             auto &m = entity.comp<EntityModel>()->state.modelMatrix;
 
             for(auto &i : it.equipped)
                 if(i.item.get())
                 {
                     mat4 &t = i.item->comp<ItemTransform>().t;
-                    t = m * s[i.id] * inverse(s.skeleton->at(i.id).t);
+                    t = m * sa[i.id] * inverse(sa.skeleton->at(i.id).t);
 
                     if(i.item->hasComp<EntityModel>())
                     {
@@ -564,6 +578,12 @@ void Game::mainloop()
 
                         t = model->getChildren()[0]->state.modelMatrix;
                     }   
+
+                    auto &is = i.item->comp<EntityState3D>();
+                    is.quaternion = quat(t);
+                    // is.position = vec3(t[0].w, t[1].w, t[2].w);
+                    is.position = vec3(t[3]);
+                    is.usequat = true;
                 }
         });
 
@@ -586,8 +606,8 @@ void Game::mainloop()
 
         /* 3D Render */
         EnvironementMap.bind(4);
+
         scene.genLightBuffer();
-        
         scene.draw();
         renderBuffer.deactivate();
 
@@ -608,4 +628,7 @@ void Game::mainloop()
     }
 
     physicsThreads.join();
+
+    GG::entities.clear();
+    PG::common.destroyPhysicsWorld(PG::world);
 }

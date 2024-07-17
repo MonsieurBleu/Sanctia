@@ -91,11 +91,12 @@ ANIMATION_SWITCH_ENTITY(switchAttackSpecial,
 )
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
-    return e->comp<EntityState3D>().speed > 0.1;
+    return e->comp<EntityState3D>().speed >= 0.1;
 )
 
 ANIMATION_SWITCH_ENTITY(switchRun, 
-    return e->comp<EntityState3D>().speed > 4.5;
+    auto &s = e->comp<EntityState3D>();
+    return s.speed >= s.walkSpeed + (s.sprintSpeed + s.walkSpeed)*0.25;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepLeft, 
@@ -211,7 +212,6 @@ float AnimBlueprint::weaponAttackCallback(
     float dmgMult, 
     int maxTrigger,
     ActionState::LockedDeplacement lockDep,
-    float acceleration,
     float maxSpeed,
     EquipementSlots slot
     )
@@ -257,14 +257,15 @@ float AnimBlueprint::weaponAttackCallback(
     actionState.attacking = true;
     if(prct >= end)
     {
-        actionState.lockDirection = ActionState::LockedDeplacement::NONE;
+        actionState.lockType = ActionState::LockedDeplacement::NONE;
     }
-    else if(actionState.lockDirection != lockDep)
+    else if(actionState.lockType != lockDep)
     {
         switch (lockDep)
         {
         case ActionState::LockedDeplacement::SPEED_ONLY :
-            e->comp<B_DynamicBodyRef>()->v *= vec3(0, 1, 0);
+            // e->comp<B_DynamicBodyRef>()->v *= vec3(0, 1, 0);
+            // TODO : FIX WITH REACT PHYSICS
             break;
         
         case ActionState::LockedDeplacement::DIRECTION :
@@ -275,9 +276,8 @@ float AnimBlueprint::weaponAttackCallback(
             break;
         }
 
-        actionState.lockDirection = lockDep;
+        actionState.lockType = lockDep;
         actionState.lockedMaxSpeed = maxSpeed;
-        actionState.lockedAcceleration = acceleration;
     }
 
     return 1.f;
@@ -287,7 +287,7 @@ std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
     Entity *e = (Entity*)usr;
     e->comp<ActionState>().isTryingToAttack = false;
     e->comp<ActionState>().attacking = false;
-    e->comp<ActionState>().lockDirection = ActionState::LockedDeplacement::NONE;
+    e->comp<ActionState>().lockType = ActionState::LockedDeplacement::NONE;
 
     auto &slots = e->comp<Items>().equipped;
 
@@ -309,13 +309,15 @@ std::function<void (void *)> AnimBlueprint::weaponGuardEnter = [](void * usr){
     Entity *e = (Entity*)usr;
     auto &s = e->comp<ActionState>();
     s.blocking = true;
+    s.lockType = ActionState::LockedDeplacement::SPEED_ONLY;
+    s.lockedMaxSpeed = 0.1;
 };
 
 std::function<void (void *)> AnimBlueprint::weaponGuardExit = [](void * usr){
     Entity *e = (Entity*)usr;
     auto &s = e->comp<ActionState>();
     s.blocking = s.hasBlockedAttack;
-    s.lockDirection = ActionState::LockedDeplacement::NONE;
+    s.lockType = ActionState::LockedDeplacement::NONE;
 };
 
 std::function<void (void *)> AnimBlueprint::weaponBlockExit = [](void * usr){
@@ -411,7 +413,7 @@ AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, E
             ACT_TO_RANDOM(ACT_FROM_FBLR, walk, impact, D_toStun, switchStun),
             ACT_TO_RANDOM(ACT_FROM_FBLR, run, impact, D_toStun, switchStun),
             ACT_TO_RANDOM(ACT_FROM_LRS, attack, impact, D_toStun, switchStun),
-            // ACT_TO_RANDOM(ACT, attackR, impact, D_toStun, switchStun),
+            ACT_TO_RANDOM(ACT_FROM_LR, runAttack, impact, D_toStun, switchStun),
             ACT_TO_RANDOM(ACT_FROM_LRS, guard, impact, D_toStun, switchStun),
             AnimationControllerTransition(impactB, idle, COND_ANIMATION_FINISHED, D_toStun, TRANSITION_SMOOTH),
             AnimationControllerTransition(impactF, idle, COND_ANIMATION_FINISHED, D_toStun, TRANSITION_SMOOTH),
@@ -439,30 +441,30 @@ AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, E
 
 void AnimBlueprint::PrepareAnimationsCallbacks()
 {
-    #define WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, acc, maxspeed, slot) \
+    #define WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, maxspeed, slot) \
         a->onExitAnimation = AnimBlueprint::weaponAttackExit;\
-        a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, beg, end, dmgMult, maxTrigger, ActionState::LockedDeplacement::lockDep, acc, maxspeed, EquipementSlots::slot););\
+        a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, beg, end, dmgMult, maxTrigger, ActionState::LockedDeplacement::lockDep, maxspeed, EquipementSlots::slot););\
 
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_R");
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 10, 1, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 1, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_L");
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 10, 1, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 1, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_S");
-        WEAPON_CALLBACK(37.5, 70, 2, 1, SPEED_ONLY, 10, 0.75, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 2, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_R");
         a->repeat = false;
-        WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, 5, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_L");
         a->repeat = false;
-        WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, 5, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_S");
         a->repeat = false;
-        WEAPON_CALLBACK(37.5, 70, 2, 1, DIRECTION, 5, 4, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 2, 1, DIRECTION, 4, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_DEATH_B");
         a->repeat = false;
@@ -486,7 +488,7 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_S");
         a->onExitAnimation = AnimBlueprint::weaponAttackExit;
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0, 0, LEFT_FOOT_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0, LEFT_FOOT_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_IMPACT_L");
         a->onExitAnimation = AnimBlueprint::weaponBlockExit;

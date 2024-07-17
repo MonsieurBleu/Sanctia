@@ -1,7 +1,9 @@
 #pragma once 
 #include <Controller.hpp>
 // #include <PhysicsEngine.hpp>
-#include <BluePhysics.hpp>
+// #include <BluePhysics.hpp>
+
+#include <reactphysics3d/reactphysics3d.h>
 
 class PlayerController : public SpectatorController
 {
@@ -24,25 +26,28 @@ class PlayerController : public SpectatorController
 
         Camera *playerCam;
         
+        rp3d::RigidBody *body = nullptr;
 
     public : 
 
-        B_Force *playerMovementForce = nullptr;
+        // B_Force *playerMovementForce = nullptr;
 
         vec3 cameraShiftPos;
         // RigidBodyRef body;
 
         PlayerController(Camera *playerCam);
-        B_DynamicBodyRef body;
+        // B_DynamicBodyRef body;
 
-        float walkAcceleration = 20;
-        float walkMaxSpeed = 2;
+        
 
-        float sprintAacceleration = 20;
-        float sprintMaxSpeed = 7;
+        // float walkAcceleration = 20;
+        // float walkMaxSpeed = 2;
 
-        float airAcceleration = 8;
-        float airMaxSpeed = 4;
+        // float sprintAacceleration = 20;
+        // float sprintMaxSpeed = 7;
+
+        // float airAcceleration = 8;
+        // float airMaxSpeed = 4;
 
         void update();
         bool inputs(GLFWKeyInfo& input);

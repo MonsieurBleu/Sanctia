@@ -11,87 +11,106 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+#include <PhysicsGlobals.hpp>
+
+#include <PhysicsEventListener.hpp>
+
+
 void Game::physicsLoop()
 {
     physicsTicks.freq = 100.f;
     physicsTicks.activate();
 
+    PhysicsEventListener eventListener;
+    PG::world->setEventListener((rp3d::EventListener*)&eventListener);
+
     while (state != quit)
-    {
-        if(globals.simulationTime.isPaused()) continue;
+    {   
+        if(globals.simulationTime.isPaused())
+        {
+            PG::currentPhysicFreq = 0.f;
+            continue;
+        }
+        else
+            PG::currentPhysicFreq = physicsTicks.freq;
 
         physicsTicks.start();
         physicsTimer.start();
-
         physicsMutex.lock();
-        
-        // playerControl.body->boundingCollider.applyTranslation(playerControl.body->position, vec3(1, 0, 0));
-        // GG::playerEntity->comp<EntityState3D>().position = playerControl.body->position;
 
-        if(globals._currentController == &spectator)
+        if(globals._currentController == &spectator && GG::playerEntity->hasComp<rp3d::RigidBody*>())
         {
-            playerControl.body->position = camera.getPosition() + vec3(0, 20, 0);
-            playerControl.body->v = vec3(0);
+            auto body = GG::playerEntity->comp<rp3d::RigidBody*>();
+            if(body)
+                body->setIsActive(false);
         }
 
-    /***** ATTACH ENTITY POSITION TO BODY POSITION *****/
-        System<B_DynamicBodyRef, EntityState3D>([](Entity &entity)
-        {
-            auto &b = entity.comp<B_DynamicBodyRef>();
+        PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
+
+    /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
+        System<rp3d::RigidBody*, EntityState3D>([](Entity &entity){
+            auto &b = entity.comp<rp3d::RigidBody*>();
             auto &s = entity.comp<EntityState3D>();
-            s.position = b->position;
-            s.deplacementDirection = b->v;
-            
-            b->boundingCollider.applyTranslation(b->position, s.lookDirection);
-        });
 
-        if(!globals.simulationTime.isPaused())
-            GG::physics.update(globals.simulationTime.speed / physicsTicks.freq);
-
-    /***** APPLYING VELOCITY FROM DEPLACEMENT DIRECTION 
-    *****/
-        System<B_DynamicBodyRef, EntityState3D, DeplacementBehaviour>([](Entity &entity)
-        {
-            auto &s = entity.comp<EntityState3D>();
-            auto &b = entity.comp<B_DynamicBodyRef>();
-
-            auto &actionState = entity.comp<ActionState>();
-
-            vec3 wdir = vec3(s.wantedDepDirection.x, 0, s.wantedDepDirection.z);
-
-            /*
-                TODO : debug
-            */
-            switch (actionState.lockDirection)
+            switch (b->getType())
             {
-                case ActionState::LockedDeplacement::DIRECTION :
-                    b->v = actionState.lockedMaxSpeed * actionState.lockedDirection + vec3(0, b->v.y, 0);
-                
-                case ActionState::LockedDeplacement::SPEED_ONLY :
-                    b->v = actionState.lockedMaxSpeed * wdir + vec3(0, b->v.y, 0);
+            /* Entities with a dynamic body follows the physic. They can also exert a deplacement force*/
+            case rp3d::BodyType::DYNAMIC : 
+                {
+                    auto &t = b->getTransform();
+                    s.position = PG::toglm(t.getPosition());
+                    s.quaternion = PG::toglm(t.getOrientation());
+                    
+                    /*
+                        Fastest way possible to see if the player is grounded.
+                            If the player comes into contact with a surface exerting an opposing force to 
+                            gravity, their vertical velocity will be canceled out.
 
-                default: 
-                    b->v = s.speed * wdir + vec3(0, b->v.y, 0);
+                            This method can theoricly leads to a rare double jump exploit.
+                            Luna said this methode render bunny hopping impossible.
+                    */
+                    s.grounded = abs(b->getLinearVelocity().y) < 5e-4;
+                    s.deplacementDirection = normalize(PG::toglm(b->getLinearVelocity()));
+
+                    float maxspeed = s.grounded ? s.wantedSpeed : s.airSpeed; 
+                    auto vel = b->getLinearVelocity();
+                    vec3 dir = s.wantedDepDirection;
+                    s.speed = length(vec2(vel.x, vel.z));
+
+                    if(entity.hasComp<ActionState>())
+                    {
+                        auto &as = entity.comp<ActionState>();
+
+                        if(as.stun)
+                            maxspeed = 0.f;
+                        else switch (as.lockType)
+                            {
+                                case ActionState::DIRECTION : dir = as.lockedDirection;
+                                case ActionState::SPEED_ONLY :maxspeed = as.lockedMaxSpeed; break;                
+                                default: break;
+                            }
+                    }
+
+                    if(s.speed < maxspeed)
+                        b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.4f) * 15.f));            
+                }
                 break;
+            
+            /* Entities with a kinematic body are stucked :(. The body follows the entity state.
+               The game assumes that another system is using the entity and dealing with his deplacement.*/
+            case rp3d::BodyType::KINEMATIC :
+                {
+                    /* TODO : maybe fix one day for entities who are not using quaternion*/
+                    rp3d::Transform t(PG::torp3d(s.position), s.usequat ? PG::torp3d(s.quaternion) : rp3d::Quaternion::identity());
+                    b->setTransform(t);
+
+                    // std::cout << entity.comp<EntityInfos>().name << " " << to_string(s.position) << "\n";
+                }
+                break;
+            default: break;
             }
-           
+
         });
-
-    /***** ALL STUNED OR BLOCKING ENTITY ARE IMMOBILE *****/
-        System<B_DynamicBodyRef, ActionState>([](Entity &entity){
-            auto &s = entity.comp<ActionState>();
-
-            if(s.stun || s.blocking)
-                entity.comp<B_DynamicBodyRef>()->v *= vec3(0, 1, 0);
-        });
-
-    /***** ATTACH EFFECT TO ENTITY STATE *****/
-        // System<Effect, EntityState3D>([](Entity &entity)
-        // {
-        //     auto &s = entity.comp<EntityState3D>();
-        //     entity.comp<Effect>().zone.applyTranslation(s.position, s.direction);
-        //     // entity.comp<Effect>().zone.applyTranslation(s.position, vec3(0));
-        // });
 
     /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
         System<Effect>([](Entity &entity)
@@ -224,7 +243,7 @@ void Game::physicsLoop()
 
                         if(!target->comp<EntityStats>().alive)
                         {
-                            s.speed = 0;
+                            s.wantedSpeed = 0;
                             return;
                         }
 
@@ -237,13 +256,13 @@ void Game::physicsLoop()
 
                         if(action.attacking || action.blocking)
                         {
-                            s.speed = 0; return;
+                            s.wantedSpeed = 0; return;
                         }
 
                         if(d > rangeMax || d < rangeMin)  
                         {
                             s.wantedDepDirection = normalize((st.position-s.position)*vec3(1, 0, 1)) * (d < rangeMin ? -1.f : 1.f);
-                            s.speed = 1;
+                            s.wantedSpeed = 1.5;
                         }
                         else
                         {
@@ -256,7 +275,7 @@ void Game::physicsLoop()
 
                             // s.wantedDepDirection = normalize(cross(st.position-s.position, vec3(0, 1, 0) + randDir));
                             s.wantedDepDirection = randDir;
-                            s.speed = dot(s.wantedDepDirection, normalize((st.position-s.position)*vec3(1, 0, 1))) < 0.75 ? 0.5f : 0.f;
+                            s.wantedSpeed = dot(s.wantedDepDirection, normalize((st.position-s.position)*vec3(1, 0, 1))) < 0.75 ? 0.5f : 0.f;
                         }
 
                         if(d <= rangeMax)
@@ -329,12 +348,23 @@ void Game::physicsLoop()
 
         });
 
-        // ManageGarbage<Effect>();
-        ManageGarbage<B_DynamicBodyRef>();
+        physicsTimer.end();
+
+        float maxFreq = 200.f;
+        float minFreq = 25.f;
+        if(physicsTimer.getDelta() > 1.f/physicsTicks.freq)
+        {
+            physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
+        }
+        else if(physicsTimer.getDelta() < 0.4f/physicsTicks.freq)
+        {
+            physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
+        }
+
+        ManageGarbage<rp3d::RigidBody *>();
 
         physicsMutex.unlock();
 
-        physicsTimer.end();
         physicsTicks.waitForEnd();
     }
 }

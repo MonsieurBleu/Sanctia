@@ -8,6 +8,7 @@
 #include <AssetManager.hpp>
 #include <EntityBlueprint.hpp>
 #include <AnimationBlueprint.hpp>
+#include <PhysicsGlobals.hpp>
 
 Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
 
@@ -37,8 +38,6 @@ void Game::init(int paramSample)
     setController(&playerControl);
 
     ambientLight = vec3(0.1);
-
-    
 
     camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f);
     // camera.setMouseFollow(false);
@@ -105,6 +104,9 @@ void Game::init(int paramSample)
     GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
     GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;
     scene.depthOnlyMaterial = depthOnlyMaterial;
+
+    /* Physics */
+    PG::world = PG::common.createPhysicsWorld();
 
     /* UI */
     FUIfont = FontRef(new FontUFT8);

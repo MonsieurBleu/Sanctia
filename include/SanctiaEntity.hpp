@@ -1,7 +1,7 @@
 #pragma once
 
 #define MAX_COMP    64
-#define MAX_ENTITY  1024
+#define MAX_ENTITY  8*4096
 
 #include <Entity.hpp>
 #include <ObjectGroup.hpp>
@@ -14,6 +14,7 @@
 #include <AnimationController.hpp>
 #include <Dialogue.hpp>
 
+#include <PhysicsGlobals.hpp>
 
 /***************** GAMEPLAY ATTRIBUTS *****************/
     const int MAX_DATA_COMP_USAGE = MAX_ENTITY;
@@ -24,14 +25,59 @@
         vec3 lookDirection = vec3(1, 0, 0);
         float speed = 0.f;
         vec3 deplacementDirection = vec3(1, 0, 0);
+
+
         vec3 wantedDepDirection = vec3(1, 0, 0);
+        float wantedSpeed = 0.f;
+        float walkSpeed = 2.f;
+        float sprintSpeed = 7.f;
+        float airSpeed = 1.f;
+
+        bool grounded = false;
+
+        bool usequat = false;
+        quat quaternion;
+
+        // enum FollowType : uint8
+        // {
+        //     ModelFollowPhysic,
+        //     PhysicFollowModel
+        // } follow = '\0';
+
+
+        /*
+            MODIFIED BY PHYSICS : 
+
+                POSITION 
+                SPEED
+                DEPLACEMENT DIRECTION 
+                QUATERNION        
+
+
+            MODIFIED BY CONTROLLS & AGENT LOGIC : 
+
+                WANTED DEPLACEMENT DIRECTION 
+                LOOK DIRECTION
+                WANTED SPEED
+
+            TYPE OF FOLLOWING : 
+
+                SIMPLE OBJECTS 
+                    PHYSICS ARE NORMAL 
+                    MODEL FOLLOW QUATERNION AND POSITION 
+
+                LIVING ENTITIES 
+                    PHYSICS ARE INFLUENCED BY WANTED DEPLACEMENT DIRECTION AND WANTED SPEED
+                    MODEL FOLLOW POSITION AND USE SPECIAL SLERP AND/OR SKELETAL ANIMATION TO FOLLOW LOOK DIRECTION
+                        ==> THE BODY MUST ALWAYS BE STANDING UP
+        */
     };
 
-    COMPONENT(EntityState3D, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(EntityState3D, DATA, MAX_DATA_COMP_USAGE)
 
-    COMPONENT(EntityStats, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(EntityStats, DATA, MAX_DATA_COMP_USAGE)
 
-    COMPONENT(CharacterDialogues, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(CharacterDialogues, DATA, MAX_DATA_COMP_USAGE)
 
     struct NpcPcRelation
     {
@@ -39,7 +85,7 @@
         short affinity = 0; 
     };
 
-    COMPONENT(NpcPcRelation, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(NpcPcRelation, DATA, MAX_DATA_COMP_USAGE)
 
     class ActionState
     {
@@ -63,14 +109,13 @@
 
             bool attacking = false;
 
-            enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockDirection;
+            enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockType;
             float lockedMaxSpeed = 0;
-            float lockedAcceleration = 0;
             vec3 lockedDirection = vec3(1, 0, 0);
 
     };
 
-    COMPONENT(ActionState, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(ActionState, DATA, MAX_DATA_COMP_USAGE)
 
     struct Faction
     {
@@ -79,7 +124,7 @@
         static inline std::vector<std::pair<Type, Type>> canDamage;
     };
 
-    COMPONENT(Faction, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(Faction, DATA, MAX_DATA_COMP_USAGE)
 
 /***************** ITEMS *****************/
     struct ItemInfos
@@ -90,7 +135,7 @@
         B_Collider dmgZone;
     };
 
-    COMPONENT(ItemInfos, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(ItemInfos, DATA, MAX_DATA_COMP_USAGE)
 
     enum EquipementSlots
     {
@@ -103,11 +148,11 @@
         struct Equipement{int id = 0; EntityRef item;} equipped[16];
     };
 
-    COMPONENT(Items, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(Items, DATA, MAX_DATA_COMP_USAGE)
 
     struct ItemTransform{mat4 t;};
 
-    COMPONENT(ItemTransform, DATA, MAX_DATA_COMP_USAGE);
+    COMPONENT(ItemTransform, DATA, MAX_DATA_COMP_USAGE)
 
 
 /***************** GRAPHICS *****************/
@@ -115,24 +160,27 @@
 
     struct EntityModel : public ObjectGroupRef{};
 
-    COMPONENT(EntityModel, GRAPHIC, MAX_GRAPHIC_COMP_USAGE);
+    COMPONENT(EntityModel, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
     template<>void Component<EntityModel>::ComponentElem::init();
     template<>void Component<EntityModel>::ComponentElem::clean();
 
-    COMPONENT(SkeletonAnimationState, GRAPHIC, MAX_GRAPHIC_COMP_USAGE);
+    COMPONENT(SkeletonAnimationState, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
     template<>void Component<SkeletonAnimationState>::ComponentElem::init();
 
-    COMPONENT(AnimationControllerRef, GRAPHIC, MAX_GRAPHIC_COMP_USAGE);
+    COMPONENT(AnimationControllerRef, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
 
 /***************** PHYSICS *****************/
     const int MAX_PHYSIC_COMP_USAGE = MAX_ENTITY;
 
-    COMPONENT(B_DynamicBodyRef, PHYSIC, MAX_PHYSIC_COMP_USAGE);
+    COMPONENT(B_DynamicBodyRef, PHYSIC, MAX_PHYSIC_COMP_USAGE)
     template<> void Component<B_DynamicBodyRef>::ComponentElem::init();
     template<> void Component<B_DynamicBodyRef>::ComponentElem::clean();
 
-    COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE);
+    COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE)
     // template<> void Component<Effect>::ComponentElem::init();
+
+    COMPONENT(rp3d::RigidBody*, PHYSIC, MAX_PHYSIC_COMP_USAGE)
+    template<> void Component<rp3d::RigidBody*>::ComponentElem::clean();
 
 /***************** IA *****************/
     const int MAX_IA_COMP_USAGE = MAX_ENTITY;
@@ -141,7 +189,7 @@
     {
         STAND_STILL, DEMO, FOLLOW_WANTED_DIR
     };
-    COMPONENT(DeplacementBehaviour, AI, MAX_IA_COMP_USAGE);
+    COMPONENT(DeplacementBehaviour, AI, MAX_IA_COMP_USAGE)
 
     struct AgentState
     {
@@ -163,10 +211,10 @@
             randomTime = minTime + r*(maxTime-minTime);
         }
     };
-    COMPONENT(AgentState, AI, MAX_IA_COMP_USAGE);
+    COMPONENT(AgentState, AI, MAX_IA_COMP_USAGE)
 
     struct Target : EntityRef {};
-    COMPONENT(Target, AI, MAX_IA_COMP_USAGE);
+    COMPONENT(Target, AI, MAX_IA_COMP_USAGE)
 
 /***************** HELPERS *****************/
     struct PhysicsHelpers : public ObjectGroupRef{};

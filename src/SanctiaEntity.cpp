@@ -50,22 +50,112 @@ ModelRef getModelFromCollider(B_Collider &c, vec3 color)
     return newModel();
 }
 
+
+ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
+{
+    
+
+    // switch (c->getCollisionShape()->getType)
+    // {
+    // case rp3d::CollisionShapeType:: :
+    //     /* code */
+    //     break;
+    
+    // default:
+    //     break;
+    // }
+
+    rp3d::AABB aabb = c->getWorldAABB();
+
+    // c->getLocalToWorldTransform();
+    
+
+    vec3 aabbmin = PG::toglm(aabb.getMin());
+    vec3 aabbmax = PG::toglm(aabb.getMax()) - aabbmin;
+
+    vec3 laabbmin = PG::toglm(c->getLocalToWorldTransform().getInverse() * aabb.getMin());
+    vec3 laabbmax = PG::toglm(c->getLocalToWorldTransform().getInverse() * aabb.getMax()) - laabbmin;
+
+    std::vector<vec3> points;
+
+    // const int res = 12;
+    const int res = max(aabbmax.x, max(aabbmax.y, aabbmax.z))*10;
+    float resdiv = 1.f/(res-1.f);
+    bool voxels[res][res][res];
+
+    for(int i = 0; i < res; i++)
+    for(int j = 0; j < res; j++)
+    for(int k = 0; k < res; k++)
+    {
+        vec3 pos = aabbmin + aabbmax*vec3(i, j, k)*resdiv - sign(vec3(i, j, k) - res*0.5f)*resdiv*0.1f;
+        
+        voxels[i][j][k] = c->testPointInside(PG::torp3d(pos));
+    }
+
+    for(int i = 0; i < res; i++)
+    for(int j = 0; j < res; j++)
+    for(int k = 0; k < res; k++)
+    if(voxels[i][j][k])
+    {
+        if(!j || !i || !k || i == res-1 || j == res-1 || k == res-1)
+            points.push_back(laabbmin + laabbmax*vec3(i, j, k)*resdiv);
+
+        else if(!voxels[i-1][j][k] || !voxels[i+1][j][k] ||
+                !voxels[i][j-1][k] || !voxels[i][j+1][k] ||
+                !voxels[i][j][k-1] || !voxels[i][j][k+1]
+        )
+            points.push_back(laabbmin + laabbmax*vec3(i, j, k)*resdiv);
+    }
+
+    return PointsHelperRef(new PointsHelper(points, color));
+}
+
 template<> void Component<PhysicsHelpers>::ComponentElem::init()
 {
     data = {newObjectGroup()};
 
-    if(entity->hasComp<B_DynamicBodyRef>() && entity != GG::playerEntity.get())
+    // if(entity->hasComp<B_DynamicBodyRef>() && entity != GG::playerEntity.get())
+    // {
+    //     auto &b = entity->comp<B_DynamicBodyRef>();
+    //     data->add(getModelFromCollider(b->boundingCollider, vec3(1, 1, 0)));
+    // }
+
+    // if(entity->ids[PHYSIC] != NO_ENTITY)
+    // {
+    //     Effect &l = entity->comp<Effect>();
+
+    //     data->add(getModelFromCollider(l.zone, vec3(1, 0, 0)));
+    // }
+
+    if(entity->hasComp<rp3d::RigidBody*>())
     {
-        auto &b = entity->comp<B_DynamicBodyRef>();
-        data->add(getModelFromCollider(b->boundingCollider, vec3(1, 1, 0)));
+        rp3d::RigidBody* b = entity->comp<rp3d::RigidBody*>();
+
+        const int nb = b->getNbColliders();
+
+        auto tmp = b->getTransform();
+        b->setTransform(rp3d::Transform(tmp.getPosition(), rp3d::Quaternion::identity()));
+
+        for(int i = 0; i < nb; i++)
+        {
+            auto c = b->getCollider(i);
+
+            vec3 color = vec3(1, 0.5, 0);
+            if(c->getIsTrigger())
+                color = vec3(0.5, 1, 0);
+
+            auto m = getModelFromCollider(c, color);
+
+            auto t = c->getLocalToBodyTransform();
+            m->state.setPosition(PG::toglm(t.getPosition()));
+            m->state.setQuaternion(PG::toglm(t.getOrientation()));
+
+            data->add(m);
+        }
+
+        b->setTransform(tmp);
     }
 
-    if(entity->ids[PHYSIC] != NO_ENTITY)
-    {
-        Effect &l = entity->comp<Effect>();
-
-        data->add(getModelFromCollider(l.zone, vec3(1, 0, 0)));
-    }
 
     globals.getScene()->add(data);
     // entity->comp<EntityModel>()->add(data);
@@ -194,6 +284,11 @@ template<> void Component<B_DynamicBodyRef>::ComponentElem::clean()
             return;
         }
     }
+}
+
+template<> void Component<rp3d::RigidBody*>::ComponentElem::clean()
+{
+    PG::world->destroyRigidBody(data);
 }
 
 // template<> void Component<Effect>::ComponentElem::init()

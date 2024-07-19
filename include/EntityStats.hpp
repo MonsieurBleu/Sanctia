@@ -53,6 +53,13 @@ class Effect
             // PG::world.col
         }
 
+        enum class TargetType : uint8
+        {
+            ALL, ENEMY, ALLIES
+        } target;
+
+
+
         // bool expired = true;
         bool enable = false;
 

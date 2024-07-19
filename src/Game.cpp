@@ -175,11 +175,15 @@ void Game::mainloop()
 
     /* Spawning dombat test mannequin */
 
-    Faction::canDamage.push_back({Faction::Type::PLAYER, Faction::Type::ENEMY});
-    Faction::canDamage.push_back({Faction::Type::ENEMY, Faction::Type::PLAYER});    
+    // Faction::isEnemy.push_back({Faction::Type::PLAYER, Faction::Type::PLAYER_ENEMY});
+    // Faction::canDamage.push_back({Faction::Type::ENEMY, Faction::Type::PLAYER});    
 
-    Faction::canDamage.push_back({Faction::Type::ENEMY2, Faction::Type::ENEMY});
-    Faction::canDamage.push_back({Faction::Type::ENEMY, Faction::Type::ENEMY2});   
+    // Faction::canDamage.push_back({Faction::Type::ENEMY2, Faction::Type::ENEMY});
+    // Faction::isEnemy.push_back({Faction::Type::PLAYER_ENEMY, Faction::Type::MONSTERS});   
+
+    Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
+    Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
+    Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
 
     scene.add(
         Loader<MeshModel3D>::get("barrel01").copy()

@@ -13,6 +13,7 @@
 #include <Animation.hpp>
 #include <AnimationController.hpp>
 #include <Dialogue.hpp>
+#include <unordered_set>
 
 #include <PhysicsGlobals.hpp>
 
@@ -117,11 +118,38 @@
 
     COMPONENT(ActionState, DATA, MAX_DATA_COMP_USAGE)
 
-    struct Faction
+    class Faction
     {
-        enum Type {NEUTRAL, ENVIRONEMENT, PLAYER, ENEMY, ENEMY2} type = Type::NEUTRAL;
+        public :
+            enum class Type : uint8 
+                {
+                    NEUTRAL, 
+                    ENVIRONEMENT, 
+                    PLAYER, 
+                    PLAYER_ENEMY, 
+                    MONSTERS
+                } type = Type::NEUTRAL;
 
-        static inline std::vector<std::pair<Type, Type>> canDamage;
+        private :
+            static uint16 Pair(Faction f1, Faction f2)
+            {
+                uint8 f[2] = {min((uint8)f1.type, (uint8)f2.type), max((uint8)f1.type, (uint8)f2.type)};
+                return *(uint16*)f;
+            }
+
+            static inline std::unordered_set<uint16> isEnemy;
+
+        public :
+            static void setEnemy(Faction f1, Faction f2)
+            {
+                isEnemy.insert(Pair(f1, f2));
+            };
+
+            static bool areEnemy(Faction f1, Faction f2)
+            {
+                return isEnemy.find(Pair(f1, f2)) == isEnemy.end();
+            };
+        
     };
 
     COMPONENT(Faction, DATA, MAX_DATA_COMP_USAGE)

@@ -217,6 +217,7 @@ float AnimBlueprint::weaponAttackCallback(
     )
 {
     auto &w = e->comp<Items>().equipped[slot].item;
+    auto &b = e->comp<rp3d::RigidBody*>();
 
     if(!w.get()) return 1.f;
     
@@ -226,10 +227,14 @@ float AnimBlueprint::weaponAttackCallback(
         w->comp<Effect>().enable = false;
         auto &zone = w->comp<Effect>().zone;
         zone.v1 = zone.v2 = zone.v3 = zone.v4 = zone.v5 = vec3(0);
+
+        // b->setIsActive(false);
     }
 
     if(prct >= begin && prct
-        && !w->comp<Effect>().enable && w->comp<Effect>().affectedEntities.empty())
+        && !w->comp<Effect>().enable 
+        && w->comp<Effect>().affectedEntities.empty()
+    )
     {
         /* Enable effect component */
         
@@ -251,6 +256,8 @@ float AnimBlueprint::weaponAttackCallback(
         newEffect.usr = e;
 
         w->set<Effect>(newEffect);
+
+        // b->setIsActive(true);
     }
 
     auto &actionState = e->comp<ActionState>();

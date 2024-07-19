@@ -61,7 +61,7 @@ EntityRef Blueprint::TestManequin()
             , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
             , NpcPcRelation()
             , ActionState{}
-            , Faction{Faction::Type::ENEMY}
+            , Faction{Faction::Type::PLAYER_ENEMY}
             , Items{}
             );
 

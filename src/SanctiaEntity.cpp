@@ -32,25 +32,6 @@ template<> void Component<SkeletonAnimationState>::ComponentElem::init()
     }
 }
 
-ModelRef getModelFromCollider(B_Collider &c, vec3 color)
-{
-    switch (c.type)
-    {
-    case B_ColliderType::Sphere :
-        return SphereHelperRef(new SphereHelper(color, c.v1.x));
-
-    case B_ColliderType::Capsule :
-        return CapsuleHelperRef(new CapsuleHelper(&c.v4, &c.v5, &c.v1.x, color));
-        break;
-    
-    default:
-        break;
-    }
-
-    return newModel();
-}
-
-
 ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 {
     
@@ -254,44 +235,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::clean()
     }
 }
 
-template<> void Component<B_DynamicBodyRef>::ComponentElem::init()
-{
-    physicsMutex.lock();
-    GG::physics.dynamics.push_back(data);
-    physicsMutex.unlock();
-}
-
-template<> void Component<B_DynamicBodyRef>::ComponentElem::clean()
-{
-    static void* ptr = nullptr;
-    ptr = data.get();
-
-    // GG::physics.dynamics.erase(
-    //     std::remove_if(
-    //         GG::physics.dynamics.begin(),
-    //         GG::physics.dynamics.end(),
-    //         [](B_DynamicBodyRef &a)
-    //         {   
-    //             return a.get() == ptr;
-    //         }), 
-    //     GG::physics.dynamics.end());
-
-    for(auto i = GG::physics.dynamics.begin(); i != GG::physics.dynamics.end(); i++)
-    {
-        if(i->get() == ptr)
-        {
-            GG::physics.dynamics.erase(i);
-            return;
-        }
-    }
-}
-
 template<> void Component<rp3d::RigidBody*>::ComponentElem::clean()
 {
     PG::world->destroyRigidBody(data);
 }
-
-// template<> void Component<Effect>::ComponentElem::init()
-// {
-//     data.expired = false;
-// }

@@ -3,11 +3,13 @@
 #define MAX_COMP    64
 #define MAX_ENTITY  8*4096
 
+#include <GlobalOptions.hpp>
+
+#include <Items.hpp>
 #include <Entity.hpp>
 #include <ObjectGroup.hpp>
 #include <GameGlobals.hpp>
 #include <Globals.hpp>
-#include <BluePhysics.hpp>
 #include <EntityStats.hpp>
 #include <Skeleton.hpp>
 #include <Animation.hpp>
@@ -28,7 +30,7 @@
         vec3 deplacementDirection = vec3(1, 0, 0);
 
 
-        vec3 wantedDepDirection = vec3(1, 0, 0);
+        vec3 wantedDepDirection = vec3(0, 0, 0);
         float wantedSpeed = 0.f;
         float walkSpeed = 2.f;
         float sprintSpeed = 7.f;
@@ -38,6 +40,10 @@
 
         bool usequat = false;
         quat quaternion;
+
+        #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
+        bool physicActivated = true;
+        #endif
 
         // enum FollowType : uint8
         // {
@@ -91,7 +97,7 @@
     class ActionState
     {
         public : 
-            enum Stance {LEFT, RIGHT, SPECIAL};
+            enum Stance : uint8 {LEFT, RIGHT, SPECIAL};
 
         private :
             Stance _stance = Stance::LEFT;
@@ -147,7 +153,7 @@
 
             static bool areEnemy(Faction f1, Faction f2)
             {
-                return isEnemy.find(Pair(f1, f2)) == isEnemy.end();
+                return isEnemy.find(Pair(f1, f2)) != isEnemy.end();
             };
         
     };
@@ -155,30 +161,10 @@
     COMPONENT(Faction, DATA, MAX_DATA_COMP_USAGE)
 
 /***************** ITEMS *****************/
-    struct ItemInfos
-    {
-        int price = 1.f;
-        float dmgMult = 20.f;
-        int dmgType = DamageType::Pure;
-        B_Collider dmgZone;
-    };
 
     COMPONENT(ItemInfos, DATA, MAX_DATA_COMP_USAGE)
 
-    enum EquipementSlots
-    {
-        WEAPON_SLOT,
-        LEFT_FOOT_SLOT
-    };
-
-    struct Items
-    {
-        struct Equipement{int id = 0; EntityRef item;} equipped[16];
-    };
-
     COMPONENT(Items, DATA, MAX_DATA_COMP_USAGE)
-
-    struct ItemTransform{mat4 t;};
 
     COMPONENT(ItemTransform, DATA, MAX_DATA_COMP_USAGE)
 
@@ -199,10 +185,6 @@
 
 /***************** PHYSICS *****************/
     const int MAX_PHYSIC_COMP_USAGE = MAX_ENTITY;
-
-    COMPONENT(B_DynamicBodyRef, PHYSIC, MAX_PHYSIC_COMP_USAGE)
-    template<> void Component<B_DynamicBodyRef>::ComponentElem::init();
-    template<> void Component<B_DynamicBodyRef>::ComponentElem::clean();
 
     COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE)
     // template<> void Component<Effect>::ComponentElem::init();

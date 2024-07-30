@@ -2,6 +2,7 @@
 
 #include <reactphysics3d/reactphysics3d.h>
 
+extern std::mutex physicsMutex;
 
 enum CollideCategory
 {

@@ -23,33 +23,6 @@
 
 void Game::mainloop()
 {
-/****** FPS demo initialization ******/
-    // vec3 gravity = vec3(0, -G, 0);
-    B_BodyRef ground(new B_Body);
-    float groundSize = 100.f;
-    ground->boundingCollider.settAABB(vec3(-groundSize, -50.0, -groundSize), vec3(groundSize, 0.0, groundSize));
-    // scene.add(CubeHelperRef(new CubeHelper(
-    //         ground->boundingCollider.AABB_getMin(), 
-    //         ground->boundingCollider.AABB_getMax())));
-
-    // playerControl.body->boundingCollider.setSphere(0.85); 
-
-    GG::physics.level.push_back(ground);
-
-    B_BodyRef wall(new B_Body);
-    wall->boundingCollider.settAABB(vec3(10, 0.01, 10), vec3(20, 10, 20));
-    scene.add(CubeHelperRef(new CubeHelper(
-            wall->boundingCollider.AABB_getMin(), 
-            wall->boundingCollider.AABB_getMax())));
-    GG::physics.level.push_back(wall);
-
-    B_BodyRef wall2(new B_Body);
-    wall2->boundingCollider.settAABB(vec3(30, 2, 10), vec3(40, 10, 20));
-    scene.add(CubeHelperRef(new CubeHelper(
-            wall2->boundingCollider.AABB_getMin(), 
-            wall2->boundingCollider.AABB_getMax())));
-    GG::physics.level.push_back(wall2);
-
 /****** Loading Models and setting up the scene ******/
     ModelRef skybox = newModel(skyboxMaterial);
     skybox->loadFromFolder("ressources/models/skybox/", true, false);
@@ -170,24 +143,11 @@ void Game::mainloop()
 /****** Loading Game Specific Elements *******/
     GG::currentConditions.readTxt("saves/gameConditions.txt");
 
-    // for(int i = 0; i < 50; i++)
-    //     Blueprint::TestManequin();
-
-    /* Spawning dombat test mannequin */
-
-    // Faction::isEnemy.push_back({Faction::Type::PLAYER, Faction::Type::PLAYER_ENEMY});
-    // Faction::canDamage.push_back({Faction::Type::ENEMY, Faction::Type::PLAYER});    
-
-    // Faction::canDamage.push_back({Faction::Type::ENEMY2, Faction::Type::ENEMY});
-    // Faction::isEnemy.push_back({Faction::Type::PLAYER_ENEMY, Faction::Type::MONSTERS});   
-
     Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
     Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
     Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
 
-    scene.add(
-        Loader<MeshModel3D>::get("barrel01").copy()
-    );
+    scene.add(Loader<MeshModel3D>::get("barrel01").copy() );
 
 
 /****** Creating Demo Player *******/
@@ -195,16 +155,9 @@ void Game::mainloop()
     GG::playerUniqueInfos = &player1;
     player1.setMenu(menu);
 
-    // playerControl.body->boundingCollider.setCapsule(0.5, vec3(0, 0.5, 0), vec3(0, 1.25, 0));
-    // playerControl.body->position = vec3(0, 10, 10);
-    // playerControl.body->applyForce(gravity);
-    // playerControl.playerMovementForce = &playerControl.body->applyForce(vec3(0));
-    // GG::physics.dynamics.push_back(playerControl.body);
-
     ObjectGroupRef playerModel(new ObjectGroup);
     auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
     playerModel->add(playerModelBody);
-
 
     GG::playerEntity = newEntity("PLayer"
         , EntityModel{playerModel}
@@ -214,33 +167,18 @@ void Game::mainloop()
         , Faction{Faction::Type::PLAYER}
         , EntityStats()
         , ActionState{}
-        , PhysicsHelpers{}
     );
 
     GG::playerEntity->set<rp3d::RigidBody*>(Blueprint::Assembly::CapsuleBody(1.75, vec3(5, 15, 5), GG::playerEntity));
 
-    // EntityRef Zweihander(new Entity("ZweiHander"
-    //     , ItemInfos{100, 50, DamageType::Slash, B_Collider().setCapsule(0.1, vec3(0, 0, 0), vec3(1.23, 0, 0))}
-    //     , Effect()
-    //     , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
-    //     , ItemTransform{}
-    //     , PhysicsHelpers{}
-    // ));
-    // GG::entities.push_back(Zweihander);
-
-    GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT] = {24, Blueprint::Zweihander()};
-    GG::playerEntity->comp<Items>().equipped[LEFT_FOOT_SLOT] = {7, Blueprint::Foot()};
+    Items::equip(GG::playerEntity, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
+    Items::equip(GG::playerEntity, Blueprint::Foot(), LEFT_FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
 
     GG::playerEntity->set<AnimationControllerRef>(
         AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get()) 
     );
 
-    // System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity){
-    //     entity.comp<Items>().equipped[WEAPON_SLOT] = {24, Blueprint::Zweihander()};
-    // });
-
     scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
-    // playerModel->setAnimation(&idleTestState);
 
     SingleStringBatchRef AttackDirectionHelper(new SingleStringBatch());
     AttackDirectionHelper->setMaterial(Loader<MeshMaterial>::get("mdFont"));
@@ -492,15 +430,28 @@ void Game::mainloop()
             }
         });
 
-    /***** ATTACH PHYSICS HELPER TO ENTITY STATE *****/
+    /***** UPDATING PHYSICS HELPER *****/
+        #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
         System<PhysicsHelpers, EntityState3D>([&, this](Entity &entity)
-        {            
+        {           
             auto &model = entity.comp<PhysicsHelpers>();
             auto &s = entity.comp<EntityState3D>();
 
-            model->state.setPosition(s.position);
-            model->state.setQuaternion(s.quaternion);
+            if(!s.physicActivated)
+            {
+                // model->state.hide = ModelStateHideStatus::HIDE;
+                /* clangy but works for debug models */
+                model->state.setPosition(vec3(-1e9));
+            }
+            else
+            {
+                model->state.hide = ModelStateHideStatus::SHOW;
+                model->state.setPosition(s.position);
+                model->state.setQuaternion(s.quaternion);
+            }
+
         });
+        #endif
 
     /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
         System<EntityStats>([](Entity &entity)
@@ -589,14 +540,6 @@ void Game::mainloop()
                     is.position = vec3(t[3]);
                     is.usequat = true;
                 }
-        });
-
-        /***** Effects follow the transform
-        *****/        
-        System<ItemTransform, Effect>([](Entity &entity){
-            entity.comp<Effect>().zone.applyTranslation(
-                entity.comp<ItemTransform>().t
-            );
         });
 
         scene.generateShadowMaps();

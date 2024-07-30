@@ -1,5 +1,7 @@
 #include <PhysicsEventListener.hpp>
+#include <GameConstants.hpp>
 
+// #define DO_EVENT_LISTENER_DEBUG_PRINT
 
 void applyEffect(Entity *weapon, Entity *target)
 {
@@ -30,7 +32,7 @@ void applyEffect(Entity *weapon, Entity *target)
 
     switch (effect.target)
     {
-        case Effect::TargetType::ENEMY : if(Faction::areEnemy(wFaction, tFaction)) return; break;
+        case Effect::TargetType::ENEMY : if(!Faction::areEnemy(wFaction, tFaction)) return; break;
         case Effect::TargetType::ALLIES : if(Faction::areEnemy(wFaction, tFaction)) return; break;
         default: break;
     }
@@ -40,12 +42,67 @@ void applyEffect(Entity *weapon, Entity *target)
     else
         effect.affectedEntities.push_back({target, 1});
 
-    std::cout 
-        << "hitzone between weapon " 
-        << weapon->comp<EntityInfos>().name 
-        << " on target " 
-        << target->comp<EntityInfos>().name 
-        << "\n";
+    /* Compiling final informations needed for applying effect */
+    auto &tAction = target->comp<ActionState>();
+    auto &wAction = effect.usr->comp<ActionState>();
+
+    auto &tState = target->comp<EntityState3D>();
+    auto &wState = effect.usr->comp<EntityState3D>();
+
+    float angle = dot(normalize(wState.position - tState.position), wState.lookDirection);
+
+    /* Applying the effect */
+    switch (effect.type)
+    {
+        case EffectType::Damage :
+            {
+                float damageMult = 1.f;
+                bool stun = true;
+
+                if(tAction.blocking && angle > SANCTIA_COMBAT_BLOCK_ANGLE)
+                {
+                    if(wAction.stance() != tAction.stance())
+                    {
+                        tAction.hasBlockedAttack = true;
+                        damageMult = 0.f;
+                    }
+                    else
+                        damageMult = 0.5f;
+                }
+                if(tAction.attacking && tAction.stance() == ActionState::SPECIAL && wAction.stance() != ActionState::SPECIAL)
+                    stun = false;
+                
+                if(damageMult > 0.f)
+                {
+                    effect.apply(target->comp<EntityStats>(), damageMult);
+                    tAction.stun = stun;
+                }
+            }
+            break;
+        
+        default : effect.apply(target->comp<EntityStats>()); break;
+    }
+
+
+    #ifdef DO_EVENT_LISTENER_DEBUG_PRINT
+        std::cout 
+            << "hitzone between weapon " 
+            << weapon->comp<EntityInfos>().name 
+            << " on target " 
+            << target->comp<EntityInfos>().name 
+            << "\n";
+        
+        std::cout 
+            << "factions are "
+            << (int)wFaction.type
+            << " and "
+            << (int)tFaction.type;
+        
+        if(Faction::areEnemy(wFaction, tFaction))
+            std::cout << ". They are enemy.\n";
+        else 
+            std::cout << ". They are not enemies.\n";
+    #endif
 }
 
 

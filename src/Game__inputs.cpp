@@ -188,20 +188,17 @@ bool Game::userInput(GLFWKeyInfo input)
             for(int i = 0; i < 20; i++)
             {
                 float cubeSize = 1;
-                ObjectGroupRef model = newObjectGroup();
-                // model->add(CubeHelperRef(new CubeHelper(vec3(cubeSize), vec3(-cubeSize))));
 
                 rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75*cubeSize, 15 + i*2.1*cubeSize, 0), rp3d::Quaternion::identity()));
 
-                // body->addCollider(PG::common.createBoxShape(rp3d::Vector3(cubeSize, cubeSize, cubeSize)), rp3d::Transform::identity());
-                // body->addCollider(PG::common.createSphereShape(cubeSize), rp3d::Transform::identity());
-                body->addCollider(PG::common.createCapsuleShape(cubeSize*0.5, cubeSize*0.75), rp3d::Transform::identity());
 
-                auto e = newEntity("physictest", EntityModel{model}, body, EntityState3D());
+                auto e = newEntity("physictest", body, EntityState3D());
                 GG::entities.push_back(e);
 
-                e->comp<EntityState3D>().wantedDepDirection = vec3(0, 0, 0);
-                // e->comp<EntityState3D>().wantedSpeed = 0.0;
+                Blueprint::Assembly::AddEntityBodies(body, e.get(), {
+                    {PG::common.createCapsuleShape(cubeSize*0.5, cubeSize*0.75), rp3d::Transform::identity()}
+                }, {});
+
                 e->comp<EntityState3D>().usequat = true;
             }
             physicsMutex.unlock();

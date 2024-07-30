@@ -5,7 +5,6 @@
 #include <GameConditions.hpp>
 #include <Timer.hpp>
 #include <SanctiaEntity.hpp>
-#include <BluePhysics.hpp>
 
 #include <list>
 
@@ -31,6 +30,4 @@ class GG
         static inline std::list<EntityRef> entities;
 
         static inline EntityRef playerEntity;
-
-        static inline B_PhysicsScene physics;
 };

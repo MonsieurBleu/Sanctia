@@ -1,6 +1,5 @@
 #pragma once
 
-#include <BluePhysics.hpp>
 #include <ObjectGroup.hpp>
 
 enum DamageType
@@ -44,33 +43,22 @@ class Effect
     public :
 
         Effect()
-        {
-            zone.setCapsule(0.f, vec3(0), vec3(0));
-        }
+        {}
 
         ~Effect()
-        {
-            // PG::world.col
-        }
+        {}
 
         enum class TargetType : uint8
         {
             ALL, ENEMY, ALLIES
-        } target;
+        } target = TargetType::ENEMY;
 
-
-
-        // bool expired = true;
-        bool enable = false;
 
         EffectType type;
 
         int maxTriggerPerEntity = 1;
         int maxTrigger = 1e9;
         int curTrigger = 0;
-        B_Collider zone;
-        // rp3d::Collider *zone;
-
         float duration = 0.f;
 
         struct EntityTrigger { Entity *e = nullptr; int cnt = 0;};
@@ -87,14 +75,5 @@ class Effect
         void apply(EntityStats &s, float mult = 1.f);
 
         void clear(){
-            enable = false; affectedEntities.clear(); 
-            zone.v1 = zone.v2 = zone.v3 = zone.v4 = zone.v5 = vec3(0);
-            };
+            affectedEntities.clear(); };
 };
-
-// struct EffectList
-// {
-//     // Effect weapon;
-// };
-
-

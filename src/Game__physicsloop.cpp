@@ -52,6 +52,10 @@ void Game::physicsLoop()
             auto &b = entity.comp<rp3d::RigidBody*>();
             auto &s = entity.comp<EntityState3D>();
 
+            #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
+            s.physicActivated = b->isActive();
+            #endif
+
             switch (b->getType())
             {
             /* Entities with a dynamic body follows the physic. They can also exert a deplacement force*/

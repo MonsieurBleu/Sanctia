@@ -216,28 +216,21 @@ float AnimBlueprint::weaponAttackCallback(
     EquipementSlots slot
     )
 {
+    
     auto &w = e->comp<Items>().equipped[slot].item;
-    auto &b = e->comp<rp3d::RigidBody*>();
-
     if(!w.get()) return 1.f;
+    auto &b = w->comp<rp3d::RigidBody*>();
+
     
     /* Disable effect componment and mark it for removal */
-    if( prct >= end && w->comp<Effect>().enable)
-    {
-        w->comp<Effect>().enable = false;
-        auto &zone = w->comp<Effect>().zone;
-        zone.v1 = zone.v2 = zone.v3 = zone.v4 = zone.v5 = vec3(0);
+    if( prct >= end && b->isActive())
+        b->setIsActive(false);
 
-        // b->setIsActive(false);
-    }
-
-    if(prct >= begin && prct
-        && !w->comp<Effect>().enable 
+    if(prct >= begin && prct < end
+        && !b->isActive()
         && w->comp<Effect>().affectedEntities.empty()
     )
     {
-        /* Enable effect component */
-        
         if(!w->hasComp<ItemInfos>())
         {
             WARNING_MESSAGE("Entity " << e->comp<EntityInfos>().name << " doesn't have item infos for applying effect zone.");
@@ -246,18 +239,14 @@ float AnimBlueprint::weaponAttackCallback(
 
         Effect newEffect;
         ItemInfos &infos = w->comp<ItemInfos>();
-        
         newEffect.type = EffectType::Damage;
-        newEffect.zone = infos.dmgZone;
         newEffect.value = dmgMult*infos.dmgMult;
         newEffect.valtype = (int)infos.dmgType;
         newEffect.maxTrigger = maxTrigger;
-        newEffect.enable = true;
         newEffect.usr = e;
-
         w->set<Effect>(newEffect);
 
-        // b->setIsActive(true);
+        b->setIsActive(true);
     }
 
     auto &actionState = e->comp<ActionState>();
@@ -268,20 +257,8 @@ float AnimBlueprint::weaponAttackCallback(
     }
     else if(actionState.lockType != lockDep)
     {
-        switch (lockDep)
-        {
-        case ActionState::LockedDeplacement::SPEED_ONLY :
-            // e->comp<B_DynamicBodyRef>()->v *= vec3(0, 1, 0);
-            // TODO : FIX WITH REACT PHYSICS
-            break;
-        
-        case ActionState::LockedDeplacement::DIRECTION :
+        if(lockDep == ActionState::LockedDeplacement::DIRECTION)
             actionState.lockedDirection = normalize(e->comp<EntityState3D>().lookDirection * vec3(1, 0, 1));
-            break;
-
-        default:
-            break;
-        }
 
         actionState.lockType = lockDep;
         actionState.lockedMaxSpeed = maxSpeed;
@@ -453,13 +430,13 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
         a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, beg, end, dmgMult, maxTrigger, ActionState::LockedDeplacement::lockDep, maxspeed, EquipementSlots::slot););\
 
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_R");
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 1, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_L");
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 1, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_S");
-        WEAPON_CALLBACK(37.5, 70, 2, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
+        WEAPON_CALLBACK(37.5, 70, 2, 1, SPEED_ONLY, 0.25, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_R");
         a->repeat = false;

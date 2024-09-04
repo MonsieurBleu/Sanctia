@@ -1,0 +1,66 @@
+"Very Important Entity"
+	: Faction 
+		: type MONSTERS
+		;
+	: ActionState 
+		: lockedDirection +0.000000e+00 +1.000000e+00 +2.000000e+00
+		: isTryingToAttack f
+		: isTryingToBlock f
+		: stun f
+		: blocking t
+		: attacking f
+		: lockedMaxSpeed +3.799999e+02
+		;
+	: Transform 
+		: position +3.000000e+00 +1.500000e+01 +2.799999e+01
+		;
+	: RigidBody 
+		: type DYNAMIC
+		: angularLockFactor +0.000000e+00 +1.000000e+00 +0.000000e+00
+		: active t
+		: canSleep t
+		: gravity t
+		: Colliders 
+			: Collider *Shape must always be given first*
+				: CapsuleShape 
+					: height +8.250000e-01
+					: radius +4.125000e-01
+					;
+				: Transform 
+					: position +0.000000e+00 +8.250000e-01 +0.000000e+00
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +1.000000e+00
+					;
+				: isTrigger f
+				;
+			: Collider *Shape must always be given first*
+				: CapsuleShape 
+					: height +8.250000e-01
+					: radius +3.918750e-01
+					;
+				: Transform 
+					: position +0.000000e+00 +8.250000e-01 +0.000000e+00
+					;
+				: CollisionCategory 
+					: HITZONE
+					;
+				: CollideWith 
+					: HITZONE
+					;
+				: ColliderMaterial 
+					: bounciness +5.000000e-01
+					: friction +3.000000e-01
+					;
+				: isTrigger t
+				;
+			;
+		;
+	;

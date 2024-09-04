@@ -3,6 +3,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+#include <GameGlobals.hpp>
+
 #include <glm/gtc/quaternion.hpp>
 #include <MathsUtils.hpp>
 

@@ -2,13 +2,30 @@
 
 #include <reactphysics3d/reactphysics3d.h>
 
+typedef  rp3d::RigidBody* RigidBody;
+typedef rp3d::Collider* Collider;
+
 extern std::mutex physicsMutex;
 
-enum CollideCategory
-{
-    HITZONE      = 1<<0,
-    ENVIRONEMENT = 1<<1
-};
+GENERATE_ENUM_FAST_REVERSE(
+    CollideCategory,
+    HITZONE,
+    ENVIRONEMENT
+);
+
+GENERATE_ENUM_FAST_REVERSE(CollisionShapeName,
+    TRIANGLE, SPHERE, CAPSULE, BOX, CONVEX_MESH, TRIANGLE_MESH, HEIGHTFIELD
+);
+
+// GENERATE_ENUM_FAST_REVERSE(CollisionShapeType,
+//     SPHERE, CAPSULE, CONVEX_POLYHEDRON, CONCAVE_SHAPE
+// );
+
+// enum CollideCategory
+// {
+//     HITZONE      = 1<<0,
+//     ENVIRONEMENT = 1<<1
+// };
 
 class PG 
 {

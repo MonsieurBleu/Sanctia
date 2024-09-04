@@ -5,6 +5,7 @@
 #include <EntityStats.hpp>
 #include <AnimationBlueprint.hpp>
 #include <GameConstants.hpp>
+#include <GameGlobals.hpp>
 
 void Blueprint::Assembly::AddEntityBodies(
     rp3d::RigidBody *body, 
@@ -18,16 +19,16 @@ void Blueprint::Assembly::AddEntityBodies(
         auto c = body->addCollider(i.first, i.second);
         c->getMaterial().setBounciness(0.f);
         c->getMaterial().setFrictionCoefficient(1.f);
-        c->setCollisionCategoryBits(CollideCategory::ENVIRONEMENT);
-        c->setCollideWithMaskBits(CollideCategory::ENVIRONEMENT);
+        c->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+        c->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
     }
 
     for(auto &i : hitboxes)
     {
         auto c = body->addCollider(i.first, i.second);
         c->setIsTrigger(true);
-        c->setCollisionCategoryBits(CollideCategory::HITZONE);
-        c->setCollideWithMaskBits(CollideCategory::HITZONE);
+        c->setCollisionCategoryBits(1<<CollideCategory::HITZONE);
+        c->setCollideWithMaskBits(1<<CollideCategory::HITZONE);
         c->setUserData(usrData);
     }
 }
@@ -69,7 +70,7 @@ EntityRef Blueprint::TestManequin()
 
     EntityRef e = newEntity("HumanMale number " + std::to_string(i)
             , EntityModel{newGroup}
-            , EntityState3D({position})
+            , EntityState3D(position)
             , stats
             , CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             , DeplacementBehaviour{DEMO}
@@ -96,7 +97,7 @@ EntityRef Blueprint::Zweihander()
 {
     EntityRef zweihander(new Entity("ZweiHander"
         , ItemInfos{100, 10, DamageType::Slash}
-        , EntityState3D()
+        , EntityState3D(true)
         , Effect()
         , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
         , ItemTransform{}

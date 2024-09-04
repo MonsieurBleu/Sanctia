@@ -70,11 +70,12 @@ void Game::mainloop()
     // scene.add(terrain);
 
 
-    ModelRef floor = newModel(GG::PBR);
+    // ModelRef floor = newModel(GG::PBR);
+    ModelRef floor = newModel(Loader<MeshMaterial>::get("paintPBR"));
     floor->loadFromFolder("ressources/models/ground/");
 
-    int gridSize = 5;
-    int gridScale = 15;
+    int gridSize = 25;
+    int gridScale = 1;
     for (int i = -gridSize; i < gridSize; i++)
         for (int j = -gridSize; j < gridSize; j++)
         {
@@ -95,12 +96,13 @@ void Game::mainloop()
 
     SceneDirectionalLight sun = newDirectionLight(
         DirectionLight()
-            .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
+            // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
+            .setColor(vec3(1))
             .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
             .setIntensity(1.0));
 
     sun->cameraResolution = vec2(2048);
-    sun->shadowCameraSize = vec2(50, 50);
+    sun->shadowCameraSize = vec2(75, 75);
     sun->activateShadows();
     scene.add(sun);
 
@@ -156,12 +158,13 @@ void Game::mainloop()
     player1.setMenu(menu);
 
     ObjectGroupRef playerModel(new ObjectGroup);
-    auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
+    auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy(); 
+    // auto playerModelBody = Loader<ObjectGroup>::get("Dummy").copy();
     playerModel->add(playerModelBody);
 
     GG::playerEntity = newEntity("PLayer"
         , EntityModel{playerModel}
-        , EntityState3D{vec3(0), vec3(1, 0, 0)}
+        , EntityState3D()
         , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
         , Items{}
         , Faction{Faction::Type::PLAYER}
@@ -169,7 +172,7 @@ void Game::mainloop()
         , ActionState{}
     );
 
-    GG::playerEntity->set<rp3d::RigidBody*>(Blueprint::Assembly::CapsuleBody(1.75, vec3(5, 15, 5), GG::playerEntity));
+    GG::playerEntity->set<RigidBody>(Blueprint::Assembly::CapsuleBody(1.75, vec3(5, 15, 5), GG::playerEntity));
 
     Items::equip(GG::playerEntity, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
     Items::equip(GG::playerEntity, Blueprint::Foot(), LEFT_FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
@@ -259,6 +262,32 @@ void Game::mainloop()
         collider->setCollideWithMaskBits(CollideCategory::ENVIRONEMENT);
     }
 
+    /***** Setting up material helpers *****/
+
+    {
+        vec3 position = vec3(0, 2, 5);
+        float jump = 0.2;
+        float hueJump = 0.2;
+
+        for(float h = 0.f; h < 1.f; h += hueJump)
+        for(float i = 1e-6; i < 1.f; i += jump)
+        for(float j = 1e-6; j < 1.f; j += jump)
+        {
+            ModelRef helper = Loader<MeshModel3D>::get("materialHelper").copy();
+            helper->uniforms.add(ShaderUniform(hsv2rgb(vec3(h, 0.85f, 1.f)) , 20));
+            helper->uniforms.add(ShaderUniform(vec2(i, j), 21));
+            helper->state.setPosition(position + 2.f*vec3(2*i, 3*h, 2*j)/jump);
+            scene.add(helper);
+        }
+    }
+
+
+    // ComponentModularity::SynchFuncs[0].element(GG::playerEntity, Blueprint::Zweihander());
+
+    GG::playerEntity->set<EntityGroupInfo>(EntityGroupInfo());
+    ComponentModularity::addChild(*GG::playerEntity, Blueprint::Zweihander());
+    ComponentModularity::synchronizeChildren(*GG::playerEntity);
+
 
 // /****** Last Pre Loop Routines ******/
     state = AppState::run;
@@ -275,6 +304,10 @@ void Game::mainloop()
     glPointSize(3.f);
 
     scene.add(SkeletonHelperRef(new SkeletonHelper(GG::playerEntity->comp<SkeletonAnimationState>())));
+
+    ObjectGroupRef dummy = Loader<ObjectGroup>::get("Dummy").copy();
+    dummy->state.setPosition(vec3(5, 0, 0));
+    scene.add(dummy);
 
 /******  Main Loop ******/
     while (state != AppState::quit)
@@ -347,6 +380,14 @@ void Game::mainloop()
             });
 
         tmpTimer.end();
+
+    /***** SYNCHRONIZING MEG
+    *****/
+        System<EntityGroupInfo>([&, this](Entity &entity)
+        {
+            ComponentModularity::synchronizeChildren(entity);
+        });
+
 
     /***** DEMO DEPLACEMENT SYSTEM 
     *****/
@@ -566,7 +607,7 @@ void Game::mainloop()
         /* Final Screen Composition */
         glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
         finalProcessingStage.activate();
-        sun->shadowMap.bindTexture(0, 6);
+        // sun->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();
 

@@ -9,11 +9,14 @@
 #include <EntityBlueprint.hpp>
 #include <AnimationBlueprint.hpp>
 #include <PhysicsGlobals.hpp>
+#include <Shadinclude.hpp>
 
 Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
 
 void Game::init(int paramSample)
 {
+    // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
+
     App::init();
 
     // activateMainSceneBindlessTextures();

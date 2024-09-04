@@ -1,0 +1,11 @@
+paintPBR
+:   paintPBRGeometry
+    :   data/placeholders/materials/paintPBR.frag
+    :   data/placeholders/materials/paintPBR.vert
+    :   directive "#define USE_MAP"
+    ;
+:   paintPBRDepthOnly
+    :   shader/depthOnly.frag
+    :   shader/foward/basic.vert
+    ;
+;

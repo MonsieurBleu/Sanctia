@@ -8,6 +8,46 @@
 
 #include <glm/gtx/string_cast.hpp>
 
+
+COMPONENT_DEFINE_SYNCH(EntityState3D)
+{
+    std::cout << parent.comp<EntityInfos>().name << "\t" << child->comp<EntityInfos>().name << "\n";
+
+
+    auto &ps = parent.comp<EntityState3D>();
+    auto &cs = child->comp<EntityState3D>();
+    cs.position = cs.initPosition + ps.position;
+
+    if(ps.usequat)
+    {
+        if(cs.usequat)
+        {
+            cs.quaternion = ps.quaternion * cs.quaternion;
+        }
+        else
+        {
+            /*
+                TODO : maybe do this part
+            */  
+        }
+    }
+    else
+    {
+        if(cs.usequat)
+        {
+            cs.quaternion = directionToQuat(ps.lookDirection)*cs.initQuat;
+            std::cout << glm::to_string(cs.quaternion) << "\n";
+        }
+        else
+        {
+            /*
+                TODO : maybe do this part
+            */
+        }
+    }
+}
+
+
 template<> void Component<EntityModel>::ComponentElem::init()
 {
     // std::cout << "creating entity model " << entity->toStr();

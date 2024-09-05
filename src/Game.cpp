@@ -165,6 +165,7 @@ void Game::mainloop()
     GG::playerEntity = newEntity("PLayer"
         , EntityModel{playerModel}
         , EntityState3D()
+        , EntityDeplacementState()
         , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
         , Items{}
         , Faction{Faction::Type::PLAYER}
@@ -248,8 +249,8 @@ void Game::mainloop()
         auto e = newEntity("physictest", EntityModel{model}, body, EntityState3D());
         GG::entities.push_back(e);
 
-        e->comp<EntityState3D>().wantedDepDirection = vec3(0, 0, 1);
-        e->comp<EntityState3D>().wantedSpeed = 3.0;
+        e->comp<EntityDeplacementState>().wantedDepDirection = vec3(0, 0, 1);
+        e->comp<EntityDeplacementState>().wantedSpeed = 3.0;
         e->comp<EntityState3D>().usequat = true;
     }
     {
@@ -261,6 +262,24 @@ void Game::mainloop()
         collider->setCollisionCategoryBits(CollideCategory::ENVIRONEMENT);
         collider->setCollideWithMaskBits(CollideCategory::ENVIRONEMENT);
     }
+
+
+
+    /**** Testing Entity Loading *****/
+    {
+        EntityRef writeTest = Blueprint::TestManequin();
+        VulpineTextOutputRef out(new VulpineTextOutput(1<<16));
+        DataLoader<EntityRef>::write(writeTest, out);
+        out->saveAs("MannequinTest.vulpineEntity");
+        VulpineTextBuffRef in(new VulpineTextBuff("MannequinTest.vulpineEntity"));
+        EntityRef readTest = DataLoader<EntityRef>::read(in);
+        VulpineTextOutputRef out2(new VulpineTextOutput(1<<16));
+        DataLoader<EntityRef>::write(readTest, out2);
+        out2->saveAs("MannequinTest2.vulpineEntity");
+    }
+
+
+
 
     /***** Setting up material helpers *****/
 
@@ -391,16 +410,17 @@ void Game::mainloop()
 
     /***** DEMO DEPLACEMENT SYSTEM 
     *****/
-        System<EntityState3D, DeplacementBehaviour>([&, this](Entity &entity)
+        System<EntityState3D, EntityDeplacementState, DeplacementBehaviour>([&, this](Entity &entity)
         {
             auto &s = entity.comp<EntityState3D>();
+            auto &ds = entity.comp<EntityDeplacementState>();
             
             if(&entity == this->dialogueControl.interlocutor.get())
             {
                 vec3 dir = GG::playerEntity->comp<EntityState3D>().position - s.position;
                 float dist = length(dir); 
-                s.lookDirection = s.wantedDepDirection = dir/dist;
-                s.speed = dist < 1.5f ? 0.f : s.speed;
+                s.lookDirection = ds.wantedDepDirection = dir/dist;
+                ds.speed = dist < 1.5f ? 0.f : ds.speed;
                 return;    
             }
 
@@ -410,14 +430,14 @@ void Game::mainloop()
             {
                 float time = globals.simulationTime.getElapsedTime();
                 float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
-                s.wantedDepDirection.x = cos(angle);
-                s.wantedDepDirection.z = sin(angle);
-                s.speed = 1;
+                ds.wantedDepDirection.x = cos(angle);
+                ds.wantedDepDirection.z = sin(angle);
+                ds.speed = 1;
             }
                 break;
             
             case DeplacementBehaviour::STAND_STILL :
-                s.speed = 0;
+                ds.speed = 0;
                 break;
 
             default:
@@ -513,7 +533,7 @@ void Game::mainloop()
                 entity.removeComp<DeplacementBehaviour>();
                 entity.comp<ActionState>().lockType = ActionState::LockedDeplacement::SPEED_ONLY;
                 entity.comp<ActionState>().lockedMaxSpeed = 0;
-                entity.comp<EntityState3D>().speed = 0;
+                entity.comp<EntityDeplacementState>().speed = 0;
                 entity.removeComp<AgentState>();
             }
         }); 

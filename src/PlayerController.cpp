@@ -20,10 +20,10 @@ void PlayerController::update()
 
     updateDirectionStateWASD();
 
-    auto &s = GG::playerEntity->comp<EntityState3D>();
-    grounded = s.grounded;
+    auto &ds = GG::playerEntity->comp<EntityDeplacementState>();
+    grounded = ds.grounded;
 
-    float accel = !grounded ? s.airSpeed : (sprintActivated ? s.sprintSpeed : s.walkSpeed);
+    float accel = !grounded ? ds.airSpeed : (sprintActivated ? ds.sprintSpeed : ds.walkSpeed);
 
     vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
     const vec3 hUp = vec3(0, 1, 0);
@@ -33,13 +33,13 @@ void PlayerController::update()
 
     if(frontFactor || rightFactor)
     {
-        s.wantedDepDirection = normalize(hFrontDep + hRightDep); 
-        s.wantedSpeed = accel;
+        ds.wantedDepDirection = normalize(hFrontDep + hRightDep); 
+        ds.wantedSpeed = accel;
     }
     else
     {
-        s.wantedDepDirection = vec3(0);
-        s.wantedSpeed = 0;
+        ds.wantedDepDirection = vec3(0);
+        ds.wantedSpeed = 0;
     }
 
     if(doJump)

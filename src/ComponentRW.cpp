@@ -4,7 +4,6 @@
 #include <MappedEnum.hpp>
 
 
-
 DATA_WRITE_FUNC_INIT(Faction);
     out->Entry();
     WRITE_NAME(type, out);
@@ -21,62 +20,210 @@ DATA_READ_FUNC(Faction)
     DATA_READ_END;
 }
 
-// DATA_WRITE_FUNC(ActionState) 
-// {
-//     DATA_WRITE_INIT(ActionState);
-    
-//     FTXTP_WRITE_ELEMENT(data, isTryingToAttack)
-//     FTXTP_WRITE_ELEMENT(data, isTryingToBlock)
-//     FTXTP_WRITE_ELEMENT(data, hasBlockedAttack)
-//     FTXTP_WRITE_ELEMENT(data, stun)
-//     FTXTP_WRITE_ELEMENT(data, blocking)
-//     FTXTP_WRITE_ELEMENT(data, attacking)
-//     FTXTP_WRITE_ELEMENT(data, lockedMaxSpeed)
-//     FTXTP_WRITE_ELEMENT(data, lockedDirection)
-
-//     DATA_WRITE_END;
-// }
-
-// DATA_READ_FUNC(ActionState)
-// {
-//     DATA_READ_INIT(ActionState);
-
-//     while (NEW_VALUE)
-//     {
-//         const char *member = buff->read();
-//         const char *value = buff->read();
-
-//         IF_MEMBER_FTXTP_LOAD(data, isTryingToAttack)
-//         else IF_MEMBER_FTXTP_LOAD(data, isTryingToBlock)
-//         else IF_MEMBER_FTXTP_LOAD(data, hasBlockedAttack)
-//         else IF_MEMBER_FTXTP_LOAD(data, stun)
-//         else IF_MEMBER_FTXTP_LOAD(data, blocking)
-//         else IF_MEMBER_FTXTP_LOAD(data, attacking)
-//         else IF_MEMBER_FTXTP_LOAD(data, lockedMaxSpeed)
-//         else IF_MEMBER_FTXTP_LOAD(data, lockedDirection)
-        
-//     }
-
-//     DATA_READ_END;
-// }
-
-AUTOGEN_DATA_RW_FUNC(ActionState, 
-    lockedDirection,
-    isTryingToAttack, 
-    isTryingToBlock,
-    stun,
-    blocking,
-    attacking,
-    lockedMaxSpeed
+AUTOGEN_DATA_RW_FUNC(ActionState 
+    , lockedDirection
+    , isTryingToAttack
+    , isTryingToBlock
+    , stun
+    , blocking
+    , attacking
+    , lockedMaxSpeed
     )
 
+AUTOGEN_DATA_READ_FUNC(EntityState3D 
+    , position
+    , quaternion
+    , lookDirection
+    , usequat
+    , useinit
+    , initPosition
+    , initQuat
+    , initPosition
+    )
 
-// struct PhysicRigidBody
-// {
-//     rp3d::RigidBody *ptr;
-// };
+DATA_WRITE_FUNC_INIT(EntityState3D)
+
+    if(data.position != vec3(0))
+        FTXTP_WRITE_ELEMENT(data, position);
+
+    if(data.usequat)
+    {
+        if(data.useinit)
+        {
+            if(data.initQuat != quat(1, 0, 0, 0))
+                FTXTP_WRITE_ELEMENT(data, initQuat);
+            if(data.initPosition != vec3(0))
+                FTXTP_WRITE_ELEMENT(data, initPosition);
+        }
+
+        if(data.quaternion != quat(1, 0, 0, 0))
+            FTXTP_WRITE_ELEMENT(data, quaternion);
+    }
+    else
+    {
+        if(data.useinit)
+        {
+            FTXTP_WRITE_ELEMENT(data, initLookDirection);
+            FTXTP_WRITE_ELEMENT(data, initPosition);
+        }
+
+        FTXTP_WRITE_ELEMENT(data, lookDirection);
+    }
+
+    FTXTP_WRITE_ELEMENT(data, usequat);
+    FTXTP_WRITE_ELEMENT(data, useinit);
+
+DATA_WRITE_END_FUNC
+
+AUTOGEN_DATA_RW_FUNC(EntityDeplacementState
+    , speed
+    , deplacementDirection
+    , wantedDepDirection
+    , grounded
+    , wantedSpeed
+    , walkSpeed
+    , sprintSpeed
+    , airSpeed
+    )
+
+/* statBars aren't special nor complexe, it's prettier for them to be anonymous when written */
+AUTOGEN_DATA_RW_FUNC_AN(statBar, min, max, cur)
+
+DATA_WRITE_FUNC_INIT(EntityStats)
+
+    FTXTP_WRITE_ELEMENT(data, alive);
+
+    out->Entry();
+    WRITE_NAME(health, out);
+    DataLoader<statBar>::write(data.health, out);
+
+    out->Entry();
+    WRITE_NAME(stamina, out);
+    DataLoader<statBar>::write(data.stamina, out);
+
+    out->Entry();
+    out->Tabulate();
+    WRITE_NAME(resistances, out);
+    for(int i = 0; i < DamageType_Size; i++)
+    {
+        out->Entry();
+        out->write(CONST_STRING_SIZED(DamageTypeReverseMap[i]));
+        out->write(" ", 1);
+        FastTextParser::write<float>(data.resistances[i], out->getReadHead());
+    }
+
+    out->Break();
+
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_INIT(EntityStats)
+
+    IF_MEMBER_FTXTP_LOAD(data, alive)
+
+    else IF_MEMBER(health)
+        data.health = DataLoader<statBar>::read(buff);
+
+    else IF_MEMBER(stamina)
+        data.stamina = DataLoader<statBar>::read(buff);
+
+    else IF_MEMBER(resistances)
+    {
+        while(NEW_VALUE)
+        {
+            int id = -1;
+            MAP_SAFE_READ(DamageTypeMap, buff, id, buff->read());
+
+            value = buff->read();
+
+            if(id == -1) continue;
+
+            data.resistances[id] = FastTextParser::read<float>(value);
+        }
+    }
+
+DATA_READ_END_FUNC
 
 
+DATA_WRITE_FUNC_INIT(CharacterDialogues)
+
+    out->Entry();
+    WRITE_NAME(filename, out);
+    out->write("\"", 1);
+    out->write(CONST_STRING_SIZED(data.filename));
+    out->write("\"", 1);
+
+    out->Entry();
+    WRITE_NAME(name, out);
+    out->write("\"", 1);
+    out->write(CONST_STRING_SIZED(data.name));
+    out->write("\"", 1);
+
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_INIT(CharacterDialogues)
+
+    IF_MEMBER_READ_VALUE(filename)
+        data.filename = std::string(value);
+
+    else IF_MEMBER_READ_VALUE(name)
+        data.name = std::string(value);
+
+DATA_READ_END_FUNC
+
+AUTOGEN_DATA_RW_FUNC(NpcPcRelation, known, affinity);
+
+DATA_WRITE_FUNC_INIT(ItemInfos)
+    FTXTP_WRITE_ELEMENT(data, price);
+    FTXTP_WRITE_ELEMENT(data, damageMultiplier);
+    out->Entry();
+    WRITE_NAME(damageType, out);
+    out->write(CONST_STRING_SIZED(DamageTypeReverseMap[data.dmgType]));
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_INIT(ItemInfos)
+    IF_MEMBER_FTXTP_LOAD(data, price)
+    else IF_MEMBER_FTXTP_LOAD(data, damageMultiplier)
+    else IF_MEMBER(damageType)
+        MAP_SAFE_READ(DamageTypeMap, buff, data.dmgType, buff->read())
+DATA_READ_END_FUNC
+
+DATA_WRITE_FUNC_INIT(Items)
+
+    for(uint64_t i = 0; i < sizeof(data.equipped)/sizeof(Items::Equipement); i++)
+        if(data.equipped[i].item.get())
+        {
+            out->Entry();
+            out->write(CONST_STRING_SIZED(EquipementSlotsReverseMap[i]));
+            out->Tabulate();
+
+            out->Entry();
+            WRITE_NAME(boneAttachementID, out);
+            FastTextParser::write<uint>(data.equipped[i].id, out->getReadHead());
+
+            out->Entry();
+            DataLoader<EntityRef>::write(data.equipped[i].item, out);
+
+            out->Break();
+        }
+
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_INIT(Items)
+    auto i = EquipementSlotsMap.find(member);
+
+    if(i != EquipementSlotsMap.end())
+    {
+        buff->read(); buff->read();
+        value = buff->read();
+        data.equipped[i->second].id = FastTextParser::read<uint>(value);
+        buff->read();
+        data.equipped[i->second].item = DataLoader<EntityRef>::read(buff);
+        buff->read();
+    }
+DATA_READ_END_FUNC
+
+
+/***************** RP3D LOADERS *****************/
 
 typedef rp3d::Transform Transform;
 

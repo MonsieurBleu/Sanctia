@@ -91,38 +91,38 @@ ANIMATION_SWITCH_ENTITY(switchAttackSpecial,
 )
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
-    return e->comp<EntityState3D>().speed >= 0.1;
+    return e->comp<EntityDeplacementState>().speed >= 0.1;
 )
 
 ANIMATION_SWITCH_ENTITY(switchRun, 
-    auto &s = e->comp<EntityState3D>();
+    auto &s = e->comp<EntityDeplacementState>();
     return s.speed >= s.walkSpeed + (s.sprintSpeed + s.walkSpeed)*0.25;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepLeft, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityState3D>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a > PI/4.f && a < 3.f*PI/4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepRight, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityState3D>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/-4.f && a > 3.f*PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepFront, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityState3D>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/4.f && a > PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepBack, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityState3D>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < -3.f*PI/4.f || a > 3.f*PI/4.f;
 )
@@ -240,7 +240,7 @@ float AnimBlueprint::weaponAttackCallback(
         Effect newEffect;
         ItemInfos &infos = w->comp<ItemInfos>();
         newEffect.type = EffectType::Damage;
-        newEffect.value = dmgMult*infos.dmgMult;
+        newEffect.value = dmgMult*infos.damageMultiplier;
         newEffect.valtype = (int)infos.dmgType;
         newEffect.maxTrigger = maxTrigger;
         newEffect.usr = e;

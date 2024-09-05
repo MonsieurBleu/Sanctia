@@ -71,6 +71,7 @@ EntityRef Blueprint::TestManequin()
     EntityRef e = newEntity("HumanMale number " + std::to_string(i)
             , EntityModel{newGroup}
             , EntityState3D(position)
+            , EntityDeplacementState()
             , stats
             , CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             , DeplacementBehaviour{DEMO}

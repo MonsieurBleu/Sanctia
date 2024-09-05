@@ -21,9 +21,14 @@
 /***************** GAMEPLAY ATTRIBUTS *****************/
     const int MAX_DATA_COMP_USAGE = MAX_ENTITY;
 
+    /*
+        TODO : maybe try to move it to graphic or another category
+    */
     COMPONENT(EntityState3D, DATA, MAX_DATA_COMP_USAGE)
     COMPONENT_ADD_SYNCH(EntityState3D)
 
+    COMPONENT(EntityDeplacementState, DATA, MAX_DATA_COMP_USAGE)
+    
     COMPONENT(EntityStats, DATA, MAX_DATA_COMP_USAGE)
 
     COMPONENT(CharacterDialogues, DATA, MAX_DATA_COMP_USAGE)
@@ -62,14 +67,14 @@
 
     COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE)
 
-    COMPONENT(rp3d::RigidBody*, PHYSIC, MAX_PHYSIC_COMP_USAGE)
-    template<> void Component<rp3d::RigidBody*>::ComponentElem::clean();
+    COMPONENT(RigidBody, PHYSIC, MAX_PHYSIC_COMP_USAGE)
+    template<> void Component<RigidBody>::ComponentElem::init();
+    template<> void Component<RigidBody>::ComponentElem::clean();
 
 /***************** IA *****************/
     const int MAX_IA_COMP_USAGE = MAX_ENTITY;
 
     COMPONENT(DeplacementBehaviour, AI, MAX_IA_COMP_USAGE)
-
 
     COMPONENT(AgentState, AI, MAX_IA_COMP_USAGE)
 

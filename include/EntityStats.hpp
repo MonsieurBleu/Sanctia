@@ -1,11 +1,9 @@
 #pragma once
 
+#include <MappedEnum.hpp>
 #include <ObjectGroup.hpp>
 
-enum DamageType
-{
-    Pure, Blunt, Slash, Piercing, DamageType_Size
-};
+GENERATE_ENUM_FAST_REVERSE(DamageType, Pure, Blunt, Slash, Piercing, DamageType_Size);
 
 enum EffectType
 {

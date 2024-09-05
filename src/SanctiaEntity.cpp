@@ -255,7 +255,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
         auto &i = entity->comp<ItemInfos>();
 
         ValueHelperRef<int> P(new ValueHelper(i.price, U"Price ", ColorHexToV(0xffcf40)));
-        ValueHelperRef<float> M(new ValueHelper(i.dmgMult, U"Damage Mult ", ColorHexToV(0xf04a1d)));
+        ValueHelperRef<float> M(new ValueHelper(i.damageMultiplier, U"Damage Mult ", ColorHexToV(0xf04a1d)));
         ValueHelperRef<int> T(new ValueHelper(i.dmgType, U"Damage Type ", ColorHexToV(0xc0e81e)));
 
         ADD_VALUE_HELPER(P)
@@ -275,7 +275,16 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::clean()
     }
 }
 
-template<> void Component<rp3d::RigidBody*>::ComponentElem::clean()
+template<> void Component<RigidBody>::ComponentElem::init()
+{
+    int size = data->getNbColliders();
+    for(int i = 0; i < size; i++)
+    {
+        data->getCollider(i)->setUserData(entity);
+    }
+}
+
+template<> void Component<RigidBody>::ComponentElem::clean()
 {
     PG::world->destroyRigidBody(data);
 }

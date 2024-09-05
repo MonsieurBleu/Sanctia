@@ -51,6 +51,7 @@ void Game::physicsLoop()
         System<rp3d::RigidBody*, EntityState3D>([](Entity &entity){
             auto &b = entity.comp<rp3d::RigidBody*>();
             auto &s = entity.comp<EntityState3D>();
+            auto &ds = entity.comp<EntityDeplacementState>();
 
             #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
             s.physicActivated = b->isActive();
@@ -65,6 +66,8 @@ void Game::physicsLoop()
                     s.position = PG::toglm(t.getPosition());
                     s.quaternion = PG::toglm(t.getOrientation());
                     
+                    if(!entity.hasComp<EntityDeplacementState>()) break;
+
                     /*
                         Fastest way possible to see if the player is grounded.
                             If the player comes into contact with a surface exerting an opposing force to 
@@ -73,13 +76,13 @@ void Game::physicsLoop()
                             This method can theoricly leads to a rare double jump exploit.
                             Luna said this methode render bunny hopping impossible.
                     */
-                    s.grounded = abs(b->getLinearVelocity().y) < 5e-4;
-                    s.deplacementDirection = normalize(PG::toglm(b->getLinearVelocity()));
+                    ds.grounded = abs(b->getLinearVelocity().y) < 5e-4;
+                    ds.deplacementDirection = normalize(PG::toglm(b->getLinearVelocity()));
 
-                    float maxspeed = s.grounded ? s.wantedSpeed : s.airSpeed; 
+                    float maxspeed = ds.grounded ? ds.wantedSpeed : ds.airSpeed; 
                     auto vel = b->getLinearVelocity();
-                    vec3 dir = s.wantedDepDirection;
-                    s.speed = length(vec2(vel.x, vel.z));
+                    vec3 dir = ds.wantedDepDirection;
+                    ds.speed = length(vec2(vel.x, vel.z));
 
                     if(entity.hasComp<ActionState>())
                     {
@@ -95,7 +98,7 @@ void Game::physicsLoop()
                             }
                     }
 
-                    if(s.speed < maxspeed)
+                    if(ds.speed < maxspeed)
                         b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.4f) * 15.f));            
                 }
                 break;
@@ -225,9 +228,10 @@ void Game::physicsLoop()
     /***** COMBAT DEMO AGENTS *****/
         static int i = 0;
         if((i++)%10 == 0)
-        System<EntityState3D, AgentState, ActionState>([&, this](Entity &entity){
+        System<EntityState3D, EntityDeplacementState, AgentState, ActionState>([&, this](Entity &entity){
 
             auto &s = entity.comp<EntityState3D>();
+            auto &ds = entity.comp<EntityDeplacementState>();
             auto target = entity.comp<Target>();
             auto &as = entity.comp<AgentState>();
             auto &action = entity.comp<ActionState>();
@@ -247,7 +251,7 @@ void Game::physicsLoop()
 
                         if(!target->comp<EntityStats>().alive)
                         {
-                            s.wantedSpeed = 0;
+                            ds.wantedSpeed = 0;
                             return;
                         }
 
@@ -260,13 +264,13 @@ void Game::physicsLoop()
 
                         if(action.attacking || action.blocking)
                         {
-                            s.wantedSpeed = 0; return;
+                            ds.wantedSpeed = 0; return;
                         }
 
                         if(d > rangeMax || d < rangeMin)  
                         {
-                            s.wantedDepDirection = normalize((st.position-s.position)*vec3(1, 0, 1)) * (d < rangeMin ? -1.f : 1.f);
-                            s.wantedSpeed = 1.5;
+                            ds.wantedDepDirection = normalize((st.position-s.position)*vec3(1, 0, 1)) * (d < rangeMin ? -1.f : 1.f);
+                            ds.wantedSpeed = 1.5;
                         }
                         else
                         {
@@ -278,8 +282,8 @@ void Game::physicsLoop()
                             vec3 randDir(cos(angle), 0, sin(angle));
 
                             // s.wantedDepDirection = normalize(cross(st.position-s.position, vec3(0, 1, 0) + randDir));
-                            s.wantedDepDirection = randDir;
-                            s.wantedSpeed = dot(s.wantedDepDirection, normalize((st.position-s.position)*vec3(1, 0, 1))) < 0.75 ? 0.5f : 0.f;
+                            ds.wantedDepDirection = randDir;
+                            ds.wantedSpeed = dot(ds.wantedDepDirection, normalize((st.position-s.position)*vec3(1, 0, 1))) < 0.75 ? 0.5f : 0.f;
                         }
 
                         if(d <= rangeMax)

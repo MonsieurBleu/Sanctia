@@ -4,10 +4,15 @@
 
 #ifndef GLM_VERSION_MAJOR 
 #include <glm/glm.hpp>
-using namespace glm;
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/euler_angles.hpp>
 #endif
+
+using namespace glm;
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <unordered_set>
 
@@ -19,27 +24,36 @@ struct EntityState3D
 
     vec3 position = vec3(0, 0, 0);
     quat quaternion = quat(1, 0, 0, 0);
+    vec3 lookDirection = vec3(1, 0, 0);
 
     bool usequat = false;
+    bool useinit = false;
 
     vec3 initPosition = vec3(0);
     quat initQuat = quat(1, 0, 0, 0);
+    vec3 initLookDirection = vec3(0);
 
     #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
     bool physicActivated = true;
     #endif
-    
-    /* TODO : maybe move alswhere*/
-    vec3 lookDirection = vec3(1, 0, 0);
+};
+
+struct EntityDeplacementState
+{
     float speed = 0.f;
+
     vec3 deplacementDirection = vec3(1, 0, 0);
     vec3 wantedDepDirection = vec3(0, 0, 0);
+
+    bool grounded = false;
+
     float wantedSpeed = 0.f;
+
     float walkSpeed = 2.f;
     float sprintSpeed = 7.f;
     float airSpeed = 1.f;
-    bool grounded = false;
 };
+
 
 
 struct NpcPcRelation

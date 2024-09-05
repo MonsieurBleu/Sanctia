@@ -121,20 +121,26 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
         Entity *e1 = (Entity*)c1->getUserData();
         Entity *e2 = (Entity*)c2->getUserData();
 
-        if(pair.getEventType() == _OverlapPair_::EventType::OverlapStart)
+        if(!e1 || !e2)
         {
-            bool e1IsValidWeapon = e1->hasComp<Effect>();
-            bool e1IsValidTarget = e1->hasComp<EntityStats>();
-
-            bool e2IsValidWeapon = e2->hasComp<Effect>();
-            bool e2IsValidTarget = e2->hasComp<EntityStats>();
-            
-            if(e1IsValidWeapon && e2IsValidTarget)
-                applyEffect(e1, e2);
-
-            if(e2IsValidWeapon && e1IsValidTarget)
-                applyEffect(e2, e1);        
+            WARNING_MESSAGE("Physic trigger event with null user data will be ignored :(");
+            continue;
         }
+
+        // if(pair.getEventType() == _OverlapPair_::EventType::OverlapStart)
+        // {
+        //     bool e1IsValidWeapon = e1->hasComp<Effect>();
+        //     bool e1IsValidTarget = e1->hasComp<EntityStats>();
+
+        //     bool e2IsValidWeapon = e2->hasComp<Effect>();
+        //     bool e2IsValidTarget = e2->hasComp<EntityStats>();
+            
+        //     if(e1IsValidWeapon && e2IsValidTarget)
+        //         applyEffect(e1, e2);
+
+        //     if(e2IsValidWeapon && e1IsValidTarget)
+        //         applyEffect(e2, e1);        
+        // }
         
     }
 }

@@ -1,7 +1,7 @@
 #include <PhysicsEventListener.hpp>
 #include <GameConstants.hpp>
 
-// #define DO_EVENT_LISTENER_DEBUG_PRINT
+#define DO_EVENT_LISTENER_DEBUG_PRINT
 
 void applyEffect(Entity *weapon, Entity *target)
 {
@@ -51,6 +51,26 @@ void applyEffect(Entity *weapon, Entity *target)
 
     float angle = dot(normalize(wState.position - tState.position), wState.lookDirection);
 
+    #ifdef DO_EVENT_LISTENER_DEBUG_PRINT
+        std::cout << TERMINAL_INFO << TERMINAL_UNDERLINE
+            << "Effect hitzone of type " 
+            << TERMINAL_FILENAME << EffectTypeReverseMap[effect.type] << TERMINAL_INFO
+            << " between object " << weapon->comp<EntityInfos>().name 
+            << " on target " << target->comp<EntityInfos>().name << "\n"
+            << TERMINAL_RESET;
+        
+        std::cout << TERMINAL_INFO
+            << "\tFactions are "
+            << TERMINAL_FILENAME << Faction::TypeReverseMap[wFaction.type] << TERMINAL_INFO
+            << " and "
+            << TERMINAL_FILENAME << Faction::TypeReverseMap[tFaction.type] << TERMINAL_INFO;
+        
+        if(Faction::areEnemy(wFaction, tFaction))
+            std::cout << ". They are enemy.\n" << TERMINAL_RESET;
+        else 
+            std::cout << ". They are not enemies.\n" << TERMINAL_RESET;
+    #endif
+
     /* Applying the effect */
     switch (effect.type)
     {
@@ -72,6 +92,12 @@ void applyEffect(Entity *weapon, Entity *target)
                 if(tAction.attacking && tAction.stance() == ActionState::SPECIAL && wAction.stance() != ActionState::SPECIAL)
                     stun = false;
                 
+                #ifdef DO_EVENT_LISTENER_DEBUG_PRINT
+                    std::cout << TERMINAL_INFO;
+                    std::cout << "\tCalculated damageMult : " << damageMult << "\n";
+                    std::cout << "\tCalculated stun : " << stun << "\n" << TERMINAL_RESET;
+                #endif
+
                 if(damageMult > 0.f)
                 {
                     effect.apply(target->comp<EntityStats>(), damageMult);
@@ -82,32 +108,14 @@ void applyEffect(Entity *weapon, Entity *target)
         
         default : effect.apply(target->comp<EntityStats>()); break;
     }
-
-
-    #ifdef DO_EVENT_LISTENER_DEBUG_PRINT
-        std::cout 
-            << "hitzone between weapon " 
-            << weapon->comp<EntityInfos>().name 
-            << " on target " 
-            << target->comp<EntityInfos>().name 
-            << "\n";
-        
-        std::cout 
-            << "factions are "
-            << (int)wFaction.type
-            << " and "
-            << (int)tFaction.type;
-        
-        if(Faction::areEnemy(wFaction, tFaction))
-            std::cout << ". They are enemy.\n";
-        else 
-            std::cout << ". They are not enemies.\n";
-    #endif
 }
 
 
 void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& callbackData)
 {
+    /* TODO : remove when the crash are fixed*/
+    // return;
+
     uint32 nb = callbackData.getNbOverlappingPairs();
 
     for(uint32 i = 0; i < nb; i++)
@@ -127,20 +135,20 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
             continue;
         }
 
-        // if(pair.getEventType() == _OverlapPair_::EventType::OverlapStart)
-        // {
-        //     bool e1IsValidWeapon = e1->hasComp<Effect>();
-        //     bool e1IsValidTarget = e1->hasComp<EntityStats>();
+        if(pair.getEventType() == _OverlapPair_::EventType::OverlapStart)
+        {
+            bool e1IsValidWeapon = e1->hasComp<Effect>();
+            bool e1IsValidTarget = e1->hasComp<EntityStats>();
 
-        //     bool e2IsValidWeapon = e2->hasComp<Effect>();
-        //     bool e2IsValidTarget = e2->hasComp<EntityStats>();
+            bool e2IsValidWeapon = e2->hasComp<Effect>();
+            bool e2IsValidTarget = e2->hasComp<EntityStats>();
             
-        //     if(e1IsValidWeapon && e2IsValidTarget)
-        //         applyEffect(e1, e2);
+            if(e1IsValidWeapon && e2IsValidTarget)
+                applyEffect(e1, e2);
 
-        //     if(e2IsValidWeapon && e1IsValidTarget)
-        //         applyEffect(e2, e1);        
-        // }
+            if(e2IsValidWeapon && e1IsValidTarget)
+                applyEffect(e2, e1);        
+        }
         
     }
 }

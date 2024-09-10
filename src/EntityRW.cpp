@@ -2,6 +2,9 @@
 #include <AssetManager.hpp>
 #include <AssetManagerUtils.hpp>
 #include <MappedEnum.hpp>
+#include <AnimationBlueprint.hpp>
+
+#include <GameGlobals.hpp>
 
 DATA_WRITE_FUNC(EntityRef)
 {
@@ -48,6 +51,22 @@ DATA_READ_FUNC(EntityRef) {
         }
     }
 
+    if(data->hasComp<EntityState3D>() && data->hasComp<RigidBody>())
+    {
+        auto &b = data->comp<RigidBody>();
+        auto &s = data->comp<EntityState3D>();
+
+        rp3d::Quaternion quat = b->getTransform().getOrientation();
+
+        /* TODO : test */
+        if(s.usequat)
+            quat = quat * PG::torp3d(s.quaternion);
+    
+        b->setTransform(rp3d::Transform(
+            PG::torp3d(s.position) + b->getTransform().getPosition(), 
+            quat));
+    }
+
     if(data->hasComp<Items>())
     {
         auto &items = data->comp<Items>();
@@ -57,6 +76,22 @@ DATA_READ_FUNC(EntityRef) {
                 Items::equip(data, items.equipped[i].item, (EquipementSlots)i, items.equipped[i].id);
         }
     }
+
+    if(data->hasComp<AnimationControllerInfos>())
+    {
+        auto &a = data->comp<AnimationControllerInfos>();
+
+        switch(a.type)
+        {
+            case AnimationControllerInfos::Biped :
+                data->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset(a, data.get()));
+            break;
+
+            default : break;
+        }
+    }
+
+    GG::entities.push_back(data);
 
     DATA_READ_END
 }
@@ -71,5 +106,14 @@ AUTOGEN_COMPONENT_RWFUNC(ActionState)
 AUTOGEN_COMPONENT_RWFUNC(Faction)
 AUTOGEN_COMPONENT_RWFUNC(ItemInfos)
 AUTOGEN_COMPONENT_RWFUNC(Items)
+AUTOGEN_COMPONENT_RWFUNC(ItemTransform)
 
+AUTOGEN_COMPONENT_RWFUNC(EntityModel)
+AUTOGEN_COMPONENT_RWFUNC(SkeletonAnimationState)
+AUTOGEN_COMPONENT_RWFUNC(AnimationControllerInfos)
+
+AUTOGEN_COMPONENT_RWFUNC(Effect)
 AUTOGEN_COMPONENT_RWFUNC(RigidBody)
+
+AUTOGEN_COMPONENT_RWFUNC(DeplacementBehaviour)
+AUTOGEN_COMPONENT_RWFUNC(AgentState)

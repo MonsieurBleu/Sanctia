@@ -5,10 +5,11 @@
 
 GENERATE_ENUM_FAST_REVERSE(DamageType, Pure, Blunt, Slash, Piercing, DamageType_Size);
 
-enum EffectType
-{
-    Damage
-};
+GENERATE_ENUM_FAST_REVERSE(EffectType
+    , Unknown
+    , Damage
+    , Heal
+)
 
 
 struct statBar
@@ -52,7 +53,7 @@ class Effect
         } target = TargetType::ENEMY;
 
 
-        EffectType type;
+        EffectType type = EffectType::Unknown;
 
         int maxTriggerPerEntity = 1;
         int maxTrigger = 1e9;
@@ -66,9 +67,6 @@ class Effect
 
         float value;
         int valtype = (int)DamageType::Pure;
-
-        /* TODO : remove ? */
-        ObjectGroupRef attachement;
 
         void apply(EntityStats &s, float mult = 1.f);
 

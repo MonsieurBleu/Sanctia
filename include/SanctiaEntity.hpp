@@ -62,6 +62,14 @@
 
     COMPONENT(AnimationControllerRef, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
 
+    struct AnimationControllerInfos : std::string
+    {
+        GENERATE_ENUM_FAST_REVERSE(Type, Biped)
+
+        Type type;
+    };
+    COMPONENT(AnimationControllerInfos, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
+
 /***************** PHYSICS *****************/
     const int MAX_PHYSIC_COMP_USAGE = MAX_ENTITY;
 

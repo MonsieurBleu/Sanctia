@@ -11,7 +11,7 @@
 
 COMPONENT_DEFINE_SYNCH(EntityState3D)
 {
-    std::cout << parent.comp<EntityInfos>().name << "\t" << child->comp<EntityInfos>().name << "\n";
+    // std::cout << parent.comp<EntityInfos>().name << "\t" << child->comp<EntityInfos>().name << "\n";
 
 
     auto &ps = parent.comp<EntityState3D>();
@@ -36,7 +36,7 @@ COMPONENT_DEFINE_SYNCH(EntityState3D)
         if(cs.usequat)
         {
             cs.quaternion = directionToQuat(ps.lookDirection)*cs.initQuat;
-            std::cout << glm::to_string(cs.quaternion) << "\n";
+            // std::cout << glm::to_string(cs.quaternion) << "\n";
         }
         else
         {
@@ -148,9 +148,9 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
     //     data->add(getModelFromCollider(l.zone, vec3(1, 0, 0)));
     // }
 
-    if(entity->hasComp<rp3d::RigidBody*>())
+    if(entity->hasComp<RigidBody>())
     {
-        rp3d::RigidBody* b = entity->comp<rp3d::RigidBody*>();
+        RigidBody b = entity->comp<RigidBody>();
 
         const int nb = b->getNbColliders();
 

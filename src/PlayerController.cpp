@@ -11,8 +11,8 @@ PlayerController::PlayerController(Camera *playerCam) : playerCam(playerCam)
 
 void PlayerController::update()
 {
-    if(GG::playerEntity->hasComp<rp3d::RigidBody*>())
-        body = GG::playerEntity->comp<rp3d::RigidBody*>();
+    if(GG::playerEntity->hasComp<RigidBody>())
+        body = GG::playerEntity->comp<RigidBody>();
 
     if(!body) return;
 

@@ -219,23 +219,31 @@ float AnimBlueprint::weaponAttackCallback(
     
     auto &w = e->comp<Items>().equipped[slot].item;
     if(!w.get()) return 1.f;
-    auto &b = w->comp<rp3d::RigidBody*>();
+    auto &b = w->comp<RigidBody>();
 
     
     /* Disable effect componment and mark it for removal */
     if( prct >= end && b->isActive())
+    {
+        // physicsMutex.lock();
         b->setIsActive(false);
+        std::cout << "De-activating body\n";
+        // physicsMutex.unlock();
+    }
 
     if(prct >= begin && prct < end
         && !b->isActive()
         && w->comp<Effect>().affectedEntities.empty()
     )
     {
+        // physicsMutex.lock();
         if(!w->hasComp<ItemInfos>())
         {
             WARNING_MESSAGE("Entity " << e->comp<EntityInfos>().name << " doesn't have item infos for applying effect zone.");
             return 1e12;
         }
+
+        std::cout << "Creating effect\n";
 
         Effect newEffect;
         ItemInfos &infos = w->comp<ItemInfos>();
@@ -246,7 +254,10 @@ float AnimBlueprint::weaponAttackCallback(
         newEffect.usr = e;
         w->set<Effect>(newEffect);
 
+        std::cout << w->comp<Effect>().type << "\n";
+
         b->setIsActive(true);
+        // physicsMutex.unlock();
     }
 
     auto &actionState = e->comp<ActionState>();
@@ -313,6 +324,8 @@ std::function<void (void *)> AnimBlueprint::weaponBlockExit = [](void * usr){
 
 AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, Entity *e)
 {
+    e->set<AnimationControllerInfos>({prefix});
+
     AnimationRef idle   = Loader<AnimationRef>::get(prefix + "_IDLE");
 
     AnimationRef walkF = Loader<AnimationRef>::get(prefix + "_WALK_F");

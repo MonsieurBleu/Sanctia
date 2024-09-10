@@ -135,19 +135,21 @@ class Faction
     
 };
 
-enum DeplacementBehaviour
-{
-    STAND_STILL, DEMO, FOLLOW_WANTED_DIR
-};
+GENERATE_ENUM_FAST_REVERSE(DeplacementBehaviour
+    , STAND_STILL 
+    , DEMO
+    , FOLLOW_WANTED_DIR
+)
 
 struct AgentState
 {
-    enum State
-    {
-        COMBAT_POSITIONING,
-        COMBAT_ATTACKING,
-        COMBAT_BLOCKING
-    } state;
+    GENERATE_ENUM_FAST_REVERSE(State
+        , COMBAT_POSITIONING
+        , COMBAT_ATTACKING
+        , COMBAT_BLOCKING
+    ) 
+    
+    State state;
 
     float timeSinceLastState = 0.f;
     float randomTime = 0.f;

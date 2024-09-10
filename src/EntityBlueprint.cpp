@@ -33,7 +33,7 @@ void Blueprint::Assembly::AddEntityBodies(
     }
 }
 
-rp3d::RigidBody* Blueprint::Assembly::CapsuleBody(float height, vec3 position, EntityRef entity)
+RigidBody Blueprint::Assembly::CapsuleBody(float height, vec3 position, EntityRef entity)
 {
     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(PG::torp3d(position), DEFQUAT));
 
@@ -82,7 +82,7 @@ EntityRef Blueprint::TestManequin()
             , Items{}
             );
 
-    e->set<rp3d::RigidBody*>(Blueprint::Assembly::CapsuleBody(1.75f, position, e));
+    e->set<RigidBody>(Blueprint::Assembly::CapsuleBody(1.75f, position, e));
     e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset("65_2HSword", e.get()));
 
     Items::equip(e, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
@@ -119,7 +119,7 @@ EntityRef Blueprint::Zweihander()
     );
 
 
-    zweihander->set<rp3d::RigidBody*>(body);
+    zweihander->set<RigidBody>(body);
 
     body->setType(rp3d::BodyType::KINEMATIC);
 
@@ -151,7 +151,7 @@ EntityRef Blueprint::Foot()
     }
     );
 
-    feet->set<rp3d::RigidBody*>(body);
+    feet->set<RigidBody>(body);
 
     body->setType(rp3d::BodyType::KINEMATIC);
 

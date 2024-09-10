@@ -8,9 +8,9 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
     {
         item->comp<Effect>().usr = usr.get();
     }
-    if(item->hasComp<rp3d::RigidBody*>())
+    if(item->hasComp<RigidBody>())
     {
-        item->comp<rp3d::RigidBody*>()->setIsActive(false);
+        item->comp<RigidBody>()->setIsActive(false);
     }
 }
 
@@ -24,8 +24,8 @@ void Items::unequip(EntityRef usr, EquipementSlots slot)
     {
         item->comp<Effect>().usr = nullptr;
     }
-    if(item->hasComp<rp3d::RigidBody*>())
+    if(item->hasComp<RigidBody>())
     {
-        item->comp<rp3d::RigidBody*>()->setIsActive(true);
+        item->comp<RigidBody>()->setIsActive(true);
     }
 }

@@ -38,9 +38,9 @@ void Game::physicsLoop()
         physicsTimer.start();
         physicsMutex.lock();
 
-        if(globals._currentController == &spectator && GG::playerEntity->hasComp<rp3d::RigidBody*>())
+        if(globals._currentController == &spectator && GG::playerEntity->hasComp<RigidBody>())
         {
-            auto body = GG::playerEntity->comp<rp3d::RigidBody*>();
+            auto body = GG::playerEntity->comp<RigidBody>();
             if(body)
                 body->setIsActive(false);
         }
@@ -48,8 +48,8 @@ void Game::physicsLoop()
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
 
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
-        System<rp3d::RigidBody*, EntityState3D>([](Entity &entity){
-            auto &b = entity.comp<rp3d::RigidBody*>();
+        System<RigidBody, EntityState3D>([](Entity &entity){
+            auto &b = entity.comp<RigidBody>();
             auto &s = entity.comp<EntityState3D>();
             auto &ds = entity.comp<EntityDeplacementState>();
 

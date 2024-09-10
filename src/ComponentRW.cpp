@@ -222,12 +222,104 @@ DATA_READ_FUNC_INIT(Items)
     }
 DATA_READ_END_FUNC
 
+AUTOGEN_DATA_RW_FUNC(ItemTransform, mat);
+
+DATA_WRITE_FUNC_INIT(EntityModel)
+    if(!data->name.size())
+    {
+        WARNING_MESSAGE("Can't save " << type_name<EntityModel>() << " component. Name is empty");
+        out->write("\"\"", 2);
+    }  
+    else 
+        out->write(CONST_STRING_SIZED(data->name));
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC(EntityModel)
+{ 
+    DATA_READ_INIT(EntityModel)
+
+    data = {Loader<ObjectGroup>::get(std::string(buff->read())).copy()};
+
+    buff->read();
+    return data;
+}
+
+DATA_WRITE_FUNC_INIT(SkeletonAnimationState)
+    out->Entry();
+    WRITE_NAME(name, out)
+    if(!data.name.size())
+    {
+        WARNING_MESSAGE("Can't save " << type_name<decltype(data)>() << " component. Name is empty");
+        out->write("\"\"", 2);
+    }  
+    else 
+        out->write(CONST_STRING_SIZED(data.name));
+
+    out->Entry();
+    WRITE_NAME(data, out)
+    out->write("\"", 1);
+    size_t size = sizeof(mat4)*data.size(); 
+    out->write((const char*)&data[0], size);
+    out->write("\"", 1);
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_INIT(SkeletonAnimationState)
+
+    IF_MEMBER_READ_VALUE(name)
+        data = SkeletonAnimationState(Loader<SkeletonRef>::get(std::string(value)));
+    else IF_MEMBER_READ_VALUE(data)
+    {
+        size_t size = sizeof(mat4)*data.size();
+        memcpy(&data[0], value, size);
+    }
+
+DATA_READ_END_FUNC
+
+/*
+    TODO : maybe put more infos like the current state of the controller
+*/
+DATA_WRITE_FUNC_INIT(AnimationControllerInfos)
+    out->Entry();
+    WRITE_NAME(name, out)
+    if(!data.size())
+    {
+        WARNING_MESSAGE("Can't save " << type_name<decltype(data)>() << " component. Name is empty");
+        out->write("\"\"", 2);
+    }  
+    else 
+        out->write(CONST_STRING_SIZED(data));
+
+    out->Entry();
+    WRITE_NAME(type, out);
+    out->write(CONST_STRING_SIZED(AnimationControllerInfos::TypeReverseMap[data.type]));
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_INIT(AnimationControllerInfos)
+    IF_MEMBER_READ_VALUE(name)
+        data = {std::string(value)};
+    else IF_MEMBER_READ_VALUE(type)
+        MAP_SAFE_READ(AnimationControllerInfos::TypeMap, buff, data.type, value)
+DATA_READ_END_FUNC
+
+/*
+    Effect Loader is kind-of empty for now, because effects are created
+    by animation controller. This could change in the future.
+*/
+DATA_WRITE_FUNC_INIT(Effect)
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC(Effect)
+{ 
+    DATA_READ_INIT(Effect)
+    buff->read();
+    DATA_READ_END
+}
 
 /***************** RP3D LOADERS *****************/
 
 typedef rp3d::Transform Transform;
 
-DATA_WRITE_FUNC_INIT(Transform);
+DATA_WRITE_FUNC_INIT(Transform)
     
     WRITE_FUNC_RESULT(position, PG::toglm(data.getPosition()));
 
@@ -529,3 +621,33 @@ DATA_READ_FUNC_INITI(RigidBody, data = PG::world->createRigidBody(rp3d::Transfor
     }
 
 DATA_READ_END_FUNC 
+
+/******* IA COMPONENT *******/
+DATA_WRITE_FUNC_INIT(DeplacementBehaviour)
+    out->write(CONST_STRING_SIZED(DeplacementBehaviourReverseMap[data]));
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC(DeplacementBehaviour)
+{ 
+    DATA_READ_INIT(DeplacementBehaviour)
+    data = DeplacementBehaviour::STAND_STILL;
+    const char *value = buff->read();
+    MAP_SAFE_READ(DeplacementBehaviourMap, buff, data, value)
+    buff->read();
+    DATA_READ_END
+}
+
+DATA_WRITE_FUNC_INIT(AgentState)
+    out->Entry();
+    WRITE_NAME(state, out)
+    out->write(CONST_STRING_SIZED(AgentState::StateReverseMap[data.state]));
+    FTXTP_WRITE_ELEMENT(data, timeSinceLastState)
+    FTXTP_WRITE_ELEMENT(data, randomTime)
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_INIT(AgentState)
+    IF_MEMBER_READ_VALUE(state)
+        MAP_SAFE_READ(AgentState::StateMap, buff, data.state, value)
+    else IF_MEMBER_FTXTP_LOAD(data, timeSinceLastState)
+    else IF_MEMBER_FTXTP_LOAD(data, randomTime)
+DATA_READ_END_FUNC

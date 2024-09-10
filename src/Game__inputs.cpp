@@ -41,9 +41,9 @@ bool Game::userInput(GLFWKeyInfo input)
                 setController(&playerControl);
                 // playerControl.body->position = globals.currentCamera->getPosition();
 
-                if(GG::playerEntity->hasComp<rp3d::RigidBody*>())
+                if(GG::playerEntity->hasComp<RigidBody>())
                 {
-                    auto body = GG::playerEntity->comp<rp3d::RigidBody*>();
+                    auto body = GG::playerEntity->comp<RigidBody>();
                     if(body)
                     {
                         body->setIsActive(true);
@@ -190,7 +190,6 @@ bool Game::userInput(GLFWKeyInfo input)
                 float cubeSize = 1;
 
                 rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75*cubeSize, 15 + i*2.1*cubeSize, 0), rp3d::Quaternion::identity()));
-
 
                 auto e = newEntity("physictest", body, EntityState3D());
                 GG::entities.push_back(e);

@@ -47,4 +47,4 @@ struct Items
     static void unequip(EntityRef usr, EquipementSlots slot);
 };
 
-struct ItemTransform{mat4 t;};
+struct ItemTransform{mat4 mat;};

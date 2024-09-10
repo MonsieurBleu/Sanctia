@@ -173,6 +173,8 @@ void Game::mainloop()
         , ActionState{}
     );
 
+    GG::playerEntity->comp<EntityStats>().health.max = 1e4;
+    GG::playerEntity->comp<EntityStats>().health.cur = 1e4;
     GG::playerEntity->set<RigidBody>(Blueprint::Assembly::CapsuleBody(1.75, vec3(5, 15, 5), GG::playerEntity));
 
     Items::equip(GG::playerEntity, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
@@ -259,23 +261,41 @@ void Game::mainloop()
         body->setType(rp3d::BodyType::STATIC);
         collider->getMaterial().setBounciness(0.f);
         collider->getMaterial().setFrictionCoefficient(0.5f);
-        collider->setCollisionCategoryBits(CollideCategory::ENVIRONEMENT);
-        collider->setCollideWithMaskBits(CollideCategory::ENVIRONEMENT);
+        collider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+        collider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
     }
 
 
 
     /**** Testing Entity Loading *****/
     {
+        NAMED_TIMER(EntityRW)
+
+        EntityRW.start();
+        
         EntityRef writeTest = Blueprint::TestManequin();
+        writeTest->set<AgentState>({AgentState::COMBAT_POSITIONING});
+        writeTest->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+        writeTest->set<Target>({GG::playerEntity});
+        // EntityRef writeTest = Blueprint::Zweihander();
         VulpineTextOutputRef out(new VulpineTextOutput(1<<16));
         DataLoader<EntityRef>::write(writeTest, out);
         out->saveAs("MannequinTest.vulpineEntity");
+
+
         VulpineTextBuffRef in(new VulpineTextBuff("MannequinTest.vulpineEntity"));
         EntityRef readTest = DataLoader<EntityRef>::read(in);
+        readTest->set<Target>({GG::playerEntity});
+        
         VulpineTextOutputRef out2(new VulpineTextOutput(1<<16));
         DataLoader<EntityRef>::write(readTest, out2);
         out2->saveAs("MannequinTest2.vulpineEntity");
+        GG::entities.push_back(readTest);
+
+        EntityRW.end();
+        std::cout << EntityRW;
+
+        std::cout << readTest->comp<Items>().equipped[WEAPON_SLOT].item->comp<RigidBody>()->isActive() << "\n";
     }
 
 
@@ -303,9 +323,9 @@ void Game::mainloop()
 
     // ComponentModularity::SynchFuncs[0].element(GG::playerEntity, Blueprint::Zweihander());
 
-    GG::playerEntity->set<EntityGroupInfo>(EntityGroupInfo());
-    ComponentModularity::addChild(*GG::playerEntity, Blueprint::Zweihander());
-    ComponentModularity::synchronizeChildren(*GG::playerEntity);
+    // GG::playerEntity->set<EntityGroupInfo>(EntityGroupInfo());
+    // ComponentModularity::addChild(*GG::playerEntity, Blueprint::Zweihander());
+    // ComponentModularity::synchronizeChildren(*GG::playerEntity);
 
 
 // /****** Last Pre Loop Routines ******/
@@ -581,7 +601,7 @@ void Game::mainloop()
             for(auto &i : it.equipped)
                 if(i.item.get())
                 {
-                    mat4 &t = i.item->comp<ItemTransform>().t;
+                    mat4 &t = i.item->comp<ItemTransform>().mat;
                     t = m * sa[i.id] * inverse(sa.skeleton->at(i.id).t);
 
                     if(i.item->hasComp<EntityModel>())

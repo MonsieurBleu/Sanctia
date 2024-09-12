@@ -2,7 +2,7 @@
 #include <AssetManager.hpp>
 #include <AssetManagerUtils.hpp>
 #include <MappedEnum.hpp>
-
+#include <GameConstants.hpp>
 
 DATA_WRITE_FUNC_INIT(Faction);
     out->Entry();
@@ -529,8 +529,6 @@ DATA_WRITE_FUNC_INIT(RigidBody);
 
     WRITE_FUNC_RESULT_COND(linearDampingFactor, data->getLinearDamping(), != 0.f);
 
-    WRITE_FUNC_RESULT(active, data->isActive());
-
     WRITE_FUNC_RESULT(canSleep, data->isAllowedToSleep());
 
     WRITE_FUNC_RESULT_COND(sleeping, data->isSleeping(), && data->isAllowedToSleep());
@@ -548,79 +546,103 @@ DATA_WRITE_FUNC_INIT(RigidBody);
         out->Break();
     }
 
+    WRITE_FUNC_RESULT(active, data->isActive());
     
 
     /* remove later*/
     // DataLoader<Transform>::write(data->getTransform(), out);
 DATA_WRITE_END_FUNC
 
-DATA_READ_FUNC_INITI(RigidBody, data = PG::world->createRigidBody(rp3d::Transform::identity()))
-    IF_MEMBER_READ_VALUE(type)
-        MAP_SAFE_READ_FC(rp3dBodyTypeMap, buff, data->setType, rp3d::BodyType, value)
+DATA_READ_FUNC_ENTITY(RigidBody)
+{ 
+    DATA_READ_INIT(RigidBody)
 
-    else IF_MEMBER_READ_VALUE(mass)
-        data->setMass(FastTextParser::read<float>(value));
-
-    else IF_MEMBER_READ_VALUE(linearVelocity)
-        data->setLinearVelocity(PG::torp3d(FastTextParser::read<vec3>(value)));
-
-    else IF_MEMBER_READ_VALUE(linearLockFactor)
-        data->setLinearLockAxisFactor(PG::torp3d(FastTextParser::read<vec3>(value)));
-
-    else IF_MEMBER_READ_VALUE(linearDampingFactor)
-        data->setLinearDamping(FastTextParser::read<float>(value));
-
-    else IF_MEMBER_READ_VALUE(angularVelocity)
-        data->setAngularVelocity(PG::torp3d(FastTextParser::read<vec3>(value)));
-
-    else IF_MEMBER_READ_VALUE(angularLockFactor)
-        data->setAngularLockAxisFactor(PG::torp3d(FastTextParser::read<vec3>(value)));
-
-    else IF_MEMBER_READ_VALUE(angularDampingFactor)
-        data->setAngularDamping(FastTextParser::read<float>(value));
-
-    else IF_MEMBER_READ_VALUE(active)
-        data->setIsActive(FastTextParser::read<bool>(value));
-
-    else IF_MEMBER_READ_VALUE(sleeping)
-        data->setIsSleeping(FastTextParser::read<bool>(value));
-
-    else IF_MEMBER_READ_VALUE(canSleep)
-        data->setIsAllowedToSleep(FastTextParser::read<bool>(value));
-
-    else IF_MEMBER_READ_VALUE(gravity)
-        data->enableGravity(FastTextParser::read<bool>(value));
-
-    else IF_MEMBER(Colliders)
+    if(e->hasComp<EntityState3D>())
     {
-        while(NEW_VALUE)
-        {
-            member = buff->read();
-            IF_MEMBER(Collider)
-            {
-                buff->read();
-                member = buff->read();
-                IF_MEMBER(CapsuleShape)
-                    newColliderTMP = data->addCollider(DataLoader<CapsuleShape>::read(buff), Transform::identity());
-                else
-                IF_MEMBER(BoxShape)
-                    newColliderTMP = data->addCollider(DataLoader<BoxShape>::read(buff), Transform::identity());
-                else
-                IF_MEMBER(SphereShape)
-                    newColliderTMP = data->addCollider(DataLoader<SphereShape>::read(buff), Transform::identity());
-                
-                newColliderTMP->setCollideWithMaskBits(0);
-                newColliderTMP->setCollisionCategoryBits(0);
-
-                DataLoader<Collider>::read(buff);
-            }
-        }
-
-        data->updateLocalCenterOfMassFromColliders();
-        data->updateLocalInertiaTensorFromColliders();
+        auto &s = e->comp<EntityState3D>();
+        rp3d::Vector3 pos = PG::torp3d(s.position);
+        rp3d::Quaternion quat = s.usequat ? PG::torp3d(s.quaternion) : DEFQUAT;
+        data = PG::world->createRigidBody(Transform(pos, quat));
+    }
+    else
+    {
+        // TODO : put a warning message here
+        FILE_ERROR_MESSAGE(
+            buff->getSource(), 
+            "Entity " << e->comp<EntityInfos>().name << " has empty EntityState3D when creating RigidBody"
+            )
+        data = PG::world->createRigidBody(rp3d::Transform::identity());
     }
 
-DATA_READ_END_FUNC 
+    WHILE_NEW_VALUE
+        IF_MEMBER_READ_VALUE(type)
+            MAP_SAFE_READ_FC(rp3dBodyTypeMap, buff, data->setType, rp3d::BodyType, value)
+
+        else IF_MEMBER_READ_VALUE(mass)
+            data->setMass(FastTextParser::read<float>(value));
+
+        else IF_MEMBER_READ_VALUE(linearVelocity)
+            data->setLinearVelocity(PG::torp3d(FastTextParser::read<vec3>(value)));
+
+        else IF_MEMBER_READ_VALUE(linearLockFactor)
+            data->setLinearLockAxisFactor(PG::torp3d(FastTextParser::read<vec3>(value)));
+
+        else IF_MEMBER_READ_VALUE(linearDampingFactor)
+            data->setLinearDamping(FastTextParser::read<float>(value));
+
+        else IF_MEMBER_READ_VALUE(angularVelocity)
+            data->setAngularVelocity(PG::torp3d(FastTextParser::read<vec3>(value)));
+
+        else IF_MEMBER_READ_VALUE(angularLockFactor)
+            data->setAngularLockAxisFactor(PG::torp3d(FastTextParser::read<vec3>(value)));
+
+        else IF_MEMBER_READ_VALUE(angularDampingFactor)
+            data->setAngularDamping(FastTextParser::read<float>(value));
+
+        else IF_MEMBER_READ_VALUE(active)
+            data->setIsActive(FastTextParser::read<bool>(value));
+
+        else IF_MEMBER_READ_VALUE(sleeping)
+            data->setIsSleeping(FastTextParser::read<bool>(value));
+
+        else IF_MEMBER_READ_VALUE(canSleep)
+            data->setIsAllowedToSleep(FastTextParser::read<bool>(value));
+
+        else IF_MEMBER_READ_VALUE(gravity)
+            data->enableGravity(FastTextParser::read<bool>(value));
+
+        else IF_MEMBER(Colliders)
+        {
+            while(NEW_VALUE)
+            {
+                member = buff->read();
+                IF_MEMBER(Collider)
+                {
+                    buff->read();
+                    member = buff->read();
+                    IF_MEMBER(CapsuleShape)
+                        newColliderTMP = data->addCollider(DataLoader<CapsuleShape>::read(buff), Transform::identity());
+                    else
+                    IF_MEMBER(BoxShape)
+                        newColliderTMP = data->addCollider(DataLoader<BoxShape>::read(buff), Transform::identity());
+                    else
+                    IF_MEMBER(SphereShape)
+                        newColliderTMP = data->addCollider(DataLoader<SphereShape>::read(buff), Transform::identity());
+                    
+                    newColliderTMP->setCollideWithMaskBits(0);
+                    newColliderTMP->setCollisionCategoryBits(0);
+
+                    DataLoader<Collider>::read(buff);
+                }
+            }
+
+            data->updateLocalCenterOfMassFromColliders();
+            data->updateLocalInertiaTensorFromColliders();
+        }
+    WHILE_NEW_VALUE_END 
+
+    DATA_READ_END
+}
 
 /******* IA COMPONENT *******/
 DATA_WRITE_FUNC_INIT(DeplacementBehaviour)

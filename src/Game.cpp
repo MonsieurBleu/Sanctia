@@ -294,8 +294,6 @@ void Game::mainloop()
 
         EntityRW.end();
         std::cout << EntityRW;
-
-        std::cout << readTest->comp<Items>().equipped[WEAPON_SLOT].item->comp<RigidBody>()->isActive() << "\n";
     }
 
 

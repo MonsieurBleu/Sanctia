@@ -218,17 +218,25 @@ float AnimBlueprint::weaponAttackCallback(
 {
     
     auto &w = e->comp<Items>().equipped[slot].item;
-    if(!w.get()) return 1.f;
+
+    if(!w.get())
+    {
+        WARNING_MESSAGE(
+            "Empty item slot " << EquipementSlotsReverseMap[slot] 
+            << " of entity " << e->comp<EntityInfos>().name << ". Animation logic can't be applied here!");
+        return 1.f;
+    }
+
     auto &b = w->comp<RigidBody>();
 
     
     /* Disable effect componment and mark it for removal */
     if( prct >= end && b->isActive())
     {
-        // physicsMutex.lock();
+        physicsMutex.lock();
         b->setIsActive(false);
-        std::cout << "De-activating body\n";
-        // physicsMutex.unlock();
+        // std::cout << TERMINAL_TIMER << "De-activating body\n" << TERMINAL_RESET;
+        physicsMutex.unlock();
     }
 
     if(prct >= begin && prct < end
@@ -236,14 +244,14 @@ float AnimBlueprint::weaponAttackCallback(
         && w->comp<Effect>().affectedEntities.empty()
     )
     {
-        // physicsMutex.lock();
+        physicsMutex.lock();
         if(!w->hasComp<ItemInfos>())
         {
             WARNING_MESSAGE("Entity " << e->comp<EntityInfos>().name << " doesn't have item infos for applying effect zone.");
             return 1e12;
         }
 
-        std::cout << "Creating effect\n";
+        // std::cout << TERMINAL_OK << "Creating effect";
 
         Effect newEffect;
         ItemInfos &infos = w->comp<ItemInfos>();
@@ -254,10 +262,10 @@ float AnimBlueprint::weaponAttackCallback(
         newEffect.usr = e;
         w->set<Effect>(newEffect);
 
-        std::cout << w->comp<Effect>().type << "\n";
+        // std::cout << " with effect type" << EffectTypeReverseMap[w->comp<Effect>().type] << "\n" << TERMINAL_RESET;
 
         b->setIsActive(true);
-        // physicsMutex.unlock();
+        physicsMutex.unlock();
     }
 
     auto &actionState = e->comp<ActionState>();

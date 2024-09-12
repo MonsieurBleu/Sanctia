@@ -51,31 +51,21 @@ DATA_READ_FUNC(EntityRef) {
         }
     }
 
-    if(data->hasComp<EntityState3D>() && data->hasComp<RigidBody>())
-    {
-        auto &b = data->comp<RigidBody>();
-        auto &s = data->comp<EntityState3D>();
+    // if(data->hasComp<EntityState3D>() && data->hasComp<RigidBody>())
+    // {
+    //     auto &b = data->comp<RigidBody>();
+    //     auto &s = data->comp<EntityState3D>();
 
-        rp3d::Quaternion quat = b->getTransform().getOrientation();
+    //     rp3d::Quaternion quat = b->getTransform().getOrientation();
 
-        /* TODO : test */
-        if(s.usequat)
-            quat = quat * PG::torp3d(s.quaternion);
+    //     /* TODO : test */
+    //     if(s.usequat)
+    //         quat = quat * PG::torp3d(s.quaternion);
     
-        b->setTransform(rp3d::Transform(
-            PG::torp3d(s.position) + b->getTransform().getPosition(), 
-            quat));
-    }
-
-    if(data->hasComp<Items>())
-    {
-        auto &items = data->comp<Items>();
-        for(uint64 i = 0; i < sizeof(items.equipped)/sizeof(Items::Equipement); i++)
-        {
-            if(items.equipped[i].item)
-                Items::equip(data, items.equipped[i].item, (EquipementSlots)i, items.equipped[i].id);
-        }
-    }
+    //     b->setTransform(rp3d::Transform(
+    //         PG::torp3d(s.position) + b->getTransform().getPosition(), 
+    //         quat));
+    // }
 
     if(data->hasComp<AnimationControllerInfos>())
     {
@@ -88,6 +78,16 @@ DATA_READ_FUNC(EntityRef) {
             break;
 
             default : break;
+        }
+    }
+
+    if(data->hasComp<Items>())
+    {
+        auto &items = data->comp<Items>();
+        for(uint64 i = 0; i < sizeof(items.equipped)/sizeof(Items::Equipement); i++)
+        {
+            if(items.equipped[i].item)
+                Items::equip(data, items.equipped[i].item, (EquipementSlots)i, items.equipped[i].id);
         }
     }
 
@@ -113,7 +113,7 @@ AUTOGEN_COMPONENT_RWFUNC(SkeletonAnimationState)
 AUTOGEN_COMPONENT_RWFUNC(AnimationControllerInfos)
 
 AUTOGEN_COMPONENT_RWFUNC(Effect)
-AUTOGEN_COMPONENT_RWFUNC(RigidBody)
+AUTOGEN_COMPONENT_RWFUNC_E(RigidBody)
 
 AUTOGEN_COMPONENT_RWFUNC(DeplacementBehaviour)
 AUTOGEN_COMPONENT_RWFUNC(AgentState)

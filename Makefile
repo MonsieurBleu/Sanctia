@@ -7,7 +7,7 @@ endif
 MAKE_FLAGS = --no-print-directory
 MAKE_PARALLEL = -j -k
 
-default : debug
+default : build-debug
 
 run :
 ifeq ($(OS),Windows_NT)
@@ -19,16 +19,16 @@ endif
 run-debug :
 	@cd build && gdb ./$(GEXEC)
 
-debug : 
+build-debug : 
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL) OPTFLAGS="-g"
 
-debug-linear : 
+build-debug-linear : 
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) OPTFLAGS="-g"
 
-debug-fast :
+build-debug-fast :
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) OPTFLAGS="-g -Ofast"
 
-release : 
+build-release : 
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL) OPTFLAGS="-Ofast"
 
 clean : 

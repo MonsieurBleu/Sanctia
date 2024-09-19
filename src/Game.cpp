@@ -35,39 +35,41 @@ void Game::mainloop()
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
-    // ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrainPBR"));
+    {
+        ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrainPBR"));
 
-    // Texture2D HeightMap = Texture2D().loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
-    //     .setFormat(GL_RGB)
-    //     .setInternalFormat(GL_RGB32F)
-    //     .setPixelType(GL_FLOAT)
-    //     .setWrapMode(GL_REPEAT) 
-    //     .setFilter(GL_LINEAR)
-    //     .generate();
-    // terrain->setMap(HeightMap, 2);
+        Texture2D HeightMap = Texture2D().loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
+            .setFormat(GL_RGB)
+            .setInternalFormat(GL_RGB32F)
+            .setPixelType(GL_FLOAT)
+            .setWrapMode(GL_REPEAT) 
+            .setFilter(GL_LINEAR)
+            .generate();
+        terrain->setMap(HeightMap, 2);
 
-    // terrain->setVao(readOBJ("ressources/maps/model.obj"));
-    // terrain->state.scaleScalar(50).setRotation(vec3(0, radians(90.f), 0)).setPosition(vec3(0, 21, 0));
+        terrain->setVao(readOBJ("ressources/maps/model.obj"));
+        terrain->state.scaleScalar(50).setRotation(vec3(0, radians(90.f), 0)).setPosition(vec3(25, 0, 0));
 
-    // const std::string terrainTextures[] = {
-    //     "snowdrift1_ue", "limestone5-bl", "leafy-grass2-bl", "forest-floor-bl-1"};
+        const std::string terrainTextures[] = {
+            "snowdrift1_ue", "limestone5-bl", "leafy-grass2-bl", "forest-floor-bl-1"};
 
-    // const int base = 5;
-    // int i = 0;
-    // for(auto str : terrainTextures)
-    // {
-    //     terrain->setMap(Loader<Texture2D>::get(str+"CE"), base + i);
-    //     terrain->setMap(Loader<Texture2D>::get(str+"NRM"), base + 4 + i);
-    //     i++;
-    // }
+        const int base = 5;
+        int i = 0;
+        for(auto str : terrainTextures)
+        {
+            terrain->setMap(Loader<Texture2D>::get(str+"CE"), base + i);
+            terrain->setMap(Loader<Texture2D>::get(str+"NRM"), base + 4 + i);
+            i++;
+        }
 
-    // terrain->defaultMode = GL_PATCHES;
-    // terrain->tessActivate(vec2(5, 16), vec2(10, 150));
-    // terrain->tessDisplacementFactors(20, 0.001);
-    // terrain->tessHeighFactors(1, 2);
-    // terrain->state.frustumCulled = false;
-    // glPatchParameteri(GL_PATCH_VERTICES, 3);
-    // scene.add(terrain);
+        terrain->defaultMode = GL_PATCHES;
+        terrain->tessActivate(vec2(5, 16), vec2(10, 150));
+        terrain->tessDisplacementFactors(20, 0.001);
+        terrain->tessHeighFactors(1, 2);
+        terrain->state.frustumCulled = false;
+        glPatchParameteri(GL_PATCH_VERTICES, 3);
+        scene.add(terrain);
+    }
 
 
     // ModelRef floor = newModel(GG::PBR);
@@ -103,7 +105,7 @@ void Game::mainloop()
 
     sun->cameraResolution = vec2(2048);
     sun->shadowCameraSize = vec2(75, 75);
-    sun->activateShadows();
+    // sun->activateShadows();
     scene.add(sun);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -276,7 +278,7 @@ void Game::mainloop()
         EntityRef writeTest = Blueprint::TestManequin();
         writeTest->set<AgentState>({AgentState::COMBAT_POSITIONING});
         writeTest->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-        writeTest->set<Target>({GG::playerEntity});
+        // writeTest->set<Target>({GG::playerEntity});
         // EntityRef writeTest = Blueprint::Zweihander();
         VulpineTextOutputRef out(new VulpineTextOutput(1<<16));
         DataLoader<EntityRef>::write(writeTest, out);
@@ -285,7 +287,7 @@ void Game::mainloop()
 
         VulpineTextBuffRef in(new VulpineTextBuff("MannequinTest.vulpineEntity"));
         EntityRef readTest = DataLoader<EntityRef>::read(in);
-        readTest->set<Target>({GG::playerEntity});
+        // readTest->set<Target>({GG::playerEntity});
         
         VulpineTextOutputRef out2(new VulpineTextOutput(1<<16));
         DataLoader<EntityRef>::write(readTest, out2);

@@ -47,6 +47,12 @@ in float terrainHeight;
 
 in vec3 modelPosition;
 
+
+vec3 clamp3D(vec3 inp, float val)
+{
+    return ceil(inp*val)/val;
+}
+
 void main()
 {
     /***** Setting up fragment inputs *****/
@@ -82,11 +88,12 @@ void main()
 
     vec3 cell_center = vec3(0);
 
-    float v2scale = 35;
+    float v2scale = 40;
     float v1scale = v2scale ;
 
-    float clampval = 1000;
-    vec3 vpos = ceil(modelPosition*clampval)/clampval;
+    /* Keep at a non round value not to create clamping artifacts */
+    float clampval = 1001;
+    vec3 vpos = clamp3D(modelPosition, clampval);
 
     vec3 voronoi2 = voronoi3d(-vpos*v2scale, cell_center);
     vec3 voronoi = voronoi3d(
@@ -99,10 +106,12 @@ void main()
             vec3(
                 vor3d_rhash(voronoi2.zz*1e-6), 
                 vor3d_rhash(voronoi2.xy*1e2).x
-                )
-            * 0.015 * v2scale   
+                ) * 0.015 * v2scale
         , cell_center);
 
+    // vec3 voronoi = voronoi2;
+
+        
     float cell = abs(voronoi.x - voronoi.y);
     cell = smoothstep(0.1, 0.0, cell);
 
@@ -113,16 +122,22 @@ void main()
     vec3 vhash = vor3d_hash(cell_center);
     vec3 normalHash = vhash*2.0 - 1.0;
     normalHash = normalHash*sign(normalComposed+normalHash*0.2);
-    normalComposed = mix(normalComposed, normalHash, 0.1);
+    normalComposed = mix(normalComposed, normalHash, 0.01);
     normalComposed = normalize(normalComposed);
 
-
+    vec3 phash = 0.5-vor3d_hash(clamp3D(modelPosition, 2001.258f)*cell_center);
+    
     color = rgb2hsv(color);
-    color += normalHash * 0.035 * (1.0-mMetallic) * vec3(0.25, 1.0, 1.0);
+    color += normalHash * 0.05 * (1.0-mMetallic) * vec3(0.25, 1.0, 1.0);
+
+    color += vec3(0.05, 0.15, 0.1)*phash;
+
     color.gb = clamp(color.gb, 0.0, 1.0);
     color.r = mod(color.r, 1.0);
     color = hsv2rgb(color);
     
+
+
 
     const float bloodyness = 0.0;
     if(bloodyness > 0.0)
@@ -135,6 +150,7 @@ void main()
     }
 
     float dirtyness = 0.0;
+    // if(dirtyness > 0.0)
     {
         vec3 colorDirt = rgb2hsv(color);
         if(vhash.z >= 1.0-dirtyness)
@@ -148,7 +164,7 @@ void main()
         colorDirt = clamp(colorDirt, vec3(0.0), vec3(1.0));
         colorDirt = hsv2rgb(colorDirt);
 
-        float value = vhash.x*0.5 + 0.5*dirtyness;
+        float value = vhash.x*0.1 + 0.9*dirtyness;
         mMetallic = mix(mMetallic, 0.0, value);
         mRoughness = mix(mRoughness, 0.9, value);
         color = mix(color, colorDirt, value);

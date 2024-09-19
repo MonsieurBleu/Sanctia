@@ -1,0 +1,16 @@
+terrain_paintPBR 
+:   terrainGeometry 
+    :   data/placeholders/materials/paintPBR.frag
+    :   shader/special/lod.vert
+    :   shader/special/lod.tesc
+    :   shader/special/lod.tese
+    :   directive "#define USING_TERRAIN_RENDERING"
+    ;
+:   terrainDepthOnly
+    :   shader/foward/basic.frag
+    :   shader/special/lod.vert
+    :   shader/special/lod.tesc
+    :   shader/special/lod.tese
+    :   directive "#define USING_TERRAIN_RENDERING"
+    ;
+;

@@ -36,7 +36,7 @@ void Game::mainloop()
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
     {
-        ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrainPBR"));
+        ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
 
         Texture2D HeightMap = Texture2D().loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
             .setFormat(GL_RGB)
@@ -64,7 +64,8 @@ void Game::mainloop()
 
         terrain->defaultMode = GL_PATCHES;
         terrain->tessActivate(vec2(5, 16), vec2(10, 150));
-        terrain->tessDisplacementFactors(20, 0.001);
+        // terrain->tessDisplacementFactors(20, 0.001);
+        // terrain->tessDisplacementFactors(0, 0);
         terrain->tessHeighFactors(1, 2);
         terrain->state.frustumCulled = false;
         glPatchParameteri(GL_PATCH_VERTICES, 3);

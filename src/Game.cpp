@@ -73,21 +73,20 @@ void Game::mainloop()
     }
 
 
-    // ModelRef floor = newModel(GG::PBR);
-    ModelRef floor = newModel(Loader<MeshMaterial>::get("paintPBR"));
-    floor->loadFromFolder("ressources/models/ground/");
+    // ModelRef floor = newModel(Loader<MeshMaterial>::get("paintPBR"));
+    // floor->loadFromFolder("ressources/models/ground/");
 
-    int gridSize = 25;
-    int gridScale = 1;
-    for (int i = -gridSize; i < gridSize; i++)
-        for (int j = -gridSize; j < gridSize; j++)
-        {
-            ModelRef f = floor->copy();
-            f->state
-                .scaleScalar(gridScale)
-                .setPosition(vec3(i * gridScale , 0, j * gridScale ));
-            scene.add(f);
-        }
+    // int gridSize = 25;
+    // int gridScale = 1;
+    // for (int i = -gridSize; i < gridSize; i++)
+    //     for (int j = -gridSize; j < gridSize; j++)
+    //     {
+    //         ModelRef f = floor->copy();
+    //         f->state
+    //             .scaleScalar(gridScale)
+    //             .setPosition(vec3(i * gridScale , 0, j * gridScale ));
+    //         scene.add(f);
+    //     }
 
 
     // ModelRef lantern = newModel(GG::PBRstencil);
@@ -106,7 +105,7 @@ void Game::mainloop()
 
     sun->cameraResolution = vec2(2048);
     sun->shadowCameraSize = vec2(75, 75);
-    // sun->activateShadows();
+    sun->activateShadows();
     scene.add(sun);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -303,20 +302,31 @@ void Game::mainloop()
 
 
     /***** Setting up material helpers *****/
-
     {
         vec3 position = vec3(0, 2, 5);
-        float jump = 0.2;
+        float jump = 0.25;
         float hueJump = 0.2;
 
-        for(float h = 0.f; h < 1.f; h += hueJump)
+        int c = 0;
+        std::vector<vec3> colors(5);
+
+        u32strtocolorHTML(U"#63462D", colors[0]);
+        u32strtocolorHTML(U"#ABABAB", colors[1]);
+        u32strtocolorHTML(U"#FFD700", colors[2]);
+        u32strtocolorHTML(U"#008AD8", colors[3]);
+        u32strtocolorHTML(U"#FF003F", colors[4]);
+
+        for(float h = 0.f; h < 1.f; h += hueJump, c++)
         for(float i = 1e-6; i < 1.f; i += jump)
         for(float j = 1e-6; j < 1.f; j += jump)
         {
             ModelRef helper = Loader<MeshModel3D>::get("materialHelper").copy();
-            helper->uniforms.add(ShaderUniform(hsv2rgb(vec3(h, 0.85f, 1.f)) , 20));
+
+            helper->uniforms.add(ShaderUniform(colors[c], 20));
             helper->uniforms.add(ShaderUniform(vec2(i, j), 21));
-            helper->state.setPosition(position + 2.f*vec3(2*i, 3*h, 2*j)/jump);
+
+            helper->state.setPosition(position + 2.f*vec3(4*i, 4*h - 2, 4*j)/jump);
+
             scene.add(helper);
         }
     }
@@ -352,6 +362,22 @@ void Game::mainloop()
 /******  Main Loop ******/
     while (state != AppState::quit)
     {
+        
+        static unsigned int itcnt = 0;
+        itcnt ++;
+        if(itcnt%144 == 0)
+        {
+            system("clear");
+            finalProcessingStage.reset();
+            Bloom.getShader().reset();
+            SSAO.getShader().reset();
+            depthOnlyMaterial->reset();
+            skyboxMaterial->reset();
+            for(auto &m : Loader<MeshMaterial>::loadedAssets)
+                m.second->reset();
+        }
+
+
         mainloopStartRoutine();
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));

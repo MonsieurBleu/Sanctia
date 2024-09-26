@@ -148,9 +148,17 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
     //     data->add(getModelFromCollider(l.zone, vec3(1, 0, 0)));
     // }
 
-    if(entity->hasComp<RigidBody>())
+    if(false && entity->hasComp<RigidBody>())
     {
+        std::cout << entity->toStr();
+        std::cout << entity->state.toStr();
+        // std::cout << Componen
+
+        // return;
+
+        std::cout << "Yoooo\n";
         RigidBody b = entity->comp<RigidBody>();
+        std::cout << "=========\n";
 
         const int nb = b->getNbColliders();
 

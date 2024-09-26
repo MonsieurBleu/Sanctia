@@ -363,19 +363,19 @@ void Game::mainloop()
     while (state != AppState::quit)
     {
         
-        static unsigned int itcnt = 0;
-        itcnt ++;
-        if(itcnt%144 == 0)
-        {
-            system("clear");
-            finalProcessingStage.reset();
-            Bloom.getShader().reset();
-            SSAO.getShader().reset();
-            depthOnlyMaterial->reset();
-            skyboxMaterial->reset();
-            for(auto &m : Loader<MeshMaterial>::loadedAssets)
-                m.second->reset();
-        }
+        // static unsigned int itcnt = 0;
+        // itcnt ++;
+        // if(itcnt%144 == 0)
+        // {
+        //     system("clear");
+        //     finalProcessingStage.reset();
+        //     Bloom.getShader().reset();
+        //     SSAO.getShader().reset();
+        //     depthOnlyMaterial->reset();
+        //     skyboxMaterial->reset();
+        //     for(auto &m : Loader<MeshMaterial>::loadedAssets)
+        //         m.second->reset();
+        // }
 
 
         mainloopStartRoutine();

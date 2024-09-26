@@ -101,8 +101,8 @@ void paintShader(
     inout float _m
 )
 {    
-    mDirtyness = 0.5 + 0.5*cos(_iTime);
-    mDirtynessFactor = clamp(modelPosition.x*2.0, 0, 1);
+    // mDirtyness = 0.5 + 0.5*cos(_iTime);
+    // mDirtynessFactor = clamp(modelPosition.x*2.0, 0, 1);
 
     /**** Extract scale from modelMatrix, assuming scale is uniform
     ****/

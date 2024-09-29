@@ -37,6 +37,7 @@ private:
     EffectHandler effects;
 
     bool hideHUD = false;
+    bool wireframe = false;
 
 public:
     static inline LimitTimer physicsTicks;

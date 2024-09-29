@@ -38,7 +38,9 @@ void Game::mainloop()
     {
         ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
 
-        Texture2D HeightMap = Texture2D().loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
+        Texture2D HeightMap = Texture2D()
+            .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
+            // .loadFromFileHDR("ressources/maps/heightMapTest.hdr")
             .setFormat(GL_RGB)
             .setInternalFormat(GL_RGB32F)
             .setPixelType(GL_FLOAT)
@@ -329,6 +331,11 @@ void Game::mainloop()
 
             scene.add(helper);
         }
+
+
+        Loader<MeshMaterial>::get("packingPaint");
+
+        scene.add(Loader<MeshModel3D>::get("packingPaintHelper").copy());
     }
 
 
@@ -363,19 +370,19 @@ void Game::mainloop()
     while (state != AppState::quit)
     {
         
-        // static unsigned int itcnt = 0;
-        // itcnt ++;
-        // if(itcnt%144 == 0)
-        // {
-        //     system("clear");
-        //     finalProcessingStage.reset();
-        //     Bloom.getShader().reset();
-        //     SSAO.getShader().reset();
-        //     depthOnlyMaterial->reset();
-        //     skyboxMaterial->reset();
-        //     for(auto &m : Loader<MeshMaterial>::loadedAssets)
-        //         m.second->reset();
-        // }
+        static unsigned int itcnt = 0;
+        itcnt ++;
+        if(itcnt%144 == 0)
+        {
+            system("clear");
+            finalProcessingStage.reset();
+            Bloom.getShader().reset();
+            SSAO.getShader().reset();
+            depthOnlyMaterial->reset();
+            skyboxMaterial->reset();
+            for(auto &m : Loader<MeshMaterial>::loadedAssets)
+                m.second->reset();
+        }
 
 
         mainloopStartRoutine();
@@ -655,6 +662,17 @@ void Game::mainloop()
         renderBuffer.activate();
         scene.cull();
 
+        if(wireframe)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            skybox->state.hide = HIDE;
+        }
+        else
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            skybox->state.hide = SHOW;
+        }    
+
         /* 3D Early Depth Testing */
         // scene.depthOnlyDraw(*globals.currentCamera, true);
         // glDepthFunc(GL_EQUAL);
@@ -665,6 +683,8 @@ void Game::mainloop()
         scene.genLightBuffer();
         scene.draw();
         renderBuffer.deactivate();
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         /* Post Processing */
         renderBuffer.bindTextures();

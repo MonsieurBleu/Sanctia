@@ -62,6 +62,10 @@ bool Game::userInput(GLFWKeyInfo input)
             globals.simulationTime.toggle();
             break;
 
+        case GLFW_KEY_F1 :
+            wireframe = !wireframe;
+            break;
+
         case GLFW_KEY_E :
             if(globals.getController() == &playerControl)
                 setController(&dialogueControl);

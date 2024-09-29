@@ -1,6 +1,7 @@
 paintPBRnouv
 :   paintPBRnouvGeometry
-    :   data/placeholders/materials/paintPBR.frag
+    *:   data/placeholders/materials/paintPBR.frag*
+    :   data/placeholders/materials/packing/packingPaint.frag
     :   data/placeholders/materials/paintPBR.vert
     ;
 :   paintPBRnouvDepthOnly

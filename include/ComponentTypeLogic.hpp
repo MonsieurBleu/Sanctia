@@ -16,6 +16,8 @@ using namespace glm;
 
 #include <unordered_set>
 
+#define UNINITIALIZED_FLOAT 1e12
+
 struct EntityState3D
 {
     EntityState3D(){};
@@ -28,15 +30,21 @@ struct EntityState3D
 
     bool usequat = false;
     bool useinit = false;
+    bool usePhysicInterpolation = true;
 
-    vec3 initPosition = vec3(0);
+    vec3 initPosition = vec3(UNINITIALIZED_FLOAT);
     quat initQuat = quat(1, 0, 0, 0);
     vec3 initLookDirection = vec3(0);
+
+    vec3 _PhysicTmpPos = vec3(UNINITIALIZED_FLOAT);
+    quat _PhysicTmpQuat = quat(1, 0, 0, 0);
+    // vec3 _PhysicTmpLookDirection = vec3(0);
 
     #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
     bool physicActivated = true;
     #endif
 };
+
 
 struct EntityDeplacementState
 {

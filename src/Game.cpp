@@ -23,6 +23,7 @@
 
 void Game::mainloop()
 {
+
 /****** Loading Models and setting up the scene ******/
     ModelRef skybox = newModel(skyboxMaterial);
     skybox->loadFromFolder("ressources/models/skybox/", true, false);
@@ -39,8 +40,10 @@ void Game::mainloop()
         ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
 
         Texture2D HeightMap = Texture2D()
-            .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
+            // .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
             // .loadFromFileHDR("ressources/maps/heightMapTest.hdr")
+            .loadFromFileHDR("ressources/maps/heightMapTest5.hdr")
+            // .loadFromFileHDR("ressources/maps/RT512.hdr")
             .setFormat(GL_RGB)
             .setInternalFormat(GL_RGB32F)
             .setPixelType(GL_FLOAT)
@@ -72,6 +75,74 @@ void Game::mainloop()
         terrain->state.frustumCulled = false;
         glPatchParameteri(GL_PATCH_VERTICES, 3);
         scene.add(terrain);
+
+
+        /* Testing rp3d height maps collider */
+
+        RigidBody b = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, 0, 0), rp3d::Quaternion::identity()));
+
+        EntityRef e = newEntity("Terrain test", b);
+
+        float test[16]
+        {
+            1.0, 1.0, 1.0, 1.0,
+            0.7, 0.7, 0.7, 0.7,
+            0.2, 0.2, 0.2, 0.2,
+            0.0, 0.0, 0.0, 0.0
+        };
+
+        ivec2 size = HeightMap.getResolution();
+        float *copy = new float[size.x*size.y];
+        float *src = ((float *)HeightMap.getPixelSource());
+
+        for(int i = 0; i < size.x; i++)
+        for(int j = 0; j < size.y; j++)
+        {
+            // std::cout << ((float *)HeightMap.getPixelSource())[i*HeightMap.getResolution().y + j] << "\n";
+
+            // heightValues[indexRow * nbColumns + indexColumn]
+
+            // copy[i * size.y + j] = src[j * size.x + i];
+            // copy[i * size.x + j] = src[j * size.x + i];
+            copy[i * size.x + j] = src[3*(i * size.x + j)];
+        }
+        
+
+        std::vector<rp3d::Message> messages;
+        auto field = PG::common.createHeightField(
+
+            HeightMap.getResolution().x, 
+            HeightMap.getResolution().y,
+            copy,
+            // HeightMap.getPixelSource(),
+            // 4, 4, test,
+            reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
+            messages,
+            1.f
+            );
+
+
+
+        for(auto &i : messages)
+            std::cout << i.text << "\n";
+
+        b->setType(rp3d::BodyType::STATIC);
+
+
+        Blueprint::Assembly::AddEntityBodies(b, e.get(), 
+            {
+                {PG::common.createHeightFieldShape(
+                    field
+                    , rp3d::Vector3(250.0/HeightMap.getResolution().x, 200.0, 250.0/HeightMap.getResolution().y)
+                    // , rp3d::Vector3(1.0, 5.0, 1.0)
+                    )
+                    ,rp3d::Transform::identity()}
+            }, {});
+
+        e->set<PhysicsHelpers>(PhysicsHelpers());
+        GG::entities.push_back(e);
+
+        GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated; 
     }
 
 
@@ -243,31 +314,31 @@ void Game::mainloop()
     //     c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
     // }
 
-    for(int i = 0; i < 0; i++)
-    {
-        ObjectGroupRef model = newObjectGroup();
-        model->add(CubeHelperRef(new CubeHelper(vec3(1), vec3(-1))));
+    // for(int i = 0; i < 0; i++)
+    // {
+    //     ObjectGroupRef model = newObjectGroup();
+    //     model->add(CubeHelperRef(new CubeHelper(vec3(1), vec3(-1))));
 
-        rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75, 15 + i*2.1, 0), rp3d::Quaternion::identity()));
+    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75, 15 + i*2.1, 0), rp3d::Quaternion::identity()));
 
-        body->addCollider(PG::common.createBoxShape(rp3d::Vector3(1, 1, 1)), rp3d::Transform::identity());
+    //     body->addCollider(PG::common.createBoxShape(rp3d::Vector3(1, 1, 1)), rp3d::Transform::identity());
 
-        auto e = newEntity("physictest", EntityModel{model}, body, EntityState3D());
-        GG::entities.push_back(e);
+    //     auto e = newEntity("physictest", EntityModel{model}, body, EntityState3D());
+    //     GG::entities.push_back(e);
 
-        e->comp<EntityDeplacementState>().wantedDepDirection = vec3(0, 0, 1);
-        e->comp<EntityDeplacementState>().wantedSpeed = 3.0;
-        e->comp<EntityState3D>().usequat = true;
-    }
-    {
-        rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, -15, 0), rp3d::Quaternion::identity()));
-        auto collider = body->addCollider(PG::common.createBoxShape(rp3d::Vector3(100, 15, 100)), rp3d::Transform::identity());
-        body->setType(rp3d::BodyType::STATIC);
-        collider->getMaterial().setBounciness(0.f);
-        collider->getMaterial().setFrictionCoefficient(0.5f);
-        collider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
-        collider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
-    }
+    //     e->comp<EntityDeplacementState>().wantedDepDirection = vec3(0, 0, 1);
+    //     e->comp<EntityDeplacementState>().wantedSpeed = 3.0;
+    //     e->comp<EntityState3D>().usequat = true;
+    // }
+    // {
+    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, -15, 0), rp3d::Quaternion::identity()));
+    //     auto collider = body->addCollider(PG::common.createBoxShape(rp3d::Vector3(100, 15, 100)), rp3d::Transform::identity());
+    //     body->setType(rp3d::BodyType::STATIC);
+    //     collider->getMaterial().setBounciness(0.f);
+    //     collider->getMaterial().setFrictionCoefficient(0.5f);
+    //     collider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+    //     collider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+    // }
 
 
 
@@ -370,19 +441,19 @@ void Game::mainloop()
     while (state != AppState::quit)
     {
         
-        static unsigned int itcnt = 0;
-        itcnt ++;
-        if(itcnt%144 == 0)
-        {
-            system("clear");
-            finalProcessingStage.reset();
-            Bloom.getShader().reset();
-            SSAO.getShader().reset();
-            depthOnlyMaterial->reset();
-            skyboxMaterial->reset();
-            for(auto &m : Loader<MeshMaterial>::loadedAssets)
-                m.second->reset();
-        }
+        // static unsigned int itcnt = 0;
+        // itcnt ++;
+        // if(itcnt%144 == 0)
+        // {
+        //     system("clear");
+        //     finalProcessingStage.reset();
+        //     Bloom.getShader().reset();
+        //     SSAO.getShader().reset();
+        //     depthOnlyMaterial->reset();
+        //     skyboxMaterial->reset();
+        //     for(auto &m : Loader<MeshMaterial>::loadedAssets)
+        //         m.second->reset();
+        // }
 
 
         mainloopStartRoutine();
@@ -502,6 +573,12 @@ void Game::mainloop()
 
         
     /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
+
+
+        PG::physicInterpolationMutex.lock();
+        float physicInterpolationValue = clamp((PG::PG::physicInterpolationTick.timeSinceLastTickMS()*physicsTicks.freq),0.f, 1.f);  
+        PG::physicInterpolationMutex.unlock();
+
         System<EntityModel, EntityState3D>([&, this](Entity &entity)
         {            
             EntityModel& model = entity.comp<EntityModel>();
@@ -511,7 +588,10 @@ void Game::mainloop()
             if(s.usequat)
             {
                 // model->state.setRotation(glm::eulerAngles(s.quaternion));
-                model->state.setQuaternion(s.quaternion);
+                // model->state.setQuaternion(s.quaternion);
+                model->state.setQuaternion(glm::eulerAngles(
+                    slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue)
+                    ));
             }
             else if(dir.x != 0.f || dir.z != 0.f)
             {
@@ -524,7 +604,12 @@ void Game::mainloop()
                 model->state.setRotation(glm::eulerAngles(resQuat));
             }
 
-            model->state.setPosition(s.position);
+            // model->state.setPosition(s.position);
+
+            if(s._PhysicTmpPos == vec3(UNINITIALIZED_FLOAT))
+                model->state.setPosition(s.position);
+            else
+                model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue));
 
             if(
                 &entity == GG::playerEntity.get() 
@@ -534,7 +619,10 @@ void Game::mainloop()
                 // vec3 pos = this->playerControl.cameraShiftPos;
 
                 model->state.update();
-                model->state.setPosition(s.position);
+                // model->state.setPosition(s.position);
+                model->state.setPosition(
+                    mix(s._PhysicTmpPos, s.position, physicInterpolationValue)
+                    );
 
                 auto &s = entity.comp<SkeletonAnimationState>();
 
@@ -547,7 +635,7 @@ void Game::mainloop()
 
     /***** UPDATING PHYSICS HELPER *****/
         #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
-        System<PhysicsHelpers, EntityState3D>([&, this](Entity &entity)
+        System<PhysicsHelpers, RigidBody, EntityState3D>([&, this](Entity &entity)
         {           
             auto &model = entity.comp<PhysicsHelpers>();
             auto &s = entity.comp<EntityState3D>();
@@ -561,10 +649,28 @@ void Game::mainloop()
             else
             {
                 model->state.hide = ModelStateHideStatus::SHOW;
-                model->state.setPosition(s.position);
-                model->state.setQuaternion(s.quaternion);
-            }
 
+                switch (entity.comp<RigidBody>()->getType())
+                {
+                case rp3d::BodyType::DYNAMIC :
+                    model->state.setPosition(
+                        mix(s._PhysicTmpPos, s.position, physicInterpolationValue)
+                        );
+                    model->state.setQuaternion(glm::eulerAngles(
+                        slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue)
+                        ));
+
+                    break; 
+
+                case rp3d::BodyType::KINEMATIC :
+                    model->state.setPosition(s.position);
+                    model->state.setQuaternion(s.quaternion);
+                    break;
+                
+                default:
+                    break;
+                }
+            }
         });
         #endif
 

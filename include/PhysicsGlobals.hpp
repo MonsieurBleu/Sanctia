@@ -42,4 +42,8 @@ class PG
         static inline rp3d::Quaternion torp3d(const quat &v){return rp3d::Quaternion(v.x, v.y, v.z, v.w);}; 
 
         static inline float currentPhysicFreq = 0.f;
+
+        static inline TickTimer physicInterpolationTick;
+        static inline std::mutex physicInterpolationMutex;
+        static inline bool doPhysicInterpolation = true;
 };

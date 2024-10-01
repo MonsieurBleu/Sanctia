@@ -47,6 +47,10 @@ void Game::physicsLoop()
 
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
 
+        PG::physicInterpolationMutex.lock();
+        PG::physicInterpolationTick.tick();
+        PG::physicInterpolationMutex.unlock();
+
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
         System<RigidBody, EntityState3D>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
@@ -63,6 +67,18 @@ void Game::physicsLoop()
             case rp3d::BodyType::DYNAMIC : 
                 {
                     auto &t = b->getTransform();
+
+                    if(!PG::doPhysicInterpolation || s._PhysicTmpPos.x == UNINITIALIZED_FLOAT)
+                    {
+                        s._PhysicTmpPos = PG::toglm(t.getPosition());
+                        s._PhysicTmpQuat = PG::toglm(t.getOrientation());
+                    }   
+                    else
+                    {
+                        s._PhysicTmpPos  = s.position;
+                        s._PhysicTmpQuat = s.quaternion;
+                    }
+
                     s.position = PG::toglm(t.getPosition());
                     s.quaternion = PG::toglm(t.getOrientation());
                     
@@ -77,6 +93,7 @@ void Game::physicsLoop()
                             Luna said this methode render bunny hopping impossible.
                     */
                     ds.grounded = abs(b->getLinearVelocity().y) < 5e-4;
+                    ds.grounded = true; // TODO : fix grounded
                     ds.deplacementDirection = normalize(PG::toglm(b->getLinearVelocity()));
 
                     float maxspeed = ds.grounded ? ds.wantedSpeed : ds.airSpeed; 
@@ -369,7 +386,7 @@ void Game::physicsLoop()
             physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
         }
 
-        ManageGarbage<rp3d::RigidBody *>();
+        ManageGarbage<RigidBody>();
 
         physicsMutex.unlock();
 

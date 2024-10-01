@@ -18,7 +18,8 @@ void Blueprint::Assembly::AddEntityBodies(
     {
         auto c = body->addCollider(i.first, i.second);
         c->getMaterial().setBounciness(0.f);
-        c->getMaterial().setFrictionCoefficient(1.f);
+        // c->getMaterial().setFrictionCoefficient(1.f);:
+        c->getMaterial().setFrictionCoefficient(0.1);
         c->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
         c->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
     }

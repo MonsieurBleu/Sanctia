@@ -193,19 +193,25 @@ bool Game::userInput(GLFWKeyInfo input)
             {
                 float cubeSize = 1;
 
-                rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75*cubeSize, 15 + i*2.1*cubeSize, 0), rp3d::Quaternion::identity()));
+                RigidBody body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75*cubeSize, 15 + i*2.1*cubeSize, 0), rp3d::Quaternion::identity()));
 
                 auto e = newEntity("physictest", body, EntityState3D());
                 GG::entities.push_back(e);
 
                 Blueprint::Assembly::AddEntityBodies(body, e.get(), {
-                    {PG::common.createCapsuleShape(cubeSize*0.5, cubeSize*0.75), rp3d::Transform::identity()}
+                    {PG::common.createCapsuleShape(cubeSize*0.5, cubeSize*0.75), rp3d::Transform::identity(), }
                 }, {});
 
                 e->comp<EntityState3D>().usequat = true;
+
+                e->set<PhysicsHelpers>(PhysicsHelpers());
             }
             physicsMutex.unlock();
             
+            break;
+
+        case GLFW_KEY_KP_1 :
+            PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
             break;
 
         default:

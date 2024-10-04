@@ -232,7 +232,17 @@ void paintShader(
     /**** Perturbing light-calculation related data
     *****/
     #ifdef USING_TERRAIN_RENDERING
-    if(lodScale <= 1.0)
+    if(lodScale > 1.001)
+    {
+        // TODO : test
+        // _p = vec3(_modelMatrix * vec4(cell_center/(voronoi_scale*_modelScale), 1.0));
+        
+        // _p = mix(position, _p, 0.35);
+        // _p.y = position.y;
+
+        // _v = normalize(_cameraPosition - _p);
+    }
+    else
     #endif
     {
         _p = vec3(_modelMatrix * vec4(cell_center/(voronoi_scale*_modelScale), 1.0));

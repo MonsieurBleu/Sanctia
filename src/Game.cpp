@@ -36,8 +36,11 @@ void Game::mainloop()
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
+    ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
+
     {
-        ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
+        float TerrainHScale = 50;
+        float TerrainVScale = 25;;
 
         Texture2D HeightMap = Texture2D()
             // .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
@@ -52,8 +55,14 @@ void Game::mainloop()
             .generate();
         terrain->setMap(HeightMap, 2);
 
-        terrain->setVao(readOBJ("ressources/maps/model.obj"));
-        terrain->state.scaleScalar(50).setRotation(vec3(0, radians(90.f), 0)).setPosition(vec3(25, 0, 0));
+        // terrain->setVao(readOBJ("ressources/maps/model.obj"));
+        terrain->setVao(Loader<MeshVao>::get("terrainPlane"));
+
+        terrain->state
+            .setScale(vec3(TerrainHScale, TerrainVScale, TerrainHScale))
+            // .setRotation(vec3(0, radians(90.f), 0))
+            // .setPosition(vec3(25, 0, 0))
+            ;
 
         const std::string terrainTextures[] = {
             "snowdrift1_ue", "limestone5-bl", "leafy-grass2-bl", "forest-floor-bl-1"};
@@ -68,10 +77,10 @@ void Game::mainloop()
         }
 
         terrain->defaultMode = GL_PATCHES;
-        terrain->tessActivate(vec2(5, 16), vec2(10, 150));
+        terrain->tessActivate(vec2(4, 32), vec2(10, 50));
         // terrain->tessDisplacementFactors(20, 0.001);
         // terrain->tessDisplacementFactors(0, 0);
-        terrain->tessHeighFactors(1, 2);
+        terrain->tessHeighFactors(1, 1);
         terrain->state.frustumCulled = false;
         glPatchParameteri(GL_PATCH_VERTICES, 3);
         scene.add(terrain);
@@ -133,7 +142,7 @@ void Game::mainloop()
             {
                 {PG::common.createHeightFieldShape(
                     field
-                    , rp3d::Vector3(250.0/HeightMap.getResolution().x, 200.0, 250.0/HeightMap.getResolution().y)
+                    , rp3d::Vector3(TerrainHScale/HeightMap.getResolution().x, TerrainVScale, TerrainHScale/HeightMap.getResolution().y)
                     // , rp3d::Vector3(1.0, 5.0, 1.0)
                     )
                     ,rp3d::Transform::identity()}
@@ -183,7 +192,7 @@ void Game::mainloop()
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
-    glLineWidth(3.0);
+    glLineWidth(1.0);
 
 /****** Setting Up Debug UI *******/
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
@@ -201,7 +210,7 @@ void Game::mainloop()
     globals.fpsLimiter.setMenu(menu);
     physicsTicks.setMenu(menu);
     sun->setMenu(menu, U"Sun");
-    // terrain->setMenu(menu, U"Ground Model");
+    terrain->setMenu(menu, U"Terrain Model");
 
     std::vector<FastUI_value> GameConditionsValues;
 
@@ -398,13 +407,10 @@ void Game::mainloop()
             helper->uniforms.add(ShaderUniform(colors[c], 20));
             helper->uniforms.add(ShaderUniform(vec2(i, j), 21));
 
-            helper->state.setPosition(position + 2.f*vec3(4*i, 4*h - 2, 4*j)/jump);
+            helper->state.setPosition(position + 2.f*vec3(4*i, 4*h - 2, 4*j)/jump + vec3(25, 0, 0));
 
             scene.add(helper);
         }
-
-
-        Loader<MeshMaterial>::get("packingPaint");
 
         scene.add(Loader<MeshModel3D>::get("packingPaintHelper").copy());
     }
@@ -441,19 +447,19 @@ void Game::mainloop()
     while (state != AppState::quit)
     {
         
-        // static unsigned int itcnt = 0;
-        // itcnt ++;
-        // if(itcnt%144 == 0)
-        // {
-        //     system("clear");
-        //     finalProcessingStage.reset();
-        //     Bloom.getShader().reset();
-        //     SSAO.getShader().reset();
-        //     depthOnlyMaterial->reset();
-        //     skyboxMaterial->reset();
-        //     for(auto &m : Loader<MeshMaterial>::loadedAssets)
-        //         m.second->reset();
-        // }
+        static unsigned int itcnt = 0;
+        itcnt ++;
+        if(itcnt%144 == 0)
+        {
+            system("clear");
+            finalProcessingStage.reset();
+            Bloom.getShader().reset();
+            SSAO.getShader().reset();
+            depthOnlyMaterial->reset();
+            skyboxMaterial->reset();
+            for(auto &m : Loader<MeshMaterial>::loadedAssets)
+                m.second->reset();
+        }
 
 
         mainloopStartRoutine();

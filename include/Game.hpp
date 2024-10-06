@@ -39,6 +39,8 @@ private:
     bool hideHUD = false;
     bool wireframe = false;
 
+    bool doAutomaticShaderRefresh = false;
+
 public:
     static inline LimitTimer physicsTicks;
     static inline BenchTimer physicsTimer = BenchTimer("Physics Timer");

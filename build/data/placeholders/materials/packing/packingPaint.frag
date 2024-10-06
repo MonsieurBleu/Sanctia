@@ -10,6 +10,7 @@
 #define SKYBOX_REFLECTION
 // #define CUBEMAP_SKYBOX
 // #define USE_TOON_SHADING
+#define USING_LOD_TESSELATION
 
 #ifdef ARB_BINDLESS_TEXTURE
 #extension GL_ARB_bindless_texture : require
@@ -46,6 +47,18 @@
 #include functions/TerrainTexture.glsl
     in vec2 terrainUv;
     in float terrainHeight;
+
+
+#ifdef ARB_BINDLESS_TEXTURE
+    layout (location = 20, bindless_sampler) uniform sampler2D bColor;
+    // layout (location = 21, bindless_sampler) uniform sampler2D bMaterial;
+    layout (location = 22, bindless_sampler) uniform sampler2D bHeight;
+#else
+    layout(binding = 0) uniform sampler2D b_Color;
+    layout(binding = 1) uniform sampler2D bMaterial;
+    layout(binding = 2) uniform sampler2D bHeight;
+#endif
+
 #endif
 
 in vec3 modelPosition;
@@ -121,21 +134,32 @@ void paintShader(
 
     /**** Extract scale from modelMatrix, assuming scale is uniform
     ****/
-    float _modelScale = length(vec3(_modelMatrix[0].x, _modelMatrix[1].x, _modelMatrix[2].x));
+    vec3 _modelScale = vec3(
+        length(vec3(_modelMatrix[0].x, _modelMatrix[1].x, _modelMatrix[2].x)),
+        length(vec3(_modelMatrix[0].y, _modelMatrix[1].y, _modelMatrix[2].y)),
+        length(vec3(_modelMatrix[0].z, _modelMatrix[1].z, _modelMatrix[2].z))
+    )
+    ;
 
 
 
     /**** Calculating the brush size dependong on distance from camera
     ****/
     float lodScale = length(_cameraPosition - _p)/1.0;
-    lodScale += vor3d_hash(clamp3D(position, 1001)).x*5.0;
-    lodScale -= mod(lodScale, 7.0);
+    
+    lodScale += vor3d_hash(clamp3D(position, 1001)).x*2.0;
+
+    lodScale -= mod(lodScale, 8.0);
+
+    lodScale = pow(lodScale, 1.0);
     
     // lodScale = min(pow(1.035, lodScale*2.5), 50);
 
-    lodScale = pow(lodScale, 1.0);
+    lodScale = min(lodScale, 200);
 
     lodScale = max(1.0, lodScale);
+
+    // lodScale = pow(lodScale, 0.5);
 
     _modelScale /= lodScale;
 
@@ -173,6 +197,7 @@ void paintShader(
     #ifdef USING_TERRAIN_RENDERING
         /* TODO : remove later when terrain normals are fixed */
         vec3 brushtrail_norm = normalize(cross(vec3(0, 1 , 0), vor3d_hash(cell_center)));
+        // vec3 brushtrail_norm = normalize(cross(_n, vor3d_hash(cell_center)));
     #else
         vec3 brushtrail_norm = normalize(cross(_n, vor3d_hash(cell_center)));
     #endif
@@ -261,7 +286,48 @@ void paintShader(
 
 void main()
 {
+    normalComposed = normal;
+    
 #ifdef USING_TERRAIN_RENDERING
+
+        // float bias = 0.025;
+        // vec2 hUv = terrainUv*lodHeightDispFactors.z;
+        // float h1 = texture(bHeight, clamp(hUv, 0.001, 0.999)).r;
+
+        // float h2 = texture(bHeight, clamp(hUv+vec2(bias, 0), 0.001, 0.999)).r;
+        // float h3 = texture(bHeight, clamp(hUv+vec2(0, bias), 0.001, 0.999)).r;
+
+        // float h4 = texture(bHeight, clamp(hUv-vec2(bias, 0), 0.001, 0.999)).r;
+        // float h5 = texture(bHeight, clamp(hUv-vec2(0, bias), 0.001, 0.999)).r;
+
+        // float slopep = max(abs(h1-h2), abs(h1-h3))/bias;
+        // float slopem = max(abs(h1-h4), abs(h1-h5))/bias;
+        // float slope = max(slopep, slopem);
+        // normalComposed = vec3(slope, 1.0-slope, 0);
+
+        // float dist = bias/lodHeightDispFactors.w;
+        // vec3 nP1 = normal*h1; 
+        // vec3 nP2 = normal*h2 + vec3(dist, 0, 0); 
+        // vec3 nP3 = normal*h3 + vec3(0, 0, dist); 
+        // vec3 nP4 = normal*h4 - vec3(dist, 0, 0); 
+        // vec3 nP5 = normal*h5 - vec3(0, 0, dist); 
+        // vec3 n1 = normalize(cross(nP2-nP1, nP3-nP1));
+        // vec3 n2 = normalize(cross(nP4-nP1, nP5-nP1));
+        // vec3 n3 = -normalize(cross(nP2-nP1, nP5-nP1));
+        // vec3 n4 = -normalize(cross(nP4-nP1, nP3-nP1));
+
+        // normalComposed = normalize(
+        //     -n1 
+        //     -n2 
+        //     -n3 
+        //     -n4 
+        //     );
+
+        // normalComposed = normalize(-max(abs(n1), abs(n2))*sign(n1));
+
+        // fragColor.rgb = 0.5 + 0.5*normalComposed;
+        // return;
+
         vec4 facttext = texture(bTerrainMap, terrainUv);
         
         vec4 factors = getTerrainFactorFromState(normal, terrainHeight);
@@ -275,11 +341,14 @@ void main()
         color = mix(color, vec3(0xB4, 0xA1, 0x6E)/255.0, factors[1]); // rocks
         color = mix(color, vec3(0xD0, 0xD0, 0xff)/255.0, factors[0]); // snow
 
-        mRoughness = 0.f;
-        mRoughness = mix(mRoughness, 1, factors[2]);
-        mRoughness = mix(mRoughness, 0.9, factors[3]);
-        mRoughness = mix(mRoughness, 0.85, factors[1]);
-        mRoughness = mix(mRoughness, 0.75, factors[0]);
+        // mRoughness = 0.f;
+        // mRoughness = mix(mRoughness, 1, factors[2]);
+        // mRoughness = mix(mRoughness, 0.9, factors[3]);
+        // mRoughness = mix(mRoughness, 0.85, factors[1]);
+        // mRoughness = mix(mRoughness, 0.75, factors[0]);
+        mRoughness = 1.f;
+
+
 #else
     #ifdef USE_MAP
         vec4 CE = texture(bColor, uv);
@@ -318,14 +387,10 @@ void main()
     mRoughness = pow(mRoughness, 2.0);
 
     viewDir = normalize(_cameraPosition - position);
-    normalComposed = normal;
 
     lcalcPosition = position;
     paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
     mRoughness2 = mRoughness * mRoughness;
-    
-    // fragColor.rgb = 0.5 - 0.5*normal;
-    // return;
 
     // normalComposed = perturbNormal(normalComposed, viewVector, NRM.xy, uv);
 

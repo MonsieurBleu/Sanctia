@@ -38,11 +38,14 @@ DATA_READ_FUNC(EntityRef) {
 
         bool found = false;
         for(auto &j : ComponentModularity::ReadFuncs)
+        {
+            // std::cout << member << "\t" << j.ComponentID << "\t" << i->second << "\n";
             if((found = (j.ComponentID == i->second)))
                 {
                     j.element(data, buff);
                     break;
                 }
+        }
 
         if(!found)
         {

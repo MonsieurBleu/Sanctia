@@ -26,7 +26,7 @@ build-debug-linear :
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) OPTFLAGS="-g"
 
 build-debug-fast :
-	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) OPTFLAGS="-g -Ofast"
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL) OPTFLAGS="-g -Ofast"
 
 build-release : 
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL) OPTFLAGS="-Ofast"

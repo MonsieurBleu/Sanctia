@@ -50,14 +50,11 @@ COMPONENT_DEFINE_SYNCH(EntityState3D)
 
 template<> void Component<EntityModel>::ComponentElem::init()
 {
-    // std::cout << "creating entity model " << entity->toStr();
     globals.getScene()->add(data);
 };
 
 template<> void Component<EntityModel>::ComponentElem::clean()
 {
-    // std::cout << "deleting entity model " << entity->toStr();
-
     if(data.get())
         globals.getScene()->remove(data);
     else
@@ -74,62 +71,11 @@ template<> void Component<SkeletonAnimationState>::ComponentElem::init()
 
 ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 {
-    
-
-    // switch (c->getCollisionShape()->getType)
-    // {
-    // case rp3d::CollisionShapeType:: :
-    //     /* code */
-    //     break;
-    
-    // default:
-    //     break;
-    // }
-
     rp3d::AABB aabb = c->getWorldAABB();
-
-    // c->getLocalToWorldTransform();
-    
-
     vec3 aabbmin = PG::toglm(aabb.getMin());
     vec3 aabbmax = PG::toglm(aabb.getMax()) - aabbmin;
 
-    // vec3 laabbmin = PG::toglm(c->getLocalToWorldTransform().getInverse() * aabb.getMin());
-    // vec3 laabbmax = PG::toglm(c->getLocalToWorldTransform().getInverse() * aabb.getMax());
-
-    // std::vector<vec3> points;
-
-    // int res = max(aabbmax.x, max(aabbmax.y, aabbmax.z))*10;
-
-    // float resdiv = 1.f/(res-1.f);
-    // bool voxels[res][res][res];
-
-    // for(int i = 0; i < res; i++)
-    // for(int j = 0; j < res; j++)
-    // for(int k = 0; k < res; k++)
-    // {
-    //     vec3 pos = aabbmin + aabbmax*vec3(i, j, k)*resdiv - sign(vec3(i, j, k) - res*0.5f)*resdiv*0.1f;
-        
-    //     voxels[i][j][k] = c->testPointInside(PG::torp3d(pos));
-    // }
-
-    // for(int i = 0; i < res; i++)
-    // for(int j = 0; j < res; j++)
-    // for(int k = 0; k < res; k++)
-    // if(voxels[i][j][k])
-    // {
-    //     if(!j || !i || !k || i == res-1 || j == res-1 || k == res-1)
-    //         points.push_back(laabbmin + laabbmax*vec3(i, j, k)*resdiv);
-
-    //     else if(!voxels[i-1][j][k] || !voxels[i+1][j][k] ||
-    //             !voxels[i][j-1][k] || !voxels[i][j+1][k] ||
-    //             !voxels[i][j][k-1] || !voxels[i][j][k+1]
-    //     )
-    //         points.push_back(laabbmin + laabbmax*vec3(i, j, k)*resdiv);
-    // }
-
     bool isFeild = c->getCollisionShape()->getName() == reactphysics3d::CollisionShapeName::HEIGHTFIELD;
-
     
     auto WtoL = c->getLocalToWorldTransform().getInverse();
     auto LtoW = c->getLocalToWorldTransform();
@@ -245,10 +191,10 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
     }
     else
     {
-        jump /= 25.0;
+        jump /= 8.0;
 
         for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)
-        for(float z = aabbmin.z; z <= aabbmax.z; z += jump.z)
+        for(float z = laabbmin.z; z <= laabbmax.z; z += jump.z)
         {
             rp3d::RaycastInfo infos = rp3d::RaycastInfo();
 
@@ -263,44 +209,9 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
             cnt ++;
         }
 
-        // for(float z = laabbmin.z; z <= laabbmax.z; z += jump.z)
-        // for(float y = laabbmin.y; y <= laabbmax.y; y += jump.y)
-        // {
-        //     rp3d::RaycastInfo infos = rp3d::RaycastInfo();
-
-        //     auto a = LtoW * rp3d::Vector3(laabbmin.x, y, z);
-        //     auto b = LtoW * rp3d::Vector3(laabbmax.x, y, z);
-
-        //     c->raycast(rp3d::Ray(b, a), infos);
-
-        //     if(infos.collider)
-        //         points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-        //     cnt ++;
-        // }
-
-        // for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)
-        // for(float y = laabbmin.y; y <= laabbmax.y; y += jump.y)
-        // {
-        //     rp3d::RaycastInfo infos = rp3d::RaycastInfo();
-
-        //     auto a = LtoW * rp3d::Vector3(x, y, laabbmin.z);
-        //     auto b = LtoW * rp3d::Vector3(x, y, laabbmax.z);
-
-        //     c->raycast(rp3d::Ray(b, a), infos);
-
-        //     if(infos.collider)
-        //         points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-        //     cnt ++;
-        // }
-
     }
 
-    std::cout << cnt << "\t" << points.size() << "\n";
-
-    // for(float z = aabbmin.z; z <= aabbmax.z; z += jump.z)
-
+    std::cout << "Creating Physics helper of size " << points.size() << "\n";
 
     return PointsHelperRef(new PointsHelper(points, color));
 }
@@ -351,11 +262,6 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
         }
 
         b->setTransform(tmp);
-    }
-    else
-    {
-        std::cout << entity->toStr();
-        std::cout << entity->state.toStr();
     }
 
 
@@ -463,6 +369,21 @@ template<> void Component<RigidBody>::ComponentElem::init()
     {
         data->getCollider(i)->setUserData(entity);
     }
+
+    /* TODO : maybe remove this and make a special static rigid body component */
+    if(data->getType() == rp3d::BodyType::STATIC)
+    {
+        auto &t = data->getTransform();
+        auto &s = entity->comp<EntityState3D>();
+        s.usePhysicInterpolation = false;
+        s.position = PG::toglm(t.getPosition());
+        s.quaternion = PG::toglm(t.getOrientation());
+        s._PhysicTmpQuat = s.quaternion;
+        s._PhysicTmpPos = s.position;
+        s.usequat = true;
+    }
+    else
+        entity->set<staticEntityFlag>({true});
 }
 
 template<> void Component<RigidBody>::ComponentElem::clean()

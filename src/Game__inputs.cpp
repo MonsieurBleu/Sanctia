@@ -213,6 +213,10 @@ bool Game::userInput(GLFWKeyInfo input)
         case GLFW_KEY_KP_1 :
             PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
             break;
+        
+        case GLFW_KEY_F6 :
+            doAutomaticShaderRefresh = !doAutomaticShaderRefresh;
+            break;
 
         default:
             break;

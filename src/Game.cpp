@@ -39,14 +39,16 @@ void Game::mainloop()
     ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
 
     {
-        float TerrainHScale = 50;
-        float TerrainVScale = 25;;
+        float TerrainHScale = 256;
+        float TerrainVScale = 64;
 
         Texture2D HeightMap = Texture2D()
             // .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
-            // .loadFromFileHDR("ressources/maps/heightMapTest.hdr")
-            .loadFromFileHDR("ressources/maps/heightMapTest5.hdr")
+            // .loadFromFileHDR("ressources/maps/generated_512x512.hdr")
+            .loadFromFileHDR("ressources/maps/heightMapTest6.hdr")
             // .loadFromFileHDR("ressources/maps/RT512.hdr")
+            // .loadFromFileHDR("ressources/maps/testPlayground.hdr")
+            // .loadFromFileHDR("ressources/maps/pattern.hdr")
             .setFormat(GL_RGB)
             .setInternalFormat(GL_RGB32F)
             .setPixelType(GL_FLOAT)
@@ -81,24 +83,11 @@ void Game::mainloop()
         // terrain->tessDisplacementFactors(20, 0.001);
         // terrain->tessDisplacementFactors(0, 0);
         terrain->tessHeighFactors(1, 1);
-        terrain->state.frustumCulled = false;
+        // terrain->state.frustumCulled = false;
         glPatchParameteri(GL_PATCH_VERTICES, 3);
-        scene.add(terrain);
+        // scene.add(terrain);
 
 
-        /* Testing rp3d height maps collider */
-
-        RigidBody b = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, 0, 0), rp3d::Quaternion::identity()));
-
-        EntityRef e = newEntity("Terrain test", b);
-
-        float test[16]
-        {
-            1.0, 1.0, 1.0, 1.0,
-            0.7, 0.7, 0.7, 0.7,
-            0.2, 0.2, 0.2, 0.2,
-            0.0, 0.0, 0.0, 0.0
-        };
 
         ivec2 size = HeightMap.getResolution();
         float *copy = new float[size.x*size.y];
@@ -107,51 +96,92 @@ void Game::mainloop()
         for(int i = 0; i < size.x; i++)
         for(int j = 0; j < size.y; j++)
         {
-            // std::cout << ((float *)HeightMap.getPixelSource())[i*HeightMap.getResolution().y + j] << "\n";
-
-            // heightValues[indexRow * nbColumns + indexColumn]
-
-            // copy[i * size.y + j] = src[j * size.x + i];
-            // copy[i * size.x + j] = src[j * size.x + i];
             copy[i * size.x + j] = src[3*(i * size.x + j)];
         }
-        
 
-        std::vector<rp3d::Message> messages;
-        auto field = PG::common.createHeightField(
+        int terrainGridSize = 0;
+        for(int i = -terrainGridSize; i <= terrainGridSize; i++)
+        for(int j = -terrainGridSize; j <= terrainGridSize; j++)
+        {
+            auto t = terrain->copy();
 
-            HeightMap.getResolution().x, 
-            HeightMap.getResolution().y,
-            copy,
-            // HeightMap.getPixelSource(),
-            // 4, 4, test,
-            reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
-            messages,
-            1.f
-            );
+            // t->state.setPosition(
+            //     vec3(i*TerrainHScale, 0, j*TerrainHScale)
+            // );
 
+            t->defaultMode = GL_PATCHES;
+            t->tessActivate(vec2(4, 32), vec2(10, 500));
+            t->tessHeighFactors(1, 1);
+            // t->state.frustumCulled = false;
 
+            // scene.add(t);
 
-        for(auto &i : messages)
-            std::cout << i.text << "\n";
+            EntityModel model = EntityModel{newObjectGroup()};
+            model->add(t);
 
-        b->setType(rp3d::BodyType::STATIC);
-
-
-        Blueprint::Assembly::AddEntityBodies(b, e.get(), 
+            float maxv = 0.f;
+            float minv = 1.f;
+            for(int i = 0; i < size.x*size.y; i++)
             {
-                {PG::common.createHeightFieldShape(
-                    field
-                    , rp3d::Vector3(TerrainHScale/HeightMap.getResolution().x, TerrainVScale, TerrainHScale/HeightMap.getResolution().y)
-                    // , rp3d::Vector3(1.0, 5.0, 1.0)
-                    )
-                    ,rp3d::Transform::identity()}
-            }, {});
+                maxv = max(maxv, copy[i]);
+                minv = min(minv, copy[i]);
+            }
 
-        e->set<PhysicsHelpers>(PhysicsHelpers());
-        GG::entities.push_back(e);
+            float halfHeight = -(maxv-minv)*0.5 - minv;
 
-        GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated; 
+
+            std::cout << minv << " : " << maxv << "\n";
+
+            /* Testing rp3d height maps collider */
+
+            RigidBody b = PG::world->createRigidBody(rp3d::Transform(
+                rp3d::Vector3(i*TerrainHScale, 0, j*TerrainHScale), 
+                rp3d::Quaternion::identity()));
+
+            b->setType(rp3d::BodyType::STATIC);
+
+            std::vector<rp3d::Message> messages;
+            auto field = PG::common.createHeightField(
+                HeightMap.getResolution().x, 
+                HeightMap.getResolution().y,
+                copy,
+                reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
+                messages,
+                1.f
+                );
+
+            std::cout << field->to_string() << "\n";
+            halfHeight = field->getVertexAt(0, 0).y;
+
+            std::cout << field->getVertexAt(0, 0).y << " :::: " << copy[0] << " ::::: " << field->getHeightAt(0, 0) << "\n"; 
+
+            for(auto &i : messages)
+                std::cout << i.text << "\n";
+
+            EntityRef e = newEntity("Terrain test", EntityState3D(), b, model);
+            Blueprint::Assembly::AddEntityBodies(b, e.get(), 
+                {
+                    {PG::common.createHeightFieldShape(
+                        field
+                        , rp3d::Vector3(TerrainHScale/HeightMap.getResolution().x, TerrainVScale, TerrainHScale/HeightMap.getResolution().y)
+                        // , rp3d::Vector3(1.0, 5.0, 1.0)
+                        )
+                        ,rp3d::Transform(
+                            /*
+                                For the height map 6 
+
+                                -(max + field->getVertexAt(0, 0).y)
+                            */
+                            rp3d::Vector3(0, -(maxv + halfHeight)*TerrainVScale, 0),
+                            rp3d::Quaternion::identity()
+                        )}
+                }, {});
+
+
+            GG::entities.push_back(e);
+        }
+
+        GlobalComponentToggler<PhysicsHelpers>::activated = true; 
     }
 
 
@@ -446,21 +476,25 @@ void Game::mainloop()
 /******  Main Loop ******/
     while (state != AppState::quit)
     {
-        
-        static unsigned int itcnt = 0;
-        itcnt ++;
-        if(itcnt%144 == 0)
-        {
-            system("clear");
-            finalProcessingStage.reset();
-            Bloom.getShader().reset();
-            SSAO.getShader().reset();
-            depthOnlyMaterial->reset();
-            skyboxMaterial->reset();
-            for(auto &m : Loader<MeshMaterial>::loadedAssets)
-                m.second->reset();
-        }
 
+        if(doAutomaticShaderRefresh)
+        {
+            static unsigned int itcnt = 0;
+            itcnt ++;
+
+            if(itcnt%144 == 0)
+            {
+                system("clear");
+                std::cout << TERMINAL_INFO << "Refreshing ALL shaders...\n" << TERMINAL_RESET;
+                finalProcessingStage.reset();
+                Bloom.getShader().reset();
+                SSAO.getShader().reset();
+                depthOnlyMaterial->reset();
+                skyboxMaterial->reset();
+                for(auto &m : Loader<MeshMaterial>::loadedAssets)
+                    m.second->reset();
+            }
+        }
 
         mainloopStartRoutine();
 
@@ -509,11 +543,8 @@ void Game::mainloop()
 
         effects.update();
 
-
         if(GG::playerEntity->comp<EntityStats>().alive)
             GG::playerEntity->comp<EntityState3D>().lookDirection = camera.getDirection();
-
-        tmpTimer.start();
 
     /***** Updating animations
     *****/
@@ -528,8 +559,6 @@ void Game::mainloop()
                 s.skeleton->applyGraph(s);
                 s.update();
             });
-
-        tmpTimer.end();
 
     /***** SYNCHRONIZING MEG
     *****/
@@ -587,8 +616,12 @@ void Game::mainloop()
 
         System<EntityModel, EntityState3D>([&, this](Entity &entity)
         {            
-            EntityModel& model = entity.comp<EntityModel>();
             auto &s = entity.comp<EntityState3D>();
+            EntityModel& model = entity.comp<EntityModel>();
+
+            if(s.usequat && s.position == model->state.position && s.quaternion == model->state.quaternion)
+                return;
+
             vec3& dir = s.lookDirection;
 
             if(s.usequat)
@@ -668,12 +701,9 @@ void Game::mainloop()
 
                     break; 
 
-                case rp3d::BodyType::KINEMATIC :
+                default:
                     model->state.setPosition(s.position);
                     model->state.setQuaternion(s.quaternion);
-                    break;
-                
-                default:
                     break;
                 }
             }
@@ -712,6 +742,7 @@ void Game::mainloop()
         GlobalComponentToggler<InfosStatsHelpers>::update(p);
         GlobalComponentToggler<PhysicsHelpers>::update(p);
 
+
         mainloopPreRenderRoutine();
 
         /* UI & 2D Render */
@@ -734,7 +765,9 @@ void Game::mainloop()
         glDepthFunc(GL_GREATER);
         glEnable(GL_DEPTH_TEST);
 
+        tmpTimer.start();
         scene.updateAllObjects();
+        tmpTimer.end();
 
         /***** Items follow the skeleton
         *****/        

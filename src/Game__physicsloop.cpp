@@ -52,7 +52,7 @@ void Game::physicsLoop()
         PG::physicInterpolationMutex.unlock();
 
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
-        System<RigidBody, EntityState3D>([](Entity &entity){
+        System<RigidBody, EntityState3D, staticEntityFlag>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
             auto &s = entity.comp<EntityState3D>();
             auto &ds = entity.comp<EntityDeplacementState>();
@@ -116,7 +116,7 @@ void Game::physicsLoop()
                     }
 
                     if(ds.speed < maxspeed)
-                        b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.4f) * 15.f));            
+                        b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.4f) * 15.f * b->getMass()));            
                 }
                 break;
             
@@ -131,6 +131,19 @@ void Game::physicsLoop()
                     // std::cout << entity.comp<EntityInfos>().name << " " << to_string(s.position) << "\n";
                 }
                 break;
+
+            // case rp3d::BodyType::STATIC :
+            //     {
+            //         std::cout << "yooo ?" << "\n"; 
+            //         s.usePhysicInterpolation = false;
+            //         auto &t = b->getTransform();
+            //         s.position = PG::toglm(t.getPosition());
+            //         s.quaternion = PG::toglm(t.getOrientation());
+            //         s._PhysicTmpQuat = s.quaternion;
+            //         s._PhysicTmpPos = s.position;
+            //     }
+            //     break;
+
             default: break;
             }
 

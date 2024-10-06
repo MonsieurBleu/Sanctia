@@ -44,7 +44,7 @@ void PlayerController::update()
 
     if(doJump)
     {
-        body->applyWorldForceAtCenterOfMass({0.f, 5.f * PG::currentPhysicFreq, 0.f});
+        body->applyWorldForceAtCenterOfMass({0.f, 5.f * PG::currentPhysicFreq * body->getMass(), 0.f});
         doJump = false;
     }
 }

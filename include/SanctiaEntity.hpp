@@ -7,16 +7,17 @@
 #include <GlobalOptions.hpp>
 #include <ModularEntityGroupping.hpp>
 
-#include <ComponentTypeLogic.hpp>
-#include <ComponentTypeGraphic.hpp>
-#include <ComponentTypePhysic.hpp>
-
 #include <Items.hpp>
 #include <Globals.hpp>
 #include <EntityStats.hpp>
 #include <AnimationController.hpp>
 #include <Dialogue.hpp>
-#include <PhysicsGlobals.hpp>
+
+#include <ComponentTypeLogic.hpp>
+#include <ComponentTypeGraphic.hpp>
+#include <ComponentTypePhysic.hpp>
+
+
 
 /***************** GAMEPLAY ATTRIBUTS *****************/
     const int MAX_DATA_COMP_USAGE = MAX_ENTITY;
@@ -78,6 +79,8 @@
     COMPONENT(RigidBody, PHYSIC, MAX_PHYSIC_COMP_USAGE)
     template<> void Component<RigidBody>::ComponentElem::init();
     template<> void Component<RigidBody>::ComponentElem::clean();
+
+    COMPONENT(staticEntityFlag, PHYSIC, MAX_PHYSIC_COMP_USAGE);
 
 /***************** IA *****************/
     const int MAX_IA_COMP_USAGE = MAX_ENTITY;

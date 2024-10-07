@@ -46,8 +46,8 @@ void Game::mainloop()
             // .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
             // .loadFromFileHDR("ressources/maps/generated_512x512.hdr")
             // .loadFromFileHDR("ressources/maps/heightMapTest6.hdr")
-            .loadFromFileHDR("ressources/maps/RT512.hdr")
-            // .loadFromFileHDR("ressources/maps/testPlayground.hdr")
+            // .loadFromFileHDR("ressources/maps/RT512.hdr")
+            .loadFromFileHDR("ressources/maps/testPlayground.hdr")
             // .loadFromFileHDR("ressources/maps/pattern.hdr")
             .setFormat(GL_RGB)
             .setInternalFormat(GL_RGB32F)
@@ -99,7 +99,7 @@ void Game::mainloop()
             copy[i * size.x + j] = src[3*(i * size.x + j)];
         }
 
-        int terrainGridSize = 0;
+        int terrainGridSize = 4;
         for(int i = -terrainGridSize; i <= terrainGridSize; i++)
         for(int j = -terrainGridSize; j <= terrainGridSize; j++)
         {
@@ -153,7 +153,7 @@ void Game::mainloop()
             GG::entities.push_back(e);
         }
 
-        GlobalComponentToggler<PhysicsHelpers>::activated = true; 
+        // GlobalComponentToggler<PhysicsHelpers>::activated = true; 
     }
 
 

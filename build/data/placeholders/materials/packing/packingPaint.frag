@@ -134,33 +134,37 @@ void paintShader(
 
     /**** Extract scale from modelMatrix, assuming scale is uniform
     ****/
-    vec3 _modelScale = vec3(
-        length(vec3(_modelMatrix[0].x, _modelMatrix[1].x, _modelMatrix[2].x)),
-        length(vec3(_modelMatrix[0].y, _modelMatrix[1].y, _modelMatrix[2].y)),
-        length(vec3(_modelMatrix[0].z, _modelMatrix[1].z, _modelMatrix[2].z))
-    )
-    ;
+    #ifdef USING_TERRAIN_RENDERING
+        vec3 _modelScale = vec3(1);
+    #else
+        vec3 _modelScale = vec3(
+            length(vec3(_modelMatrix[0].x, _modelMatrix[1].x, _modelMatrix[2].x)),
+            length(vec3(_modelMatrix[0].y, _modelMatrix[1].y, _modelMatrix[2].y)),
+            length(vec3(_modelMatrix[0].z, _modelMatrix[1].z, _modelMatrix[2].z))
+        )
+        ;
+    #endif
 
 
 
     /**** Calculating the brush size dependong on distance from camera
     ****/
-    float lodScale = length(_cameraPosition - _p)/1.0;
+    // float lodScale = length(_cameraPosition - _p)/1.0;
     
-    lodScale += vor3d_hash(clamp3D(position, 1001)).x*2.0;
+    // lodScale += vor3d_hash(clamp3D(position, 1001)).x*2.0;
 
-    lodScale -= mod(lodScale, 8.0);
+    // lodScale -= mod(lodScale, 8.0);
 
-    lodScale = pow(lodScale, 1.0);
+    // lodScale = pow(lodScale, 1.0);
     
-    // lodScale = min(pow(1.035, lodScale*2.5), 50);
+    // // lodScale = min(pow(1.035, lodScale*2.5), 50);
 
-    lodScale = min(lodScale, 200);
+    // lodScale = min(lodScale, 200);
 
-    lodScale = max(1.0, lodScale);
+    // lodScale = max(1.0, lodScale);
 
-    // lodScale = pow(lodScale, 0.5);
-
+    float camdist = length(_cameraPosition - _p);
+    float lodScale = 1;
     _modelScale /= lodScale;
 
 
@@ -186,8 +190,13 @@ void paintShader(
     ****/
     vec3 cell_center;
     const float clampval = 10001; /* Keep at a non round value not to create clamping artifacts */
-    float voronoi_scale = 30;
-    vec3 vpos = clamp3D(modelPosition * _modelScale, clampval)*voronoi_scale;
+    #ifdef USING_TERRAIN_RENDERING
+        float voronoi_scale = 20;
+        vec3 vpos = clamp3D(position * _modelScale, clampval)*voronoi_scale;
+    #else
+        float voronoi_scale = 30;
+        vec3 vpos = clamp3D(modelPosition * _modelScale, clampval)*voronoi_scale;
+    #endif
     vec3 voronoi = voronoi3d(vpos + lodScale, cell_center);
     
 
@@ -341,12 +350,12 @@ void main()
         color = mix(color, vec3(0xB4, 0xA1, 0x6E)/255.0, factors[1]); // rocks
         color = mix(color, vec3(0xD0, 0xD0, 0xff)/255.0, factors[0]); // snow
 
-        // mRoughness = 0.f;
-        // mRoughness = mix(mRoughness, 1, factors[2]);
-        // mRoughness = mix(mRoughness, 0.9, factors[3]);
-        // mRoughness = mix(mRoughness, 0.85, factors[1]);
-        // mRoughness = mix(mRoughness, 0.75, factors[0]);
-        mRoughness = 1.f;
+        mRoughness = 0.f;
+        mRoughness = mix(mRoughness, 1, factors[2]);
+        mRoughness = mix(mRoughness, 0.9, factors[3]);
+        mRoughness = mix(mRoughness, 0.85, factors[1]);
+        mRoughness = mix(mRoughness, 0.75, factors[0]);
+        // mRoughness = 1.f;
 
 
 #else

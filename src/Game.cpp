@@ -45,8 +45,8 @@ void Game::mainloop()
         Texture2D HeightMap = Texture2D()
             // .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
             // .loadFromFileHDR("ressources/maps/generated_512x512.hdr")
-            .loadFromFileHDR("ressources/maps/heightMapTest6.hdr")
-            // .loadFromFileHDR("ressources/maps/RT512.hdr")
+            // .loadFromFileHDR("ressources/maps/heightMapTest6.hdr")
+            .loadFromFileHDR("ressources/maps/RT512.hdr")
             // .loadFromFileHDR("ressources/maps/testPlayground.hdr")
             // .loadFromFileHDR("ressources/maps/pattern.hdr")
             .setFormat(GL_RGB)
@@ -105,32 +105,11 @@ void Game::mainloop()
         {
             auto t = terrain->copy();
 
-            // t->state.setPosition(
-            //     vec3(i*TerrainHScale, 0, j*TerrainHScale)
-            // );
-
             t->defaultMode = GL_PATCHES;
             t->tessActivate(vec2(4, 32), vec2(10, 500));
             t->tessHeighFactors(1, 1);
-            // t->state.frustumCulled = false;
-
-            // scene.add(t);
-
             EntityModel model = EntityModel{newObjectGroup()};
             model->add(t);
-
-            float maxv = 0.f;
-            float minv = 1.f;
-            for(int i = 0; i < size.x*size.y; i++)
-            {
-                maxv = max(maxv, copy[i]);
-                minv = min(minv, copy[i]);
-            }
-
-            float halfHeight = -(maxv-minv)*0.5 - minv;
-
-
-            std::cout << minv << " : " << maxv << "\n";
 
             /* Testing rp3d height maps collider */
 
@@ -150,10 +129,9 @@ void Game::mainloop()
                 1.f
                 );
 
-            std::cout << field->to_string() << "\n";
-            halfHeight = field->getVertexAt(0, 0).y;
-
-            std::cout << field->getVertexAt(0, 0).y << " :::: " << copy[0] << " ::::: " << field->getHeightAt(0, 0) << "\n"; 
+            float maxv = field->getMaxHeight();
+            float minv = field->getMinHeight();
+            float halfHeight = (-(maxv - minv)*0.5 - minv) + 0.5;
 
             for(auto &i : messages)
                 std::cout << i.text << "\n";
@@ -164,15 +142,9 @@ void Game::mainloop()
                     {PG::common.createHeightFieldShape(
                         field
                         , rp3d::Vector3(TerrainHScale/HeightMap.getResolution().x, TerrainVScale, TerrainHScale/HeightMap.getResolution().y)
-                        // , rp3d::Vector3(1.0, 5.0, 1.0)
                         )
                         ,rp3d::Transform(
-                            /*
-                                For the height map 6 
-
-                                -(max + field->getVertexAt(0, 0).y)
-                            */
-                            rp3d::Vector3(0, -(maxv + halfHeight)*TerrainVScale, 0),
+                            rp3d::Vector3(0, -halfHeight*TerrainVScale, 0),
                             rp3d::Quaternion::identity()
                         )}
                 }, {});

@@ -2,7 +2,7 @@
 
 #include SceneDefines3D.glsl
 
-#define ESS_BASE_PENUMBRA_RADIUS 0.00075
+#define ESS_BASE_PENUMBRA_RADIUS 0.0002
 #define ESS_PENUMBRA_ITERATION 16
 #define ESS_BASE_ITERATION 8
 
@@ -48,17 +48,11 @@
     in vec2 terrainUv;
     in float terrainHeight;
 
-
-#ifdef ARB_BINDLESS_TEXTURE
-    layout (location = 20, bindless_sampler) uniform sampler2D bColor;
-    // layout (location = 21, bindless_sampler) uniform sampler2D bMaterial;
-    layout (location = 22, bindless_sampler) uniform sampler2D bHeight;
-#else
-    layout(binding = 0) uniform sampler2D b_Color;
-    layout(binding = 1) uniform sampler2D bMaterial;
-    layout(binding = 2) uniform sampler2D bHeight;
-#endif
-
+    #ifdef ARB_BINDLESS_TEXTURE
+        layout (location = 22, bindless_sampler) uniform sampler2D bHeight;
+    #else
+        layout(binding = 1) uniform sampler2D bMaterial;
+    #endif
 #endif
 
 in vec3 modelPosition;
@@ -86,6 +80,11 @@ float mDirtynessFactor = 0.0;
 vec3 clamp3D(vec3 inp, float val)
 {
     return ceil(inp*val)/val;
+}
+
+vec3 snap(vec3 inp, float val)
+{
+    return inp - mod(inp, val);
 }
 
 vec3 projectPointOntoPlane(vec3 point, vec3 planePoint, vec3 planeNormal) {
@@ -164,7 +163,29 @@ void paintShader(
     // lodScale = max(1.0, lodScale);
 
     float camdist = length(_cameraPosition - _p);
+    camdist += rand3to1(snap(position, 0.01)) * max(10., camdist) * 0.25;
+
     float lodScale = 1;
+
+    if(camdist > 6.0)
+        lodScale = 1.5;
+    if(camdist > 15.0)
+        lodScale = 3.0;
+    if(camdist > 25.0)
+        lodScale = 5.0;
+    if(camdist > 40.0)
+        lodScale = 7.0;
+    if(camdist > 60.0)
+        lodScale = 10.0;
+    if(camdist > 80.0)
+        lodScale = 15.0;
+    if(camdist > 100.0)
+        lodScale = 20.0;
+    if(camdist > 150.0)
+        lodScale = 25.0;
+    if(camdist > 200.0)
+        lodScale = 50.0;
+
     _modelScale /= lodScale;
 
 
@@ -191,7 +212,7 @@ void paintShader(
     vec3 cell_center;
     const float clampval = 10001; /* Keep at a non round value not to create clamping artifacts */
     #ifdef USING_TERRAIN_RENDERING
-        float voronoi_scale = 20;
+        float voronoi_scale = 15;
         vec3 vpos = clamp3D(position * _modelScale, clampval)*voronoi_scale;
     #else
         float voronoi_scale = 30;
@@ -275,21 +296,32 @@ void paintShader(
         // _p.y = position.y;
 
         // _v = normalize(_cameraPosition - _p);
+
+        vec3 vp = cell_center/(voronoi_scale*_modelScale);
+        
+        vp.y = _p.y;
+        vp = mix(_p, vp, (0.75 / lodScale));
+        // vp = mix(_p, vp, 0.1);
+        _p = vp;
     }
     else
     #endif
     {
-        _p = vec3(_modelMatrix * vec4(cell_center/(voronoi_scale*_modelScale), 1.0));
+        _p = cell_center/(voronoi_scale*_modelScale);
+        #ifndef USING_TERRAIN_RENDERING
+            _p = vec3(_modelMatrix * vec4(cell_center/(voronoi_scale*_modelScale), 1.0));
+        #endif
+
         _v = normalize(_cameraPosition - _p);
 
         _n = mix(_n, cross(1.0 - 2.0*brushtrail_hash, _n),  0.1*distance(brushtrail_proj, cell_center)/lodScale);
         _n = normalize(mix(_n, 1.0 - 2.0*hash, 0.05 * mClearness_inv)); 
-        _n = normalize(mix(_n, -cross(paperCell, _n), 1.5*paperA*(0.6 + 0.4*_r)));
 
-        _r = clamp(_r - 0.1*hash.z, 1e-6, 1.0);
         // _m = clamp(_m + 0.05*hash.y, 1e-6, 1.0);
     }
-
+    
+    _n = normalize(mix(_n, -cross(paperCell, _n), 1.5*paperA*(0.6 + 0.4*_r)));
+    _r = clamp(_r - 0.2*hash.z, 1e-6, 1.0);
 }
 
 
@@ -355,8 +387,14 @@ void main()
         mRoughness = mix(mRoughness, 0.9, factors[3]);
         mRoughness = mix(mRoughness, 0.85, factors[1]);
         mRoughness = mix(mRoughness, 0.75, factors[0]);
-        // mRoughness = 1.f;
+        // mRoughness = 0.f;
+        // mMetallic = 1.0;
 
+        mClearness = 0.f;
+        mClearness = mix(mClearness, 0.6, factors[2]);    // grass
+        mClearness = mix(mClearness, 0.5,  factors[3]);  // dirt
+        mClearness = mix(mClearness, 0.7, factors[1]); // rocks
+        mClearness = mix(mClearness, 0.5, factors[0]); // snow
 
 #else
     #ifdef USE_MAP
@@ -394,6 +432,7 @@ void main()
 
     mClearness = 1.0 - smoothstep(0.0, 0.75, 1.0 - mClearness);
     mRoughness = pow(mRoughness, 2.0);
+
 
     viewDir = normalize(_cameraPosition - position);
 

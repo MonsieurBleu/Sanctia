@@ -15,6 +15,15 @@ namespace Blueprint
         rp3d::RigidBody *CapsuleBody(float height, vec3 position, EntityRef entity);
     };
 
+
+    void Terrain(
+        const char *mapPath, 
+        vec3 terrainSize,
+        vec3 terrainPosition,
+        int logGridSize
+    );
+
+
     EntityRef TestManequin();
 
     EntityRef Zweihander();

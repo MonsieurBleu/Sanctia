@@ -108,6 +108,22 @@ void main()
     hsv.r = mod(hsv.r, 1.0);
     _fragColor.rgb = hsv2rgb(hsv);
 
+/******** DEPTH FOG ********/
+{
+    float d = 1.0/texture(bDepth, uv).r;
+
+    if(d < 1e5)
+    {
+        float density = 2.5e-4;
+        float fog = exp(-pow(d*density, 2.0));
+        vec3 fogColor = vec3(0.5, 0.65, 0.75);
+
+        fog = 1.0 - clamp(fog, 0.0, 1.0);
+
+        _fragColor.rgb = mix(_fragColor.rgb, fogColor, fog*0.95);
+    }
+
+}
 
 /******* Vignette *******/
     float vignetteExp = 1.0/vignette.a;

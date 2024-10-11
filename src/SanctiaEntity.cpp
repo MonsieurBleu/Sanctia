@@ -191,7 +191,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
     }
     else
     {
-        jump /= 8.0;
+        jump /= 4.0;
 
         for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)
         for(float z = laabbmin.z; z <= laabbmax.z; z += jump.z)
@@ -208,7 +208,6 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             cnt ++;
         }
-
     }
 
     std::cout << "Creating Physics helper of size " << points.size() << "\n";

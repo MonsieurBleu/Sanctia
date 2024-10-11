@@ -38,8 +38,20 @@ void Game::mainloop()
 
     ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
 
+    Blueprint::Terrain(
+        "ressources/maps/testPlayground.hdr",
+        // "ressources/maps/RuggedTerrain.hdr",
+        // "ressources/maps/generated_512x512.hdr",
+        // "ressources/maps/RT512.hdr",
+        // vec3(512, 64, 512), 
+        vec3(256, 64, 256), 
+        vec3(0),
+        128
+    );
+
+    if(false)
     {
-        float TerrainHScale = 256;
+        float TerrainHScale = 64; //256
         float TerrainVScale = 64;
 
         Texture2D HeightMap = Texture2D()
@@ -57,57 +69,51 @@ void Game::mainloop()
             .generate();
         terrain->setMap(HeightMap, 2);
 
-        // terrain->setVao(readOBJ("ressources/maps/model.obj"));
         terrain->setVao(Loader<MeshVao>::get("terrainPlane"));
 
         terrain->state
             .setScale(vec3(TerrainHScale, TerrainVScale, TerrainHScale))
-            // .setRotation(vec3(0, radians(90.f), 0))
-            // .setPosition(vec3(25, 0, 0))
             ;
-
-        const std::string terrainTextures[] = {
-            "snowdrift1_ue", "limestone5-bl", "leafy-grass2-bl", "forest-floor-bl-1"};
-
-        const int base = 5;
-        int i = 0;
-        for(auto str : terrainTextures)
-        {
-            terrain->setMap(Loader<Texture2D>::get(str+"CE"), base + i);
-            terrain->setMap(Loader<Texture2D>::get(str+"NRM"), base + 4 + i);
-            i++;
-        }
 
         terrain->defaultMode = GL_PATCHES;
         terrain->tessActivate(vec2(4, 32), vec2(10, 50));
         // terrain->tessDisplacementFactors(20, 0.001);
         // terrain->tessDisplacementFactors(0, 0);
         terrain->tessHeighFactors(1, 1);
-        // terrain->state.frustumCulled = false;
         glPatchParameteri(GL_PATCH_VERTICES, 3);
-        // scene.add(terrain);
 
-
-
-        ivec2 size = HeightMap.getResolution();
-        float *copy = new float[size.x*size.y];
+        ivec2 textureSize = HeightMap.getResolution();
+        float *copy = new float[textureSize.x*textureSize.y];
         float *src = ((float *)HeightMap.getPixelSource());
 
-        for(int i = 0; i < size.x; i++)
-        for(int j = 0; j < size.y; j++)
+        for(int i = 0; i < textureSize.x; i++)
+        for(int j = 0; j < textureSize.y; j++)
         {
-            copy[i * size.x + j] = src[3*(i * size.x + j)];
+            copy[i * textureSize.x + j] = src[3*(i * textureSize.x + j)];
         }
 
-        int terrainGridSize = 4;
-        for(int i = -terrainGridSize; i <= terrainGridSize; i++)
-        for(int j = -terrainGridSize; j <= terrainGridSize; j++)
+        int terrainGridSize = 5;
+        vec2 gmin = vec2(-terrainGridSize);
+        vec2 gmax = vec2(terrainGridSize);
+
+        /*
+            TODO : revamp by using only power of 2 grid size
+        */
+
+        for(int i = gmin.x; i <= gmax.x; i++)
+        for(int j = gmin.y; j <= gmax.y; j++)
         {
             auto t = terrain->copy();
 
             t->defaultMode = GL_PATCHES;
-            t->tessActivate(vec2(4, 32), vec2(10, 500));
+            t->tessActivate(vec2(1, 16), vec2(75, 500));
             t->tessHeighFactors(1, 1);
+
+            vec2 uvmin = (vec2(i, j)-gmin)/vec2(gmax - gmin + 1.f);
+            vec2 uvmax = (vec2(i+1, j+1)-gmin)/vec2(gmax - gmin + 1.f);
+
+            t->tessHeightTextureRange(uvmin, uvmax);
+
             EntityModel model = EntityModel{newObjectGroup()};
             model->add(t);
 
@@ -119,11 +125,36 @@ void Game::mainloop()
 
             b->setType(rp3d::BodyType::STATIC);
 
+
+            ivec2 iuvmin = round(uvmin*vec2(textureSize));
+            ivec2 iuvmax = round(uvmax*vec2(textureSize));
+            int dsize = max(iuvmax.x - iuvmin.x, iuvmax.y - iuvmin.y);
+            // dsize = ivec2(max(dsize.x, dsize.y));
+            std::vector<float> heightData(dsize*dsize);
+
+            std::cout << dsize << "\t" << to_string(iuvmin) << "\t" << to_string(iuvmax) << "\n";
+
+            // for(int i = iuvmin.x; i < iuvmax.x; i++)
+            // for(int j = iuvmin.y; j < iuvmax.y; j++)
+            // {
+            //     // heightData[i * textureSize.x + j] = src[3*(i * textureSize.x + j)];
+            //     heightData[i * textureSize.x + j] = copy[i * textureSize.x + j];
+            //     // std::cout << i << "\t" << j << "\t" << i * textureSize.x + j << "\t" << heightData[i * textureSize.x + j] << "\n";
+            // }
+
+            for(int i = 0; i < dsize; i++)
+            for(int j = 0; j < dsize; j++)
+            {
+                // heightData[i * textureSize.x + j] = src[3*((i + iuvmin.x)* textureSize.x + j + iuvmin.y)];
+                heightData[i * dsize + j] = copy[(i + iuvmin.y)*textureSize.x + j + iuvmin.x];
+            }
+
             std::vector<rp3d::Message> messages;
             auto field = PG::common.createHeightField(
-                HeightMap.getResolution().x, 
-                HeightMap.getResolution().y,
-                copy,
+                // HeightMap.getResolution().x, 
+                // HeightMap.getResolution().y,
+                // copy,
+                dsize, dsize, heightData.data(),
                 reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
                 messages,
                 1.f
@@ -141,7 +172,7 @@ void Game::mainloop()
                 {
                     {PG::common.createHeightFieldShape(
                         field
-                        , rp3d::Vector3(TerrainHScale/HeightMap.getResolution().x, TerrainVScale, TerrainHScale/HeightMap.getResolution().y)
+                        , rp3d::Vector3(TerrainHScale/(float)(dsize-1), TerrainVScale, TerrainHScale/(float)(dsize-1))
                         )
                         ,rp3d::Transform(
                             rp3d::Vector3(0, -halfHeight*TerrainVScale, 0),
@@ -187,8 +218,8 @@ void Game::mainloop()
             .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
             .setIntensity(1.0));
 
-    sun->cameraResolution = vec2(2048);
-    sun->shadowCameraSize = vec2(75, 75);
+    sun->cameraResolution = vec2(8192);
+    sun->shadowCameraSize = vec2(256, 256);
     sun->activateShadows();
     scene.add(sun);
 

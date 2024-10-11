@@ -7,6 +7,127 @@
 #include <GameConstants.hpp>
 #include <GameGlobals.hpp>
 
+void Blueprint::Terrain(
+    const char *mapPath, 
+    vec3 terrainSize,
+    vec3 terrainPosition,
+    int cellSize
+)
+{
+    // /* I don't even want the application to run if future me decides to instance 200k terrain models */
+    // assert(log2CellSize < 9);
+
+    Texture2D HeightMap = Texture2D()
+        .loadFromFileHDR(mapPath)
+        .setFormat(GL_RGB)
+        .setInternalFormat(GL_RGB32F)
+        .setPixelType(GL_FLOAT)
+        .setWrapMode(GL_REPEAT) 
+        .setFilter(GL_LINEAR)
+        .generate();
+
+    float *src = ((float *)HeightMap.getPixelSource());
+    ivec2 textureSize = HeightMap.getResolution();
+
+    ivec2 gridDim = ivec2(terrainSize.x, terrainSize.z)/cellSize;
+    
+    float cellHscale = cellSize;
+
+    #define DEBUG_PRINT(x) std::cout << #x << " : " << x << "\n";
+
+    DEBUG_PRINT(cellHscale)
+    DEBUG_PRINT(gridDim.x)
+    DEBUG_PRINT(gridDim.y)
+
+    ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"), Loader<MeshVao>::get("terrainPlane"));
+    terrain->state.setScale(vec3(cellHscale, terrainSize.y, cellHscale));
+    terrain->defaultMode = GL_PATCHES;
+    terrain->setMap(HeightMap, 2);
+
+    vec3 aabmin = terrain->getVao()->getAABBMin();
+    vec3 aabmax = terrain->getVao()->getAABBMax();
+
+    aabmin.y = -terrainSize.y;
+    aabmax.y = terrainSize.y;
+
+    terrain->getVao()->setAABB(aabmin, aabmax);
+
+    for(int i = 0; i < gridDim.x; i++)
+    for(int j = 0; j < gridDim.y; j++)
+    {
+        /* Graphic cell component */
+        ModelRef t = terrain->copy();
+
+        t->defaultMode = GL_PATCHES;
+        t->tessActivate(vec2(1, 16), vec2(25, 250));
+        t->tessHeighFactors(1, terrainSize.y/terrainSize.x);
+
+        vec2 uvmin = vec2(i, j)/vec2(gridDim);
+        vec2 uvmax = vec2(i+1, j+1)/vec2(gridDim);
+        vec2 uvhalf = (vec2((float)i+0.5f, (float)j+0.5f)/vec2(gridDim)) - 0.5f;
+
+        t->tessHeightTextureRange(uvmin, uvmax);
+
+        EntityModel model = EntityModel{newObjectGroup()};
+        model->add(t);
+
+
+        /* Physic cell component */
+
+        // vec3 cellPos = terrainPosition + cellHscale*(-1.f + 2.f*vec3((i + 0.5f)/(float)gridDim.x, 0, (j + 0.5f)/(float)gridDim.y));
+
+        vec3 cellPos = terrainPosition + vec3(terrainSize.x*uvhalf.x, 0, terrainSize.z*uvhalf.y);
+
+        RigidBody b = PG::world->createRigidBody(rp3d::Transform(
+            rp3d::Vector3(PG::torp3d(cellPos)), 
+            rp3d::Quaternion::identity()));
+
+        b->setType(rp3d::BodyType::STATIC);
+
+        ivec2 iuvmin = round(uvmin*vec2(textureSize));
+        ivec2 iuvmax = round(uvmax*vec2(textureSize));
+        int dsize = max(iuvmax.x - iuvmin.x, iuvmax.y - iuvmin.y);
+        std::vector<float> heightData(dsize*dsize);
+
+        for(int i = 0; i < dsize; i++)
+        for(int j = 0; j < dsize; j++)
+        {
+            heightData[i * dsize + j] = src[3*((i + iuvmin.y)*textureSize.x + j + iuvmin.x)];
+        }
+
+        std::vector<rp3d::Message> messages;
+        auto field = PG::common.createHeightField(
+            dsize, dsize, heightData.data(),
+            reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
+            messages);
+        
+        for(auto &i : messages)
+            std::cout << i.text << "\n";
+
+        float maxv = field->getMaxHeight();
+        float minv = field->getMinHeight();
+        float halfHeight = (-(maxv - minv)*0.5 - minv) + 0.5;
+
+        /* Creating terrain cell entity */
+        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), EntityState3D(), b, model);
+        Blueprint::Assembly::AddEntityBodies(b, e.get(), 
+            {
+                {PG::common.createHeightFieldShape(
+                    field
+                    , rp3d::Vector3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1))
+                    )
+                    ,rp3d::Transform(
+                        rp3d::Vector3(0, -halfHeight*terrainSize.y, 0),
+                        rp3d::Quaternion::identity()
+                    )}
+            }, {});
+
+
+        GG::entities.push_back(e);
+    }
+}
+
+
 void Blueprint::Assembly::AddEntityBodies(
     rp3d::RigidBody *body, 
     void *usrData,

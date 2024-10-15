@@ -11,8 +11,11 @@
 
 COMPONENT_DEFINE_SYNCH(EntityState3D)
 {
-    // std::cout << parent.comp<EntityInfos>().name << "\t" << child->comp<EntityInfos>().name << "\n";
-
+    if(
+        child->hasComp<RigidBody>() &&
+        child->comp<RigidBody>()->getType() != rp3d::BodyType::KINEMATIC
+        )
+        return;
 
     auto &ps = parent.comp<EntityState3D>();
     auto &cs = child->comp<EntityState3D>();
@@ -45,6 +48,29 @@ COMPONENT_DEFINE_SYNCH(EntityState3D)
             */
         }
     }
+
+    cs._PhysicTmpPos = cs.position;
+    cs._PhysicTmpQuat = cs.quaternion;
+}
+
+COMPONENT_DEFINE_SYNCH(RigidBody)
+{
+    quat parentQuat = PG::toglm(parent.comp<RigidBody>()->getTransform().getOrientation());
+    quat childQuat = PG::toglm(child->comp<RigidBody>()->getTransform().getOrientation());
+
+    vec3 parentPos = PG::toglm(parent.comp<RigidBody>()->getTransform().getPosition());
+    vec3 childPos = PG::toglm(child->comp<RigidBody>()->getTransform().getPosition());
+
+    childQuat = parentQuat * childQuat;
+    childPos += parentPos;
+
+    auto &b = child->comp<RigidBody>();
+
+    b->setTransform(
+        rp3d::Transform(PG::torp3d(childPos), PG::torp3d(childQuat))
+    );
+
+    std::cout << to_string(childPos) << "\n";
 }
 
 
@@ -80,12 +106,12 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
     auto WtoL = c->getLocalToWorldTransform().getInverse();
     auto LtoW = c->getLocalToWorldTransform();
 
-    vec3 laabbmin = PG::toglm(WtoL * aabb.getMin());
-    vec3 laabbmax = PG::toglm(WtoL * aabb.getMax());
+    vec3 laabbmin = PG::toglm(WtoL * aabb.getMin()) - 0.1f;
+    vec3 laabbmax = PG::toglm(WtoL * aabb.getMax()) + 0.1f;
 
     std::vector<vec3> points;
 
-    
+
     vec3 jump = (laabbmax - laabbmin)/25.f;
 
     int cnt = 0;

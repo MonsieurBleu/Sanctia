@@ -20,7 +20,7 @@ namespace Blueprint
         const char *mapPath, 
         vec3 terrainSize,
         vec3 terrainPosition,
-        int logGridSize
+        int cellSize
     );
 
 

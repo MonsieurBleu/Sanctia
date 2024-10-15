@@ -27,7 +27,7 @@
     */
     COMPONENT(EntityState3D, DATA, MAX_DATA_COMP_USAGE)
     COMPONENT_ADD_SYNCH(EntityState3D)
-
+    
     COMPONENT(EntityDeplacementState, DATA, MAX_DATA_COMP_USAGE)
     
     COMPONENT(EntityStats, DATA, MAX_DATA_COMP_USAGE)
@@ -39,6 +39,7 @@
     COMPONENT(ActionState, DATA, MAX_DATA_COMP_USAGE)
 
     COMPONENT(Faction, DATA, MAX_DATA_COMP_USAGE)
+    
 
 /***************** ITEMS *****************/
 
@@ -79,6 +80,7 @@
     COMPONENT(RigidBody, PHYSIC, MAX_PHYSIC_COMP_USAGE)
     template<> void Component<RigidBody>::ComponentElem::init();
     template<> void Component<RigidBody>::ComponentElem::clean();
+    COMPONENT_ADD_SYNCH(RigidBody)
 
     COMPONENT(staticEntityFlag, PHYSIC, MAX_PHYSIC_COMP_USAGE);
 

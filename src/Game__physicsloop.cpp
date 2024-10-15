@@ -127,129 +127,20 @@ void Game::physicsLoop()
                     /* TODO : maybe fix one day for entities who are not using quaternion*/
                     rp3d::Transform t(PG::torp3d(s.position), s.usequat ? PG::torp3d(s.quaternion) : rp3d::Quaternion::identity());
                     b->setTransform(t);
-
-                    // std::cout << entity.comp<EntityInfos>().name << " " << to_string(s.position) << "\n";
                 }
                 break;
-
-            // case rp3d::BodyType::STATIC :
-            //     {
-            //         std::cout << "yooo ?" << "\n"; 
-            //         s.usePhysicInterpolation = false;
-            //         auto &t = b->getTransform();
-            //         s.position = PG::toglm(t.getPosition());
-            //         s.quaternion = PG::toglm(t.getOrientation());
-            //         s._PhysicTmpQuat = s.quaternion;
-            //         s._PhysicTmpPos = s.position;
-            //     }
-            //     break;
 
             default: break;
             }
 
         });
 
-    /***** CHECKING & APPLYING EFFECT TO ALL ENTITIES *****/
-        // System<Effect>([](Entity &entity)
-        // {
-        //     Effect *e = &entity.comp<Effect>();
-            
-        //     if(!e->enable || e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
-
-        //     System<B_DynamicBodyRef, EntityStats, EntityState3D, Faction>([e](Entity &entity)
-        //     {
-        //         auto &f1 = e->usr ? e->usr->comp<Faction>() : entity.comp<Faction>();
-        //         auto &f2 = entity.comp<Faction>();
-        //         bool cancel = true;
-
-        //         if(e->type == EffectType::Damage)
-        //             for(auto &i : Faction::canDamage)
-        //                 if(i.first == f1.type && i.second == f2.type)
-        //                 {
-        //                     cancel = false;
-        //                     break;
-        //                 }
-                
-        //         if(cancel) return;
-
-        //         if(e->curTrigger < e->maxTrigger)
-        //         {
-        //             auto &b = entity.comp<B_DynamicBodyRef>();
-        //             auto &s = entity.comp<EntityState3D>();
-
-        //             CollisionInfo c = B_Collider::collide(b->boundingCollider, s.position, e->zone, vec3(0));
-        //             if(c.penetration > 1e-6)
-        //             {
-        //                 for(auto i : e->affectedEntities)
-        //                     if(i.e == &entity)
-        //                         return;
-
-        //                 e->affectedEntities.push_back({&entity, 0});
-        //             }
-        //         }
-        //     });
-
-        //     for(auto &i : e->affectedEntities) 
-        //     if(i.e && i.cnt < e->maxTriggerPerEntity)
-        //         switch (e->type)
-        //         {
-        //         case EffectType::Damage :
-        //             {
-        //                 bool blocked = false;
-        //                 bool doStun = true;
-        //                 float damageMult = 1.f;
-
-        //                 auto &sd = i.e->comp<ActionState>();
-        //                 auto &sd3D = i.e->comp<EntityState3D>();
-
-        //                 ActionState *sa = e->usr ? &e->usr->comp<ActionState>() : &entity.comp<ActionState>();
-        //                 EntityState3D *sa3D = e->usr ? &e->usr->comp<EntityState3D>() : &entity.comp<EntityState3D>();
-                        
-        //                 const int r = ActionState::Stance::RIGHT;
-        //                 const int l = ActionState::Stance::LEFT;
-        //                 const int special = ActionState::Stance::SPECIAL;
-
-        //                 if(sd.blocking)
-        //                 {
-        //                     float a = dot(normalize(sa3D->position - sd3D.position), sd3D.lookDirection);
-        //                     if(a > 0.5)
-        //                     {
-
-        //                         if((sd.stance() == r && sa->stance() == l) || (sd.stance() == l && sa->stance() == r))
-        //                         {
-        //                             sd.hasBlockedAttack = true;
-        //                             blocked = true;
-        //                         }
-        //                         else if(sd.stance() == r || sd.stance() == l)
-        //                         {
-        //                             damageMult = 0.5;
-        //                         }
-        //                     } 
-        //                 }
-        //                 else if(sd.attacking)
-        //                 {
-        //                     if(sd.stance() == special && sa->stance() != special)
-        //                         doStun = false;
-        //                 }
-                        
-        //                 if(!blocked)
-        //                 {
-        //                     e->apply(i.e->comp<EntityStats>(), damageMult);
-        //                     sd.stun = doStun;
-        //                 }
-        //                 i.cnt ++;
-        //             }
-        //             break;
-                
-        //         default :
-        //             e->apply(i.e->comp<EntityStats>());
-        //             i.cnt ++;
-        //             break;
-        //         }
-
-        //     // if(e->curTrigger >= e->maxTrigger) entity.removeComp<Effect>();
-        //     if(e->curTrigger >= e->maxTrigger) entity.comp<Effect>().enable = false;
-        // });
+    // /***** SYNCHRONIZING MEG
+    // *****/
+    //     System<EntityGroupInfo>([&, this](Entity &entity)
+    //     {
+    //         ComponentModularity::synchronizeChildren(entity);
+    //     });
 
         System<AgentState>([&, this](Entity &entity){
             entity.comp<AgentState>().timeSinceLastState += globals.simulationTime.getDelta();

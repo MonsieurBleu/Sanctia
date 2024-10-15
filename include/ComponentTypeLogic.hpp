@@ -32,7 +32,7 @@ struct EntityState3D
     bool useinit = false;
     bool usePhysicInterpolation = true;
 
-    vec3 initPosition = vec3(UNINITIALIZED_FLOAT);
+    vec3 initPosition = vec3(0);
     quat initQuat = quat(1, 0, 0, 0);
     vec3 initLookDirection = vec3(0);
 

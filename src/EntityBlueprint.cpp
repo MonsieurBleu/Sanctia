@@ -33,12 +33,6 @@ void Blueprint::Terrain(
     
     float cellHscale = cellSize;
 
-    #define DEBUG_PRINT(x) std::cout << #x << " : " << x << "\n";
-
-    DEBUG_PRINT(cellHscale)
-    DEBUG_PRINT(gridDim.x)
-    DEBUG_PRINT(gridDim.y)
-
     ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"), Loader<MeshVao>::get("terrainPlane"));
     terrain->state.setScale(vec3(cellHscale, terrainSize.y, cellHscale));
     terrain->defaultMode = GL_PATCHES;
@@ -73,11 +67,8 @@ void Blueprint::Terrain(
 
 
         /* Physic cell component */
-
-        // vec3 cellPos = terrainPosition + cellHscale*(-1.f + 2.f*vec3((i + 0.5f)/(float)gridDim.x, 0, (j + 0.5f)/(float)gridDim.y));
-
         vec3 cellPos = terrainPosition + vec3(terrainSize.x*uvhalf.x, 0, terrainSize.z*uvhalf.y);
-
+        
         RigidBody b = PG::world->createRigidBody(rp3d::Transform(
             rp3d::Vector3(PG::torp3d(cellPos)), 
             rp3d::Quaternion::identity()));
@@ -102,7 +93,7 @@ void Blueprint::Terrain(
             messages);
         
         for(auto &i : messages)
-            std::cout << i.text << "\n";
+            std::cerr << i.text << "\n";
 
         float maxv = field->getMaxHeight();
         float minv = field->getMinHeight();
@@ -232,7 +223,10 @@ EntityRef Blueprint::Zweihander()
 
     Assembly::AddEntityBodies(body, zweihander.get(),
     {
-
+        {
+            PG::common.createBoxShape(rp3d::Vector3(1.0, 0.1, 0.1)),
+            rp3d::Transform(rp3d::Vector3(0.2, 0, 0), DEFQUAT)
+        }
     },
     {
         {

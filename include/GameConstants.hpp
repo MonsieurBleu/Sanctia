@@ -2,7 +2,7 @@
 
 /******** CODE UTILS ********/
 
-    #define DEFQUAT rp3d::Quaternion::identity()
+    
 
 /******** COMBATS ********/
 

@@ -36,8 +36,6 @@ void Game::mainloop()
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
-    ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"));
-
     Blueprint::Terrain(
         "ressources/maps/testPlayground.hdr",
         // "ressources/maps/RuggedTerrain.hdr",
@@ -48,168 +46,6 @@ void Game::mainloop()
         vec3(0),
         128
     );
-
-    if(false)
-    {
-        float TerrainHScale = 64; //256
-        float TerrainVScale = 64;
-
-        Texture2D HeightMap = Texture2D()
-            // .loadFromFileHDR("ressources/maps/RuggedTerrain.hdr")
-            // .loadFromFileHDR("ressources/maps/generated_512x512.hdr")
-            // .loadFromFileHDR("ressources/maps/heightMapTest6.hdr")
-            // .loadFromFileHDR("ressources/maps/RT512.hdr")
-            .loadFromFileHDR("ressources/maps/testPlayground.hdr")
-            // .loadFromFileHDR("ressources/maps/pattern.hdr")
-            .setFormat(GL_RGB)
-            .setInternalFormat(GL_RGB32F)
-            .setPixelType(GL_FLOAT)
-            .setWrapMode(GL_REPEAT) 
-            .setFilter(GL_LINEAR)
-            .generate();
-        terrain->setMap(HeightMap, 2);
-
-        terrain->setVao(Loader<MeshVao>::get("terrainPlane"));
-
-        terrain->state
-            .setScale(vec3(TerrainHScale, TerrainVScale, TerrainHScale))
-            ;
-
-        terrain->defaultMode = GL_PATCHES;
-        terrain->tessActivate(vec2(4, 32), vec2(10, 50));
-        // terrain->tessDisplacementFactors(20, 0.001);
-        // terrain->tessDisplacementFactors(0, 0);
-        terrain->tessHeighFactors(1, 1);
-        glPatchParameteri(GL_PATCH_VERTICES, 3);
-
-        ivec2 textureSize = HeightMap.getResolution();
-        float *copy = new float[textureSize.x*textureSize.y];
-        float *src = ((float *)HeightMap.getPixelSource());
-
-        for(int i = 0; i < textureSize.x; i++)
-        for(int j = 0; j < textureSize.y; j++)
-        {
-            copy[i * textureSize.x + j] = src[3*(i * textureSize.x + j)];
-        }
-
-        int terrainGridSize = 5;
-        vec2 gmin = vec2(-terrainGridSize);
-        vec2 gmax = vec2(terrainGridSize);
-
-        /*
-            TODO : revamp by using only power of 2 grid size
-        */
-
-        for(int i = gmin.x; i <= gmax.x; i++)
-        for(int j = gmin.y; j <= gmax.y; j++)
-        {
-            auto t = terrain->copy();
-
-            t->defaultMode = GL_PATCHES;
-            t->tessActivate(vec2(1, 16), vec2(75, 500));
-            t->tessHeighFactors(1, 1);
-
-            vec2 uvmin = (vec2(i, j)-gmin)/vec2(gmax - gmin + 1.f);
-            vec2 uvmax = (vec2(i+1, j+1)-gmin)/vec2(gmax - gmin + 1.f);
-
-            t->tessHeightTextureRange(uvmin, uvmax);
-
-            EntityModel model = EntityModel{newObjectGroup()};
-            model->add(t);
-
-            /* Testing rp3d height maps collider */
-
-            RigidBody b = PG::world->createRigidBody(rp3d::Transform(
-                rp3d::Vector3(i*TerrainHScale, 0, j*TerrainHScale), 
-                rp3d::Quaternion::identity()));
-
-            b->setType(rp3d::BodyType::STATIC);
-
-
-            ivec2 iuvmin = round(uvmin*vec2(textureSize));
-            ivec2 iuvmax = round(uvmax*vec2(textureSize));
-            int dsize = max(iuvmax.x - iuvmin.x, iuvmax.y - iuvmin.y);
-            // dsize = ivec2(max(dsize.x, dsize.y));
-            std::vector<float> heightData(dsize*dsize);
-
-            std::cout << dsize << "\t" << to_string(iuvmin) << "\t" << to_string(iuvmax) << "\n";
-
-            // for(int i = iuvmin.x; i < iuvmax.x; i++)
-            // for(int j = iuvmin.y; j < iuvmax.y; j++)
-            // {
-            //     // heightData[i * textureSize.x + j] = src[3*(i * textureSize.x + j)];
-            //     heightData[i * textureSize.x + j] = copy[i * textureSize.x + j];
-            //     // std::cout << i << "\t" << j << "\t" << i * textureSize.x + j << "\t" << heightData[i * textureSize.x + j] << "\n";
-            // }
-
-            for(int i = 0; i < dsize; i++)
-            for(int j = 0; j < dsize; j++)
-            {
-                // heightData[i * textureSize.x + j] = src[3*((i + iuvmin.x)* textureSize.x + j + iuvmin.y)];
-                heightData[i * dsize + j] = copy[(i + iuvmin.y)*textureSize.x + j + iuvmin.x];
-            }
-
-            std::vector<rp3d::Message> messages;
-            auto field = PG::common.createHeightField(
-                // HeightMap.getResolution().x, 
-                // HeightMap.getResolution().y,
-                // copy,
-                dsize, dsize, heightData.data(),
-                reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
-                messages,
-                1.f
-                );
-
-            float maxv = field->getMaxHeight();
-            float minv = field->getMinHeight();
-            float halfHeight = (-(maxv - minv)*0.5 - minv) + 0.5;
-
-            for(auto &i : messages)
-                std::cout << i.text << "\n";
-
-            EntityRef e = newEntity("Terrain test", EntityState3D(), b, model);
-            Blueprint::Assembly::AddEntityBodies(b, e.get(), 
-                {
-                    {PG::common.createHeightFieldShape(
-                        field
-                        , rp3d::Vector3(TerrainHScale/(float)(dsize-1), TerrainVScale, TerrainHScale/(float)(dsize-1))
-                        )
-                        ,rp3d::Transform(
-                            rp3d::Vector3(0, -halfHeight*TerrainVScale, 0),
-                            rp3d::Quaternion::identity()
-                        )}
-                }, {});
-
-
-            GG::entities.push_back(e);
-        }
-
-        // GlobalComponentToggler<PhysicsHelpers>::activated = true; 
-    }
-
-
-    // ModelRef floor = newModel(Loader<MeshMaterial>::get("paintPBR"));
-    // floor->loadFromFolder("ressources/models/ground/");
-
-    // int gridSize = 25;
-    // int gridScale = 1;
-    // for (int i = -gridSize; i < gridSize; i++)
-    //     for (int j = -gridSize; j < gridSize; j++)
-    //     {
-    //         ModelRef f = floor->copy();
-    //         f->state
-    //             .scaleScalar(gridScale)
-    //             .setPosition(vec3(i * gridScale , 0, j * gridScale ));
-    //         scene.add(f);
-    //     }
-
-
-    // ModelRef lantern = newModel(GG::PBRstencil);
-    // lantern->loadFromFolder("ressources/models/lantern/");
-    // lantern->state.scaleScalar(0.04).setPosition(vec3(10, 5, 0));
-    // lantern->noBackFaceCulling = true;
-    // scene.add(lantern);
-
 
     SceneDirectionalLight sun = newDirectionLight(
         DirectionLight()
@@ -243,7 +79,6 @@ void Game::mainloop()
     globals.fpsLimiter.setMenu(menu);
     physicsTicks.setMenu(menu);
     sun->setMenu(menu, U"Sun");
-    terrain->setMenu(menu, U"Terrain Model");
 
     std::vector<FastUI_value> GameConditionsValues;
 
@@ -383,6 +218,8 @@ void Game::mainloop()
     // }
 
 
+    std::cout << ComponentModularity::SynchFuncs[0].ComponentID << "\n";
+    std::cout << ComponentInfos<EntityState3D>::id << "\n";
 
     /**** Testing Entity Loading *****/
     {
@@ -411,6 +248,26 @@ void Game::mainloop()
 
         EntityRW.end();
         std::cout << EntityRW;
+
+
+        readTest->set<EntityGroupInfo>(EntityGroupInfo());
+
+
+        for(int i = 0; i < 64; i++)
+        {
+            EntityRef child = Blueprint::Zweihander();
+
+            child->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
+            child->comp<RigidBody>()->setTransform(rp3d::Transform(
+                rp3d::Vector3(0.f, i*2.f, 0.f), 
+                DEFQUAT
+            )); 
+            child->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
+
+            ComponentModularity::addChild(*readTest, child);
+        }
+        
+        ComponentModularity::synchronizeChildren(*readTest);
     }
 
 
@@ -451,9 +308,7 @@ void Game::mainloop()
 
     // ComponentModularity::SynchFuncs[0].element(GG::playerEntity, Blueprint::Zweihander());
 
-    // GG::playerEntity->set<EntityGroupInfo>(EntityGroupInfo());
-    // ComponentModularity::addChild(*GG::playerEntity, Blueprint::Zweihander());
-    // ComponentModularity::synchronizeChildren(*GG::playerEntity);
+
 
 
 // /****** Last Pre Loop Routines ******/
@@ -563,12 +418,12 @@ void Game::mainloop()
                 s.update();
             });
 
-    /***** SYNCHRONIZING MEG
-    *****/
-        System<EntityGroupInfo>([&, this](Entity &entity)
-        {
-            ComponentModularity::synchronizeChildren(entity);
-        });
+    // /***** SYNCHRONIZING MEG
+    // *****/
+    //     System<EntityGroupInfo>([&, this](Entity &entity)
+    //     {
+    //         ComponentModularity::synchronizeChildren(entity);
+    //     });
 
 
     /***** DEMO DEPLACEMENT SYSTEM 

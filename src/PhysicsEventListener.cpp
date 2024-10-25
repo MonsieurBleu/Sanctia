@@ -1,7 +1,7 @@
 #include <PhysicsEventListener.hpp>
 #include <GameConstants.hpp>
 
-#define DO_EVENT_LISTENER_DEBUG_PRINT
+// #define DO_EVENT_LISTENER_DEBUG_PRINT
 
 void applyEffect(Entity *weapon, Entity *target)
 {
@@ -21,9 +21,11 @@ void applyEffect(Entity *weapon, Entity *target)
 
     if(!effect.usr)
     {
+        #ifdef DO_EVENT_LISTENER_DEBUG_PRINT
         WARNING_MESSAGE("Empty Effect::usr on weapon '" 
             << weapon->comp<EntityInfos>().name << "' in collision with '" 
             << target->comp<EntityInfos>().name << "'");
+        #endif
         return;
     }
 
@@ -131,7 +133,9 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
 
         if(!e1 || !e2)
         {
+            #ifdef DO_EVENT_LISTENER_DEBUG_PRINT
             WARNING_MESSAGE("Physic trigger event with null user data will be ignored :(");
+            #endif
             continue;
         }
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <MappedEnum.hpp>
-#include <ObjectGroup.hpp>
+#include <Graphics/ObjectGroup.hpp>
 
 GENERATE_ENUM_FAST_REVERSE(DamageType, Pure, Blunt, Slash, Piercing, DamageType_Size);
 

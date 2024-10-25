@@ -1,7 +1,7 @@
 #pragma once
 #include <App.hpp>
-#include <Fonts.hpp>
-#include <FastUI.hpp>
+#include <Graphics/Fonts.hpp>
+#include <Graphics/FastUI.hpp>
 
 #include <GameGlobals.hpp>
 #include <PlayerController.hpp>

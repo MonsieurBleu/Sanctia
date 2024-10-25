@@ -9,7 +9,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 
-COMPONENT_DEFINE_SYNCH(EntityState3D)
+COMPONENT_DEFINE_SYNCH(EntityState3D) /**************** UNUSED TODO: remove*****************/
 {
     if(
         child->hasComp<RigidBody>() &&
@@ -53,7 +53,7 @@ COMPONENT_DEFINE_SYNCH(EntityState3D)
     cs._PhysicTmpQuat = cs.quaternion;
 }
 
-COMPONENT_DEFINE_SYNCH(RigidBody)
+COMPONENT_DEFINE_SYNCH(RigidBody) /**************** UNUSED TODO: remove*****************/
 {
     quat parentQuat = PG::toglm(parent.comp<RigidBody>()->getTransform().getOrientation());
     quat childQuat = PG::toglm(child->comp<RigidBody>()->getTransform().getOrientation());
@@ -72,6 +72,95 @@ COMPONENT_DEFINE_SYNCH(RigidBody)
 
     std::cout << to_string(childPos) << "\n";
 }
+
+COMPONENT_DEFINE_REPARENT(RigidBody)
+{
+    if(&parent != &newParent) return;
+
+    rp3d::Transform t;
+
+    auto &childBody = child->comp<RigidBody>();
+    auto &parentBody = parent.comp<RigidBody>();
+    
+    auto &childTransform = childBody->getTransform();
+    auto &parentTransform = parentBody->getTransform();
+
+    t.setPosition(childTransform.getPosition() + parentTransform.getPosition());
+    t.setOrientation(childTransform.getOrientation() * parentTransform.getOrientation());
+
+    auto childBodyType = childBody->getType();
+    childBody->setType(rp3d::BodyType::KINEMATIC);
+    childBody->setTransform(t);
+    childBody->setType(childBodyType);
+}   
+
+COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)
+{
+    return child->comp<RigidBody>()->getType() == parent.comp<RigidBody>()->getType();
+}   
+
+COMPONENT_DEFINE_COMPATIBILITY_CHECK(EntityState3D)
+{
+    auto &childState = child->comp<EntityState3D>();
+    auto &parentState = parent.comp<EntityState3D>();
+
+    return childState.usequat == parentState.usequat;
+}   
+
+COMPONENT_DEFINE_MERGE(EntityModel)
+{
+    globals.getScene()->remove(child->comp<EntityModel>());
+
+    auto childModel = child->comp<EntityModel>()->copy();
+    auto &parentModel = parent.comp<EntityModel>();
+
+    if(parent.hasComp<EntityModel>() && parent.hasComp<EntityModel>())
+    {
+        auto &childState = child->comp<EntityState3D>();
+        auto &parentState = parent.comp<EntityState3D>();
+
+        childModel->state.setPosition(childState.position - parentState.position);
+
+        /* TODO : investigate if rotation need to be merged too */
+        // if(childState.usequat)
+        // {
+
+        // }
+    }
+
+    parentModel->add(childModel);
+    globals.getScene()->add(childModel);
+}
+
+COMPONENT_DEFINE_MERGE(RigidBody)
+{
+    auto &childBody = child->comp<RigidBody>();
+    auto &parentBody = parent.comp<RigidBody>();
+    
+    auto &childTransform = childBody->getTransform();
+    auto &parentTransform = parentBody->getTransform();
+
+    int childCnb = childBody->getNbColliders();
+
+    for(int i = 0; i < childCnb; i++)
+    {
+        auto collider = childBody->getCollider(i);
+
+        auto t = collider->getLocalToWorldTransform();
+
+        t.setPosition(t.getPosition() - parentTransform.getPosition());
+        auto newCollider = parentBody->addCollider(collider->getCollisionShape(), t);
+
+        newCollider->setCollisionCategoryBits(collider->getCollisionCategoryBits());
+        newCollider->setCollideWithMaskBits(collider->getCollideWithMaskBits());
+        newCollider->setIsTrigger(collider->getIsTrigger());
+        newCollider->setMaterial(collider->getMaterial());
+        newCollider->setLocalToBodyTransform(t);
+    }
+
+    parentBody->updateLocalCenterOfMassFromColliders();
+}
+
 
 
 template<> void Component<EntityModel>::ComponentElem::init()
@@ -106,8 +195,11 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
     auto WtoL = c->getLocalToWorldTransform().getInverse();
     auto LtoW = c->getLocalToWorldTransform();
 
-    vec3 laabbmin = PG::toglm(WtoL * aabb.getMin()) - 0.1f;
-    vec3 laabbmax = PG::toglm(WtoL * aabb.getMax()) + 0.1f;
+    vec3 laabbmin_tmp = PG::toglm(WtoL * aabb.getMin()) - 0.1f;
+    vec3 laabbmax_tmp = PG::toglm(WtoL * aabb.getMax()) + 0.1f;
+
+    vec3 laabbmax = max(laabbmax_tmp, laabbmin_tmp);
+    vec3 laabbmin = min(laabbmax_tmp, laabbmin_tmp);
 
     std::vector<vec3> points;
 
@@ -116,6 +208,9 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
     int cnt = 0;
 
+    std::cout << to_string(laabbmin) << "\t" << to_string(laabbmax) << "\t" << to_string(jump) << "\n";
+
+    assert(jump.x > 0 && jump.y > 0 && jump.z > 0);
 
     if(!isFeild)
     {
@@ -260,6 +355,8 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
 
     if(entity->hasComp<RigidBody>())
     {
+        std::cout << TERMINAL_NOTIF << entity->comp<EntityInfos>().name << "\n" << TERMINAL_RESET;
+
         RigidBody b = entity->comp<RigidBody>();
 
         const int nb = b->getNbColliders();

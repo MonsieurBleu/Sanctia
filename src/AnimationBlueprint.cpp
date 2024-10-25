@@ -1,8 +1,8 @@
 #include <AnimationBlueprint.hpp>
 #include <SanctiaEntity.hpp>
 #include <AssetManager.hpp>
-#include <Animation.hpp>
-#include <Skeleton.hpp>
+#include <Graphics/Animation.hpp>
+#include <Graphics/Skeleton.hpp>
 #include <Utils.hpp>
 #include <MathsUtils.hpp>
 #include <Constants.hpp>

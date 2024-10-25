@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Mesh.hpp>
+#include <Graphics/Mesh.hpp>
 #include <Player.hpp>
 #include <GameConditions.hpp>
 #include <Timer.hpp>

@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <Fonts.hpp>
+#include <Graphics/Fonts.hpp>
 #include <GameConditions.hpp>
 
 #define DIALOGUE_FILE_BUFF_SIZE 4096

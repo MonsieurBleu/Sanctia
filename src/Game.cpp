@@ -15,8 +15,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
-#include <Skeleton.hpp>
-#include <Animation.hpp>
+#include <Graphics/Skeleton.hpp>
+#include <Graphics/Animation.hpp>
 #include <AnimationBlueprint.hpp>
 
 #include <PhysicsGlobals.hpp>
@@ -218,11 +218,8 @@ void Game::mainloop()
     // }
 
 
-    std::cout << ComponentModularity::SynchFuncs[0].ComponentID << "\n";
-    std::cout << ComponentInfos<EntityState3D>::id << "\n";
-
     /**** Testing Entity Loading *****/
-    {
+    // {
         NAMED_TIMER(EntityRW)
 
         EntityRW.start();
@@ -253,22 +250,45 @@ void Game::mainloop()
         readTest->set<EntityGroupInfo>(EntityGroupInfo());
 
 
-        for(int i = 0; i < 64; i++)
+
+        Entity* parent = nullptr;
+        // Entity* parent = readTest.get();
+        EntityRef firstChild;
+
+
+        for(int i = 0; i < 16; i++)
         {
             EntityRef child = Blueprint::Zweihander();
 
+            if(!i) firstChild = child;
+
             child->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
             child->comp<RigidBody>()->setTransform(rp3d::Transform(
-                rp3d::Vector3(0.f, i*2.f, 0.f), 
+                rp3d::Vector3(0.0f, 0.2f, 0.0f), 
+                // PG::torp3d(quat(vec3(0, cos(i/PI), 0)))
                 DEFQUAT
             )); 
             child->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
 
-            ComponentModularity::addChild(*readTest, child);
+            if(parent 
+            && parent != child.get()
+            )
+            {
+                ComponentModularity::addChild(*parent, child);
+            }
+
+            parent = child.get();
         }
         
-        ComponentModularity::synchronizeChildren(*readTest);
-    }
+        // ComponentModularity::synchronizeChildren(*readTest);
+
+        // ComponentModularity::mergeChildren(*readTest);
+
+        // System<EntityGroupInfo>([&, this](Entity &entity)
+        // {
+        //     ComponentModularity::synchronizeChildren(entity);
+        // });
+    // }
 
 
 
@@ -334,12 +354,10 @@ void Game::mainloop()
 /******  Main Loop ******/
     while (state != AppState::quit)
     {
-
+        static unsigned int itcnt = 0;
+        itcnt ++;
         if(doAutomaticShaderRefresh)
         {
-            static unsigned int itcnt = 0;
-            itcnt ++;
-
             if(itcnt%144 == 0)
             {
                 system("clear");
@@ -352,6 +370,14 @@ void Game::mainloop()
                 for(auto &m : Loader<MeshMaterial>::loadedAssets)
                     m.second->reset();
             }
+        }
+
+        if(itcnt == 50)
+        {
+            physicsMutex.lock();
+            // ComponentModularity::mergeChildren(*readTest);
+            ComponentModularity::mergeChildren(*firstChild);
+            physicsMutex.unlock();
         }
 
         mainloopStartRoutine();
@@ -594,12 +620,14 @@ void Game::mainloop()
         
         ManageGarbage<EntityModel>();
         ManageGarbage<PhysicsHelpers>();
-        GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
-        GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
-        std::vector<EntityRef> p = {GG::playerEntity};
-        GlobalComponentToggler<InfosStatsHelpers>::update(p);
-        GlobalComponentToggler<PhysicsHelpers>::update(p);
+        // GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
+        // GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
+        // std::vector<EntityRef> p = {GG::playerEntity};
+        // GlobalComponentToggler<InfosStatsHelpers>::update(p);
+        // GlobalComponentToggler<PhysicsHelpers>::update(p);
 
+        GlobalComponentToggler<PhysicsHelpers>::updateALL();
+        GlobalComponentToggler<InfosStatsHelpers>::updateALL();
 
         mainloopPreRenderRoutine();
 

@@ -1,4 +1,4 @@
-#include <AnimationController.hpp>
+#include <Graphics/AnimationController.hpp>
 #include <SanctiaEntity.hpp>
 
 class Entity;

@@ -9,7 +9,7 @@
 #include <EntityBlueprint.hpp>
 #include <AnimationBlueprint.hpp>
 #include <PhysicsGlobals.hpp>
-#include <Shadinclude.hpp>
+#include <Graphics/Shadinclude.hpp>
 
 Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
 

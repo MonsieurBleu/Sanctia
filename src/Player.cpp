@@ -1,5 +1,5 @@
 #include <Player.hpp>
-#include <FastUI.hpp>
+#include <Graphics/FastUI.hpp>
 
 void Player::setMenu(FastUI_valueMenu &menu)
 {

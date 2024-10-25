@@ -241,7 +241,7 @@ EntityRef Blueprint::Zweihander()
 
     body->setType(rp3d::BodyType::KINEMATIC);
 
-    GG::entities.push_back(zweihander);
+    // GG::entities.push_back(zweihander);
 
     return zweihander;
 }

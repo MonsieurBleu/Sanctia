@@ -5,103 +5,106 @@
 
 
 #include <GlobalOptions.hpp>
-#include <ModularEntityGroupping.hpp>
+#include <ECS/ModularEntityGroupping.hpp>
+
+#include <ECS/EngineComponents.hpp>
 
 #include <Items.hpp>
 #include <Globals.hpp>
 #include <EntityStats.hpp>
-#include <AnimationController.hpp>
+#include <Graphics/AnimationController.hpp>
 #include <Dialogue.hpp>
 
 #include <ComponentTypeLogic.hpp>
 #include <ComponentTypeGraphic.hpp>
 #include <ComponentTypePhysic.hpp>
+#include <ComponentTypeAI.hpp>
 
+#undef CURRENT_MAX_COMP_USAGE
+#define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
 
 /***************** GAMEPLAY ATTRIBUTS *****************/
-    const int MAX_DATA_COMP_USAGE = MAX_ENTITY;
 
-    /*
-        TODO : maybe try to move it to graphic or another category
-    */
-    COMPONENT(EntityState3D, DATA, MAX_DATA_COMP_USAGE)
-    COMPONENT_ADD_SYNCH(EntityState3D)
-    
-    COMPONENT(EntityDeplacementState, DATA, MAX_DATA_COMP_USAGE)
-    
-    COMPONENT(EntityStats, DATA, MAX_DATA_COMP_USAGE)
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY DATA
 
-    COMPONENT(CharacterDialogues, DATA, MAX_DATA_COMP_USAGE)
+    Coherent_Component(EntityState3D)
 
-    COMPONENT(NpcPcRelation, DATA, MAX_DATA_COMP_USAGE)
+    Ephemeral_Component(EntityDeplacementState)
 
-    COMPONENT(ActionState, DATA, MAX_DATA_COMP_USAGE)
+    Ephemeral_Component(EntityStats)
 
-    COMPONENT(Faction, DATA, MAX_DATA_COMP_USAGE)
-    
+    Ephemeral_Component(CharacterDialogues)
+
+    Ephemeral_Component(NpcPcRelation)
+
+    Ephemeral_Component(ActionState)
+
+    Ephemeral_Component(Faction)
+
 
 /***************** ITEMS *****************/
 
-    COMPONENT(ItemInfos, DATA, MAX_DATA_COMP_USAGE)
+    Ephemeral_Component(ItemInfos)
 
-    COMPONENT(Items, DATA, MAX_DATA_COMP_USAGE)
+    Ephemeral_Component(Items)
 
-    COMPONENT(ItemTransform, DATA, MAX_DATA_COMP_USAGE)
+    Ephemeral_Component(ItemTransform)
 
 
 /***************** GRAPHICS *****************/
-    const int MAX_GRAPHIC_COMP_USAGE = MAX_ENTITY;
 
-    struct EntityModel : public ObjectGroupRef{};
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY GRAPHIC
 
-    COMPONENT(EntityModel, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
-    template<>void Component<EntityModel>::ComponentElem::init();
-    template<>void Component<EntityModel>::ComponentElem::clean();
+    Intrinsic_Component(EntityModel)
+    template<> void Component<EntityModel>::ComponentElem::init();
+    template<> void Component<EntityModel>::ComponentElem::clean();
 
-    COMPONENT(SkeletonAnimationState, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
-    template<>void Component<SkeletonAnimationState>::ComponentElem::init();
+    Ephemeral_Component(SkeletonAnimationState)
+    template<> void Component<SkeletonAnimationState>::ComponentElem::init();
 
-    COMPONENT(AnimationControllerRef, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
+    Ephemeral_Component(AnimationControllerRef)
 
-    struct AnimationControllerInfos : std::string
-    {
-        GENERATE_ENUM_FAST_REVERSE(Type, Biped)
+    Ephemeral_Component(AnimationControllerInfos)
 
-        Type type;
-    };
-    COMPONENT(AnimationControllerInfos, GRAPHIC, MAX_GRAPHIC_COMP_USAGE)
-
-/***************** PHYSICS *****************/
-    const int MAX_PHYSIC_COMP_USAGE = MAX_ENTITY;
-
-    COMPONENT(Effect, PHYSIC, MAX_PHYSIC_COMP_USAGE)
-
-    COMPONENT(RigidBody, PHYSIC, MAX_PHYSIC_COMP_USAGE)
-    template<> void Component<RigidBody>::ComponentElem::init();
-    template<> void Component<RigidBody>::ComponentElem::clean();
-    COMPONENT_ADD_SYNCH(RigidBody)
-
-    COMPONENT(staticEntityFlag, PHYSIC, MAX_PHYSIC_COMP_USAGE);
-
-/***************** IA *****************/
-    const int MAX_IA_COMP_USAGE = MAX_ENTITY;
-
-    COMPONENT(DeplacementBehaviour, AI, MAX_IA_COMP_USAGE)
-
-    COMPONENT(AgentState, AI, MAX_IA_COMP_USAGE)
-
-    struct Target : EntityRef {};
-    COMPONENT(Target, AI, MAX_IA_COMP_USAGE)
 
 /***************** HELPERS *****************/
-    struct PhysicsHelpers : public ObjectGroupRef{};
 
-    COMPONENT(PhysicsHelpers, GRAPHIC, MAX_GRAPHIC_COMP_USAGE);
-    template<> void Component<PhysicsHelpers>::ComponentElem::clean();
+    Ephemeral_Component(PhysicsHelpers);
     template<> void Component<PhysicsHelpers>::ComponentElem::init();
+    template<> void Component<PhysicsHelpers>::ComponentElem::clean();
 
-    struct InfosStatsHelpers{std::vector<ModelRef> models;};
-    COMPONENT(InfosStatsHelpers, GRAPHIC, MAX_GRAPHIC_COMP_USAGE);
+    Ephemeral_Component(InfosStatsHelpers);
     template<> void Component<InfosStatsHelpers>::ComponentElem::init();
     template<> void Component<InfosStatsHelpers>::ComponentElem::clean();
+
+/***************** PHYSICS *****************/
+
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY PHYSIC
+
+    Ephemeral_Component(Effect)
+
+    Aligned_Intricate_Component(RigidBody)
+    template<> void Component<RigidBody>::ComponentElem::init();
+    template<> void Component<RigidBody>::ComponentElem::clean();
+
+    Ephemeral_Component(staticEntityFlag)
+
+/***************** IA *****************/
+
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY AI
+
+    Ephemeral_Component(DeplacementBehaviour)
+
+    Ephemeral_Component(AgentState)
+
+    Ephemeral_Component(Target)
+
+
+
+
+

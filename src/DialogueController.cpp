@@ -9,7 +9,7 @@
 #include <MathsUtils.hpp>
 
 #include <Helpers.hpp>
-#include <FastUI.hpp>
+#include <Graphics/FastUI.hpp>
 
 #include <Utils.hpp>
 

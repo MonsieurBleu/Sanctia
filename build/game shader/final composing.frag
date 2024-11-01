@@ -47,6 +47,7 @@ vec4 getBlurAO(vec2 TexCoords) {
 
 void main()
 {
+    // vec2 uv = uvScreen*1.5 - vec2(0.5, 0.5);
     vec2 uv = uvScreen;
     float aspectRatio = float(iResolution.y) / float(iResolution.x);
 
@@ -145,6 +146,9 @@ void main()
     #endif
 
 /******* UI *******/
+    if(uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0)
+        _fragColor.rgb = vec3(0.15, 0.2, 0.25);
+
     vec4 ui = texture(bUI, uvScreen);
     _fragColor.rgb = mix(_fragColor.rgb, ui.rgb, ui.a);
     _fragColor.a = 1.0;

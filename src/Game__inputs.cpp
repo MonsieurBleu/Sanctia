@@ -28,11 +28,11 @@ bool Game::userInput(GLFWKeyInfo input)
         case GLFW_KEY_F12 :
             if(globals.getController() == &playerControl)
             {
-                GG::playerEntity->comp<EntityModel>()->state.hide = HIDE;
+                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStateHideStatus::HIDE;
 
                 for(auto &i : GG::playerEntity->comp<Items>().equipped)
                     if(i.item.get() && i.item->hasComp<EntityModel>())
-                        i.item->comp<EntityModel>()->state.hide = HIDE;
+                        i.item->comp<EntityModel>()->state.hide = ModelStateHideStatus::HIDE;
                 setController(&spectator);
             }
             else
@@ -51,10 +51,10 @@ bool Game::userInput(GLFWKeyInfo input)
                     }
                 }
 
-                GG::playerEntity->comp<EntityModel>()->state.hide = SHOW;
+                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStateHideStatus::SHOW;
                 for(auto &i : GG::playerEntity->comp<Items>().equipped)
                     if(i.item.get() && i.item->hasComp<EntityModel>())
-                        i.item->comp<EntityModel>()->state.hide = SHOW;
+                        i.item->comp<EntityModel>()->state.hide = ModelStateHideStatus::SHOW;
             }
             break;
         
@@ -163,28 +163,34 @@ bool Game::userInput(GLFWKeyInfo input)
             // GG::playerEntity->set<Effect>(testEffectZone);
             
             // animTime = 0.f;
-            GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
+            if(globals.currentCamera->getMouseFollow())
+                GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
         }
             break;
 
         case GLFW_KEY_LEFT :
-            GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::LEFT);
+            if(globals.currentCamera->getMouseFollow())
+                GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::LEFT);
             break;
 
         case GLFW_KEY_RIGHT :
-            GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::RIGHT);
+            if(globals.currentCamera->getMouseFollow())
+                GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::RIGHT);
             break;
 
         case GLFW_KEY_UP :
-            GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::SPECIAL);
+            if(globals.currentCamera->getMouseFollow())
+                GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::SPECIAL);
             break;
 
         case GLFW_KEY_BACKSPACE :
-            GG::playerEntity->comp<EntityStats>().alive = false;
+            if(globals.currentCamera->getMouseFollow())
+                GG::playerEntity->comp<EntityStats>().alive = false;
             break;
 
         case GLFW_KEY_RIGHT_SHIFT :
-            GG::playerEntity->comp<ActionState>().stun = true;
+            if(globals.currentCamera->getMouseFollow())
+                GG::playerEntity->comp<ActionState>().stun = true;
             break;
         
         case GLFW_KEY_N :

@@ -161,6 +161,8 @@ void PlayerController::update()
 
 bool PlayerController::inputs(GLFWKeyInfo& input)
 {
+    if(!globals.currentCamera->getMouseFollow()) return false;
+
     switch (input.action)
     {
     case GLFW_PRESS:

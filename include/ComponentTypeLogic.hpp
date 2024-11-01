@@ -16,7 +16,7 @@ using namespace glm;
 
 #include <unordered_set>
 
-#define UNINITIALIZED_FLOAT 1e12
+#define UNINITIALIZED_FLOAT 1e12f
 
 struct EntityState3D
 {

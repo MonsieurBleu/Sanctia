@@ -122,7 +122,7 @@ void DialogueController::clean()
 {
     globals.getScene2D()->remove(NPC);
 
-    interface->state.hide = HIDE;
+    interface->state.hide = ModelStateHideStatus::HIDE;
     interface->update(true);
 
     clearChoices();
@@ -213,7 +213,7 @@ void DialogueController::init()
         tmpFUIAdded = true;
     }
 
-    interface->state.hide = SHOW;
+    interface->state.hide = ModelStateHideStatus::SHOW;
     interface->update(true);
 
     auto &cd = interlocutor->comp<CharacterDialogues>();

@@ -16,6 +16,8 @@ Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
 void Game::init(int paramSample)
 {
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
+   
+    // globals._renderScale = 0.5;
 
     App::init();
 

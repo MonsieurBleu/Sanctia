@@ -69,7 +69,7 @@ void Game::mainloop()
 
     BenchTimer tmpTimer("tmp timer");
 
-    menu->state.setPosition(vec3(-0.9, 0.5, 0)).scaleScalar(0.7);
+    menu->state.setPosition(vec3(-0.9, 0.9, 0)).scaleScalar(0.9);
     globals.appTime.setMenuConst(menu);
     globals.simulationTime.setMenu(menu);
     physicsTimer.setMenu(menu);
@@ -93,7 +93,162 @@ void Game::mainloop()
         {FastUI_menuTitle(menu.ui, U"Games Conditions"), FastUI_valueTab(menu.ui, GameConditionsValues)}
     );
 
+    /* TODO : remove */
+    menu->state.setPosition(vec3(1e9, 0.9, 0)).scaleScalar(0.9);
+
+    /* Testing Out new ECS based UI*/
+    // for(int i = 0; i < 8; i++)
+    // {
+    //     EntityRef uitest = newEntity("UiTest"
+    //         , WidgetUI_Context{&ui}
+    //         , WidgetUpdate()
+    //         , WidgetBox(
+    //             vec2(i/8.f    , -0.5), 
+    //             vec2((i+1)/8.f,  0.5))
+    //         , WidgetBakground()
+    //     );  
+
+    //     GG::entities.push_back(uitest);
+
+    //     std::cout << uitest->toStr() << "\n"; 
+    // }
     
+    // EntityRef first;
+    // {
+    //     EntityRef parent;
+
+    //     for(int i = 0; i < 8; i++)
+    //     {
+    //         EntityRef uitest = newEntity("UiTest"
+    //             , WidgetUI_Context{&ui}
+    //             , WidgetState()
+    //             , WidgetBox(
+    //                 vec2(-0.75, -2.25), 
+    //                 vec2(+0.75, -1.05))
+    //             , WidgetBackground()
+    //             , WidgetText(U"Bonjour, je suis le reuf. Pour vrai !")
+    //             , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER)
+    //         );  
+
+    //         if(i == 3)
+    //             uitest->comp<WidgetState>().status = ModelStateHideStatus::HIDE;
+
+    //         if(!first)
+    //         {
+    //             uitest->comp<WidgetBox>() = WidgetBox(vec2(-0.9, 0.25), vec2(0.9,  1.0));
+    //             first = uitest;
+    //         }
+    //         else
+    //         {
+    //             ComponentModularity::addChild(*parent, uitest);
+    //         }
+
+    //         parent = uitest;
+
+    //         GG::entities.push_back(uitest);
+
+    //         std::cout << uitest->toStr() << "\n"; 
+    //     }
+
+    //     ComponentModularity::synchronizeChildren(first);
+    // }
+
+    ui.colorTitleBackground.a = 0.9f;
+
+    #define TEST_ELEMENT_COMPONENT \
+        , WidgetUI_Context{&ui}  \
+        , WidgetState() \
+        , WidgetBox( \
+            vec2(-0.9, +0.9), \
+            vec2(+1.1, +2.6), \
+            WidgetBox::Type::FOLLOW_SIBLINGS_BOX \
+        ) \
+        , WidgetBackground() \
+        , WidgetText() \
+        , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER)
+
+
+    EntityRef first = newEntity("first"
+        , WidgetUI_Context{&ui}
+        , WidgetState()
+        , WidgetBox(
+            vec2(-0.25, +0.25), 
+            vec2(-0.9, -0.8)
+        )
+        , WidgetBackground()
+        , WidgetText(U"Titre important")
+        , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER)
+        , EntityGroupInfo
+        ({
+            newEntity("Sous élément 1"
+                TEST_ELEMENT_COMPONENT 
+                , EntityGroupInfo
+                ({
+                        newEntity("Sous élément 1-1"
+                            TEST_ELEMENT_COMPONENT 
+                        ),
+                        newEntity("Sous élément 1-2"
+                            TEST_ELEMENT_COMPONENT 
+                        ),
+                        newEntity("Sous élément 1-3"
+                            TEST_ELEMENT_COMPONENT 
+                        ),
+                        newEntity("Sous élément 1-4"
+                            TEST_ELEMENT_COMPONENT 
+                            , EntityGroupInfo(
+                                {
+                                    newEntity("Sous élément 1-4-1"
+                                        TEST_ELEMENT_COMPONENT 
+                                    ),
+                                    newEntity("Sous élément 1-4-2"
+                                        TEST_ELEMENT_COMPONENT 
+                                    ),
+                                    newEntity("Sous élément 1-4-3"
+                                        TEST_ELEMENT_COMPONENT 
+                                    ),
+                                    newEntity("Sous élément 1-4-4"
+                                        TEST_ELEMENT_COMPONENT 
+                                    ),
+                                })
+                        ),
+                    })
+            ),
+            newEntity("Sous élément 2"
+                TEST_ELEMENT_COMPONENT 
+                , EntityGroupInfo
+                    ({
+                        newEntity("Sous élément 2-1"
+                            TEST_ELEMENT_COMPONENT 
+                        ),
+                        newEntity("Sous élément 2-2"
+                            TEST_ELEMENT_COMPONENT 
+                        ),
+                        newEntity("Sous élément 2-3"
+                            TEST_ELEMENT_COMPONENT 
+                        ),
+                        newEntity("Sous élément 2-4"
+                            TEST_ELEMENT_COMPONENT 
+                        ),
+                    })
+            ),
+            newEntity("Sous élément 3"
+                TEST_ELEMENT_COMPONENT 
+            ),
+            newEntity("Sous élément 4"
+                TEST_ELEMENT_COMPONENT 
+            ),
+            // newEntity("Sous élément 5"
+            //     TEST_ELEMENT_COMPONENT 
+            //     , WidgetBox( 
+            //         vec2(-0.9, +0.9), 
+            //         vec2(-2.5, -1.1), 
+            //         WidgetBox::Type::FOLLOW_SIBLINGS_BOX 
+            //     ) 
+            // ),
+        })
+    );
+
+
 /****** Loading Game Specific Elements *******/
     GG::currentConditions.readTxt("saves/gameConditions.txt");
 
@@ -138,22 +293,22 @@ void Game::mainloop()
 
     scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
 
-    SingleStringBatchRef AttackDirectionHelper(new SingleStringBatch());
-    AttackDirectionHelper->setMaterial(Loader<MeshMaterial>::get("mdFont"));
-    AttackDirectionHelper->setFont(FUIfont);
-    AttackDirectionHelper->align = CENTERED;
-    AttackDirectionHelper->color = ColorHexToV(0xFFFFFF);
-    AttackDirectionHelper->baseUniforms.add(ShaderUniform(&AttackDirectionHelper->color, 32));
-    scene2D.add(AttackDirectionHelper);
+    // SingleStringBatchRef AttackDirectionHelper(new SingleStringBatch());
+    // AttackDirectionHelper->setMaterial(Loader<MeshMaterial>::get("mdFont"));
+    // AttackDirectionHelper->setFont(FUIfont);
+    // AttackDirectionHelper->align = CENTERED;
+    // AttackDirectionHelper->color = ColorHexToV(0xFFFFFF);
+    // AttackDirectionHelper->baseUniforms.add(ShaderUniform(&AttackDirectionHelper->color, 32));
+    // scene2D.add(AttackDirectionHelper);
 
-    SingleStringBatchRef HealthBar(new SingleStringBatch());
-    HealthBar->setMaterial(Loader<MeshMaterial>::get("mdFont"));
-    HealthBar->setFont(FUIfont);
-    HealthBar->align = StringAlignement::TO_LEFT;
-    HealthBar->color = ColorHexToV(0x00FF00);
-    HealthBar->baseUniforms.add(ShaderUniform(&HealthBar->color, 32));
-    HealthBar->state.setPosition(screenPosToModel(vec2(-0.8, -0.8)));
-    scene2D.add(HealthBar);
+    // SingleStringBatchRef HealthBar(new SingleStringBatch());
+    // HealthBar->setMaterial(Loader<MeshMaterial>::get("mdFont"));
+    // HealthBar->setFont(FUIfont);
+    // HealthBar->align = StringAlignement::TO_LEFT;
+    // HealthBar->color = ColorHexToV(0x00FF00);
+    // HealthBar->baseUniforms.add(ShaderUniform(&HealthBar->color, 32));
+    // HealthBar->state.setPosition(screenPosToModel(vec2(-0.8, -0.8)));
+    // scene2D.add(HealthBar);
 
     // {   auto e = Blueprint::TestManequin();
     //     e->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
@@ -367,6 +522,10 @@ void Game::mainloop()
                 SSAO.getShader().reset();
                 depthOnlyMaterial->reset();
                 skyboxMaterial->reset();
+                
+                ui.fontMaterial->reset();
+                defaultSUIMaterial->reset();
+
                 for(auto &m : Loader<MeshMaterial>::loadedAssets)
                     m.second->reset();
             }
@@ -380,37 +539,56 @@ void Game::mainloop()
             physicsMutex.unlock();
         }
 
+        if(globals.mouseLeftClickDown())
+        {
+            updateEntityCursor(globals.mousePosition(), true, globals.mouseLeftClick());
+        }
+        if(globals.mouseRightClickDown())
+        {
+            auto &b = first->comp<WidgetBox>();
+
+            // vec2 pos = (b.min + b.max)*0.5f;
+            vec2 pos = (globals.mousePosition()/vec2(globals.windowSize()))*2.f - 1.f;
+            vec2 scale = (b.max-b.min);
+
+            b.min = pos - scale*0.5f;
+            b.max = pos + scale*0.5f;
+        }
+
+        /* TODO : remove */
+        ComponentModularity::synchronizeChildren(first);
+
         mainloopStartRoutine();
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
 
-        switch (GG::playerEntity->comp<ActionState>().stance())
-        {
-            case ActionState::Stance::LEFT :
-                AttackDirectionHelper->text = U"**<==** V ==>";
-                break;
+        // switch (GG::playerEntity->comp<ActionState>().stance())
+        // {
+        //     case ActionState::Stance::LEFT :
+        //         AttackDirectionHelper->text = U"**<==** V ==>";
+        //         break;
             
-            case ActionState::Stance::RIGHT :
-                AttackDirectionHelper->text = U"<== V **==>**";
-                break;
+        //     case ActionState::Stance::RIGHT :
+        //         AttackDirectionHelper->text = U"<== V **==>**";
+        //         break;
 
-            case ActionState::Stance::SPECIAL :
-                AttackDirectionHelper->text = U"<== **V** ==>";
-                break;
+        //     case ActionState::Stance::SPECIAL :
+        //         AttackDirectionHelper->text = U"<== **V** ==>";
+        //         break;
 
-            default: break;
-        }
-        AttackDirectionHelper->batchText();
+        //     default: break;
+        // }
+        // AttackDirectionHelper->batchText();
 
 
-        float h = GG::playerEntity->comp<EntityStats>().health.cur;
-        HealthBar->text = U"<";
-        h /= GG::playerEntity->comp<EntityStats>().health.max;
-        int i = 0;
-        for(; i < (int)(h*50.f); i++) HealthBar->text += U'=';
-        for(; i < 50; i++) HealthBar->text += U" -";
-        HealthBar->text += U">";
-        HealthBar->batchText();
+        // float h = GG::playerEntity->comp<EntityStats>().health.cur;
+        // HealthBar->text = U"<";
+        // h /= GG::playerEntity->comp<EntityStats>().health.max;
+        // int i = 0;
+        // for(; i < (int)(h*50.f); i++) HealthBar->text += U'=';
+        // for(; i < 50; i++) HealthBar->text += U" -";
+        // HealthBar->text += U">";
+        // HealthBar->batchText();
 
         float maxSlow = player1.getStats().reflexMaxSlowFactor;
         float reflex = player1.getInfos().state.reflex;
@@ -696,12 +874,12 @@ void Game::mainloop()
         if(wireframe)
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            skybox->state.hide = HIDE;
+            skybox->state.hide = ModelStateHideStatus::HIDE;
         }
         else
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            skybox->state.hide = SHOW;
+            skybox->state.hide = ModelStateHideStatus::SHOW;
         }    
 
         /* 3D Early Depth Testing */

@@ -155,6 +155,8 @@ void Game::mainloop()
 
     ui.colorTitleBackground.a = 0.9f;
 
+    float widgetTileSPace = 0.01;
+
     gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
         , WidgetState()
@@ -171,7 +173,17 @@ void Game::mainloop()
                 , WidgetState()
                 , WidgetBox(
                     vec2(-1, 1), 
-                    vec2(-1.1, -1)
+                    vec2(-1.1, -1) + vec2(widgetTileSPace, -widgetTileSPace)
+                ) 
+                , WidgetBackground()
+                , WidgetText()
+            ),
+            newEntity("Current Application Controls"
+                , WidgetUI_Context{&ui}
+                , WidgetState()
+                , WidgetBox(
+                    vec2(-1, 1),
+                    vec2(1, 1.1) + vec2(widgetTileSPace, -widgetTileSPace)
                 )
                 , WidgetBackground()
                 , WidgetText()
@@ -180,8 +192,38 @@ void Game::mainloop()
                 , WidgetUI_Context{&ui}
                 , WidgetState()
                 , WidgetBox(
+                    vec2(-1, 1),
+                    vec2(1.1, 1.2) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace)
+                )
+                , WidgetBackground()
+                , WidgetText()
+            ),
+            newEntity("Global Information Section Menu"
+                , WidgetUI_Context{&ui}
+                , WidgetState()
+                , WidgetBox(
+                    vec2(-1, 1),
+                    vec2(1.2, 1.3) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace)*2.f
+                )
+                , WidgetBackground()
+                , WidgetText()
+            ),
+            newEntity("Global Informations"
+                , WidgetUI_Context{&ui}
+                , WidgetState()
+                , WidgetBox(
                     vec2(-1, 1), 
-                    vec2(1, 1.1)
+                    vec2(1.3, 1.9) - vec2(widgetTileSPace*2.f, widgetTileSPace)
+                )
+                , WidgetBackground()
+                , WidgetText()
+            ),
+            newEntity("Current Application Menus"
+                , WidgetUI_Context{&ui}
+                , WidgetState()
+                , WidgetBox(
+                    vec2(-2, -1)     + vec2(0, -widgetTileSPace), 
+                    vec2(-1.1, 1.9)  + vec2(widgetTileSPace, -widgetTileSPace)
                 )
                 , WidgetBackground()
                 , WidgetText()

@@ -155,6 +155,43 @@ void Game::mainloop()
 
     ui.colorTitleBackground.a = 0.9f;
 
+    gameScreenWidget = newEntity("Game Screen Widget"
+        , WidgetUI_Context{&ui}
+        , WidgetState()
+        , WidgetBox(
+            vec2(0, +1), 
+            vec2(0, +1)
+        )
+        , WidgetBackground()
+        , WidgetText()
+        , EntityGroupInfo
+        ({
+            newEntity("Application Choice Menu"
+                , WidgetUI_Context{&ui}
+                , WidgetState()
+                , WidgetBox(
+                    vec2(-1, 1), 
+                    vec2(-1.1, -1)
+                )
+                , WidgetBackground()
+                , WidgetText()
+            ),
+            newEntity("Global Application Controls"
+                , WidgetUI_Context{&ui}
+                , WidgetState()
+                , WidgetBox(
+                    vec2(-1, 1), 
+                    vec2(1, 1.1)
+                )
+                , WidgetBackground()
+                , WidgetText()
+            ),
+        })
+    );
+
+    gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
+
+
     #define TEST_ELEMENT_COMPONENT \
         , WidgetUI_Context{&ui}  \
         , WidgetState() \
@@ -172,8 +209,8 @@ void Game::mainloop()
         , WidgetUI_Context{&ui}
         , WidgetState()
         , WidgetBox(
-            vec2(-0.25, +0.25), 
-            vec2(-0.9, -0.8)
+            vec2(-0.125, +0.125), 
+            vec2(-0.9, -0.85)
         )
         , WidgetBackground()
         , WidgetText(U"Titre important")
@@ -247,6 +284,8 @@ void Game::mainloop()
             // ),
         })
     );
+
+    ComponentModularity::addChild(*gameScreenWidget, first);
 
 
 /****** Loading Game Specific Elements *******/
@@ -551,12 +590,13 @@ void Game::mainloop()
             vec2 pos = (globals.mousePosition()/vec2(globals.windowSize()))*2.f - 1.f;
             vec2 scale = (b.max-b.min);
 
-            b.min = pos - scale*0.5f;
-            b.max = pos + scale*0.5f;
+            b.initMin = pos - scale*0.5f;
+            b.initMax = pos + scale*0.5f;
         }
 
         /* TODO : remove */
-        ComponentModularity::synchronizeChildren(first);
+        // ComponentModularity::synchronizeChildren(first);
+        ComponentModularity::synchronizeChildren(gameScreenWidget);
 
         mainloopStartRoutine();
 

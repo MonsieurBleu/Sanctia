@@ -7,7 +7,9 @@ layout(location = 0) uniform ivec2 iResolution;
 layout(location = 1) uniform float iTime;
 layout(location = 2) uniform mat4 MVP;
 
+
 layout(location = 10) uniform int bloomEnable;
+layout(location = 11) uniform int editorModeEnable;
 
 layout(location = 16) uniform vec3 caColor1;
 layout(location = 17) uniform vec3 caColor2;
@@ -47,8 +49,7 @@ vec4 getBlurAO(vec2 TexCoords) {
 
 void main()
 {
-    // vec2 uv = uvScreen*1.5 - vec2(0.5, 0.5);
-    vec2 uv = uvScreen;
+    vec2 uv = editorModeEnable != 0 ? uvScreen*1.5 - vec2(0.5, 0.45) : uvScreen;
     float aspectRatio = float(iResolution.y) / float(iResolution.x);
 
 /******* Depth Based Pixelisation 

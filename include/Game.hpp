@@ -38,8 +38,11 @@ private:
 
     bool hideHUD = false;
     bool wireframe = false;
+    int editorModeEnable = true;
+    EntityRef gameScreenWidget;
 
     bool doAutomaticShaderRefresh = false;
+
 
 public:
     static inline LimitTimer physicsTicks;

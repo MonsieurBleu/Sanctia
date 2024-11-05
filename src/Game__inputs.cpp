@@ -92,6 +92,14 @@ bool Game::userInput(GLFWKeyInfo input)
             globals.currentCamera->toggleMouseFollow();
             break;
 
+        case GLFW_KEY_F3:
+            editorModeEnable = editorModeEnable ? false : true;
+            if(editorModeEnable)
+                gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
+            else
+                gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-1, 1), vec2(-1, 1)));
+            break;
+
         case GLFW_KEY_1:
             Bloom.toggle();
             break;

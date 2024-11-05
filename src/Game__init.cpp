@@ -33,6 +33,7 @@ void Game::init(int paramSample)
 
     finalProcessingStage
         .addUniform(ShaderUniform(Bloom.getIsEnableAddr(), 10))
+        .addUniform(ShaderUniform(&editorModeEnable, 11))
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor1, 16))
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor2, 17))
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbAngleAmplitude, 18))

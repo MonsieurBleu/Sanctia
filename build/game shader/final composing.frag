@@ -10,6 +10,7 @@ layout(location = 2) uniform mat4 MVP;
 
 layout(location = 10) uniform int bloomEnable;
 layout(location = 11) uniform int editorModeEnable;
+layout(location = 12) uniform vec4 gameScreenBox;
 
 layout(location = 16) uniform vec3 caColor1;
 layout(location = 17) uniform vec3 caColor2;
@@ -49,8 +50,14 @@ vec4 getBlurAO(vec2 TexCoords) {
 
 void main()
 {
-    vec2 uv = editorModeEnable != 0 ? uvScreen*1.5 - vec2(0.5, 0.45) : uvScreen;
+    vec4 gsb = 0.5 + 0.5*(gameScreenBox.xwzy*vec4(1, -1, 1, -1));
+    
+    vec2 uv = uvScreen/(gsb.zw - gsb.xy) - gsb.xy*1.5;
+
+    // vec2 uv = editorModeEnable != 0 ? uvScreen*1.5 - vec2(0.5, 0.45) : uvScreen;    
+    
     float aspectRatio = float(iResolution.y) / float(iResolution.x);
+
 
 /******* Depth Based Pixelisation 
         float pixelSize = 0.0075;
@@ -153,5 +160,4 @@ void main()
     vec4 ui = texture(bUI, uvScreen);
     _fragColor.rgb = mix(_fragColor.rgb, ui.rgb, ui.a);
     _fragColor.a = 1.0;
-
 }

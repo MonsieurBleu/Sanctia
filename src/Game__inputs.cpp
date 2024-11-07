@@ -28,11 +28,11 @@ bool Game::userInput(GLFWKeyInfo input)
         case GLFW_KEY_F12 :
             if(globals.getController() == &playerControl)
             {
-                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStateHideStatus::HIDE;
+                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
 
                 for(auto &i : GG::playerEntity->comp<Items>().equipped)
                     if(i.item.get() && i.item->hasComp<EntityModel>())
-                        i.item->comp<EntityModel>()->state.hide = ModelStateHideStatus::HIDE;
+                        i.item->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
                 setController(&spectator);
             }
             else
@@ -51,10 +51,10 @@ bool Game::userInput(GLFWKeyInfo input)
                     }
                 }
 
-                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStateHideStatus::SHOW;
+                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
                 for(auto &i : GG::playerEntity->comp<Items>().equipped)
                     if(i.item.get() && i.item->hasComp<EntityModel>())
-                        i.item->comp<EntityModel>()->state.hide = ModelStateHideStatus::SHOW;
+                        i.item->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
             }
             break;
         
@@ -93,11 +93,20 @@ bool Game::userInput(GLFWKeyInfo input)
             break;
 
         case GLFW_KEY_F3:
+        {
             editorModeEnable = editorModeEnable ? false : true;
+
             if(editorModeEnable)
-                gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
+                gameScreenWidget->comp<WidgetBox>().set(
+                    vec2(-1./3., +1),
+                    vec2(-0.6 - 1./3., +0.4)
+                );
             else
-                gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-1, 1), vec2(-1, 1)));
+                gameScreenWidget->comp<WidgetBox>().set(
+                    vec2(-1, +1),
+                    vec2(-1, +1)
+                );
+        }
             break;
 
         case GLFW_KEY_1:
@@ -231,6 +240,45 @@ bool Game::userInput(GLFWKeyInfo input)
         case GLFW_KEY_F6 :
             doAutomaticShaderRefresh = !doAutomaticShaderRefresh;
             break;
+
+        case GLFW_KEY_KP_ADD :
+            ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+                newEntity("Info Stat Helper"
+                    , EDITOR::MENUS::AppMenu->comp<WidgetUI_Context>()
+                    , WidgetState()
+                    , WidgetBox(
+                        vec2(0),
+                        vec2(0)
+                    )
+                    , WidgetBackground()
+                    , WidgetSprite("VulpineIcon")
+                    , WidgetStyle()
+                    , WidgetButton(
+                        WidgetButton::Type::CHECKBOX, 
+                        WidgetButton::InteractFunc([](float v){
+                            GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+                        }),
+                        WidgetButton::UpdateFunc([](){
+                            return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+                        })
+                    )
+                    )
+            );
+
+
+            break;
+
+        case GLFW_KEY_KP_SUBTRACT :
+            if(EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.size())
+                EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.pop_back();
+
+            ManageGarbage<EntityModel>();
+            ManageGarbage<PhysicsHelpers>();
+            ManageGarbage<WidgetBackground>();
+            ManageGarbage<WidgetSprite>();
+            ManageGarbage<WidgetText>();
+            break;
+
 
         default:
             break;

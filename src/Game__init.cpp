@@ -123,8 +123,8 @@ void Game::init(int paramSample)
 
     defaultFontMaterial = MeshMaterial(
         new ShaderProgram(
-            "shader/2D/sprite.frag",
-            "shader/2D/sprite.vert",
+            "shader/2D/text.frag",
+            "shader/2D/text.vert",
             "",
             globals.standartShaderUniform2D()));
 

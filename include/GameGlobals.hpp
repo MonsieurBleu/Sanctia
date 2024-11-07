@@ -31,3 +31,16 @@ class GG
 
         static inline EntityRef playerEntity;
 };
+
+namespace EDITOR 
+{
+    namespace MENUS
+    {
+        inline EntityRef GameScreen;
+        inline EntityRef AppChoice;
+        inline EntityRef AppControl; 
+        inline EntityRef AppMenu;
+        inline EntityRef GlobalControl;
+        inline EntityRef GlobalInfos;
+    }
+}

@@ -70,12 +70,12 @@ void DialogueController::prevChoice()
 
 void DialogueController::render_ClearSelectedChoice()
 {
-    choices[selectedChoice].second->color = choicesColor;
+    choices[selectedChoice].second->color = vec4(choicesColor, 1.0);
 }
 
 void DialogueController::render_HightlightSelectedChoice()
 {
-    choices[selectedChoice].second->color = selectionChoiceColor;
+    choices[selectedChoice].second->color = vec4(selectionChoiceColor, 1.0);
 }
 
 bool DialogueController::inputs(GLFWKeyInfo& input)
@@ -122,7 +122,7 @@ void DialogueController::clean()
 {
     globals.getScene2D()->remove(NPC);
 
-    interface->state.hide = ModelStateHideStatus::HIDE;
+    interface->state.hide = ModelStatus::HIDE;
     interface->update(true);
 
     clearChoices();
@@ -213,7 +213,7 @@ void DialogueController::init()
         tmpFUIAdded = true;
     }
 
-    interface->state.hide = ModelStateHideStatus::SHOW;
+    interface->state.hide = ModelStatus::SHOW;
     interface->update(true);
 
     auto &cd = interlocutor->comp<CharacterDialogues>();

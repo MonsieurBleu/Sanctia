@@ -65,6 +65,7 @@ void Game::mainloop()
 
 /****** Setting Up Debug UI *******/
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
+    ui.spriteMaterial = Loader<MeshMaterial>::get("sprite");
     FastUI_valueMenu menu(ui, {});
 
     BenchTimer tmpTimer("tmp timer");
@@ -157,28 +158,29 @@ void Game::mainloop()
 
     float widgetTileSPace = 0.01;
 
-    gameScreenWidget = newEntity("Game Screen Widget"
+    EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
         , WidgetState()
         , WidgetBox(
             vec2(0, +1), 
             vec2(0, +1)
         )
-        , WidgetBackground()
-        , WidgetText()
+        // , WidgetBackground()
+        // , WidgetText()
         , EntityGroupInfo
         ({
-            newEntity("Application Choice Menu"
+            EDITOR::MENUS::AppChoice = newEntity("Application Choice Menu"
                 , WidgetUI_Context{&ui}
                 , WidgetState()
                 , WidgetBox(
                     vec2(-1, 1), 
-                    vec2(-1.1, -1) + vec2(widgetTileSPace, -widgetTileSPace)
+                    vec2(-1.1, -1) + vec2(0.f, -widgetTileSPace)
                 ) 
                 , WidgetBackground()
                 , WidgetText()
+                , WidgetStyle().setbackgroundColor1(vec4(0.2, 0.2, 0.5, 1.0))
             ),
-            newEntity("Current Application Controls"
+            EDITOR::MENUS::AppControl = newEntity("Current Application Controls"
                 , WidgetUI_Context{&ui}
                 , WidgetState()
                 , WidgetBox(
@@ -187,8 +189,9 @@ void Game::mainloop()
                 )
                 , WidgetBackground()
                 , WidgetText()
+                , WidgetStyle().setbackgroundColor1(vec4(0.5, 0.0, 0.0, 1.0))
             ),
-            newEntity("Global Application Controls"
+            EDITOR::MENUS::GlobalControl = newEntity("Global Controls"
                 , WidgetUI_Context{&ui}
                 , WidgetState()
                 , WidgetBox(
@@ -197,42 +200,67 @@ void Game::mainloop()
                 )
                 , WidgetBackground()
                 , WidgetText()
+                , WidgetStyle().setbackgroundColor1(vec4(0.0, 0.5, 0.0, 1.0))
             ),
-            newEntity("Global Information Section Menu"
-                , WidgetUI_Context{&ui}
-                , WidgetState()
-                , WidgetBox(
-                    vec2(-1, 1),
-                    vec2(1.2, 1.3) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace)*2.f
-                )
-                , WidgetBackground()
-                , WidgetText()
-            ),
-            newEntity("Global Informations"
+            EDITOR::MENUS::GlobalInfos = newEntity("Global Informations"
                 , WidgetUI_Context{&ui}
                 , WidgetState()
                 , WidgetBox(
                     vec2(-1, 1), 
-                    vec2(1.3, 1.9) - vec2(widgetTileSPace*2.f, widgetTileSPace)
+                    vec2(1.2, 1.9) - vec2(widgetTileSPace*1.f, 0.f)
                 )
                 , WidgetBackground()
                 , WidgetText()
+                , WidgetStyle().setbackgroundColor1(vec4(0.2, 0.5, 0.2, 1.0))
             ),
-            newEntity("Current Application Menus"
+            EDITOR::MENUS::AppMenu = newEntity("Current Application Menus"
                 , WidgetUI_Context{&ui}
                 , WidgetState()
                 , WidgetBox(
                     vec2(-2, -1)     + vec2(0, -widgetTileSPace), 
-                    vec2(-1.1, 1.9)  + vec2(widgetTileSPace, -widgetTileSPace)
+                    vec2(-1.1, 1.9)
                 )
                 , WidgetBackground()
                 , WidgetText()
+                , WidgetStyle().setbackgroundColor1(vec4(0.5, 0.2, 0.2, 1.0))
             ),
         })
     );
 
     gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
 
+    finalProcessingStage.addUniform(ShaderUniform((vec4*)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
+
+    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(4);
+
+    for(int i = 0; i < 5; i++)
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+        newEntity("Info Stat Helper"
+            , WidgetUI_Context{&ui}
+            , WidgetState()
+            , WidgetBox(
+                vec2(-0.9, -0.7),
+                vec2(-0.9, +0.9)
+            )
+            , WidgetBackground()
+            , WidgetSprite("VulpineIcon")
+            , WidgetStyle()
+            , WidgetButton(
+                WidgetButton::Type::CHECKBOX, 
+                WidgetButton::InteractFunc([](float v){
+                    GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+                }),
+                WidgetButton::UpdateFunc([](){
+                    return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+                })
+            )
+            )
+    );
+
+    for(auto &i : Loader<Texture2D>::loadingInfos)
+        std::cout << i.first << "\n";
+
+    EDITOR::MENUS::AppMenu->set<WidgetSprite>(WidgetSprite("VulpineIcon"));
 
     #define TEST_ELEMENT_COMPONENT \
         , WidgetUI_Context{&ui}  \
@@ -244,19 +272,29 @@ void Game::mainloop()
         ) \
         , WidgetBackground() \
         , WidgetText() \
-        , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER)
+        , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER) \
+        , WidgetStyle()
 
 
     EntityRef first = newEntity("first"
         , WidgetUI_Context{&ui}
         , WidgetState()
         , WidgetBox(
-            vec2(-0.125, +0.125), 
-            vec2(-0.9, -0.85)
+            vec2(-0.25, +0.25), 
+            vec2(-0.9, -0.8)
         )
         , WidgetBackground()
         , WidgetText(U"Titre important")
-        , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER)
+        , WidgetButton(
+            WidgetButton::Type::HIDE_SHOW_TRIGGER
+            // WidgetButton::Type::CHECKBOX,
+            // WidgetButton::func([](float v)
+            // {
+            //     // std::cout << v << "\n";
+            //     GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
+            // })
+            )
+        , WidgetStyle()
         , EntityGroupInfo
         ({
             newEntity("Sous élément 1"
@@ -620,10 +658,9 @@ void Game::mainloop()
             physicsMutex.unlock();
         }
 
-        if(globals.mouseLeftClickDown())
-        {
-            updateEntityCursor(globals.mousePosition(), true, globals.mouseLeftClick());
-        }
+        WidgetUI_Context uiContext = WidgetUI_Context(&ui);
+        updateEntityCursor(globals.mousePosition(), true, globals.mouseLeftClick(), uiContext);
+
         if(globals.mouseRightClickDown())
         {
             auto &b = first->comp<WidgetBox>();
@@ -635,6 +672,8 @@ void Game::mainloop()
             b.initMin = pos - scale*0.5f;
             b.initMax = pos + scale*0.5f;
         }
+        
+        updateWidgetsStyle();
 
         /* TODO : remove */
         // ComponentModularity::synchronizeChildren(first);
@@ -831,7 +870,7 @@ void Game::mainloop()
             }
             else
             {
-                model->state.hide = ModelStateHideStatus::SHOW;
+                model->state.hide = ModelStatus::SHOW;
 
                 switch (entity.comp<RigidBody>()->getType())
                 {
@@ -880,6 +919,9 @@ void Game::mainloop()
         
         ManageGarbage<EntityModel>();
         ManageGarbage<PhysicsHelpers>();
+        ManageGarbage<WidgetBackground>();
+        ManageGarbage<WidgetSprite>();
+        ManageGarbage<WidgetText>();
         // GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
         // GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
         // std::vector<EntityRef> p = {GG::playerEntity};
@@ -894,6 +936,9 @@ void Game::mainloop()
         /* UI & 2D Render */
         glEnable(GL_BLEND);
         glEnable(GL_FRAMEBUFFER_SRGB);
+
+        glDepthFunc(GL_GEQUAL);
+        glEnable(GL_DEPTH_TEST);
 
         scene2D.updateAllObjects();
         fuiBatch->batch();
@@ -956,12 +1001,12 @@ void Game::mainloop()
         if(wireframe)
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            skybox->state.hide = ModelStateHideStatus::HIDE;
+            skybox->state.hide = ModelStatus::HIDE;
         }
         else
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            skybox->state.hide = ModelStateHideStatus::SHOW;
+            skybox->state.hide = ModelStatus::SHOW;
         }    
 
         /* 3D Early Depth Testing */

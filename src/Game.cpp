@@ -231,7 +231,7 @@ void Game::mainloop()
 
     finalProcessingStage.addUniform(ShaderUniform((vec4*)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
-    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(4);
+    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
 
     for(int i = 0; i < 5; i++)
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
@@ -244,7 +244,7 @@ void Game::mainloop()
             )
             , WidgetBackground()
             , WidgetSprite("VulpineIcon")
-            , WidgetStyle()
+            , WidgetStyle().setbackGroundStyle(UiTileType::CIRCLE)
             , WidgetButton(
                 WidgetButton::Type::CHECKBOX, 
                 WidgetButton::InteractFunc([](float v){
@@ -254,7 +254,50 @@ void Game::mainloop()
                     return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
                 })
             )
+        )
+    );
+
+    EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        newEntity("Text input test"
+            , WidgetUI_Context{&ui}
+            , WidgetState()
+            , WidgetBox(
+                vec2(-0.9, -0.7),
+                vec2(-0.9, +0.9)
             )
+            , WidgetBackground()
+            , WidgetText(U"[...]")
+            , WidgetStyle()
+            , WidgetButton(
+                WidgetButton::Type::TEXT_INPUT
+            )
+        )
+    );
+
+
+    EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
+
+    for(int i = 0; i < 5; i++)
+    ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
+        newEntity("Sun Hue" 
+            , WidgetUI_Context{&ui}
+            , WidgetState()
+            , WidgetBackground()
+            , WidgetBox()
+            , WidgetSprite("VulpineIcon")
+            , WidgetStyle().setbackGroundStyle(UiTileType::SQUARE)
+            , WidgetButton(
+                WidgetButton::Type::SLIDER,
+                WidgetButton::InteractFunc([&sun](float v){
+                     sun->setColor(hsv2rgb(vec3(v, 1, 1)));
+                }),
+                WidgetButton::UpdateFunc([&sun](){
+                    return rgb2hsv(sun->getInfos()._color).r;
+                })
+            ).setpadding(10).setmax(0.99)
+        )
     );
 
     for(auto &i : Loader<Texture2D>::loadingInfos)
@@ -659,7 +702,7 @@ void Game::mainloop()
         }
 
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
-        updateEntityCursor(globals.mousePosition(), true, globals.mouseLeftClick(), uiContext);
+        updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
 
         if(globals.mouseRightClickDown())
         {

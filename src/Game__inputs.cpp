@@ -8,6 +8,9 @@ bool Game::userInput(GLFWKeyInfo input)
     if (baseInput(input))
         return true;
 
+    if (globals.isTextInputsActive())
+        return true;
+
     if (globals.mouseRightClickDown())
     {
         GG::playerEntity->comp<ActionState>().isTryingToBlock = true;

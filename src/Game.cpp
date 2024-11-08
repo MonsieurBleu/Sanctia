@@ -4,55 +4,50 @@
 #include <Game.hpp>
 #include <Globals.hpp>
 // #include <GameObject.hpp>
-#include <CompilingOptions.hpp>
-#include <MathsUtils.hpp>
-#include <Audio.hpp>
-#include <Helpers.hpp>
-#include <Constants.hpp>
 #include <AssetManager.hpp>
+#include <Audio.hpp>
+#include <CompilingOptions.hpp>
+#include <Constants.hpp>
 #include <EntityBlueprint.hpp>
+#include <Helpers.hpp>
+#include <MathsUtils.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
-#include <Graphics/Skeleton.hpp>
-#include <Graphics/Animation.hpp>
 #include <AnimationBlueprint.hpp>
+#include <Graphics/Animation.hpp>
+#include <Graphics/Skeleton.hpp>
 
 #include <PhysicsGlobals.hpp>
 
 void Game::mainloop()
 {
 
-/****** Loading Models and setting up the scene ******/
+    /****** Loading Models and setting up the scene ******/
     ModelRef skybox = newModel(skyboxMaterial);
     skybox->loadFromFolder("ressources/models/skybox/", true, false);
 
     // skybox->invertFaces = true;
     // skybox->depthWrite = false;
     skybox->state.frustumCulled = false;
-    skybox->state.scaleScalar(1E6); 
+    skybox->state.scaleScalar(1E6);
     scene.add(skybox);
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
-    Blueprint::Terrain(
-        "ressources/maps/testPlayground.hdr",
-        // "ressources/maps/RuggedTerrain.hdr",
-        // "ressources/maps/generated_512x512.hdr",
-        // "ressources/maps/RT512.hdr",
-        // vec3(512, 64, 512), 
-        vec3(256, 64, 256), 
-        vec3(0),
-        128
-    );
+    Blueprint::Terrain("ressources/maps/testPlayground.hdr",
+                       // "ressources/maps/RuggedTerrain.hdr",
+                       // "ressources/maps/generated_512x512.hdr",
+                       // "ressources/maps/RT512.hdr",
+                       // vec3(512, 64, 512),
+                       vec3(256, 64, 256), vec3(0), 128);
 
-    SceneDirectionalLight sun = newDirectionLight(
-        DirectionLight()
-            // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
-            .setColor(vec3(1))
-            .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
-            .setIntensity(1.0));
+    SceneDirectionalLight sun = newDirectionLight(DirectionLight()
+                                                      // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
+                                                      .setColor(vec3(1))
+                                                      .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
+                                                      .setIntensity(1.0));
 
     sun->cameraResolution = vec2(8192);
     sun->shadowCameraSize = vec2(256, 256);
@@ -63,7 +58,7 @@ void Game::mainloop()
     glEnable(GL_DEPTH_TEST);
     glLineWidth(1.0);
 
-/****** Setting Up Debug UI *******/
+    /****** Setting Up Debug UI *******/
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     ui.spriteMaterial = Loader<MeshMaterial>::get("sprite");
     FastUI_valueMenu menu(ui, {});
@@ -83,16 +78,11 @@ void Game::mainloop()
 
     std::vector<FastUI_value> GameConditionsValues;
 
-    for(auto &i : GameConditionMap)
+    for (auto &i : GameConditionMap)
         GameConditionsValues.push_back(
-            FastUI_value(
-                (bool*)&GG::currentConditions.get(i.second),
-                UFTconvert.from_bytes(i.first) + U"\t"
-            ));
+            FastUI_value((bool *)&GG::currentConditions.get(i.second), UFTconvert.from_bytes(i.first) + U"\t"));
 
-    menu.push_back(
-        {FastUI_menuTitle(menu.ui, U"Games Conditions"), FastUI_valueTab(menu.ui, GameConditionsValues)}
-    );
+    menu.push_back({FastUI_menuTitle(menu.ui, U"Games Conditions"), FastUI_valueTab(menu.ui, GameConditionsValues)});
 
     /* TODO : remove */
     menu->state.setPosition(vec3(1e9, 0.9, 0)).scaleScalar(0.9);
@@ -104,16 +94,16 @@ void Game::mainloop()
     //         , WidgetUI_Context{&ui}
     //         , WidgetUpdate()
     //         , WidgetBox(
-    //             vec2(i/8.f    , -0.5), 
+    //             vec2(i/8.f    , -0.5),
     //             vec2((i+1)/8.f,  0.5))
     //         , WidgetBakground()
-    //     );  
+    //     );
 
     //     GG::entities.push_back(uitest);
 
-    //     std::cout << uitest->toStr() << "\n"; 
+    //     std::cout << uitest->toStr() << "\n";
     // }
-    
+
     // EntityRef first;
     // {
     //     EntityRef parent;
@@ -124,12 +114,12 @@ void Game::mainloop()
     //             , WidgetUI_Context{&ui}
     //             , WidgetState()
     //             , WidgetBox(
-    //                 vec2(-0.75, -2.25), 
+    //                 vec2(-0.75, -2.25),
     //                 vec2(+0.75, -1.05))
     //             , WidgetBackground()
     //             , WidgetText(U"Bonjour, je suis le reuf. Pour vrai !")
     //             , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER)
-    //         );  
+    //         );
 
     //         if(i == 3)
     //             uitest->comp<WidgetState>().status = ModelStateHideStatus::HIDE;
@@ -148,7 +138,7 @@ void Game::mainloop()
 
     //         GG::entities.push_back(uitest);
 
-    //         std::cout << uitest->toStr() << "\n"; 
+    //         std::cout << uitest->toStr() << "\n";
     //     }
 
     //     ComponentModularity::synchronizeChildren(first);
@@ -158,246 +148,134 @@ void Game::mainloop()
 
     float widgetTileSPace = 0.01;
 
-    EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
-        , WidgetUI_Context{&ui}
-        , WidgetState()
-        , WidgetBox(
-            vec2(0, +1), 
-            vec2(0, +1)
-        )
+    EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity(
+        "Game Screen Widget", WidgetUI_Context{&ui}, WidgetState(),
+        WidgetBox(vec2(0, +1), vec2(0, +1))
         // , WidgetBackground()
         // , WidgetText()
-        , EntityGroupInfo
-        ({
-            EDITOR::MENUS::AppChoice = newEntity("Application Choice Menu"
-                , WidgetUI_Context{&ui}
-                , WidgetState()
-                , WidgetBox(
-                    vec2(-1, 1), 
-                    vec2(-1.1, -1) + vec2(0.f, -widgetTileSPace)
-                ) 
-                , WidgetBackground()
-                , WidgetText()
-                , WidgetStyle().setbackgroundColor1(vec4(0.2, 0.2, 0.5, 1.0))
-            ),
-            EDITOR::MENUS::AppControl = newEntity("Current Application Controls"
-                , WidgetUI_Context{&ui}
-                , WidgetState()
-                , WidgetBox(
-                    vec2(-1, 1),
-                    vec2(1, 1.1) + vec2(widgetTileSPace, -widgetTileSPace)
-                )
-                , WidgetBackground()
-                , WidgetText()
-                , WidgetStyle().setbackgroundColor1(vec4(0.5, 0.0, 0.0, 1.0))
-            ),
-            EDITOR::MENUS::GlobalControl = newEntity("Global Controls"
-                , WidgetUI_Context{&ui}
-                , WidgetState()
-                , WidgetBox(
-                    vec2(-1, 1),
-                    vec2(1.1, 1.2) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace)
-                )
-                , WidgetBackground()
-                , WidgetText()
-                , WidgetStyle().setbackgroundColor1(vec4(0.0, 0.5, 0.0, 1.0))
-            ),
-            EDITOR::MENUS::GlobalInfos = newEntity("Global Informations"
-                , WidgetUI_Context{&ui}
-                , WidgetState()
-                , WidgetBox(
-                    vec2(-1, 1), 
-                    vec2(1.2, 1.9) - vec2(widgetTileSPace*1.f, 0.f)
-                )
-                , WidgetBackground()
-                , WidgetText()
-                , WidgetStyle().setbackgroundColor1(vec4(0.2, 0.5, 0.2, 1.0))
-            ),
-            EDITOR::MENUS::AppMenu = newEntity("Current Application Menus"
-                , WidgetUI_Context{&ui}
-                , WidgetState()
-                , WidgetBox(
-                    vec2(-2, -1)     + vec2(0, -widgetTileSPace), 
-                    vec2(-1.1, 1.9)
-                )
-                , WidgetBackground()
-                , WidgetText()
-                , WidgetStyle().setbackgroundColor1(vec4(0.5, 0.2, 0.2, 1.0))
-            ),
-        })
-    );
+        ,
+        EntityGroupInfo({
+            EDITOR::MENUS::AppChoice =
+                newEntity("Application Choice Menu", WidgetUI_Context{&ui}, WidgetState(),
+                          WidgetBox(vec2(-1, 1), vec2(-1.1, -1) + vec2(0.f, -widgetTileSPace)), WidgetBackground(),
+                          WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.2, 0.2, 0.5, 1.0))),
+            EDITOR::MENUS::AppControl = newEntity(
+                "Current Application Controls", WidgetUI_Context{&ui}, WidgetState(),
+                WidgetBox(vec2(-1, 1), vec2(1, 1.1) + vec2(widgetTileSPace, -widgetTileSPace)), WidgetBackground(),
+                WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.5, 0.0, 0.0, 1.0))),
+            EDITOR::MENUS::GlobalControl = newEntity(
+                "Global Controls", WidgetUI_Context{&ui}, WidgetState(),
+                WidgetBox(vec2(-1, 1),
+                          vec2(1.1, 1.2) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace)),
+                WidgetBackground(), WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.0, 0.5, 0.0, 1.0))),
+            EDITOR::MENUS::GlobalInfos =
+                newEntity("Global Informations", WidgetUI_Context{&ui}, WidgetState(),
+                          WidgetBox(vec2(-1, 1), vec2(1.2, 1.9) - vec2(widgetTileSPace * 1.f, 0.f)), WidgetBackground(),
+                          WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.2, 0.5, 0.2, 1.0))),
+            EDITOR::MENUS::AppMenu =
+                newEntity("Current Application Menus", WidgetUI_Context{&ui}, WidgetState(),
+                          WidgetBox(vec2(-2, -1) + vec2(0, -widgetTileSPace), vec2(-1.1, 1.9)), WidgetBackground(),
+                          WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.5, 0.2, 0.2, 1.0))),
+        }));
 
     gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
 
-    finalProcessingStage.addUniform(ShaderUniform((vec4*)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
+    finalProcessingStage.addUniform(ShaderUniform((vec4 *)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
     EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(4);
 
-    for(int i = 0; i < 5; i++)
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        newEntity("Info Stat Helper"
-            , WidgetUI_Context{&ui}
-            , WidgetState()
-            , WidgetBox(
-                vec2(-0.9, -0.7),
-                vec2(-0.9, +0.9)
-            )
-            , WidgetBackground()
-            , WidgetSprite("VulpineIcon")
-            , WidgetStyle()
-            , WidgetButton(
-                WidgetButton::Type::CHECKBOX, 
-                WidgetButton::InteractFunc([](float v){
-                    GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
-                }),
-                WidgetButton::UpdateFunc([](){
-                    return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-                })
-            )
-            )
-    );
+    for (int i = 0; i < 5; i++)
+        ComponentModularity::addChild(
+            *EDITOR::MENUS::GlobalInfos,
+            newEntity("Info Stat Helper", WidgetUI_Context{&ui}, WidgetState(),
+                      WidgetBox(vec2(-0.9, -0.7), vec2(-0.9, +0.9)), WidgetBackground(), WidgetSprite("VulpineIcon"),
+                      WidgetStyle(),
+                      WidgetButton(WidgetButton::Type::CHECKBOX, WidgetButton::InteractFunc([](float v) {
+                                       GlobalComponentToggler<InfosStatsHelpers>::activated =
+                                           !GlobalComponentToggler<InfosStatsHelpers>::activated;
+                                   }),
+                                   WidgetButton::UpdateFunc([]() {
+                                       return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+                                   }))));
 
-    for(auto &i : Loader<Texture2D>::loadingInfos)
+    for (auto &i : Loader<Texture2D>::loadingInfos)
         std::cout << i.first << "\n";
 
     EDITOR::MENUS::AppMenu->set<WidgetSprite>(WidgetSprite("VulpineIcon"));
 
-    #define TEST_ELEMENT_COMPONENT \
-        , WidgetUI_Context{&ui}  \
-        , WidgetState() \
-        , WidgetBox( \
-            vec2(-0.9, +0.9), \
-            vec2(+1.1, +2.6), \
-            WidgetBox::Type::FOLLOW_SIBLINGS_BOX \
-        ) \
-        , WidgetBackground() \
-        , WidgetText() \
-        , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER) \
-        , WidgetStyle()
+#define TEST_ELEMENT_COMPONENT                                                                                         \
+    , WidgetUI_Context{&ui}, WidgetState(),                                                                            \
+        WidgetBox(vec2(-0.9, +0.9), vec2(+1.1, +2.6), WidgetBox::Type::FOLLOW_SIBLINGS_BOX), WidgetBackground(),       \
+        WidgetText(), WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER), WidgetStyle()
 
-
-    EntityRef first = newEntity("first"
-        , WidgetUI_Context{&ui}
-        , WidgetState()
-        , WidgetBox(
-            vec2(-0.25, +0.25), 
-            vec2(-0.9, -0.8)
-        )
-        , WidgetBackground()
-        , WidgetText(U"Titre important")
-        , WidgetButton(
-            WidgetButton::Type::HIDE_SHOW_TRIGGER
-            // WidgetButton::Type::CHECKBOX,
-            // WidgetButton::func([](float v)
-            // {
-            //     // std::cout << v << "\n";
-            //     GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
-            // })
-            )
-        , WidgetStyle()
-        , EntityGroupInfo
-        ({
-            newEntity("Sous élément 1"
-                TEST_ELEMENT_COMPONENT 
-                , EntityGroupInfo
-                ({
-                        newEntity("Sous élément 1-1"
-                            TEST_ELEMENT_COMPONENT 
-                        ),
-                        newEntity("Sous élément 1-2"
-                            TEST_ELEMENT_COMPONENT 
-                        ),
-                        newEntity("Sous élément 1-3"
-                            TEST_ELEMENT_COMPONENT 
-                        ),
-                        newEntity("Sous élément 1-4"
-                            TEST_ELEMENT_COMPONENT 
-                            , EntityGroupInfo(
-                                {
-                                    newEntity("Sous élément 1-4-1"
-                                        TEST_ELEMENT_COMPONENT 
-                                    ),
-                                    newEntity("Sous élément 1-4-2"
-                                        TEST_ELEMENT_COMPONENT 
-                                    ),
-                                    newEntity("Sous élément 1-4-3"
-                                        TEST_ELEMENT_COMPONENT 
-                                    ),
-                                    newEntity("Sous élément 1-4-4"
-                                        TEST_ELEMENT_COMPONENT 
-                                    ),
-                                })
-                        ),
-                    })
-            ),
-            newEntity("Sous élément 2"
-                TEST_ELEMENT_COMPONENT 
-                , EntityGroupInfo
-                    ({
-                        newEntity("Sous élément 2-1"
-                            TEST_ELEMENT_COMPONENT 
-                        ),
-                        newEntity("Sous élément 2-2"
-                            TEST_ELEMENT_COMPONENT 
-                        ),
-                        newEntity("Sous élément 2-3"
-                            TEST_ELEMENT_COMPONENT 
-                        ),
-                        newEntity("Sous élément 2-4"
-                            TEST_ELEMENT_COMPONENT 
-                        ),
-                    })
-            ),
-            newEntity("Sous élément 3"
-                TEST_ELEMENT_COMPONENT 
-            ),
-            newEntity("Sous élément 4"
-                TEST_ELEMENT_COMPONENT 
-            ),
+    EntityRef first = newEntity(
+        "first", WidgetUI_Context{&ui}, WidgetState(), WidgetBox(vec2(-0.25, +0.25), vec2(-0.9, -0.8)),
+        WidgetBackground(), WidgetText(U"Titre important"),
+        WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER
+                     // WidgetButton::Type::CHECKBOX,
+                     // WidgetButton::func([](float v)
+                     // {
+                     //     // std::cout << v << "\n";
+                     //     GlobalComponentToggler<PhysicsHelpers>::activated =
+                     //     !GlobalComponentToggler<PhysicsHelpers>::activated;
+                     // })
+                     ),
+        WidgetStyle(),
+        EntityGroupInfo({
+            newEntity("Sous élément 1" TEST_ELEMENT_COMPONENT,
+                      EntityGroupInfo({
+                          newEntity("Sous élément 1-1" TEST_ELEMENT_COMPONENT),
+                          newEntity("Sous élément 1-2" TEST_ELEMENT_COMPONENT),
+                          newEntity("Sous élément 1-3" TEST_ELEMENT_COMPONENT),
+                          newEntity("Sous élément 1-4" TEST_ELEMENT_COMPONENT,
+                                    EntityGroupInfo({
+                                        newEntity("Sous élément 1-4-1" TEST_ELEMENT_COMPONENT),
+                                        newEntity("Sous élément 1-4-2" TEST_ELEMENT_COMPONENT),
+                                        newEntity("Sous élément 1-4-3" TEST_ELEMENT_COMPONENT),
+                                        newEntity("Sous élément 1-4-4" TEST_ELEMENT_COMPONENT),
+                                    })),
+                      })),
+            newEntity("Sous élément 2" TEST_ELEMENT_COMPONENT, EntityGroupInfo({
+                                                                   newEntity("Sous élément 2-1" TEST_ELEMENT_COMPONENT),
+                                                                   newEntity("Sous élément 2-2" TEST_ELEMENT_COMPONENT),
+                                                                   newEntity("Sous élément 2-3" TEST_ELEMENT_COMPONENT),
+                                                                   newEntity("Sous élément 2-4" TEST_ELEMENT_COMPONENT),
+                                                               })),
+            newEntity("Sous élément 3" TEST_ELEMENT_COMPONENT), newEntity("Sous élément 4" TEST_ELEMENT_COMPONENT),
             // newEntity("Sous élément 5"
-            //     TEST_ELEMENT_COMPONENT 
-            //     , WidgetBox( 
-            //         vec2(-0.9, +0.9), 
-            //         vec2(-2.5, -1.1), 
-            //         WidgetBox::Type::FOLLOW_SIBLINGS_BOX 
-            //     ) 
+            //     TEST_ELEMENT_COMPONENT
+            //     , WidgetBox(
+            //         vec2(-0.9, +0.9),
+            //         vec2(-2.5, -1.1),
+            //         WidgetBox::Type::FOLLOW_SIBLINGS_BOX
+            //     )
             // ),
-        })
-    );
+        }));
 
     ComponentModularity::addChild(*gameScreenWidget, first);
 
-
-/****** Loading Game Specific Elements *******/
+    /****** Loading Game Specific Elements *******/
     GG::currentConditions.readTxt("saves/gameConditions.txt");
 
     Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
     Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
     Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
 
-    scene.add(Loader<MeshModel3D>::get("barrel01").copy() );
+    scene.add(Loader<MeshModel3D>::get("barrel01").copy());
 
-
-/****** Creating Demo Player *******/
+    /****** Creating Demo Player *******/
     Player player1;
     GG::playerUniqueInfos = &player1;
     player1.setMenu(menu);
 
     ObjectGroupRef playerModel(new ObjectGroup);
-    auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy(); 
+    auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
     // auto playerModelBody = Loader<ObjectGroup>::get("Dummy").copy();
     playerModel->add(playerModelBody);
 
-    GG::playerEntity = newEntity("PLayer"
-        , EntityModel{playerModel}
-        , EntityState3D()
-        , EntityDeplacementState()
-        , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
-        , Items{}
-        , Faction{Faction::Type::PLAYER}
-        , EntityStats()
-        , ActionState{}
-    );
+    GG::playerEntity = newEntity("PLayer", EntityModel{playerModel}, EntityState3D(), EntityDeplacementState(),
+                                 SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot")), Items{},
+                                 Faction{Faction::Type::PLAYER}, EntityStats(), ActionState{});
 
     GG::playerEntity->comp<EntityStats>().health.max = 1e4;
     GG::playerEntity->comp<EntityStats>().health.cur = 1e4;
@@ -406,9 +284,7 @@ void Game::mainloop()
     Items::equip(GG::playerEntity, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
     Items::equip(GG::playerEntity, Blueprint::Foot(), LEFT_FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
 
-    GG::playerEntity->set<AnimationControllerRef>(
-        AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get()) 
-    );
+    GG::playerEntity->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get()));
 
     scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
 
@@ -435,14 +311,15 @@ void Game::mainloop()
     //     e->set<Target>(Target{GG::playerEntity});
     // }
 
-    {   auto e = Blueprint::TestManequin();
+    {
+        auto e = Blueprint::TestManequin();
         e->set<DeplacementBehaviour>(STAND_STILL);
         vec4 &c1 = e->comp<EntityModel>()->getLights()[0]->getInfos()._color;
         c1 = vec4(ColorHexToV(0x00FF00), c1.a);
     }
 
     // for(int i = 0; i < 50; i++)
-    // {   
+    // {
     //     auto e1 = Blueprint::TestManequin();
     //     auto e2 = Blueprint::TestManequin();
 
@@ -470,7 +347,8 @@ void Game::mainloop()
     //     ObjectGroupRef model = newObjectGroup();
     //     model->add(CubeHelperRef(new CubeHelper(vec3(1), vec3(-1))));
 
-    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75, 15 + i*2.1, 0), rp3d::Quaternion::identity()));
+    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75, 15 + i*2.1,
+    //     0), rp3d::Quaternion::identity()));
 
     //     body->addCollider(PG::common.createBoxShape(rp3d::Vector3(1, 1, 1)), rp3d::Transform::identity());
 
@@ -482,8 +360,9 @@ void Game::mainloop()
     //     e->comp<EntityState3D>().usequat = true;
     // }
     // {
-    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, -15, 0), rp3d::Quaternion::identity()));
-    //     auto collider = body->addCollider(PG::common.createBoxShape(rp3d::Vector3(100, 15, 100)), rp3d::Transform::identity());
+    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, -15, 0),
+    //     rp3d::Quaternion::identity())); auto collider =
+    //     body->addCollider(PG::common.createBoxShape(rp3d::Vector3(100, 15, 100)), rp3d::Transform::identity());
     //     body->setType(rp3d::BodyType::STATIC);
     //     collider->getMaterial().setBounciness(0.f);
     //     collider->getMaterial().setFrictionCoefficient(0.5f);
@@ -491,81 +370,69 @@ void Game::mainloop()
     //     collider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
     // }
 
-
     /**** Testing Entity Loading *****/
     // {
-        NAMED_TIMER(EntityRW)
+    NAMED_TIMER(EntityRW)
 
-        EntityRW.start();
-        
-        EntityRef writeTest = Blueprint::TestManequin();
-        writeTest->set<AgentState>({AgentState::COMBAT_POSITIONING});
-        writeTest->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-        // writeTest->set<Target>({GG::playerEntity});
-        // EntityRef writeTest = Blueprint::Zweihander();
-        VulpineTextOutputRef out(new VulpineTextOutput(1<<16));
-        DataLoader<EntityRef>::write(writeTest, out);
-        out->saveAs("MannequinTest.vulpineEntity");
+    EntityRW.start();
 
+    EntityRef writeTest = Blueprint::TestManequin();
+    writeTest->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    writeTest->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+    // writeTest->set<Target>({GG::playerEntity});
+    // EntityRef writeTest = Blueprint::Zweihander();
+    VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
+    DataLoader<EntityRef>::write(writeTest, out);
+    out->saveAs("MannequinTest.vulpineEntity");
 
-        VulpineTextBuffRef in(new VulpineTextBuff("MannequinTest.vulpineEntity"));
-        EntityRef readTest = DataLoader<EntityRef>::read(in);
-        // readTest->set<Target>({GG::playerEntity});
-        
-        VulpineTextOutputRef out2(new VulpineTextOutput(1<<16));
-        DataLoader<EntityRef>::write(readTest, out2);
-        out2->saveAs("MannequinTest2.vulpineEntity");
-        GG::entities.push_back(readTest);
+    VulpineTextBuffRef in(new VulpineTextBuff("MannequinTest.vulpineEntity"));
+    EntityRef readTest = DataLoader<EntityRef>::read(in);
+    // readTest->set<Target>({GG::playerEntity});
 
-        EntityRW.end();
-        std::cout << EntityRW;
+    VulpineTextOutputRef out2(new VulpineTextOutput(1 << 16));
+    DataLoader<EntityRef>::write(readTest, out2);
+    out2->saveAs("MannequinTest2.vulpineEntity");
+    GG::entities.push_back(readTest);
 
+    EntityRW.end();
+    std::cout << EntityRW;
 
-        readTest->set<EntityGroupInfo>(EntityGroupInfo());
+    readTest->set<EntityGroupInfo>(EntityGroupInfo());
 
+    Entity *parent = nullptr;
+    // Entity* parent = readTest.get();
+    EntityRef firstChild;
 
+    for (int i = 0; i < 16; i++)
+    {
+        EntityRef child = Blueprint::Zweihander();
 
-        Entity* parent = nullptr;
-        // Entity* parent = readTest.get();
-        EntityRef firstChild;
+        if (!i)
+            firstChild = child;
 
+        child->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
+        child->comp<RigidBody>()->setTransform(rp3d::Transform(rp3d::Vector3(0.0f, 0.2f, 0.0f),
+                                                               // PG::torp3d(quat(vec3(0, cos(i/PI), 0)))
+                                                               DEFQUAT));
+        child->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
 
-        for(int i = 0; i < 16; i++)
+        if (parent && parent != child.get())
         {
-            EntityRef child = Blueprint::Zweihander();
-
-            if(!i) firstChild = child;
-
-            child->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
-            child->comp<RigidBody>()->setTransform(rp3d::Transform(
-                rp3d::Vector3(0.0f, 0.2f, 0.0f), 
-                // PG::torp3d(quat(vec3(0, cos(i/PI), 0)))
-                DEFQUAT
-            )); 
-            child->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
-
-            if(parent 
-            && parent != child.get()
-            )
-            {
-                ComponentModularity::addChild(*parent, child);
-            }
-
-            parent = child.get();
+            ComponentModularity::addChild(*parent, child);
         }
-        
-        // ComponentModularity::synchronizeChildren(*readTest);
 
-        // ComponentModularity::mergeChildren(*readTest);
+        parent = child.get();
+    }
 
-        // System<EntityGroupInfo>([&, this](Entity &entity)
-        // {
-        //     ComponentModularity::synchronizeChildren(entity);
-        // });
+    // ComponentModularity::synchronizeChildren(*readTest);
+
+    // ComponentModularity::mergeChildren(*readTest);
+
+    // System<EntityGroupInfo>([&, this](Entity &entity)
+    // {
+    //     ComponentModularity::synchronizeChildren(entity);
+    // });
     // }
-
-
-
 
     /***** Setting up material helpers *****/
     {
@@ -582,30 +449,26 @@ void Game::mainloop()
         u32strtocolorHTML(U"#008AD8", colors[3]);
         u32strtocolorHTML(U"#FF003F", colors[4]);
 
-        for(float h = 0.f; h < 1.f; h += hueJump, c++)
-        for(float i = 1e-6; i < 1.f; i += jump)
-        for(float j = 1e-6; j < 1.f; j += jump)
-        {
-            ModelRef helper = Loader<MeshModel3D>::get("materialHelper").copy();
+        for (float h = 0.f; h < 1.f; h += hueJump, c++)
+            for (float i = 1e-6; i < 1.f; i += jump)
+                for (float j = 1e-6; j < 1.f; j += jump)
+                {
+                    ModelRef helper = Loader<MeshModel3D>::get("materialHelper").copy();
 
-            helper->uniforms.add(ShaderUniform(colors[c], 20));
-            helper->uniforms.add(ShaderUniform(vec2(i, j), 21));
+                    helper->uniforms.add(ShaderUniform(colors[c], 20));
+                    helper->uniforms.add(ShaderUniform(vec2(i, j), 21));
 
-            helper->state.setPosition(position + 2.f*vec3(4*i, 4*h - 2, 4*j)/jump + vec3(25, 0, 0));
+                    helper->state.setPosition(position + 2.f * vec3(4 * i, 4 * h - 2, 4 * j) / jump + vec3(25, 0, 0));
 
-            scene.add(helper);
-        }
+                    scene.add(helper);
+                }
 
         scene.add(Loader<MeshModel3D>::get("packingPaintHelper").copy());
     }
 
-
     // ComponentModularity::SynchFuncs[0].element(GG::playerEntity, Blueprint::Zweihander());
 
-
-
-
-// /****** Last Pre Loop Routines ******/
+    // /****** Last Pre Loop Routines ******/
     state = AppState::run;
     std::thread physicsThreads(&Game::physicsLoop, this);
 
@@ -625,14 +488,22 @@ void Game::mainloop()
     dummy->state.setPosition(vec3(5, 0, 0));
     scene.add(dummy);
 
-/******  Main Loop ******/
+    auto &event = InputManager::addEventInput(
+        "toggle hud", GLFW_KEY_H, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT, GLFW_PRESS, [&]() { hideHUD = !hideHUD; },
+        InputManager::Filters::always, false);
+
+    std::string k = InputManager::getInputKeyString("toggle hud");
+
+    std::cout << "Press " << k << " to toggle HUD\n";
+
+    /******  Main Loop ******/
     while (state != AppState::quit)
     {
         static unsigned int itcnt = 0;
-        itcnt ++;
-        if(doAutomaticShaderRefresh)
+        itcnt++;
+        if (doAutomaticShaderRefresh)
         {
-            if(itcnt%144 == 0)
+            if (itcnt % 144 == 0)
             {
                 system("clear");
                 std::cout << TERMINAL_INFO << "Refreshing ALL shaders...\n" << TERMINAL_RESET;
@@ -641,16 +512,16 @@ void Game::mainloop()
                 SSAO.getShader().reset();
                 depthOnlyMaterial->reset();
                 skyboxMaterial->reset();
-                
+
                 ui.fontMaterial->reset();
                 defaultSUIMaterial->reset();
 
-                for(auto &m : Loader<MeshMaterial>::loadedAssets)
+                for (auto &m : Loader<MeshMaterial>::loadedAssets)
                     m.second->reset();
             }
         }
 
-        if(itcnt == 50)
+        if (itcnt == 50)
         {
             physicsMutex.lock();
             // ComponentModularity::mergeChildren(*readTest);
@@ -661,18 +532,18 @@ void Game::mainloop()
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), true, globals.mouseLeftClick(), uiContext);
 
-        if(globals.mouseRightClickDown())
+        if (globals.mouseRightClickDown())
         {
             auto &b = first->comp<WidgetBox>();
 
             // vec2 pos = (b.min + b.max)*0.5f;
-            vec2 pos = (globals.mousePosition()/vec2(globals.windowSize()))*2.f - 1.f;
-            vec2 scale = (b.max-b.min);
+            vec2 pos = (globals.mousePosition() / vec2(globals.windowSize())) * 2.f - 1.f;
+            vec2 scale = (b.max - b.min);
 
-            b.initMin = pos - scale*0.5f;
-            b.initMax = pos + scale*0.5f;
+            b.initMin = pos - scale * 0.5f;
+            b.initMax = pos + scale * 0.5f;
         }
-        
+
         updateWidgetsStyle();
 
         /* TODO : remove */
@@ -681,14 +552,17 @@ void Game::mainloop()
 
         mainloopStartRoutine();
 
-        for (GLFWKeyInfo input; inputs.pull(input); userInput(input));
+        for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input))
+            ;
+
+        InputManager::processContinuousInputs();
 
         // switch (GG::playerEntity->comp<ActionState>().stance())
         // {
         //     case ActionState::Stance::LEFT :
         //         AttackDirectionHelper->text = U"**<==** V ==>";
         //         break;
-            
+
         //     case ActionState::Stance::RIGHT :
         //         AttackDirectionHelper->text = U"<== V **==>**";
         //         break;
@@ -701,7 +575,6 @@ void Game::mainloop()
         // }
         // AttackDirectionHelper->batchText();
 
-
         // float h = GG::playerEntity->comp<EntityStats>().health.cur;
         // HealthBar->text = U"<";
         // h /= GG::playerEntity->comp<EntityStats>().health.max;
@@ -713,12 +586,12 @@ void Game::mainloop()
 
         float maxSlow = player1.getStats().reflexMaxSlowFactor;
         float reflex = player1.getInfos().state.reflex;
-        globals.simulationTime.speed = maxSlow + (1.f-maxSlow)*(1.f-reflex*0.01);
+        globals.simulationTime.speed = maxSlow + (1.f - maxSlow) * (1.f - reflex * 0.01);
 
         float scroll = globals.mouseScrollOffset().y;
         float &preflex = GG::playerUniqueInfos->infos.state.reflex;
-        if(GG::playerUniqueInfos)
-            preflex = clamp(preflex+scroll*5.f, 0.f, 100.f);
+        if (GG::playerUniqueInfos)
+            preflex = clamp(preflex + scroll * 5.f, 0.f, 100.f);
         globals.clearMouseScroll();
 
         menu.trackCursor();
@@ -726,14 +599,13 @@ void Game::mainloop()
 
         effects.update();
 
-        if(GG::playerEntity->comp<EntityStats>().alive)
+        if (GG::playerEntity->comp<EntityStats>().alive)
             GG::playerEntity->comp<EntityState3D>().lookDirection = camera.getDirection();
 
-    /***** Updating animations
-    *****/
-        if(!globals.simulationTime.isPaused())
-            System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity)
-            {
+        /***** Updating animations
+        *****/
+        if (!globals.simulationTime.isPaused())
+            System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity) {
                 auto &s = entity.comp<SkeletonAnimationState>();
                 auto &c = entity.comp<AnimationControllerRef>();
 
@@ -743,83 +615,79 @@ void Game::mainloop()
                 s.update();
             });
 
-    // /***** SYNCHRONIZING MEG
-    // *****/
-    //     System<EntityGroupInfo>([&, this](Entity &entity)
-    //     {
-    //         ComponentModularity::synchronizeChildren(entity);
-    //     });
+        // /***** SYNCHRONIZING MEG
+        // *****/
+        //     System<EntityGroupInfo>([&, this](Entity &entity)
+        //     {
+        //         ComponentModularity::synchronizeChildren(entity);
+        //     });
 
-
-    /***** DEMO DEPLACEMENT SYSTEM 
-    *****/
-        System<EntityState3D, EntityDeplacementState, DeplacementBehaviour>([&, this](Entity &entity)
-        {
+        /***** DEMO DEPLACEMENT SYSTEM
+        *****/
+        System<EntityState3D, EntityDeplacementState, DeplacementBehaviour>([&, this](Entity &entity) {
             auto &s = entity.comp<EntityState3D>();
             auto &ds = entity.comp<EntityDeplacementState>();
-            
-            if(&entity == this->dialogueControl.interlocutor.get())
+
+            if (&entity == this->dialogueControl.interlocutor.get())
             {
                 vec3 dir = GG::playerEntity->comp<EntityState3D>().position - s.position;
-                float dist = length(dir); 
-                s.lookDirection = ds.wantedDepDirection = dir/dist;
+                float dist = length(dir);
+                s.lookDirection = ds.wantedDepDirection = dir / dist;
                 ds.speed = dist < 1.5f ? 0.f : ds.speed;
-                return;    
+                return;
             }
 
             switch (entity.comp<DeplacementBehaviour>())
             {
-            case DeplacementBehaviour::DEMO :
-            {
+            case DeplacementBehaviour::DEMO: {
                 float time = globals.simulationTime.getElapsedTime();
-                float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 0.5f+random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) + entity.ids[ENTITY_LIST];
+                float angle =
+                    PI * 2.f *
+                        random01Vec2(vec2(time - mod(time, 0.5f + random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) +
+                    entity.ids[ENTITY_LIST];
                 ds.wantedDepDirection.x = cos(angle);
                 ds.wantedDepDirection.z = sin(angle);
                 ds.speed = 1;
             }
-                break;
-            
-            case DeplacementBehaviour::STAND_STILL :
+            break;
+
+            case DeplacementBehaviour::STAND_STILL:
                 ds.speed = 0;
                 break;
 
             default:
                 break;
             }
-
         });
 
-        
-    /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
-
+        /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
 
         PG::physicInterpolationMutex.lock();
-        float physicInterpolationValue = clamp((PG::PG::physicInterpolationTick.timeSinceLastTickMS()*physicsTicks.freq),0.f, 1.f);  
+        float physicInterpolationValue =
+            clamp((PG::PG::physicInterpolationTick.timeSinceLastTickMS() * physicsTicks.freq), 0.f, 1.f);
         PG::physicInterpolationMutex.unlock();
 
-        System<EntityModel, EntityState3D>([&, this](Entity &entity)
-        {            
+        System<EntityModel, EntityState3D>([&, this](Entity &entity) {
             auto &s = entity.comp<EntityState3D>();
-            EntityModel& model = entity.comp<EntityModel>();
+            EntityModel &model = entity.comp<EntityModel>();
 
-            if(s.usequat && s.position == model->state.position && s.quaternion == model->state.quaternion)
+            if (s.usequat && s.position == model->state.position && s.quaternion == model->state.quaternion)
                 return;
 
-            vec3& dir = s.lookDirection;
+            vec3 &dir = s.lookDirection;
 
-            if(s.usequat)
+            if (s.usequat)
             {
                 // model->state.setRotation(glm::eulerAngles(s.quaternion));
                 // model->state.setQuaternion(s.quaternion);
-                model->state.setQuaternion(glm::eulerAngles(
-                    slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue)
-                    ));
+                model->state.setQuaternion(
+                    glm::eulerAngles(slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue)));
             }
-            else if(dir.x != 0.f || dir.z != 0.f)
+            else if (dir.x != 0.f || dir.z != 0.f)
             {
                 quat wantQuat = quatLookAt(normalize(dir * vec3(-1, 0, -1)), vec3(0, 1, 0));
                 quat currQuat = quat(model->state.rotation);
-                float a = min(1.f, globals.simulationTime.getDelta()*5.f);
+                float a = min(1.f, globals.simulationTime.getDelta() * 5.f);
 
                 quat resQuat = slerp(currQuat, wantQuat, a);
 
@@ -828,23 +696,18 @@ void Game::mainloop()
 
             // model->state.setPosition(s.position);
 
-            if(s._PhysicTmpPos == vec3(UNINITIALIZED_FLOAT))
+            if (s._PhysicTmpPos == vec3(UNINITIALIZED_FLOAT))
                 model->state.setPosition(s.position);
             else
                 model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue));
 
-            if(
-                &entity == GG::playerEntity.get() 
-                && globals._currentController != &this->spectator
-                )
+            if (&entity == GG::playerEntity.get() && globals._currentController != &this->spectator)
             {
                 // vec3 pos = this->playerControl.cameraShiftPos;
 
                 model->state.update();
                 // model->state.setPosition(s.position);
-                model->state.setPosition(
-                    mix(s._PhysicTmpPos, s.position, physicInterpolationValue)
-                    );
+                model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue));
 
                 auto &s = entity.comp<SkeletonAnimationState>();
 
@@ -855,14 +718,13 @@ void Game::mainloop()
             }
         });
 
-    /***** UPDATING PHYSICS HELPER *****/
-        #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
-        System<PhysicsHelpers, RigidBody, EntityState3D>([&, this](Entity &entity)
-        {           
+        /***** UPDATING PHYSICS HELPER *****/
+#ifdef SANCTIA_DEBUG_PHYSIC_HELPER
+        System<PhysicsHelpers, RigidBody, EntityState3D>([&, this](Entity &entity) {
             auto &model = entity.comp<PhysicsHelpers>();
             auto &s = entity.comp<EntityState3D>();
 
-            if(!s.physicActivated)
+            if (!s.physicActivated)
             {
                 // model->state.hide = ModelStateHideStatus::HIDE;
                 /* clangy but works for debug models */
@@ -874,15 +736,12 @@ void Game::mainloop()
 
                 switch (entity.comp<RigidBody>()->getType())
                 {
-                case rp3d::BodyType::DYNAMIC :
-                    model->state.setPosition(
-                        mix(s._PhysicTmpPos, s.position, physicInterpolationValue)
-                        );
-                    model->state.setQuaternion(glm::eulerAngles(
-                        slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue)
-                        ));
+                case rp3d::BodyType::DYNAMIC:
+                    model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue));
+                    model->state.setQuaternion(
+                        glm::eulerAngles(slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue)));
 
-                    break; 
+                    break;
 
                 default:
                     model->state.setPosition(s.position);
@@ -891,23 +750,22 @@ void Game::mainloop()
                 }
             }
         });
-        #endif
+#endif
 
-    /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
-        System<EntityStats>([](Entity &entity)
-        {
+        /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
+        System<EntityStats>([](Entity &entity) {
             /* TODO : move entity despawn code elswhere*/
             // void *ptr = &entity;
             // if(!entity.comp<EntityStats>().alive)
             // {
             //     GG::entities.erase(
             //         std::remove_if(
-            //         GG::entities.begin(), 
+            //         GG::entities.begin(),
             //         GG::entities.end(),
             //         [ptr](EntityRef &e){return e.get() == ptr;}
             //     ), GG::entities.end());
             // }
-            if(!entity.comp<EntityStats>().alive)
+            if (!entity.comp<EntityStats>().alive)
             {
                 entity.removeComp<DeplacementBehaviour>();
                 entity.comp<ActionState>().lockType = ActionState::LockedDeplacement::SPEED_ONLY;
@@ -915,8 +773,8 @@ void Game::mainloop()
                 entity.comp<EntityDeplacementState>().speed = 0;
                 entity.removeComp<AgentState>();
             }
-        }); 
-        
+        });
+
         ManageGarbage<EntityModel>();
         ManageGarbage<PhysicsHelpers>();
         ManageGarbage<WidgetBackground>();
@@ -943,7 +801,7 @@ void Game::mainloop()
         scene2D.updateAllObjects();
         fuiBatch->batch();
         screenBuffer2D.activate();
-        if(!hideHUD)
+        if (!hideHUD)
         {
             scene2D.cull();
             scene2D.draw();
@@ -961,29 +819,28 @@ void Game::mainloop()
         tmpTimer.end();
 
         /***** Items follow the skeleton
-        *****/        
-        System<Items, SkeletonAnimationState, EntityModel>([](Entity &entity)
-        {
+        *****/
+        System<Items, SkeletonAnimationState, EntityModel>([](Entity &entity) {
             auto &it = entity.comp<Items>();
             auto &sa = entity.comp<SkeletonAnimationState>();
             auto &m = entity.comp<EntityModel>()->state.modelMatrix;
 
-            for(auto &i : it.equipped)
-                if(i.item.get())
+            for (auto &i : it.equipped)
+                if (i.item.get())
                 {
                     mat4 &t = i.item->comp<ItemTransform>().mat;
                     t = m * sa[i.id] * inverse(sa.skeleton->at(i.id).t);
 
-                    if(i.item->hasComp<EntityModel>())
+                    if (i.item->hasComp<EntityModel>())
                     {
                         auto &model = i.item->comp<EntityModel>();
 
                         model->state.modelMatrix = t;
-                        
+
                         model->update(true);
 
                         t = model->getChildren()[0]->state.modelMatrix;
-                    }   
+                    }
 
                     auto &is = i.item->comp<EntityState3D>();
                     is.quaternion = quat(t);
@@ -998,7 +855,7 @@ void Game::mainloop()
         renderBuffer.activate();
         scene.cull();
 
-        if(wireframe)
+        if (wireframe)
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             skybox->state.hide = ModelStatus::HIDE;
@@ -1007,7 +864,7 @@ void Game::mainloop()
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             skybox->state.hide = ModelStatus::SHOW;
-        }    
+        }
 
         /* 3D Early Depth Testing */
         // scene.depthOnlyDraw(*globals.currentCamera, true);

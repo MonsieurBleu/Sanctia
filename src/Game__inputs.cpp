@@ -1,6 +1,6 @@
-#include <Game.hpp>
 #include <AssetManager.hpp>
 #include <EntityBlueprint.hpp>
+#include <Game.hpp>
 #include <Helpers.hpp>
 
 bool Game::userInput(GLFWKeyInfo input)
@@ -8,7 +8,7 @@ bool Game::userInput(GLFWKeyInfo input)
     if (baseInput(input))
         return true;
 
-    if(globals.mouseRightClickDown())
+    if (globals.mouseRightClickDown())
     {
         GG::playerEntity->comp<ActionState>().isTryingToBlock = true;
     }
@@ -25,65 +25,64 @@ bool Game::userInput(GLFWKeyInfo input)
             state = quit;
             break;
 
-        case GLFW_KEY_F12 :
-            if(globals.getController() == &playerControl)
+        case GLFW_KEY_F12:
+            if (globals.getController() == &playerControl)
             {
                 GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
 
-                for(auto &i : GG::playerEntity->comp<Items>().equipped)
-                    if(i.item.get() && i.item->hasComp<EntityModel>())
+                for (auto &i : GG::playerEntity->comp<Items>().equipped)
+                    if (i.item.get() && i.item->hasComp<EntityModel>())
                         i.item->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
                 setController(&spectator);
             }
-            else
-            if(globals.getController() == &spectator)
+            else if (globals.getController() == &spectator)
             {
                 setController(&playerControl);
                 // playerControl.body->position = globals.currentCamera->getPosition();
 
-                if(GG::playerEntity->hasComp<RigidBody>())
+                if (GG::playerEntity->hasComp<RigidBody>())
                 {
                     auto body = GG::playerEntity->comp<RigidBody>();
-                    if(body)
+                    if (body)
                     {
                         body->setIsActive(true);
-                        body->setTransform(rp3d::Transform(PG::torp3d(camera.getPosition() + vec3(0, 5, 0)), rp3d::Quaternion::identity()));
+                        body->setTransform(rp3d::Transform(PG::torp3d(camera.getPosition() + vec3(0, 5, 0)),
+                                                           rp3d::Quaternion::identity()));
                     }
                 }
 
                 GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
-                for(auto &i : GG::playerEntity->comp<Items>().equipped)
-                    if(i.item.get() && i.item->hasComp<EntityModel>())
+                for (auto &i : GG::playerEntity->comp<Items>().equipped)
+                    if (i.item.get() && i.item->hasComp<EntityModel>())
                         i.item->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
             }
             break;
-        
-        case GLFW_KEY_F11 :
+
+        case GLFW_KEY_F11:
             globals.simulationTime.toggle();
             break;
 
-        case GLFW_KEY_F1 :
+        case GLFW_KEY_F1:
             wireframe = !wireframe;
             break;
 
-        case GLFW_KEY_E :
-            if(globals.getController() == &playerControl)
+        case GLFW_KEY_E:
+            if (globals.getController() == &playerControl)
                 setController(&dialogueControl);
-            else 
-            if(globals.getController() == &dialogueControl)
+            else if (globals.getController() == &dialogueControl)
                 setController(&playerControl);
             break;
-        
-        case GLFW_KEY_F :
+
+        case GLFW_KEY_F:
             GG::playerEntity->comp<ActionState>().isTryingToBlock = true;
             GG::playerEntity->comp<ActionState>().setStance(ActionState::SPECIAL);
             break;
 
-        case GLFW_KEY_H :
-            hideHUD = !hideHUD;
-            break;
+            // case GLFW_KEY_H:
+            //     hideHUD = !hideHUD;
+            //     break;
 
-        case GLFW_MOUSE_BUTTON_MIDDLE :
+        case GLFW_MOUSE_BUTTON_MIDDLE:
             GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
             GG::playerEntity->comp<ActionState>().setStance(ActionState::SPECIAL);
             break;
@@ -92,22 +91,15 @@ bool Game::userInput(GLFWKeyInfo input)
             globals.currentCamera->toggleMouseFollow();
             break;
 
-        case GLFW_KEY_F3:
-        {
+        case GLFW_KEY_F3: {
             editorModeEnable = editorModeEnable ? false : true;
 
-            if(editorModeEnable)
-                gameScreenWidget->comp<WidgetBox>().set(
-                    vec2(-1./3., +1),
-                    vec2(-0.6 - 1./3., +0.4)
-                );
+            if (editorModeEnable)
+                gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1. / 3., +0.4));
             else
-                gameScreenWidget->comp<WidgetBox>().set(
-                    vec2(-1, +1),
-                    vec2(-1, +1)
-                );
+                gameScreenWidget->comp<WidgetBox>().set(vec2(-1, +1), vec2(-1, +1));
         }
-            break;
+        break;
 
         case GLFW_KEY_1:
             Bloom.toggle();
@@ -116,13 +108,13 @@ bool Game::userInput(GLFWKeyInfo input)
         case GLFW_KEY_2:
             SSAO.toggle();
             break;
-        
+
         case GLFW_KEY_F5:
-            #ifdef _WIN32
+#ifdef _WIN32
             system("cls");
-            #else
+#else
             system("clear");
-            #endif
+#endif
 
             finalProcessingStage.reset();
             Bloom.getShader().reset();
@@ -131,46 +123,45 @@ bool Game::userInput(GLFWKeyInfo input)
             GG::PBR->reset();
             GG::PBRstencil->reset();
             skyboxMaterial->reset();
-            for(auto &m : Loader<MeshMaterial>::loadedAssets)
+            for (auto &m : Loader<MeshMaterial>::loadedAssets)
                 m.second->reset();
             break;
 
-        case GLFW_KEY_F8 :
-            {
-                auto myfile = std::fstream("saves/cameraState.bin", std::ios::out | std::ios::binary);
-                myfile.write((char*)&camera.getState(), sizeof(CameraState));
-                myfile.close();
-            }
-                break;
+        case GLFW_KEY_F8: {
+            auto myfile = std::fstream("saves/cameraState.bin", std::ios::out | std::ios::binary);
+            myfile.write((char *)&camera.getState(), sizeof(CameraState));
+            myfile.close();
+        }
+        break;
 
-        case GLFW_KEY_T :
+        case GLFW_KEY_T:
             GG::entities.clear();
             break;
 
-        case GLFW_KEY_P :
-        {   auto e = Blueprint::TestManequin();
+        case GLFW_KEY_P: {
+            auto e = Blueprint::TestManequin();
             e->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
             e->set<AgentState>({AgentState::COMBAT_POSITIONING});
             e->set<Target>(Target{GG::playerEntity});
         }
 
+        break;
 
-            break;
-        
-        case GLFW_KEY_M :
-            if(GG::entities.size()) GG::entities.pop_back();
-            break;
-        
-        case GLFW_KEY_9 : 
-            GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+        case GLFW_KEY_M:
+            if (GG::entities.size())
+                GG::entities.pop_back();
             break;
 
-        case GLFW_KEY_0 : 
+        case GLFW_KEY_9:
+            GlobalComponentToggler<InfosStatsHelpers>::activated =
+                !GlobalComponentToggler<InfosStatsHelpers>::activated;
+            break;
+
+        case GLFW_KEY_0:
             GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
             break;
 
-        case GLFW_MOUSE_BUTTON_LEFT : 
-        {
+        case GLFW_MOUSE_BUTTON_LEFT: {
             // Effect testEffectZone;
             // testEffectZone.zone.setCapsule(0.25, vec3(-1, 1.5, 1), vec3(1, 1.5, 1));
             // testEffectZone.type = EffectType::Damage;
@@ -178,98 +169,91 @@ bool Game::userInput(GLFWKeyInfo input)
             // testEffectZone.value = 20;
             // testEffectZone.maxTrigger = 1;
             // GG::playerEntity->set<Effect>(testEffectZone);
-            
+
             // animTime = 0.f;
-            if(globals.currentCamera->getMouseFollow())
+            if (globals.currentCamera->getMouseFollow())
                 GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
         }
-            break;
+        break;
 
-        case GLFW_KEY_LEFT :
-            if(globals.currentCamera->getMouseFollow())
+        case GLFW_KEY_LEFT:
+            if (globals.currentCamera->getMouseFollow())
                 GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::LEFT);
             break;
 
-        case GLFW_KEY_RIGHT :
-            if(globals.currentCamera->getMouseFollow())
+        case GLFW_KEY_RIGHT:
+            if (globals.currentCamera->getMouseFollow())
                 GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::RIGHT);
             break;
 
-        case GLFW_KEY_UP :
-            if(globals.currentCamera->getMouseFollow())
+        case GLFW_KEY_UP:
+            if (globals.currentCamera->getMouseFollow())
                 GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::SPECIAL);
             break;
 
-        case GLFW_KEY_BACKSPACE :
-            if(globals.currentCamera->getMouseFollow())
+        case GLFW_KEY_BACKSPACE:
+            if (globals.currentCamera->getMouseFollow())
                 GG::playerEntity->comp<EntityStats>().alive = false;
             break;
 
-        case GLFW_KEY_RIGHT_SHIFT :
-            if(globals.currentCamera->getMouseFollow())
+        case GLFW_KEY_RIGHT_SHIFT:
+            if (globals.currentCamera->getMouseFollow())
                 GG::playerEntity->comp<ActionState>().stun = true;
             break;
-        
-        case GLFW_KEY_N :
+
+        case GLFW_KEY_N:
             physicsMutex.lock();
-            for(int i = 0; i < 20; i++)
+            for (int i = 0; i < 20; i++)
             {
                 float cubeSize = 1;
 
-                RigidBody body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75*cubeSize, 15 + i*2.1*cubeSize, 0), rp3d::Quaternion::identity()));
+                RigidBody body = PG::world->createRigidBody(
+                    rp3d::Transform(rp3d::Vector3(0 + (i % 10) * 0.75 * cubeSize, 15 + i * 2.1 * cubeSize, 0),
+                                    rp3d::Quaternion::identity()));
 
                 auto e = newEntity("physictest", body, EntityState3D());
                 GG::entities.push_back(e);
 
-                Blueprint::Assembly::AddEntityBodies(body, e.get(), {
-                    {PG::common.createCapsuleShape(cubeSize*0.5, cubeSize*0.75), rp3d::Transform::identity(), }
-                }, {});
+                Blueprint::Assembly::AddEntityBodies(body, e.get(),
+                                                     {{
+                                                         PG::common.createCapsuleShape(cubeSize * 0.5, cubeSize * 0.75),
+                                                         rp3d::Transform::identity(),
+                                                     }},
+                                                     {});
 
                 e->comp<EntityState3D>().usequat = true;
 
                 e->set<PhysicsHelpers>(PhysicsHelpers());
             }
             physicsMutex.unlock();
-            
+
             break;
 
-        case GLFW_KEY_KP_1 :
+        case GLFW_KEY_KP_1:
             PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
             break;
-        
-        case GLFW_KEY_F6 :
+
+        case GLFW_KEY_F6:
             doAutomaticShaderRefresh = !doAutomaticShaderRefresh;
             break;
 
-        case GLFW_KEY_KP_ADD :
-            ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-                newEntity("Info Stat Helper"
-                    , EDITOR::MENUS::AppMenu->comp<WidgetUI_Context>()
-                    , WidgetState()
-                    , WidgetBox(
-                        vec2(0),
-                        vec2(0)
-                    )
-                    , WidgetBackground()
-                    , WidgetSprite("VulpineIcon")
-                    , WidgetStyle()
-                    , WidgetButton(
-                        WidgetButton::Type::CHECKBOX, 
-                        WidgetButton::InteractFunc([](float v){
-                            GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
-                        }),
-                        WidgetButton::UpdateFunc([](){
-                            return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-                        })
-                    )
-                    )
-            );
-
+        case GLFW_KEY_KP_ADD:
+            ComponentModularity::addChild(
+                *EDITOR::MENUS::GlobalInfos,
+                newEntity("Info Stat Helper", EDITOR::MENUS::AppMenu->comp<WidgetUI_Context>(), WidgetState(),
+                          WidgetBox(vec2(0), vec2(0)), WidgetBackground(), WidgetSprite("VulpineIcon"), WidgetStyle(),
+                          WidgetButton(WidgetButton::Type::CHECKBOX, WidgetButton::InteractFunc([](float v) {
+                                           GlobalComponentToggler<InfosStatsHelpers>::activated =
+                                               !GlobalComponentToggler<InfosStatsHelpers>::activated;
+                                       }),
+                                       WidgetButton::UpdateFunc([]() {
+                                           return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+                                       }))));
 
             break;
 
-        case GLFW_KEY_KP_SUBTRACT :
-            if(EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.size())
+        case GLFW_KEY_KP_SUBTRACT:
+            if (EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.size())
                 EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.pop_back();
 
             ManageGarbage<EntityModel>();
@@ -278,7 +262,6 @@ bool Game::userInput(GLFWKeyInfo input)
             ManageGarbage<WidgetSprite>();
             ManageGarbage<WidgetText>();
             break;
-
 
         default:
             break;
@@ -289,7 +272,7 @@ bool Game::userInput(GLFWKeyInfo input)
     {
         switch (input.key)
         {
-        case GLFW_MOUSE_BUTTON_RIGHT : 
+        case GLFW_MOUSE_BUTTON_RIGHT:
             // GG::playerEntity->removeComp<Effect>();
             break;
 
@@ -300,4 +283,3 @@ bool Game::userInput(GLFWKeyInfo input)
 
     return true;
 };
-

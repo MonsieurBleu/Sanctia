@@ -70,7 +70,7 @@ COMPONENT_DEFINE_SYNCH(RigidBody) /**************** UNUSED TODO: remove*********
         rp3d::Transform(PG::torp3d(childPos), PG::torp3d(childQuat))
     );
 
-    std::cout << to_string(childPos) << "\n";
+    // std::cout << to_string(childPos) << "\n";
 }
 
 COMPONENT_DEFINE_REPARENT(RigidBody)

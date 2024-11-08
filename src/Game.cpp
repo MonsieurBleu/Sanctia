@@ -184,41 +184,72 @@ void Game::mainloop()
 
     EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
 
-    for (int i = 0; i < 5; i++)
-        ComponentModularity::addChild(
-            *EDITOR::MENUS::GlobalInfos,
-            newEntity("Info Stat Helper", WidgetUI_Context{&ui}, WidgetState(),
-                      WidgetBox(vec2(-0.9, -0.7), vec2(-0.9, +0.9)), WidgetBackground(), WidgetSprite("VulpineIcon"),
-                      WidgetStyle().setbackGroundStyle(UiTileType::CIRCLE),
-                      WidgetButton(WidgetButton::Type::CHECKBOX, WidgetButton::InteractFunc([](float v) {
-                                       GlobalComponentToggler<InfosStatsHelpers>::activated =
-                                           !GlobalComponentToggler<InfosStatsHelpers>::activated;
-                                   }),
-                                   WidgetButton::UpdateFunc([]() {
-                                       return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-                                   }))));
+    for(int i = 0; i < 5; i++)
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+        newEntity("Info Stat Helper"
+            , WidgetUI_Context{&ui}
+            , WidgetState()
+            , WidgetBox(
+                vec2(-0.9, -0.7),
+                vec2(-0.9, +0.9)
+            )
+            , WidgetBackground()
+            , WidgetSprite("VulpineIcon")
+            , WidgetStyle().setbackGroundStyle(UiTileType::CIRCLE)
+            , WidgetButton(
+                WidgetButton::Type::CHECKBOX, 
+                WidgetButton::InteractFunc([](float v){
+                    GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+                }),
+                WidgetButton::UpdateFunc([](){
+                    return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+                })
+            )
+        )
+    );
 
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-                                  newEntity("Text input test", WidgetUI_Context{&ui}, WidgetState(),
-                                            WidgetBox(vec2(-0.9, -0.7), vec2(-0.9, +0.9)), WidgetBackground(),
-                                            WidgetText(U"[...]"), WidgetStyle(),
-                                            WidgetButton(WidgetButton::Type::TEXT_INPUT)));
+        newEntity("Text input test"
+            , WidgetUI_Context{&ui}
+            , WidgetState()
+            , WidgetBox(
+                vec2(-0.9, -0.7),
+                vec2(-0.9, +0.9)
+            )
+            , WidgetBackground()
+            , WidgetText(U"[...]")
+            , WidgetStyle()
+            , WidgetButton(
+                WidgetButton::Type::TEXT_INPUT
+            )
+        )
+    );
+
 
     EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
 
-    for (int i = 0; i < 5; i++)
-        ComponentModularity::addChild(
-            *EDITOR::MENUS::AppControl,
-            newEntity("Sun Hue", WidgetUI_Context{&ui}, WidgetState(), WidgetBackground(), WidgetBox(),
-                      WidgetSprite("VulpineIcon"), WidgetStyle().setbackGroundStyle(UiTileType::SQUARE),
-                      WidgetButton(WidgetButton::Type::SLIDER, WidgetButton::InteractFunc([&sun](float v) {
-                                       sun->setColor(hsv2rgb(vec3(v, 1, 1)));
-                                   }),
-                                   WidgetButton::UpdateFunc([&sun]() { return rgb2hsv(sun->getInfos()._color).r; }))
-                          .setpadding(10)
-                          .setmax(0.99)));
+    for(int i = 0; i < 5; i++)
+    ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
+        newEntity("Sun Hue" 
+            , WidgetUI_Context{&ui}
+            , WidgetState()
+            , WidgetBackground()
+            , WidgetBox()
+            , WidgetSprite("VulpineIcon")
+            , WidgetStyle().setbackGroundStyle(UiTileType::SQUARE)
+            , WidgetButton(
+                WidgetButton::Type::SLIDER,
+                WidgetButton::InteractFunc([&sun](float v){
+                     sun->setColor(hsv2rgb(vec3(v, 1, 1)));
+                }),
+                WidgetButton::UpdateFunc([&sun](){
+                    return rgb2hsv(sun->getInfos()._color).r;
+                })
+            ).setpadding(10).setmax(0.99)
+        )
+    );
 
     for (auto &i : Loader<Texture2D>::loadingInfos)
         std::cout << i.first << "\n";

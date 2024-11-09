@@ -29,4 +29,12 @@ namespace Blueprint
     EntityRef Zweihander();
 
     EntityRef Foot();
+
+    namespace EDITOR
+    {
+        namespace INO
+        {
+            extern WidgetBox::FittingFunc SmoothSliderFittingFunc;
+        };
+    };
 };

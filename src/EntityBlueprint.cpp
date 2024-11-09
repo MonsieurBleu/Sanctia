@@ -14,9 +14,6 @@ void Blueprint::Terrain(
     int cellSize
 )
 {
-    // /* I don't even want the application to run if future me decides to instance 200k terrain models */
-    // assert(log2CellSize < 9);
-
     Texture2D HeightMap = Texture2D()
         .loadFromFileHDR(mapPath)
         .setFormat(GL_RGB)

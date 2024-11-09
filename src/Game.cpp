@@ -61,6 +61,7 @@ void Game::mainloop()
     /****** Setting Up Debug UI *******/
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     ui.spriteMaterial = Loader<MeshMaterial>::get("sprite");
+    EDITOR::UIcontext = WidgetUI_Context{&ui};
     FastUI_valueMenu menu(ui, {});
 
     BenchTimer tmpTimer("tmp timer");
@@ -156,33 +157,56 @@ void Game::mainloop()
         ,
         EntityGroupInfo({
             EDITOR::MENUS::AppChoice =
-                newEntity("Application Choice Menu", WidgetUI_Context{&ui}, WidgetState(),
-                          WidgetBox(vec2(-1, 1), vec2(-1.1, -1) + vec2(0.f, -widgetTileSPace)), WidgetBackground(),
-                          WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.2, 0.2, 0.5, 1.0))),
-            EDITOR::MENUS::AppControl = newEntity(
-                "Current Application Controls", WidgetUI_Context{&ui}, WidgetState(),
-                WidgetBox(vec2(-1, 1), vec2(1, 1.1) + vec2(widgetTileSPace, -widgetTileSPace)), WidgetBackground(),
-                WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.5, 0.0, 0.0, 1.0))),
-            EDITOR::MENUS::GlobalControl = newEntity(
-                "Global Controls", WidgetUI_Context{&ui}, WidgetState(),
-                WidgetBox(vec2(-1, 1),
-                          vec2(1.1, 1.2) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace)),
-                WidgetBackground(), WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.0, 0.5, 0.0, 1.0))),
+                newEntity("Application Choice Menu"
+                    , WidgetUI_Context{&ui}
+                    , WidgetState()
+                    , WidgetBox(vec2(-1, 1)
+                    , vec2(-1.1, -1) + vec2(0.f, -widgetTileSPace))
+                    , WidgetBackground()
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    ), 
+            EDITOR::MENUS::AppControl = 
+                newEntity("Current Application Controls"
+                    , WidgetUI_Context{&ui}
+                    , WidgetState()
+                    , WidgetBox(vec2(-1, 1), vec2(1, 1.1) + vec2(widgetTileSPace, -widgetTileSPace))
+                    , WidgetBackground()
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    ),
+            EDITOR::MENUS::GlobalControl = 
+                newEntity("Global Controls"
+                    , WidgetUI_Context{&ui}
+                    , WidgetState()
+                    , WidgetBox(vec2(-1, 1), vec2(1.1, 1.2) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace))
+                    , WidgetBackground()
+                    // , WidgetText()
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    ),
             EDITOR::MENUS::GlobalInfos =
-                newEntity("Global Informations", WidgetUI_Context{&ui}, WidgetState(),
-                          WidgetBox(vec2(-1, 1), vec2(1.2, 1.9) - vec2(widgetTileSPace * 1.f, 0.f)), WidgetBackground(),
-                          WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.2, 0.5, 0.2, 1.0))),
+                newEntity("Global Informations"
+                    , WidgetUI_Context{&ui}
+                    , WidgetState()
+                    , WidgetBox(vec2(-1, 1), vec2(1.2, 1.9) - vec2(widgetTileSPace * 1.f, 0.f)), WidgetBackground()
+                    , WidgetText(), WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    ),
             EDITOR::MENUS::AppMenu =
-                newEntity("Current Application Menus", WidgetUI_Context{&ui}, WidgetState(),
-                          WidgetBox(vec2(-2, -1) + vec2(0, -widgetTileSPace), vec2(-1.1, 1.9)), WidgetBackground(),
-                          WidgetText(), WidgetStyle().setbackgroundColor1(vec4(0.5, 0.2, 0.2, 1.0))),
-        }));
+                newEntity("Current Application Menus"
+                    , WidgetUI_Context{&ui}
+                    , WidgetState()
+                    , WidgetBox(vec2(-2, -1) + vec2(0, -widgetTileSPace), vec2(-1.1, 1.9))
+                    , WidgetBackground()
+                    // , WidgetText()
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    ),
+                }
+            )
+        );
 
     gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
 
     finalProcessingStage.addUniform(ShaderUniform((vec4 *)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
-    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
+    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(4);
 
     for(int i = 0; i < 5; i++)
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
@@ -194,8 +218,11 @@ void Game::mainloop()
                 vec2(-0.9, +0.9)
             )
             , WidgetBackground()
-            , WidgetSprite("VulpineIcon")
-            , WidgetStyle().setbackGroundStyle(UiTileType::CIRCLE)
+            , WidgetSprite("icon_idcard")
+            , WidgetStyle()
+                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+                .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
             , WidgetButton(
                 WidgetButton::Type::CHECKBOX, 
                 WidgetButton::InteractFunc([](float v){
@@ -238,7 +265,9 @@ void Game::mainloop()
             , WidgetBackground()
             , WidgetBox()
             , WidgetSprite("VulpineIcon")
-            , WidgetStyle().setbackGroundStyle(UiTileType::SQUARE)
+            , WidgetStyle()
+                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
             , WidgetButton(
                 WidgetButton::Type::SLIDER,
                 WidgetButton::InteractFunc([&sun](float v){
@@ -248,13 +277,24 @@ void Game::mainloop()
                     return rgb2hsv(sun->getInfos()._color).r;
                 })
             ).setpadding(10).setmax(0.99)
+            , EntityGroupInfo({
+                newEntity("Sun Hue Slider Helper"
+                , WidgetUI_Context{&ui}
+                , WidgetState()
+                , WidgetBackground()
+                , WidgetStyle()
+                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+                , WidgetBox(Blueprint::EDITOR::INO::SmoothSliderFittingFunc)
+                )
+            })
         )
     );
 
     for (auto &i : Loader<Texture2D>::loadingInfos)
         std::cout << i.first << "\n";
 
-    EDITOR::MENUS::AppMenu->set<WidgetSprite>(WidgetSprite("VulpineIcon"));
+    EDITOR::MENUS::AppMenu->set<WidgetSprite>(WidgetSprite("icon_gizmo"));
 
 #define TEST_ELEMENT_COMPONENT                                                                                         \
     , WidgetUI_Context{&ui}, WidgetState(),                                                                            \

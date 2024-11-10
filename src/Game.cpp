@@ -149,13 +149,12 @@ void Game::mainloop()
 
     float widgetTileSPace = 0.01;
 
-    EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity(
-        "Game Screen Widget", WidgetUI_Context{&ui}, WidgetState(),
-        WidgetBox(vec2(0, +1), vec2(0, +1))
-        // , WidgetBackground()
-        // , WidgetText()
-        ,
-        EntityGroupInfo({
+    EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
+        , WidgetUI_Context{&ui}
+        , WidgetState()
+        , WidgetBox(vec2(0, +1), vec2(0, +1))
+        , WidgetText(U" ")
+        , EntityGroupInfo({
             EDITOR::MENUS::AppChoice =
                 newEntity("Application Choice Menu"
                     , WidgetUI_Context{&ui}
@@ -163,7 +162,7 @@ void Game::mainloop()
                     , WidgetBox(vec2(-1, 1)
                     , vec2(-1.1, -1) + vec2(0.f, -widgetTileSPace))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ), 
             EDITOR::MENUS::AppControl = 
                 newEntity("Current Application Controls"
@@ -171,7 +170,7 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1), vec2(1, 1.1) + vec2(widgetTileSPace, -widgetTileSPace))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::GlobalControl = 
                 newEntity("Global Controls"
@@ -179,15 +178,14 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1), vec2(1.1, 1.2) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace))
                     , WidgetBackground()
-                    // , WidgetText()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::GlobalInfos =
                 newEntity("Global Informations"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1), vec2(1.2, 1.9) - vec2(widgetTileSPace * 1.f, 0.f)), WidgetBackground()
-                    , WidgetText(), WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::AppMenu =
                 newEntity("Current Application Menus"
@@ -195,8 +193,7 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-2, -1) + vec2(0, -widgetTileSPace), vec2(-1.1, 1.9))
                     , WidgetBackground()
-                    // , WidgetText()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBakcgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
                 }
             )
@@ -210,28 +207,38 @@ void Game::mainloop()
 
     for(int i = 0; i < 5; i++)
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        newEntity("Info Stat Helper"
-            , WidgetUI_Context{&ui}
-            , WidgetState()
-            , WidgetBox(
-                vec2(-0.9, -0.7),
-                vec2(-0.9, +0.9)
-            )
-            , WidgetBackground()
-            , WidgetSprite("icon_idcard")
-            , WidgetStyle()
-                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-                .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-                .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
-            , WidgetButton(
-                WidgetButton::Type::CHECKBOX, 
-                WidgetButton::InteractFunc([](float v){
-                    GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
-                }),
-                WidgetButton::UpdateFunc([](){
-                    return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-                })
-            )
+        // newEntity("Info Stat Helper"
+        //     , WidgetUI_Context{&ui}
+        //     , WidgetState()
+        //     , WidgetBox(
+        //         vec2(-0.9, -0.7),
+        //         vec2(-0.9, +0.9)
+        //     )
+        //     , WidgetBackground()
+        //     , WidgetSprite("icon_idcard")
+        //     , WidgetStyle()
+        //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        //         .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+        //         .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+        //     , WidgetButton(
+        //         WidgetButton::Type::CHECKBOX, 
+        //         WidgetButton::InteractFunc([](float v){
+        //             GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+        //         }),
+        //         WidgetButton::UpdateFunc([](){
+        //             return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+        //         })
+        //     )
+        // )
+
+        Blueprint::EDITOR_ENTITY::INO::Toggable("Ingo Stat Helper"
+            , "icon_idcard"
+            , WidgetButton::InteractFunc([](float v){
+                GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+            })
+            , WidgetButton::UpdateFunc([](){
+                return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+            })
         )
     );
 
@@ -259,42 +266,124 @@ void Game::mainloop()
 
     for(int i = 0; i < 5; i++)
     ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
-        newEntity("Sun Hue" 
-            , WidgetUI_Context{&ui}
-            , WidgetState()
-            , WidgetBackground()
-            , WidgetBox()
-            , WidgetSprite("VulpineIcon")
-            , WidgetStyle()
-                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-                .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
-            , WidgetButton(
-                WidgetButton::Type::SLIDER,
-                WidgetButton::InteractFunc([&sun](float v){
-                     sun->setColor(hsv2rgb(vec3(v, 1, 1)));
-                }),
-                WidgetButton::UpdateFunc([&sun](){
-                    return rgb2hsv(sun->getInfos()._color).r;
-                })
-            ).setpadding(10).setmax(0.99)
-            , EntityGroupInfo({
-                newEntity("Sun Hue Slider Helper"
-                , WidgetUI_Context{&ui}
-                , WidgetState()
-                , WidgetBackground()
-                , WidgetStyle()
-                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-                    .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-                , WidgetBox(Blueprint::EDITOR::INO::SmoothSliderFittingFunc)
-                )
-            })
+        // newEntity("Sun Hue" 
+        //     , WidgetUI_Context{&ui}
+        //     , WidgetState()
+        //     , WidgetBackground()
+        //     , WidgetBox()
+        //     , WidgetSprite("VulpineIcon")
+        //     , WidgetStyle()
+        //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        //         .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+        //     , WidgetButton(
+        //         WidgetButton::Type::SLIDER,
+        //         WidgetButton::InteractFunc([&sun](float v){
+        //              sun->setColor(hsv2rgb(vec3(v, 1, 1)));
+        //         }),
+        //         WidgetButton::UpdateFunc([&sun](){
+        //             return rgb2hsv(sun->getInfos()._color).r;
+        //         })
+        //     ).setpadding(10).setmax(0.99)
+        //     , EntityGroupInfo({
+        //         newEntity("Sun Hue Slider Helper"
+        //         , WidgetUI_Context{&ui}
+        //         , WidgetState()
+        //         , WidgetBackground()
+        //         , WidgetStyle()
+        //             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        //             .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+        //         , WidgetBox(Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc)
+        //         )
+        //     })
+        // )
+
+        // Blueprint::EDITOR_ENTITY::INO::SmoothSlider(
+        //     "Sun Hue", 0., 0.999, 360, 
+        //     WidgetButton::InteractFunc([&sun](float v){
+        //             sun->setColor(hsv2rgb(vec3(v, 1, 1)));
+        //     }),
+        //     WidgetButton::UpdateFunc([&sun](){
+        //         return rgb2hsv(sun->getInfos()._color).r;
+        //     })
+        // )
+
+        Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+            /* Name & range parameters */
+            "Sun Hue", 0., 0.9999, 360,
+
+            /* Slider interact function */ 
+            [&sun](float v){
+                sun->setColor(hsv2rgb(vec3(v, 1, 1)));
+            },
+
+            /* Slider update function */
+            [&sun](){
+                return rgb2hsv(sun->getInfos()._color).r;
+            },
+
+            /* Update from text function */
+            [&sun](std::u32string text)
+            {
+                // uint op = text[0];
+
+                // switch (op)
+                // {
+                //     case U'+': case U'-': case U'x': case U'/':
+                //         text[0] = '0';
+                //         break;
+                    
+                //     default:break;
+                // }
+
+                // float r;
+                // if(u32strtof(text, r))
+                // {
+                //     float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
+
+                //     switch (op)
+                //     {
+                //         case U'+': f += r; break;
+                //         case U'-': f -= r; break;
+                //         case U'x': f *= r; break;
+                //         case U'/': f /= r; break;
+                //         default  : f  = r; break;
+                //     }
+
+                //     sun->setColor(hsv2rgb(vec3(f/360.f, 1, 1)));   
+                // }
+
+                float f = u32strtof2(text, round(rgb2hsv(sun->getInfos()._color).r * 360.f));
+                sun->setColor(hsv2rgb(vec3(f/360.f, 1, 1))); 
+            },
+
+            /* Text generation function */
+            [&sun]()
+            {
+                char str[8];
+                float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
+
+                std::snprintf(str, 5, "%*.f", 0, f); 
+
+                return UFTconvert.from_bytes(str);
+
+                // return 
+                    // UFTconvert.from_bytes(std::to_string(
+                    //     round(rgb2hsv(sun->getInfos()._color).r * 360.f)
+                    //     )
+                    // );
+
+                // UFT32Stream stream;
+                // float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
+                // stream << std::setw(5) << f << "__";
+                // return std::u32string(stream.str());
+            }
         )
     );
 
     for (auto &i : Loader<Texture2D>::loadingInfos)
         std::cout << i.first << "\n";
 
-    EDITOR::MENUS::AppMenu->set<WidgetSprite>(WidgetSprite("icon_gizmo"));
+    // EDITOR::MENUS::AppMenu->set<WidgetSprite>(WidgetSprite("icon_gizmo"));
 
 #define TEST_ELEMENT_COMPONENT                                                                                         \
     , WidgetUI_Context{&ui}, WidgetState(),                                                                            \

@@ -30,11 +30,38 @@ namespace Blueprint
 
     EntityRef Foot();
 
-    namespace EDITOR
+    namespace EDITOR_ENTITY
     {
         namespace INO
         {
             extern WidgetBox::FittingFunc SmoothSliderFittingFunc;
+
+            EntityRef SmoothSlider(
+                const std::string &name,
+                float min, float max, int padding, 
+                WidgetButton::InteractFunc ifunc, 
+                WidgetButton::UpdateFunc ufunc
+                );
+            
+            EntityRef Toggable(
+                const std::string &name,
+                const std::string &icon,
+                WidgetButton::InteractFunc ifunc, 
+                WidgetButton::UpdateFunc ufunc
+            );
+
+            EntityRef ValueInputSlider(
+                const std::string &name,
+                float min, float max, int padding, 
+                WidgetButton::InteractFunc ifunc, 
+                WidgetButton::UpdateFunc ufunc,
+                std::function<void(std::u32string &)> fromText, 
+                std::function<std::u32string()> toText
+                );
+            
+
         };
+
+        
     };
 };

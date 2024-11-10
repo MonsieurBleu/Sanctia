@@ -155,7 +155,7 @@ void main()
 
 /******* UI *******/
     if(uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0)
-        _fragColor.rgb = vec3(0.15, 0.2, 0.25);
+        _fragColor.rgb = vec3(70.,  63.,  60.)/255.;
 
     vec4 ui = texture(bUI, uvScreen);
     _fragColor.rgb = mix(_fragColor.rgb, ui.rgb, ui.a);

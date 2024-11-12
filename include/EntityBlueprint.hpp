@@ -70,6 +70,8 @@ namespace Blueprint
                 EntityRef entry,
                 float nameRatioSize = 0.5f
             );
+
+            EntityRef TimerTab(BenchTimer &timer, vec4(color));
         };
 
         

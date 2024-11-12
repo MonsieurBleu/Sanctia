@@ -56,7 +56,10 @@ namespace EDITOR
             inline vec4 DarkBackgroundColor1  = vec4( 70,  63,  60, BASE_ALPHA)/255.f;
             inline vec4 DarkBackgroundColor2  = vec4( 53,  49,  48, BASE_ALPHA)/255.f;
 
-            inline vec4 HightlightColor       = vec4(255, 136,  14, BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor1       = vec4(253, 103,  6, BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor2       = vec4(44, 211,  175, BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor3       = vec4(217, 38,  144, BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor4       = vec4(249, 192,  25, BASE_ALPHA)/255.f;
         }   
     }
 }

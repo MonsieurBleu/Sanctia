@@ -203,43 +203,35 @@ void Game::mainloop()
 
     finalProcessingStage.addUniform(ShaderUniform((vec4 *)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
-    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(4);
+    // EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
 
-    for(int i = 0; i < 5; i++)
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        // newEntity("Info Stat Helper"
-        //     , WidgetUI_Context{&ui}
-        //     , WidgetState()
-        //     , WidgetBox(
-        //         vec2(-0.9, -0.7),
-        //         vec2(-0.9, +0.9)
-        //     )
-        //     , WidgetBackground()
-        //     , WidgetSprite("icon_idcard")
-        //     , WidgetStyle()
-        //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-        //         .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-        //         .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
-        //     , WidgetButton(
-        //         WidgetButton::Type::CHECKBOX, 
-        //         WidgetButton::InteractFunc([](float v){
-        //             GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
-        //         }),
-        //         WidgetButton::UpdateFunc([](){
-        //             return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-        //         })
-        //     )
+    // for(int i = 0; i < 1; i++)
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+        // Blueprint::EDITOR_ENTITY::INO::Toggable("Ingo Stat Helper"
+        //     , "icon_idcard"
+        //     , WidgetButton::InteractFunc([](float v){
+        //         GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+        //     })
+        //     , WidgetButton::UpdateFunc([](){
+        //         return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+        //     })
         // )
+    // );
 
-        Blueprint::EDITOR_ENTITY::INO::Toggable("Ingo Stat Helper"
-            , "icon_idcard"
-            , WidgetButton::InteractFunc([](float v){
-                GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
-            })
-            , WidgetButton::UpdateFunc([](){
-                return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-            })
-        )
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+        Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.appTime, EDITOR::MENUS::COLOR::HightlightColor1)
+    );
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+        Blueprint::EDITOR_ENTITY::INO::TimerTab(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
+    );
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+        Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.cpuTime, EDITOR::MENUS::COLOR::HightlightColor3)
+    );
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+        Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
     );
 
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
@@ -266,80 +258,6 @@ void Game::mainloop()
 
     for(int i = 0; i < 5; i++)
     ComponentModularity::addChild(*EDITOR::MENUS::AppMenu,
-        // newEntity("Sun Hue" 
-        //     , WidgetUI_Context{&ui}
-        //     , WidgetState()
-        //     , WidgetBackground()
-        //     , WidgetBox()
-        //     , WidgetSprite("VulpineIcon")
-        //     , WidgetStyle()
-        //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-        //         .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
-        //     , WidgetButton(
-        //         WidgetButton::Type::SLIDER,
-        //         WidgetButton::InteractFunc([&sun](float v){
-        //              sun->setColor(hsv2rgb(vec3(v, 1, 1)));
-        //         }),
-        //         WidgetButton::UpdateFunc([&sun](){
-        //             return rgb2hsv(sun->getInfos()._color).r;
-        //         })
-        //     ).setpadding(10).setmax(0.99)
-        //     , EntityGroupInfo({
-        //         newEntity("Sun Hue Slider Helper"
-        //         , WidgetUI_Context{&ui}
-        //         , WidgetState()
-        //         , WidgetBackground()
-        //         , WidgetStyle()
-        //             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-        //             .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-        //         , WidgetBox(Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc)
-        //         )
-        //     })
-        // )
-
-        // Blueprint::EDITOR_ENTITY::INO::SmoothSlider(
-        //     "Sun Hue", 0., 0.999, 360, 
-        //     WidgetButton::InteractFunc([&sun](float v){
-        //             sun->setColor(hsv2rgb(vec3(v, 1, 1)));
-        //     }),
-        //     WidgetButton::UpdateFunc([&sun](){
-        //         return rgb2hsv(sun->getInfos()._color).r;
-        //     })
-        // )
-
-        // Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
-        //     /* Name & range parameters */
-        //     "Sun Hue", 0., 0.9999, 360,
-
-        //     /* Slider interact function */ 
-        //     [&sun](float v){
-        //         sun->setColor(hsv2rgb(vec3(v, 1, 1)));
-        //     },
-
-        //     /* Slider update function */
-        //     [&sun](){
-        //         return rgb2hsv(sun->getInfos()._color).r;
-        //     },
-
-        //     /* Update from text function */
-        //     [&sun](std::u32string text)
-        //     {
-        //         float f = u32strtof2(text, round(rgb2hsv(sun->getInfos()._color).r * 360.f));
-        //         sun->setColor(hsv2rgb(vec3(f/360.f, 1, 1))); 
-        //     },
-
-        //     /* Text generation function */
-        //     [&sun]()
-        //     {
-        //         char str[8];
-        //         float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
-
-        //         std::snprintf(str, 5, "%*.f", 0, f); 
-
-        //         return UFTconvert.from_bytes(str);
-        //     }
-        // )
-
         Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
             "Sun color", 
             [&sun](){return vec3(sun->getInfos()._color);},
@@ -645,9 +563,18 @@ void Game::mainloop()
 
     std::cout << "Press " << k << " to toggle HUD\n";
 
+
+
+    // PlottingHelperRef plottest(new PlottingHelper(vec4(1), 256));
+    // scene2D.add(plottest);
+    // plottest->state.setPositionZ(0.5);
+
     /******  Main Loop ******/
     while (state != AppState::quit)
     {
+        // plottest->push(globals.appTime.getDeltaMS());
+        // plottest->updateData();
+
         static unsigned int itcnt = 0;
         itcnt++;
         if (doAutomaticShaderRefresh)

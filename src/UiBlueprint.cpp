@@ -1,6 +1,7 @@
 #include <EntityBlueprint.hpp>
 #include <GameGlobals.hpp>
 #include <MathsUtils.hpp>
+#include <Helpers.hpp>
 
 #define UI_BASE_COMP EDITOR::UIcontext, WidgetState()
 
@@ -96,7 +97,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
             .setbackgroundColor2(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
 
             .settextColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-            .settextColor2(EDITOR::MENUS::COLOR::HightlightColor)
+            .settextColor2(EDITOR::MENUS::COLOR::HightlightColor1)
         , WidgetText(U"")
     );
 
@@ -402,4 +403,49 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
     );
 
     return p;
+}
+
+EntityRef Blueprint::EDITOR_ENTITY::INO::TimerTab(BenchTimer &timer, vec4(color))
+{
+    auto infos = newEntity(timer.name + " - Infos"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+            newEntity(timer.name + "- Infos Values"
+                , UI_BASE_COMP
+                , WidgetBox()
+            ),
+            newEntity(timer.name + " - Infos Plot Background"
+                , UI_BASE_COMP
+                , WidgetBox()
+                , WidgetBackground()
+                , WidgetStyle()
+                    .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    .setautomaticTabbing(1)
+                , EntityGroupInfo({
+                    newEntity(timer.name + " - Infos Plo"
+                        , UI_BASE_COMP
+                        , WidgetSprite(PlottingHelperRef(new PlottingHelper(color, 1024)))
+                        , WidgetBox(
+                            [&timer](Entity *parent, Entity *child)
+                            {
+                                if(timer.isPaused()) 
+                                    return;
+
+                                auto &s = child->comp<WidgetSprite>();
+                                ((PlottingHelper*)s.sprite.get())->push(timer.getDeltaMS());
+                                ((PlottingHelper*)s.sprite.get())->updateData();
+                            }
+                        )
+                    )
+                })
+            )
+        })
+    );
+
+
+    return infos;
 }

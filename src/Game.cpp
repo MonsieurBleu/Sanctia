@@ -222,9 +222,9 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.appTime, EDITOR::MENUS::COLOR::HightlightColor1)
     );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        Blueprint::EDITOR_ENTITY::INO::TimerTab(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
-    );
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+    //     Blueprint::EDITOR_ENTITY::INO::TimerTab(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
+    // );
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
         Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.cpuTime, EDITOR::MENUS::COLOR::HightlightColor3)

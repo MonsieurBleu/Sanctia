@@ -59,7 +59,17 @@ namespace Blueprint
                 std::function<std::u32string()> toText
                 );
             
+            EntityRef ColorSelectionScreen(
+                const std::string &name,
+                std::function<vec3()> getColor, 
+                std::function<void(vec3)> setColor
+            );
 
+            EntityRef NamedEntry(
+                const std::u32string &name,
+                EntityRef entry,
+                float nameRatioSize = 0.5f
+            );
         };
 
         

@@ -262,10 +262,10 @@ void Game::mainloop()
     );
 
 
-    EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
+    EDITOR::MENUS::AppMenu->comp<WidgetStyle>().setautomaticTabbing(5);
 
     for(int i = 0; i < 5; i++)
-    ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
+    ComponentModularity::addChild(*EDITOR::MENUS::AppMenu,
         // newEntity("Sun Hue" 
         //     , WidgetUI_Context{&ui}
         //     , WidgetState()
@@ -307,76 +307,43 @@ void Game::mainloop()
         //     })
         // )
 
-        Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
-            /* Name & range parameters */
-            "Sun Hue", 0., 0.9999, 360,
+        // Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+        //     /* Name & range parameters */
+        //     "Sun Hue", 0., 0.9999, 360,
 
-            /* Slider interact function */ 
-            [&sun](float v){
-                sun->setColor(hsv2rgb(vec3(v, 1, 1)));
-            },
+        //     /* Slider interact function */ 
+        //     [&sun](float v){
+        //         sun->setColor(hsv2rgb(vec3(v, 1, 1)));
+        //     },
 
-            /* Slider update function */
-            [&sun](){
-                return rgb2hsv(sun->getInfos()._color).r;
-            },
+        //     /* Slider update function */
+        //     [&sun](){
+        //         return rgb2hsv(sun->getInfos()._color).r;
+        //     },
 
-            /* Update from text function */
-            [&sun](std::u32string text)
-            {
-                // uint op = text[0];
+        //     /* Update from text function */
+        //     [&sun](std::u32string text)
+        //     {
+        //         float f = u32strtof2(text, round(rgb2hsv(sun->getInfos()._color).r * 360.f));
+        //         sun->setColor(hsv2rgb(vec3(f/360.f, 1, 1))); 
+        //     },
 
-                // switch (op)
-                // {
-                //     case U'+': case U'-': case U'x': case U'/':
-                //         text[0] = '0';
-                //         break;
-                    
-                //     default:break;
-                // }
+        //     /* Text generation function */
+        //     [&sun]()
+        //     {
+        //         char str[8];
+        //         float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
 
-                // float r;
-                // if(u32strtof(text, r))
-                // {
-                //     float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
+        //         std::snprintf(str, 5, "%*.f", 0, f); 
 
-                //     switch (op)
-                //     {
-                //         case U'+': f += r; break;
-                //         case U'-': f -= r; break;
-                //         case U'x': f *= r; break;
-                //         case U'/': f /= r; break;
-                //         default  : f  = r; break;
-                //     }
+        //         return UFTconvert.from_bytes(str);
+        //     }
+        // )
 
-                //     sun->setColor(hsv2rgb(vec3(f/360.f, 1, 1)));   
-                // }
-
-                float f = u32strtof2(text, round(rgb2hsv(sun->getInfos()._color).r * 360.f));
-                sun->setColor(hsv2rgb(vec3(f/360.f, 1, 1))); 
-            },
-
-            /* Text generation function */
-            [&sun]()
-            {
-                char str[8];
-                float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
-
-                std::snprintf(str, 5, "%*.f", 0, f); 
-
-                return UFTconvert.from_bytes(str);
-
-                // return 
-                    // UFTconvert.from_bytes(std::to_string(
-                    //     round(rgb2hsv(sun->getInfos()._color).r * 360.f)
-                    //     )
-                    // );
-
-                // UFT32Stream stream;
-                // float f = round(rgb2hsv(sun->getInfos()._color).r * 360.f);
-                // stream << std::setw(5) << f << "__";
-                // return std::u32string(stream.str());
-            }
+        Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
+            "Sun color", 
+            [&sun](){return vec3(sun->getInfos()._color);},
+            [&sun](vec3 color){sun->setColor(color);}
         )
     );
 

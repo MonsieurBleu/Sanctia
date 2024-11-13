@@ -17,7 +17,7 @@ void Game::init(int paramSample)
 {
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
    
-    // globals._renderScale = 0.5;
+    // globals._renderScale = 0.25;
 
     App::init();
 

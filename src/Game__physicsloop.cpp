@@ -45,7 +45,11 @@ void Game::physicsLoop()
                 body->setIsActive(false);
         }
 
+        physicsWorldUpdateTimer.start();
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
+        physicsWorldUpdateTimer.end();
+
+        physicsSystemsTimer.start();
 
         PG::physicInterpolationMutex.lock();
         PG::physicInterpolationTick.tick();
@@ -277,6 +281,7 @@ void Game::physicsLoop()
 
         });
 
+        physicsSystemsTimer.end();
         physicsTimer.end();
 
         float maxFreq = 200.f;

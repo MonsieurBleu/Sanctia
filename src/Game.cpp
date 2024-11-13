@@ -203,36 +203,40 @@ void Game::mainloop()
 
     finalProcessingStage.addUniform(ShaderUniform((vec4 *)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
-    // EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
+    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
 
-    // for(int i = 0; i < 1; i++)
+    // for(int i = 0; i < 5; i++)
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        // Blueprint::EDITOR_ENTITY::INO::Toggable("Ingo Stat Helper"
-        //     , "icon_idcard"
-        //     , WidgetButton::InteractFunc([](float v){
-        //         GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
-        //     })
-        //     , WidgetButton::UpdateFunc([](){
-        //         return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-        //     })
-        // )
+    //     Blueprint::EDITOR_ENTITY::INO::Toggable("Ingo Stat Helper"
+    //         , "icon_idcard"
+    //         , WidgetButton::InteractFunc([](float v){
+    //             GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
+    //         })
+    //         , WidgetButton::UpdateFunc([](){
+    //             return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
+    //         })
+    //     )
     // );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.appTime, EDITOR::MENUS::COLOR::HightlightColor1)
-    );
-
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     Blueprint::EDITOR_ENTITY::INO::TimerTab(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
+    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.appTime, EDITOR::MENUS::COLOR::HightlightColor1)
     // );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.cpuTime, EDITOR::MENUS::COLOR::HightlightColor3)
-    );
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
+    // );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-        Blueprint::EDITOR_ENTITY::INO::TimerTab(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
-    );
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.cpuTime, EDITOR::MENUS::COLOR::HightlightColor3)
+    // );
+
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
+    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
+    // );
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos, 
+        Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
+        );
 
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
 
@@ -320,6 +324,7 @@ void Game::mainloop()
         }));
 
     ComponentModularity::addChild(*gameScreenWidget, first);
+
 
     /****** Loading Game Specific Elements *******/
     GG::currentConditions.readTxt("saves/gameConditions.txt");

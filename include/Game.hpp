@@ -47,7 +47,9 @@ private:
 public:
     static inline LimitTimer physicsTicks;
     static inline BenchTimer physicsTimer = BenchTimer("Physics Timer");
-    
+    static inline BenchTimer physicsWorldUpdateTimer = BenchTimer("Physics World");
+    static inline BenchTimer physicsSystemsTimer = BenchTimer("Physics Systems");
+
     Game(GLFWwindow *window);
     void init(int paramSample);
     bool userInput(GLFWKeyInfo input);

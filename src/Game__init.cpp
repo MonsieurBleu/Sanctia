@@ -157,4 +157,6 @@ void Game::init(int paramSample)
     loadAllAssetsInfos("data");
     loadAllAssetsInfos("shader/vulpineMaterials");
     AnimBlueprint::PrepareAnimationsCallbacks();
+
+    initInput();
 }

@@ -149,6 +149,9 @@ void Game::mainloop()
 
     float widgetTileSPace = 0.01;
 
+    vec3 sunDir = vec3(0.0f);
+    skybox->uniforms.add(ShaderUniform(&sunDir, 21));
+
     EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
         , WidgetState()
@@ -320,6 +323,64 @@ void Game::mainloop()
         }));
 
     ComponentModularity::addChild(*gameScreenWidget, first);
+
+    EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
+    ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
+        Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+            "Time of day", 
+            0, 24, 240, 
+            [](float v)
+            {
+                // 8 = 0
+                // 0 = -8 = = 16 = 0.666
+                float t = (v - 8.0f);
+                if (t < 0)
+                    t += 24;
+                GG::timeOfDay = t / 24.f;
+            },
+            []()
+            {
+                float t = GG::timeOfDay * 24.f;
+                if (t > 16)
+                    t -= 24;
+                return t + 8;
+            },
+            [](std::u32string text)
+            {
+                float t = u32strtof2(text, GG::timeOfDay) - 8;
+                if (t < 0)
+                    t += 24;
+                GG::timeOfDay = t / 24.f;
+            }, 
+            []()
+            {
+                std::stringstream s;
+                float t = GG::timeOfDay * 24.f;
+                if (t > 16)
+                    t -= 24;
+                s << t + 8;
+                return UFTconvert.from_bytes(s.str());
+            }
+        )
+    );
+
+    bool enableTime = true;
+    ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
+        Blueprint::EDITOR_ENTITY::INO::Toggable(
+            "Enable Time", 
+            "icon_light",
+            [&enableTime](float v)
+            {
+                enableTime = !enableTime;
+            },
+            [&enableTime]()
+            {
+                return enableTime ? 0.f : 1.f;
+            }
+        )
+    );
+
+            
 
     /****** Loading Game Specific Elements *******/
     GG::currentConditions.readTxt("saves/gameConditions.txt");
@@ -555,9 +616,7 @@ void Game::mainloop()
     dummy->state.setPosition(vec3(5, 0, 0));
     scene.add(dummy);
 
-    auto &event = InputManager::addEventInput(
-        "toggle hud", GLFW_KEY_H, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT, GLFW_PRESS, [&]() { hideHUD = !hideHUD; },
-        InputManager::Filters::always, false);
+    
 
     std::string k = InputManager::getInputKeyString("toggle hud");
 
@@ -604,6 +663,29 @@ void Game::mainloop()
             ComponentModularity::mergeChildren(*firstChild);
             physicsMutex.unlock();
         }
+
+        // temporary
+        if (enableTime) {
+            GG::timeOfDay += globals.appTime.getDelta() * 0.005;
+            GG::timeOfDay = fmod(GG::timeOfDay, 1.f);
+        }
+
+        double axialTilt = radians(23.5);
+        double sunYaw = radians(-90.0) + axialTilt;
+        double sunPitch = radians(180.0 - GG::timeOfDay * 360.0);
+
+        double d = 9e10;
+        vec3 sunPos = vec3(
+            sin(sunYaw) * d * cos(sunPitch), 
+            sin(sunPitch) * d,  
+            cos(sunYaw) * d * cos(sunPitch)
+        );
+        
+        constexpr double PLANET_RADIUS = 6371e3;
+        vec3 planetPos = vec3(0, PLANET_RADIUS, 0);
+        sunDir = normalize(sunPos - planetPos);
+
+        sun->setDirection(-sunDir);
 
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
@@ -976,3 +1058,5 @@ void Game::mainloop()
     GG::entities.clear();
     PG::common.destroyPhysicsWorld(PG::world);
 }
+
+

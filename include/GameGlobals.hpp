@@ -30,6 +30,8 @@ class GG
         static inline std::list<EntityRef> entities;
 
         static inline EntityRef playerEntity;
+
+        static inline float timeOfDay = 0.0f;
 };
 
 namespace EDITOR 

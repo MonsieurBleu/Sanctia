@@ -71,9 +71,20 @@ namespace Blueprint
                 float nameRatioSize = 0.5f
             );
 
-            EntityRef TimerTab(BenchTimer &timer, vec4(color));
-        };
 
+            EntityRef ColoredConstEntry(
+                const std::string &name,
+                std::function<std::u32string()> toText,
+                vec4 color
+            );
+
+            EntityRef TimerPlot(
+                BenchTimer &timer, 
+                vec4(color),
+                std::function<vec2()> getMinmax
+            );
         
+            EntityRef GlobalBenchmarkScreen();
+        };        
     };
 };

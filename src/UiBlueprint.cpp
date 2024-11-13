@@ -2,6 +2,7 @@
 #include <GameGlobals.hpp>
 #include <MathsUtils.hpp>
 #include <Helpers.hpp>
+#include <Game.hpp>
 
 #define UI_BASE_COMP EDITOR::UIcontext, WidgetState()
 
@@ -405,47 +406,338 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
     return p;
 }
 
-EntityRef Blueprint::EDITOR_ENTITY::INO::TimerTab(BenchTimer &timer, vec4(color))
+EntityRef Blueprint::EDITOR_ENTITY::INO::TimerPlot(
+    BenchTimer &timer, 
+    vec4(color),
+    std::function<vec2()> getMinmax
+    )
 {
-    auto infos = newEntity(timer.name + " - Infos"
+    auto infos = newEntity(timer.name + " - Infos Plo"
         , UI_BASE_COMP
-        , WidgetBox()
-        , WidgetStyle()
-            .setautomaticTabbing(1)
-        , EntityGroupInfo({
-            newEntity(timer.name + "- Infos Values"
-                , UI_BASE_COMP
-                , WidgetBox()
-            ),
-            newEntity(timer.name + " - Infos Plot Background"
-                , UI_BASE_COMP
-                , WidgetBox()
-                , WidgetBackground()
-                , WidgetStyle()
-                    .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
-                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-                    .setautomaticTabbing(1)
-                , EntityGroupInfo({
-                    newEntity(timer.name + " - Infos Plo"
-                        , UI_BASE_COMP
-                        , WidgetSprite(PlottingHelperRef(new PlottingHelper(color, 1024)))
-                        , WidgetBox(
-                            [&timer](Entity *parent, Entity *child)
-                            {
-                                if(timer.isPaused()) 
-                                    return;
+        , WidgetSprite(PlottingHelperRef(new PlottingHelper(color, 1024)))
+        , WidgetBox(
+            [&timer, getMinmax](Entity *parent, Entity *child)
+            {
+                if(timer.isPaused()) 
+                    return;
 
-                                auto &s = child->comp<WidgetSprite>();
-                                ((PlottingHelper*)s.sprite.get())->push(timer.getDeltaMS());
-                                ((PlottingHelper*)s.sprite.get())->updateData();
-                            }
-                        )
-                    )
+                PlottingHelper* p = (PlottingHelper*)child->comp<WidgetSprite>().sprite.get();
+
+                vec2 minmax = getMinmax();
+                p->minv = minmax.x;
+                p->maxv = minmax.y;
+                p->push(timer.getDeltaMS());
+                p->updateData();
+            }
+        )
+    );
+
+    return infos;
+}
+
+EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
+{
+    std::function<vec2()> getMinmaxMainThread = []()
+    {
+        float max = globals.mainThreadTime.getMax().count();
+        return vec2(0, max);
+    };
+
+    std::function<vec2()> getMinmaxPhysicThread = []()
+    {
+        float max = 1000.f/Game::physicsTicks.freq;
+        // float max = Game::physicsTimer.getMax().count();
+        // float max = Game::physicsWorldUpdateTimer.getMax().count();
+        return vec2(0, max);
+    };
+
+    auto mainThreadPlotters = newEntity("Main Thread Plotters Background"
+        , UI_BASE_COMP
+        , WidgetBox(vec2(-0.33333f, 1.f))
+        , WidgetBackground()
+        , WidgetStyle()
+            // .setautomaticTabbing(1)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        , EntityGroupInfo({
+            newEntity("Main Thread Plotters"
+                , UI_BASE_COMP
+                , WidgetBox()
+                , EntityGroupInfo({
+                    TimerPlot(
+                        globals.mainThreadTime, 
+                        EDITOR::MENUS::COLOR::HightlightColor1,
+                        getMinmaxMainThread),
+                    TimerPlot(
+                        globals.cpuTime, 
+                        EDITOR::MENUS::COLOR::HightlightColor2,
+                        getMinmaxMainThread),
+                    TimerPlot(
+                        globals.gpuTime, 
+                        EDITOR::MENUS::COLOR::HightlightColor3,
+                        getMinmaxMainThread)
                 })
             )
         })
     );
 
+    auto physicThreadPlotters = newEntity("Physic Thread Plotters Background"
+        , UI_BASE_COMP
+        , WidgetBox(vec2(-0.33333, 1.0))
+        , WidgetBackground()
+        , WidgetStyle()
+            // .setautomaticTabbing(1)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        , EntityGroupInfo({
+            newEntity("Physic Thread Plotters"
+                , UI_BASE_COMP
+                , WidgetBox()
+                , EntityGroupInfo({
+                    TimerPlot(
+                        Game::physicsTimer, 
+                        EDITOR::MENUS::COLOR::HightlightColor5,
+                        getMinmaxPhysicThread),
+                    // TimerPlot(
+                    //     Game::physicsWorldUpdateTimer, 
+                    //     EDITOR::MENUS::COLOR::HightlightColor4,
+                    //     getMinmaxPhysicThread),
+                    TimerPlot(
+                        Game::physicsSystemsTimer, 
+                        EDITOR::MENUS::COLOR::HightlightColor4,
+                        getMinmaxPhysicThread)
+                })
+            )
+        })
+    );
 
-    return infos;
+    // auto plotters = newEntity("Global Benchmark plotters"
+    //     , UI_BASE_COMP
+    //     , WidgetBox(vec2(-0.33333, 1), vec2(-1, 1))
+    //     , WidgetStyle()
+    //         .setautomaticTabbing(2)
+    //         .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+    //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+    //     , EntityGroupInfo({
+    //         mainThreadPlotters, physicThreadPlotters
+    //     })
+    // );
+
+
+
+    auto mainMenuBench = newEntity("Main thread Benchmark"
+        , UI_BASE_COMP
+        , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
+        , WidgetStyle()
+            // .setautomaticTabbing(1)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        , WidgetBackground()
+        , EntityGroupInfo({
+            newEntity("Global Benchmark values"
+                , UI_BASE_COMP
+                , WidgetBox(vec2(-1, -0.33333))
+                , WidgetStyle()
+                    .setautomaticTabbing(3)
+                , EntityGroupInfo({
+                    ColoredConstEntry(
+                        "FPS",
+                        [](){return ftou32str(1000.0/globals.appTime.getLastAvg().count());},
+                        EDITOR::MENUS::COLOR::LightBackgroundColor1
+                    ),
+                    ColoredConstEntry(
+                        "GPU",
+                        [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
+                        EDITOR::MENUS::COLOR::HightlightColor3
+                    ),
+                    ColoredConstEntry(
+                        "CPU",
+                        [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
+                        EDITOR::MENUS::COLOR::HightlightColor2
+                    )
+                })
+            ),
+            mainThreadPlotters
+        })
+    );
+
+    auto physicMenuBench = newEntity("Physic thread Benchmark"
+        , UI_BASE_COMP
+        , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
+        , WidgetStyle()
+            // .setautomaticTabbing(1)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        , WidgetBackground()
+        , EntityGroupInfo({
+            newEntity("Physic Benchmark values"
+                , UI_BASE_COMP
+                , WidgetBox(vec2(-1, -0.33333))
+                , WidgetStyle()
+                    .setautomaticTabbing(3)
+                , EntityGroupInfo({
+                    ColoredConstEntry(
+                        "FPS",
+                        [](){return ftou32str(Game::physicsTicks.freq);},
+                        EDITOR::MENUS::COLOR::LightBackgroundColor1
+                    ),
+                    ColoredConstEntry(
+                        "RP3D",
+                        [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
+                        EDITOR::MENUS::COLOR::HightlightColor5
+                    ),
+                    ColoredConstEntry(
+                        "SYSTEMS",
+                        [](){return ftou32str(Game::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
+                        EDITOR::MENUS::COLOR::HightlightColor4
+                    ),
+                })
+            ),
+            physicThreadPlotters
+        })
+    );
+
+    // auto values = newEntity("Global Benchmark values"
+    //     , UI_BASE_COMP
+    //     , WidgetBox(vec2(-1, -0.33333), vec2(-1, 1))
+    //     , WidgetStyle()
+    //         .setautomaticTabbing(6)
+    //     , EntityGroupInfo({
+    //         ColoredConstEntry(
+    //             "FPS",
+    //              [](){return ftou32str(1000.0/globals.appTime.getLastAvg().count());},
+    //              EDITOR::MENUS::COLOR::LightBackgroundColor1
+    //         ),
+    //         // ColoredConstEntry(
+    //         //     "Main",
+    //         //      [](){return ftou32str(globals.mainThreadTime.getLastAvg().count());},
+    //         //      EDITOR::MENUS::COLOR::HightlightColor1
+    //         // ),
+    //         ColoredConstEntry(
+    //             "GPU",
+    //              [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
+    //              EDITOR::MENUS::COLOR::HightlightColor3
+    //         ),
+    //         ColoredConstEntry(
+    //             "CPU",
+    //              [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
+    //              EDITOR::MENUS::COLOR::HightlightColor2
+    //         ),
+    //         // newEntity("Global Benchmark values separator"
+
+    //         // ),
+
+    //         ColoredConstEntry(
+    //             "Physic FPS",
+    //              [](){return ftou32str(Game::physicsTicks.freq);},
+    //              EDITOR::MENUS::COLOR::LightBackgroundColor1
+    //         ),
+    //         ColoredConstEntry(
+    //             "Physic Update",
+    //              [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
+    //              EDITOR::MENUS::COLOR::HightlightColor5
+    //         ),
+    //         ColoredConstEntry(
+    //             "Physic Systems",
+    //              [](){return ftou32str(Game::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
+    //              EDITOR::MENUS::COLOR::HightlightColor4
+    //         ),
+    //     })
+    // );
+
+
+    return newEntity("Global Benchmark Infos"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(2)
+        , EntityGroupInfo({
+
+            newEntity("Main Thread Benchmark Menu"
+                , UI_BASE_COMP
+                , WidgetBox()
+                , EntityGroupInfo({
+                    newEntity("Main Thread Benchmark Titlte"
+                        , UI_BASE_COMP
+                        , WidgetBox(vec2(-1, +1), vec2(-1, -0.6))
+                        , WidgetBackground()
+                        , WidgetText(U"Thread 1")
+                        , WidgetStyle()
+                            .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+                            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    ), 
+                    mainMenuBench
+                })
+            ),
+
+            newEntity("Physic Thread Benchmark Menu"
+                , UI_BASE_COMP
+                , WidgetBox()
+                , EntityGroupInfo({
+                    newEntity("Physic Thread Benchmark Titlte"
+                        , UI_BASE_COMP
+                        , WidgetBox(vec2(-1, +1), vec2(-1, -0.6))
+                        , WidgetBackground()
+                        , WidgetText(U"Thread 2")
+                        , WidgetStyle()
+                            .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+                            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    ), 
+                    physicMenuBench
+                })
+            )
+        })
+    );
+}
+
+EntityRef Blueprint::EDITOR_ENTITY::INO::ColoredConstEntry(
+    const std::string &name,
+    std::function<std::u32string()> toText,
+    vec4 color
+)
+{
+    vec4 color2 = color;
+    color2.a *= 0.5;
+
+    return newEntity(name + "- coloredConstEntry"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+            newEntity(name
+                , UI_BASE_COMP
+                , WidgetBox()
+                , WidgetText()
+                , WidgetBackground()
+                , WidgetStyle()
+                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    // .setbackgroundColor1(color)
+                    .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                    // .settextColor1(color)
+                    .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+            ),
+
+            newEntity(name + "- text"
+                , UI_BASE_COMP
+                , WidgetBackground()
+                , WidgetBox([toText](Entity *parent, Entity *child)
+                {
+                    child->comp<WidgetText>().text = toText();
+                })
+                , WidgetStyle()
+                    // .setbackgroundColor1(color2)
+                    // .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    // .settextColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+
+                    .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+
+                    .settextColor1(color)
+
+                , WidgetText(U" ")
+            )
+        })
+    );
 }

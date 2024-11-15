@@ -29,7 +29,7 @@ void Game::mainloop()
     skybox->loadFromFolder("ressources/models/skybox/", true, false);
 
     // skybox->invertFaces = true;
-    // skybox->depthWrite = false;
+    // skybox->depthWrite = true;
     skybox->state.frustumCulled = false;
     skybox->state.scaleScalar(1E6);
     scene.add(skybox);
@@ -149,7 +149,7 @@ void Game::mainloop()
 
     float widgetTileSPace = 0.01;
 
-    vec3 sunDir = vec3(0.0f);
+    vec3 sunDir = vec3(0);
     skybox->uniforms.add(ShaderUniform(&sunDir, 21));
 
     EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
@@ -206,7 +206,7 @@ void Game::mainloop()
 
     finalProcessingStage.addUniform(ShaderUniform((vec4 *)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
-    EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
+    // EDITOR::MENUS::GlobalInfos->comp<WidgetStyle>().setautomaticTabbing(1);
 
     // for(int i = 0; i < 5; i++)
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
@@ -237,29 +237,69 @@ void Game::mainloop()
     //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
     // );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos, 
-        Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
-        );
-
-    EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
-
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        newEntity("Text input test"
-            , WidgetUI_Context{&ui}
-            , WidgetState()
-            , WidgetBox(
-                vec2(-0.9, -0.7),
-                vec2(-0.9, +0.9)
-            )
-            , WidgetBackground()
-            , WidgetText(U"[...]")
-            , WidgetStyle()
-            , WidgetButton(
-                WidgetButton::Type::TEXT_INPUT
-            )
-        )
+    EntityRef GlobalInfosTitleTab = newEntity("Global Infos Title Tab"
+        , WidgetUI_Context{&ui}
+        , WidgetState()
+        , WidgetBox(vec2(-1, 1), vec2(-1, -0.75))
+        , WidgetBackground()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
+    EntityRef GlobalInfosSubTab = newEntity("Global Infos Sub Tab"
+        , WidgetUI_Context{&ui}
+        // , WidgetState()
+        , WidgetBox(vec2(-1, 1), vec2(-0.75, 1))
+        , WidgetBackground()
+        , WidgetStyle()
+            // .setautomaticTabbing(1)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+    );
+
+
+    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab, 
+        Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen(),
+        "Global Benchmark", "icon_chrono"
+    );
+
+    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab,
+        Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene),
+        "3D Scene Infos", "VulpineIcon"
+    );
+
+    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab,
+        Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene2D),
+        "2D Scene Infos", "VulpineIcon"
+    );
+
+    /* TODO : finish*/
+    // Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    //     GlobalInfosTitleTab, GlobalInfosSubTab,
+
+    //     newEntity("Scenes Infos Menu", 
+    //         , WidgetUI_Context{&ui}
+    //         , WidgetState()
+    //         , WidgetBox()
+    //         , Widget
+
+    //     ),
+
+    //     // Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene),
+
+    //     "Scenes Infos", "VulpineIcon"
+    // );
+
+    GlobalInfosTitleTab->comp<EntityGroupInfo>().children[1]->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos, GlobalInfosTitleTab);
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos, GlobalInfosSubTab);
 
     EDITOR::MENUS::AppMenu->comp<WidgetStyle>().setautomaticTabbing(5);
 
@@ -329,47 +369,37 @@ void Game::mainloop()
     ComponentModularity::addChild(*gameScreenWidget, first);
 
     EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
-    ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
+    EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
             "Time of day", 
-            0, 24, 240, 
+            0, 24, 24*4, 
             [](float v)
             {
-                // 8 = 0
-                // 0 = -8 = = 16 = 0.666
-                float t = (v - 8.0f);
-                if (t < 0)
-                    t += 24;
-                GG::timeOfDay = t / 24.f;
+                float t = v;
+                GG::timeOfDay = t;
             },
             []()
             {
-                float t = GG::timeOfDay * 24.f;
-                if (t > 16)
-                    t -= 24;
-                return t + 8;
+                float t = GG::timeOfDay;
+                return t;
             },
             [](std::u32string text)
             {
-                float t = u32strtof2(text, GG::timeOfDay) - 8;
-                if (t < 0)
-                    t += 24;
-                GG::timeOfDay = t / 24.f;
+                float t = u32strtof2(text, GG::timeOfDay);
+                GG::timeOfDay = t;
             }, 
             []()
             {
-                std::stringstream s;
-                float t = GG::timeOfDay * 24.f;
-                if (t > 16)
-                    t -= 24;
-                s << t + 8;
-                return UFTconvert.from_bytes(s.str());
+                float t = GG::timeOfDay;
+                return ftou32str(t);
             }
         )
     );
 
     bool enableTime = true;
-    ComponentModularity::addChild(*EDITOR::MENUS::AppControl,
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         Blueprint::EDITOR_ENTITY::INO::Toggable(
             "Enable Time", 
             "icon_light",
@@ -384,7 +414,74 @@ void Game::mainloop()
         )
     );
 
-            
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        Blueprint::EDITOR_ENTITY::INO::Toggable(
+            "Entity Infos Stats Helper", 
+            "icon_idcard",
+            [&](float v)
+            {
+                GlobalComponentToggler<InfosStatsHelpers>::activated =
+                    !GlobalComponentToggler<InfosStatsHelpers>::activated;
+            },
+            [&]()
+            {
+                return GlobalComponentToggler<InfosStatsHelpers>::activated  ? 0.f : 1.f;
+            }
+        )
+    );
+
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        Blueprint::EDITOR_ENTITY::INO::Toggable(
+            "Entity Physic Helper", 
+            "icon_hitbox",
+            [&](float v)
+            {
+                GlobalComponentToggler<PhysicsHelpers>::activated =
+                    !GlobalComponentToggler<PhysicsHelpers>::activated;
+            },
+            [&]()
+            {
+                return GlobalComponentToggler<PhysicsHelpers>::activated  ? 0.f : 1.f;
+            }
+        )
+    );
+
+    {
+        auto &bloom = Bloom;
+        ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+            Blueprint::EDITOR_ENTITY::INO::Toggable(
+                "Bloom", 
+                "VulpineIcon",
+                [&bloom](float v)
+                {
+                    bloom.toggle();
+                },
+                [&bloom]()
+                {
+                    return bloom.isPassEnable() ? 0.f : 1.f;
+                }
+            )
+        );
+    }
+    {
+        auto &ssao = SSAO;
+        ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+            Blueprint::EDITOR_ENTITY::INO::Toggable(
+                "AO", 
+                "VulpineIcon",
+                [&ssao](float v)
+                {
+                    ssao.toggle();
+                },
+                [&ssao]()
+                {
+                    return ssao.isPassEnable() ? 0.f : 1.f;
+                }
+            )
+        );
+    }
+
 
     /****** Loading Game Specific Elements *******/
     GG::currentConditions.readTxt("saves/gameConditions.txt");
@@ -668,28 +765,53 @@ void Game::mainloop()
             physicsMutex.unlock();
         }
 
-        // temporary
-        if (enableTime) {
-            GG::timeOfDay += globals.appTime.getDelta() * 0.005;
-            GG::timeOfDay = fmod(GG::timeOfDay, 1.f);
+
+
+        /****** SUN / TIMEOF DAY LOGIC GESTION 
+         * 
+         *  TODO : move in another place
+         * 
+         * ***/
+        {
+            if (enableTime) {
+                GG::timeOfDay += globals.appTime.getDelta() * 5.f;
+                GG::timeOfDay = fmod(GG::timeOfDay, 24.f);
+            }
+
+            float todayNorm = GG::timeOfDay/24.f;
+
+            // float theta = PI * (todayNorm * 2.f - 1.f);
+            // float phi = 0;
+
+            // Parameters for sun movement
+            float latitude = radians(45.0f); // Example latitude (e.g., 45 degrees)
+            float declination = radians(23.5f); // Max tilt of Earth's axis
+            float maxElevation = PI / 2 - fabs(latitude - declination); // Adjust for seasonality if needed
+
+            // Calculate theta (elevation) and phi (azimuth)
+            float theta = maxElevation * sin(todayNorm * PI * 2.f - PI / 2.f); // Shift to center day at noon (PI/2 shift)
+            float phi = todayNorm * 2.f * PI; // Azimuth angle across the sky
+
+            sunDir = PhiThetaToDir(vec2(phi, theta));
+            sun->setDirection(-sunDir);
+
+
+            float sunsetriseAlpha = smoothstep(-0.1f, 0.5f, theta);
+            sun->setIntensity(smoothstep(-0.1f, 0.5f, theta));
+
+            sun->setColor(
+                mix(
+                    vec3(255, 198, 0)/255.f,
+                    vec3(1, 1, 1),
+                    smoothstep(0.f, (float)PI/6.f, theta)
+                )
+            );
+
+            ambientLight = vec3(0.07);
         }
 
-        double axialTilt = radians(23.5);
-        double sunYaw = radians(-90.0) + axialTilt;
-        double sunPitch = radians(180.0 - GG::timeOfDay * 360.0);
 
-        double d = 9e10;
-        vec3 sunPos = vec3(
-            sin(sunYaw) * d * cos(sunPitch), 
-            sin(sunPitch) * d,  
-            cos(sunYaw) * d * cos(sunPitch)
-        );
-        
-        constexpr double PLANET_RADIUS = 6371e3;
-        vec3 planetPos = vec3(0, PLANET_RADIUS, 0);
-        sunDir = normalize(sunPos - planetPos);
 
-        sun->setDirection(-sunDir);
 
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
@@ -706,11 +828,11 @@ void Game::mainloop()
             b.initMax = pos + scale * 0.5f;
         }
 
-        updateWidgetsStyle();
 
         /* TODO : remove */
         // ComponentModularity::synchronizeChildren(first);
         ComponentModularity::synchronizeChildren(gameScreenWidget);
+        updateWidgetsStyle();
 
         mainloopStartRoutine();
 

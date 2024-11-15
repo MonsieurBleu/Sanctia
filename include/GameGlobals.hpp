@@ -49,8 +49,8 @@ namespace EDITOR
 
         namespace COLOR
         {
-            #define BASE_ALPHA 0.90f*255.f
-            #define ALPHA2     0.65f*255.f
+            #define BASE_ALPHA 0.85f*255.f
+            #define ALPHA2     0.60f*255.f
 
             inline vec4 LightBackgroundColor1 = vec4(242, 234,  222, BASE_ALPHA)/255.f;
             inline vec4 LightBackgroundColor2 = vec4(242, 234,  222, ALPHA2)/255.f;

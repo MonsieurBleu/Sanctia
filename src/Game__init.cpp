@@ -20,7 +20,7 @@ void Game::init(int paramSample)
     // globals._renderScale = 0.25;
 
     App::init();
-
+    
     // activateMainSceneBindlessTextures();
     activateMainSceneClusteredLighting(ivec3(16, 9, 24), 1024);
 

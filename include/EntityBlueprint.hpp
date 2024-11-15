@@ -1,5 +1,6 @@
 #pragma once
 #include <SanctiaEntity.hpp>
+#include <GameGlobals.hpp>
 
 namespace Blueprint
 {
@@ -75,7 +76,7 @@ namespace Blueprint
             EntityRef ColoredConstEntry(
                 const std::string &name,
                 std::function<std::u32string()> toText,
-                vec4 color
+                vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
             );
 
             EntityRef TimerPlot(
@@ -83,8 +84,18 @@ namespace Blueprint
                 vec4(color),
                 std::function<vec2()> getMinmax
             );
+
+            void AddToSelectionMenu(
+                EntityRef titlesParent, 
+                EntityRef infosParent,  
+                EntityRef info,
+                const std::string &name,
+                const std::string &icon
+            );
         
             EntityRef GlobalBenchmarkScreen();
+
+            EntityRef SceneInfos(Scene& scene);
         };        
     };
 };

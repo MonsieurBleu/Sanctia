@@ -449,7 +449,9 @@ void main()
     Material material = getMultiLight();
     vec3 rColor = getSkyboxReflection(viewDir, normalComposed);
     const float reflectFactor = getReflectionFactor(1.0 - nDotV, mMetallic, mRoughness);
-    fragColor.rgb = color * ambientLight + material.result + rColor * reflectFactor;
+    // fragColor.rgb = color * ambientLight + material.result + 
+    //     (ambientLight + material.result + reflectFactor*0.1)*rColor*reflectFactor*5;
+    fragColor.rgb = color * ambientLight + material.result + rColor * reflectFactor * 0.5;
 
     fragColor.rgb = mix(fragColor.rgb, color, mEmmisive);
     fragEmmisive = getStandardEmmisive(fragColor.rgb);

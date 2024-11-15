@@ -50,6 +50,7 @@ void Blueprint::Terrain(
         ModelRef t = terrain->copy();
 
         t->defaultMode = GL_PATCHES;
+        t->noBackFaceCulling = true;
         t->tessActivate(vec2(1, 16), vec2(25, 250));
         t->tessHeighFactors(1, terrainSize.y/terrainSize.x);
 

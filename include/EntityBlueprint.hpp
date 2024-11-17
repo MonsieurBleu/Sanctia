@@ -2,6 +2,8 @@
 #include <SanctiaEntity.hpp>
 #include <GameGlobals.hpp>
 
+#define UI_BASE_COMP EDITOR::UIcontext, WidgetState()
+
 namespace Blueprint
 {
     namespace Assembly
@@ -90,7 +92,7 @@ namespace Blueprint
                 EntityRef infosParent,  
                 EntityRef info,
                 const std::string &name,
-                const std::string &icon
+                const std::string &icon = ""
             );
         
             EntityRef GlobalBenchmarkScreen();

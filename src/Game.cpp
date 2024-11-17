@@ -21,6 +21,8 @@
 
 #include <PhysicsGlobals.hpp>
 
+#include <Subapps.hpp>
+
 void Game::mainloop()
 {
 
@@ -295,15 +297,15 @@ void Game::mainloop()
     //     "Scenes Infos", "VulpineIcon"
     // );
 
-    GlobalInfosTitleTab->comp<EntityGroupInfo>().children[1]->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+    GlobalInfosTitleTab->comp<EntityGroupInfo>().children[0]->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
 
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos, GlobalInfosTitleTab);
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos, GlobalInfosSubTab);
 
-    EDITOR::MENUS::AppMenu->comp<WidgetStyle>().setautomaticTabbing(5);
+    // EDITOR::MENUS::AppMenu->comp<WidgetStyle>().setautomaticTabbing(1);
 
-    for(int i = 0; i < 5; i++)
+    for(int i = 0; i < 1; i++)
     ComponentModularity::addChild(*EDITOR::MENUS::AppMenu,
         Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
             "Sun color", 
@@ -322,53 +324,54 @@ void Game::mainloop()
         WidgetBox(vec2(-0.9, +0.9), vec2(+1.1, +2.6), WidgetBox::Type::FOLLOW_SIBLINGS_BOX), WidgetBackground(),       \
         WidgetText(), WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER), WidgetStyle()
 
-    EntityRef first = newEntity(
-        "first", WidgetUI_Context{&ui}, WidgetState(), WidgetBox(vec2(-0.25, +0.25), vec2(-0.9, -0.8)),
-        WidgetBackground(), WidgetText(U"Titre important"),
-        WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER
-                     // WidgetButton::Type::CHECKBOX,
-                     // WidgetButton::func([](float v)
-                     // {
-                     //     // std::cout << v << "\n";
-                     //     GlobalComponentToggler<PhysicsHelpers>::activated =
-                     //     !GlobalComponentToggler<PhysicsHelpers>::activated;
-                     // })
-                     ),
-        WidgetStyle(),
-        EntityGroupInfo({
-            newEntity("Sous élément 1" TEST_ELEMENT_COMPONENT,
-                      EntityGroupInfo({
-                          newEntity("Sous élément 1-1" TEST_ELEMENT_COMPONENT),
-                          newEntity("Sous élément 1-2" TEST_ELEMENT_COMPONENT),
-                          newEntity("Sous élément 1-3" TEST_ELEMENT_COMPONENT),
-                          newEntity("Sous élément 1-4" TEST_ELEMENT_COMPONENT,
-                                    EntityGroupInfo({
-                                        newEntity("Sous élément 1-4-1" TEST_ELEMENT_COMPONENT),
-                                        newEntity("Sous élément 1-4-2" TEST_ELEMENT_COMPONENT),
-                                        newEntity("Sous élément 1-4-3" TEST_ELEMENT_COMPONENT),
-                                        newEntity("Sous élément 1-4-4" TEST_ELEMENT_COMPONENT),
-                                    })),
-                      })),
-            newEntity("Sous élément 2" TEST_ELEMENT_COMPONENT, EntityGroupInfo({
-                                                                   newEntity("Sous élément 2-1" TEST_ELEMENT_COMPONENT),
-                                                                   newEntity("Sous élément 2-2" TEST_ELEMENT_COMPONENT),
-                                                                   newEntity("Sous élément 2-3" TEST_ELEMENT_COMPONENT),
-                                                                   newEntity("Sous élément 2-4" TEST_ELEMENT_COMPONENT),
-                                                               })),
-            newEntity("Sous élément 3" TEST_ELEMENT_COMPONENT), newEntity("Sous élément 4" TEST_ELEMENT_COMPONENT),
-            // newEntity("Sous élément 5"
-            //     TEST_ELEMENT_COMPONENT
-            //     , WidgetBox(
-            //         vec2(-0.9, +0.9),
-            //         vec2(-2.5, -1.1),
-            //         WidgetBox::Type::FOLLOW_SIBLINGS_BOX
-            //     )
-            // ),
-        }));
+    // EntityRef first = newEntity(
+    //     "first", WidgetUI_Context{&ui}, WidgetState(), WidgetBox(vec2(-0.25, +0.25), vec2(-0.9, -0.8)),
+    //     WidgetBackground(), WidgetText(U"Titre important"),
+    //     WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER
+    //                  // WidgetButton::Type::CHECKBOX,
+    //                  // WidgetButton::func([](float v)
+    //                  // {
+    //                  //     // std::cout << v << "\n";
+    //                  //     GlobalComponentToggler<PhysicsHelpers>::activated =
+    //                  //     !GlobalComponentToggler<PhysicsHelpers>::activated;
+    //                  // })
+    //                  ),
+    //     WidgetStyle(),
+    //     EntityGroupInfo({
+    //         newEntity("Sous élément 1" TEST_ELEMENT_COMPONENT,
+    //                   EntityGroupInfo({
+    //                       newEntity("Sous élément 1-1" TEST_ELEMENT_COMPONENT),
+    //                       newEntity("Sous élément 1-2" TEST_ELEMENT_COMPONENT),
+    //                       newEntity("Sous élément 1-3" TEST_ELEMENT_COMPONENT),
+    //                       newEntity("Sous élément 1-4" TEST_ELEMENT_COMPONENT,
+    //                                 EntityGroupInfo({
+    //                                     newEntity("Sous élément 1-4-1" TEST_ELEMENT_COMPONENT),
+    //                                     newEntity("Sous élément 1-4-2" TEST_ELEMENT_COMPONENT),
+    //                                     newEntity("Sous élément 1-4-3" TEST_ELEMENT_COMPONENT),
+    //                                     newEntity("Sous élément 1-4-4" TEST_ELEMENT_COMPONENT),
+    //                                 })),
+    //                   })),
+    //         newEntity("Sous élément 2" TEST_ELEMENT_COMPONENT, EntityGroupInfo({
+    //                                                                newEntity("Sous élément 2-1" TEST_ELEMENT_COMPONENT),
+    //                                                                newEntity("Sous élément 2-2" TEST_ELEMENT_COMPONENT),
+    //                                                                newEntity("Sous élément 2-3" TEST_ELEMENT_COMPONENT),
+    //                                                                newEntity("Sous élément 2-4" TEST_ELEMENT_COMPONENT),
+    //                                                            })),
+    //         newEntity("Sous élément 3" TEST_ELEMENT_COMPONENT), newEntity("Sous élément 4" TEST_ELEMENT_COMPONENT),
+    //         // newEntity("Sous élément 5"
+    //         //     TEST_ELEMENT_COMPONENT
+    //         //     , WidgetBox(
+    //         //         vec2(-0.9, +0.9),
+    //         //         vec2(-2.5, -1.1),
+    //         //         WidgetBox::Type::FOLLOW_SIBLINGS_BOX
+    //         //     )
+    //         // ),
+    //     }));
 
-    ComponentModularity::addChild(*gameScreenWidget, first);
+    // ComponentModularity::addChild(*EDITOR::MENUS::AppMenu, first);
 
     EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
+    EDITOR::MENUS::AppChoice->comp<WidgetStyle>().setautomaticTabbing(1);
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
@@ -398,7 +401,7 @@ void Game::mainloop()
         )
     );
 
-    bool enableTime = true;
+    bool enableTime = false;
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         Blueprint::EDITOR_ENTITY::INO::Toggable(
             "Enable Time", 
@@ -481,6 +484,11 @@ void Game::mainloop()
             )
         );
     }
+
+    Apps::MainGameApp testsubapps1;
+    Apps::MainGameApp testsubapps2;
+    Apps::MainGameApp testsubapps3;
+    Apps::MainGameApp testsubapps4;
 
 
     /****** Loading Game Specific Elements *******/
@@ -796,7 +804,7 @@ void Game::mainloop()
             sun->setDirection(-sunDir);
 
 
-            float sunsetriseAlpha = smoothstep(-0.1f, 0.5f, theta);
+
             sun->setIntensity(smoothstep(-0.1f, 0.5f, theta));
 
             sun->setColor(
@@ -816,19 +824,20 @@ void Game::mainloop()
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
 
-        if (globals.mouseRightClickDown())
-        {
-            auto &b = first->comp<WidgetBox>();
+        // if (globals.mouseRightClickDown())
+        // {
+        //     auto &b = first->comp<WidgetBox>();
 
-            // vec2 pos = (b.min + b.max)*0.5f;
-            vec2 pos = (globals.mousePosition() / vec2(globals.windowSize())) * 2.f - 1.f;
-            vec2 scale = (b.max - b.min);
+        //     // vec2 pos = (b.min + b.max)*0.5f;
+        //     vec2 pos = (globals.mousePosition() / vec2(globals.windowSize())) * 2.f - 1.f;
+        //     vec2 scale = (b.max - b.min);
 
-            b.initMin = pos - scale * 0.5f;
-            b.initMax = pos + scale * 0.5f;
-        }
+        //     b.initMin = pos - scale * 0.5f;
+        //     b.initMax = pos + scale * 0.5f;
+        // }
 
 
+        SubApps::UpdateApps();
         /* TODO : remove */
         // ComponentModularity::synchronizeChildren(first);
         ComponentModularity::synchronizeChildren(gameScreenWidget);
@@ -840,6 +849,7 @@ void Game::mainloop()
             ;
 
         InputManager::processContinuousInputs();
+
 
         // switch (GG::playerEntity->comp<ActionState>().stance())
         // {

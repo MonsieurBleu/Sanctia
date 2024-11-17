@@ -4,8 +4,6 @@
 #include <Helpers.hpp>
 #include <Game.hpp>
 
-#define UI_BASE_COMP EDITOR::UIcontext, WidgetState()
-
 
 WidgetBox::FittingFunc Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc = [](Entity* parent, Entity* child){ 
     auto &cbox = child->comp<WidgetBox>();
@@ -755,11 +753,16 @@ void Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
         , WidgetStyle()
             .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
             .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
         , WidgetBackground()
-        , WidgetSprite(icon)
         , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER_INDIRECT).setusr((uint64)info.get())
     );
+
+    if(icon.size())
+        title->set<WidgetSprite>(WidgetSprite(icon));
+    else 
+        title->set<WidgetText>(WidgetText(UFTconvert.from_bytes(name)));
 
     title->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
 

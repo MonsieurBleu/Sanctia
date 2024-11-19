@@ -165,6 +165,12 @@ COMPONENT_DEFINE_MERGE(RigidBody)
 
 template<> void Component<EntityModel>::ComponentElem::init()
 {
+    if(data.get())
+    {
+        // std::cout << "NON EMPTY ENTITY MODEL !!!!!\n";
+        globals.getScene()->remove(data);
+    }
+
     globals.getScene()->add(data);
 };
 
@@ -183,6 +189,12 @@ template<> void Component<SkeletonAnimationState>::ComponentElem::init()
         entity->comp<EntityModel>()->setAnimation(&data);
     }
 }
+
+template<> void Component<Items>::ComponentElem::clean()
+{
+    for(auto i : data.equipped)
+        i = {0, EntityRef()};
+};
 
 ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 {
@@ -510,5 +522,6 @@ template<> void Component<RigidBody>::ComponentElem::init()
 
 template<> void Component<RigidBody>::ComponentElem::clean()
 {
-    PG::world->destroyRigidBody(data);
+    if(data)
+        PG::world->destroyRigidBody(data);
 }

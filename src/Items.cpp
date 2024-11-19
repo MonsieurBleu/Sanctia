@@ -4,6 +4,8 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
 {
     usr->comp<Items>().equipped[slot] = {id, item};
 
+    ComponentModularity::addChild(*usr, item);
+
     if(item->hasComp<Effect>())
     {
         item->comp<Effect>().usr = usr.get();
@@ -17,6 +19,8 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
 void Items::unequip(EntityRef usr, EquipementSlots slot)
 {
     EntityRef item = usr->comp<Items>().equipped[slot].item;
+
+    ComponentModularity::addChild(*usr, item);
 
     usr->comp<Items>().equipped[slot] = { };
 

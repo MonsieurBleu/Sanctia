@@ -43,6 +43,8 @@ struct Items
 {
     struct Equipement{int id = 0; EntityRef item;} equipped[16];
 
+    // ~Items(){for(auto i : equipped) i.item = EntityRef();};
+
     static void equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id);
     static void unequip(EntityRef usr, EquipementSlots slot);
 };

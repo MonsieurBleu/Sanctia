@@ -201,10 +201,10 @@ EntityRef Blueprint::TestManequin()
     Items::equip(e, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
     Items::equip(e, Blueprint::Foot(), LEFT_FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
 
-    GG::entities.push_back(e);
+    // GG::entities.push_back(e);
 
     i++;
-    return GG::entities.back();
+    return e;
 }
 
 EntityRef Blueprint::Zweihander()
@@ -271,7 +271,7 @@ EntityRef Blueprint::Foot()
 
     body->setType(rp3d::BodyType::KINEMATIC);
 
-    GG::entities.push_back(feet);
+    // GG::entities.push_back(feet);
 
     return feet;
 }

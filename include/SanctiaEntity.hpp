@@ -49,6 +49,7 @@
     Ephemeral_Component(ItemInfos)
 
     Ephemeral_Component(Items)
+    template<> void Component<Items>::ComponentElem::clean();
 
     Ephemeral_Component(ItemTransform)
 

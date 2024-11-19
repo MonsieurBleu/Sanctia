@@ -12,6 +12,8 @@ class SubApps
         EntityRef uiMenuParentTMP;
         EntityRef uiChoiceParentTMP;
 
+        EntityRef appRoot;
+
         static inline  std::vector<SubApps*> apps;
 
         static inline SubApps *activeApp = nullptr;
@@ -34,6 +36,8 @@ class SubApps
         static void switchTo(SubApps *ptr);
 
         static void UpdateApps();
+
+        static void cleanActiveApp();
 };
 
 
@@ -41,6 +45,7 @@ namespace Apps
 {
     class MainGameApp : public SubApps
     {
+
         public : 
 
             MainGameApp() : SubApps("Main Game"){};

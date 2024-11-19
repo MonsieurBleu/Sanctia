@@ -803,15 +803,15 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
 
                     ColoredConstEntry("BINDLESS TEXTURES", [&scene](){return scene.useBindlessTextures ? U"Activated" : U"Disabled";}),
 
-                    ColoredConstEntry("CULL TIME", [&scene](){return ftou32str(scene.cullTime.getLastAvg().count()*1e3f, 4) + U" µs";}),
+                    ColoredConstEntry("CULL TIME", [&scene](){return ftou32str(scene.cullTime.getLastAvg().count(), 4) + U" ms";}),
 
-                    ColoredConstEntry("DRAW CALL TIME", [&scene](){return ftou32str(scene.callsTime.getLastAvg().count()*1e3f, 4) + U" µs";}),
+                    ColoredConstEntry("DRAW CALL TIME", [&scene](){return ftou32str(scene.callsTime.getLastAvg().count(), 4) + U" ms";}),
 
-                    ColoredConstEntry("DEPTH DRAW CALL TIME", [&scene](){return ftou32str(scene.depthOnlyCallsTime.getLastAvg().count()*1e3f, 4) + U" µs";}),
+                    ColoredConstEntry("DEPTH DRAW CALL TIME", [&scene](){return ftou32str(scene.depthOnlyCallsTime.getLastAvg().count(), 4) + U" ms";}),
 
-                    ColoredConstEntry("SHADOWMAP CALL TIME", [&scene](){return ftou32str(scene.shadowPassCallsTime.getLastAvg().count()*1e3f, 4) + U" µs";}),
+                    ColoredConstEntry("SHADOWMAP CALL TIME", [&scene](){return ftou32str(scene.shadowPassCallsTime.getLastAvg().count(), 4) + U" ms";}),
 
-                    ColoredConstEntry("LIGHT BUFFER GEN", [&scene](){return ftou32str(scene.lightBufferTime.getLastAvg().count()*1e3f, 4) + U" µs";}),
+                    ColoredConstEntry("LIGHT BUFFER GEN", [&scene](){return ftou32str(scene.lightBufferTime.getLastAvg().count()*1e3f, 4) + U" ms";}),
 
                     ColoredConstEntry("FRUSTUM CLUSTER DIMENTION", [&scene]()
                     {
@@ -824,16 +824,6 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
                     ColoredConstEntry("CLUSTER LIGHTING", [&scene](){ return scene.isUSingClusteredLighting() ? U"Activated" : U"Disabled";;}),
                 })
             ),
-
-            // newEntity("Scene Info View ???? TODO"
-            //     , UI_BASE_COMP
-            //     , WidgetBox()
-            //     , WidgetStyle()
-            //         .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
-            //     , WidgetBackground()
-            // )
-
-
         })
     );
 }

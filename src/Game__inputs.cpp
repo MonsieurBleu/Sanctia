@@ -554,6 +554,7 @@ void Game::initInput()
             if (EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.size())
                 EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.pop_back();
 
+            ManageGarbage<Items>();
             ManageGarbage<EntityModel>();
             ManageGarbage<PhysicsHelpers>();
             ManageGarbage<WidgetBackground>();

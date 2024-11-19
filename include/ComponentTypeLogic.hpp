@@ -140,6 +140,8 @@ class Faction
         {
             return isEnemy.find(Pair(f1, f2)) != isEnemy.end();
         };
+
+        static void clearRelations(){isEnemy.clear();};
     
 };
 

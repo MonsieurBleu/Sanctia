@@ -20,6 +20,7 @@ class SubApps
 
         std::string name;
 
+        std::vector<EventInput*> inputs;
         
     public : 
 
@@ -48,7 +49,7 @@ namespace Apps
 
         public : 
 
-            MainGameApp() : SubApps("Main Game"){};
+            MainGameApp();
 
             virtual EntityRef UImenu() override;
 

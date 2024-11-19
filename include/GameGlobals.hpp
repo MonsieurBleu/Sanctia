@@ -19,7 +19,8 @@ class GG
         static inline MeshMaterial PBRstencil;
         static inline MeshMaterial PBRinstanced;
 
-        static inline Player* playerUniqueInfos;
+        /* TODO : remove*/
+        static inline Player* playerUniqueInfos = nullptr;
 
         static inline GameConditionsHandler currentConditions;
 

@@ -7,13 +7,15 @@
 #include <GameConstants.hpp>
 #include <GameGlobals.hpp>
 
-void Blueprint::Terrain(
+EntityRef Blueprint::Terrain(
     const char *mapPath, 
     vec3 terrainSize,
     vec3 terrainPosition,
     int cellSize
 )
 {
+    EntityRef terrainRoot = newEntity("Terrain Root");
+
     Texture2D HeightMap = Texture2D()
         .loadFromFileHDR(mapPath)
         .setFormat(GL_RGB)
@@ -112,8 +114,11 @@ void Blueprint::Terrain(
             }, {});
 
 
-        GG::entities.push_back(e);
+        // GG::entities.push_back(e);
+        ComponentModularity::addChild(*terrainRoot, e);
     }
+
+    return terrainRoot;
 }
 
 

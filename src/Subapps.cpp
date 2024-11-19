@@ -37,6 +37,9 @@ void SubApps::cleanActiveApp()
     ManageGarbage<RigidBody>();
     physicsMutex.unlock();
 
+    for(auto &i : activeApp->inputs)
+        i->activated = false;
+
     activeApp = nullptr;
 }
 
@@ -75,6 +78,9 @@ void SubApps::switchTo(SubApps *ptr)
     // std::cout << "SWITCH TO APP : " << ptr << "\n";
 
     activeApp = ptr;
+
+    for(auto &i : activeApp->inputs)
+        i->activated = true;
 
     ptr->init();
     auto newUI = ptr->UImenu();

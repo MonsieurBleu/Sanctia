@@ -11,6 +11,8 @@ PlayerController::PlayerController(Camera *playerCam) : playerCam(playerCam)
 
 void PlayerController::update()
 {
+    if(!GG::playerEntity) return;
+
     if(GG::playerEntity->hasComp<RigidBody>())
         body = GG::playerEntity->comp<RigidBody>();
 
@@ -233,6 +235,8 @@ void PlayerController::init()
 
 void PlayerController::mouseEvent(vec2 dir, GLFWwindow* window)
 {
+    if(!GG::playerEntity) return;
+    
     static bool lastCameraFollow = !globals.currentCamera->getMouseFollow();
     bool cameraFollow = globals.currentCamera->getMouseFollow();
 

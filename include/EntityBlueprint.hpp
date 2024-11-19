@@ -19,7 +19,7 @@ namespace Blueprint
     };
 
 
-    void Terrain(
+    EntityRef Terrain(
         const char *mapPath, 
         vec3 terrainSize,
         vec3 terrainPosition,

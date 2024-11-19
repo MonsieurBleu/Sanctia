@@ -811,7 +811,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
 
                     ColoredConstEntry("SHADOWMAP CALL TIME", [&scene](){return ftou32str(scene.shadowPassCallsTime.getLastAvg().count(), 4) + U" ms";}),
 
-                    ColoredConstEntry("LIGHT BUFFER GEN", [&scene](){return ftou32str(scene.lightBufferTime.getLastAvg().count()*1e3f, 4) + U" ms";}),
+                    ColoredConstEntry("LIGHT BUFFER GEN", [&scene](){return ftou32str(scene.lightBufferTime.getLastAvg().count(), 4) + U" ms";}),
 
                     ColoredConstEntry("FRUSTUM CLUSTER DIMENTION", [&scene]()
                     {

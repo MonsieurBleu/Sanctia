@@ -27,6 +27,8 @@ void Game::mainloop()
 {
 
     /****** Loading Models and setting up the scene ******/
+    globals.simulationTime.pause();
+
     ModelRef skybox = newModel(skyboxMaterial);
     skybox->loadFromFolder("ressources/models/skybox/", true, false);
 
@@ -38,12 +40,12 @@ void Game::mainloop()
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
-    Blueprint::Terrain("ressources/maps/testPlayground.hdr",
-                       // "ressources/maps/RuggedTerrain.hdr",
-                       // "ressources/maps/generated_512x512.hdr",
-                       // "ressources/maps/RT512.hdr",
-                       // vec3(512, 64, 512),
-                       vec3(256, 64, 256), vec3(0), 128);
+    // Blueprint::Terrain("ressources/maps/testPlayground.hdr",
+    //                    // "ressources/maps/RuggedTerrain.hdr",
+    //                    // "ressources/maps/generated_512x512.hdr",
+    //                    // "ressources/maps/RT512.hdr",
+    //                    // vec3(512, 64, 512),
+    //                    vec3(256, 64, 256), vec3(0), 128);
 
     SceneDirectionalLight sun = newDirectionLight(DirectionLight()
                                                       // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
@@ -64,88 +66,6 @@ void Game::mainloop()
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     ui.spriteMaterial = Loader<MeshMaterial>::get("sprite");
     EDITOR::UIcontext = WidgetUI_Context{&ui};
-    FastUI_valueMenu menu(ui, {});
-
-    BenchTimer tmpTimer("tmp timer");
-
-    menu->state.setPosition(vec3(-0.9, 0.9, 0)).scaleScalar(0.9);
-    globals.appTime.setMenuConst(menu);
-    globals.simulationTime.setMenu(menu);
-    physicsTimer.setMenu(menu);
-    tmpTimer.setMenu(menu);
-    globals.cpuTime.setMenu(menu);
-    globals.gpuTime.setMenu(menu);
-    globals.fpsLimiter.setMenu(menu);
-    physicsTicks.setMenu(menu);
-    sun->setMenu(menu, U"Sun");
-
-    std::vector<FastUI_value> GameConditionsValues;
-
-    for (auto &i : GameConditionMap)
-        GameConditionsValues.push_back(
-            FastUI_value((bool *)&GG::currentConditions.get(i.second), UFTconvert.from_bytes(i.first) + U"\t"));
-
-    menu.push_back({FastUI_menuTitle(menu.ui, U"Games Conditions"), FastUI_valueTab(menu.ui, GameConditionsValues)});
-
-    /* TODO : remove */
-    menu->state.setPosition(vec3(1e9, 0.9, 0)).scaleScalar(0.9);
-
-    /* Testing Out new ECS based UI*/
-    // for(int i = 0; i < 8; i++)
-    // {
-    //     EntityRef uitest = newEntity("UiTest"
-    //         , WidgetUI_Context{&ui}
-    //         , WidgetUpdate()
-    //         , WidgetBox(
-    //             vec2(i/8.f    , -0.5),
-    //             vec2((i+1)/8.f,  0.5))
-    //         , WidgetBakground()
-    //     );
-
-    //     GG::entities.push_back(uitest);
-
-    //     std::cout << uitest->toStr() << "\n";
-    // }
-
-    // EntityRef first;
-    // {
-    //     EntityRef parent;
-
-    //     for(int i = 0; i < 8; i++)
-    //     {
-    //         EntityRef uitest = newEntity("UiTest"
-    //             , WidgetUI_Context{&ui}
-    //             , WidgetState()
-    //             , WidgetBox(
-    //                 vec2(-0.75, -2.25),
-    //                 vec2(+0.75, -1.05))
-    //             , WidgetBackground()
-    //             , WidgetText(U"Bonjour, je suis le reuf. Pour vrai !")
-    //             , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER)
-    //         );
-
-    //         if(i == 3)
-    //             uitest->comp<WidgetState>().status = ModelStateHideStatus::HIDE;
-
-    //         if(!first)
-    //         {
-    //             uitest->comp<WidgetBox>() = WidgetBox(vec2(-0.9, 0.25), vec2(0.9,  1.0));
-    //             first = uitest;
-    //         }
-    //         else
-    //         {
-    //             ComponentModularity::addChild(*parent, uitest);
-    //         }
-
-    //         parent = uitest;
-
-    //         GG::entities.push_back(uitest);
-
-    //         std::cout << uitest->toStr() << "\n";
-    //     }
-
-    //     ComponentModularity::synchronizeChildren(first);
-    // }
 
     ui.colorTitleBackground.a = 0.9f;
 
@@ -279,6 +199,7 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene2D),
         "2D Scene Infos", "VulpineIcon"
     );
+
 
     /* TODO : finish*/
     // Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
@@ -486,129 +407,15 @@ void Game::mainloop()
     }
 
     Apps::MainGameApp testsubapps1;
-    Apps::MainGameApp testsubapps2;
-    Apps::MainGameApp testsubapps3;
-    Apps::MainGameApp testsubapps4;
+    // Apps::MainGameApp testsubapps2;
+    // Apps::MainGameApp testsubapps3;
+    // Apps::MainGameApp testsubapps4;
 
 
-    /****** Loading Game Specific Elements *******/
-    GG::currentConditions.readTxt("saves/gameConditions.txt");
 
-    Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
-    Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
-    Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
-
-    scene.add(Loader<MeshModel3D>::get("barrel01").copy());
 
     /****** Creating Demo Player *******/
-    Player player1;
-    GG::playerUniqueInfos = &player1;
-    player1.setMenu(menu);
 
-    ObjectGroupRef playerModel(new ObjectGroup);
-    auto playerModelBody = Loader<ObjectGroup>::get("PlayerTest").copy();
-    // auto playerModelBody = Loader<ObjectGroup>::get("Dummy").copy();
-    playerModel->add(playerModelBody);
-
-    GG::playerEntity = newEntity("PLayer", EntityModel{playerModel}, EntityState3D(), EntityDeplacementState(),
-                                 SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot")), Items{},
-                                 Faction{Faction::Type::PLAYER}, EntityStats(), ActionState{});
-
-    GG::playerEntity->comp<EntityStats>().health.max = 1e4;
-    GG::playerEntity->comp<EntityStats>().health.cur = 1e4;
-    GG::playerEntity->set<RigidBody>(Blueprint::Assembly::CapsuleBody(1.75, vec3(5, 15, 5), GG::playerEntity));
-
-    Items::equip(GG::playerEntity, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
-    Items::equip(GG::playerEntity, Blueprint::Foot(), LEFT_FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
-
-    GG::playerEntity->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset("65_2HSword", GG::playerEntity.get()));
-
-    scene.add(Loader<ObjectGroup>::get("PlayerTest").copy());
-
-    // SingleStringBatchRef AttackDirectionHelper(new SingleStringBatch());
-    // AttackDirectionHelper->setMaterial(Loader<MeshMaterial>::get("mdFont"));
-    // AttackDirectionHelper->setFont(FUIfont);
-    // AttackDirectionHelper->align = CENTERED;
-    // AttackDirectionHelper->color = ColorHexToV(0xFFFFFF);
-    // AttackDirectionHelper->baseUniforms.add(ShaderUniform(&AttackDirectionHelper->color, 32));
-    // scene2D.add(AttackDirectionHelper);
-
-    // SingleStringBatchRef HealthBar(new SingleStringBatch());
-    // HealthBar->setMaterial(Loader<MeshMaterial>::get("mdFont"));
-    // HealthBar->setFont(FUIfont);
-    // HealthBar->align = StringAlignement::TO_LEFT;
-    // HealthBar->color = ColorHexToV(0x00FF00);
-    // HealthBar->baseUniforms.add(ShaderUniform(&HealthBar->color, 32));
-    // HealthBar->state.setPosition(screenPosToModel(vec2(-0.8, -0.8)));
-    // scene2D.add(HealthBar);
-
-    // {   auto e = Blueprint::TestManequin();
-    //     e->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //     e->set<AgentState>({AgentState::COMBAT_POSITIONING});
-    //     e->set<Target>(Target{GG::playerEntity});
-    // }
-
-    {
-        auto e = Blueprint::TestManequin();
-        e->set<DeplacementBehaviour>(STAND_STILL);
-        vec4 &c1 = e->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-        c1 = vec4(ColorHexToV(0x00FF00), c1.a);
-    }
-
-    // for(int i = 0; i < 50; i++)
-    // {
-    //     auto e1 = Blueprint::TestManequin();
-    //     auto e2 = Blueprint::TestManequin();
-
-    //     e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //     e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
-    //     e1->set<Target>(Target{e2});
-    //     e1->set<Faction>({Faction::ENEMY});
-
-    //     e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //     e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
-    //     e2->set<Target>(Target{e1});
-    //     e2->set<Faction>({Faction::ENEMY2});
-
-    //     e2->comp<EntityState3D>().position.x += 50;
-
-    //     vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-    //     c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
-
-    //     vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-    //     c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
-    // }
-
-    // for(int i = 0; i < 0; i++)
-    // {
-    //     ObjectGroupRef model = newObjectGroup();
-    //     model->add(CubeHelperRef(new CubeHelper(vec3(1), vec3(-1))));
-
-    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0 + (i%10)*0.75, 15 + i*2.1,
-    //     0), rp3d::Quaternion::identity()));
-
-    //     body->addCollider(PG::common.createBoxShape(rp3d::Vector3(1, 1, 1)), rp3d::Transform::identity());
-
-    //     auto e = newEntity("physictest", EntityModel{model}, body, EntityState3D());
-    //     GG::entities.push_back(e);
-
-    //     e->comp<EntityDeplacementState>().wantedDepDirection = vec3(0, 0, 1);
-    //     e->comp<EntityDeplacementState>().wantedSpeed = 3.0;
-    //     e->comp<EntityState3D>().usequat = true;
-    // }
-    // {
-    //     rp3d::RigidBody *body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(0, -15, 0),
-    //     rp3d::Quaternion::identity())); auto collider =
-    //     body->addCollider(PG::common.createBoxShape(rp3d::Vector3(100, 15, 100)), rp3d::Transform::identity());
-    //     body->setType(rp3d::BodyType::STATIC);
-    //     collider->getMaterial().setBounciness(0.f);
-    //     collider->getMaterial().setFrictionCoefficient(0.5f);
-    //     collider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
-    //     collider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
-    // }
-
-    /**** Testing Entity Loading *****/
-    // {
 
 
     
@@ -636,7 +443,7 @@ void Game::mainloop()
 
     // Sword->meshes[0]->setMenu(menu, U"sword");
 
-    menu.batch();
+    // menu.batch();
     scene2D.updateAllObjects();
     fuiBatch->batch();
     fuiBatch->state.frustumCulled = false;
@@ -740,19 +547,6 @@ void Game::mainloop()
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
 
-        // if (globals.mouseRightClickDown())
-        // {
-        //     auto &b = first->comp<WidgetBox>();
-
-        //     // vec2 pos = (b.min + b.max)*0.5f;
-        //     vec2 pos = (globals.mousePosition() / vec2(globals.windowSize())) * 2.f - 1.f;
-        //     vec2 scale = (b.max - b.min);
-
-        //     b.initMin = pos - scale * 0.5f;
-        //     b.initMax = pos + scale * 0.5f;
-        // }
-
-
         SubApps::UpdateApps();
         /* TODO : remove */
         // ComponentModularity::synchronizeChildren(first);
@@ -766,37 +560,9 @@ void Game::mainloop()
 
         InputManager::processContinuousInputs();
 
-
-        // switch (GG::playerEntity->comp<ActionState>().stance())
-        // {
-        //     case ActionState::Stance::LEFT :
-        //         AttackDirectionHelper->text = U"**<==** V ==>";
-        //         break;
-
-        //     case ActionState::Stance::RIGHT :
-        //         AttackDirectionHelper->text = U"<== V **==>**";
-        //         break;
-
-        //     case ActionState::Stance::SPECIAL :
-        //         AttackDirectionHelper->text = U"<== **V** ==>";
-        //         break;
-
-        //     default: break;
-        // }
-        // AttackDirectionHelper->batchText();
-
-        // float h = GG::playerEntity->comp<EntityStats>().health.cur;
-        // HealthBar->text = U"<";
-        // h /= GG::playerEntity->comp<EntityStats>().health.max;
-        // int i = 0;
-        // for(; i < (int)(h*50.f); i++) HealthBar->text += U'=';
-        // for(; i < 50; i++) HealthBar->text += U" -";
-        // HealthBar->text += U">";
-        // HealthBar->batchText();
-
-        float maxSlow = player1.getStats().reflexMaxSlowFactor;
-        float reflex = player1.getInfos().state.reflex;
-        globals.simulationTime.speed = maxSlow + (1.f - maxSlow) * (1.f - reflex * 0.01);
+        // float maxSlow = player1.getStats().reflexMaxSlowFactor;
+        // float reflex = player1.getInfos().state.reflex;
+        // globals.simulationTime.speed = maxSlow + (1.f - maxSlow) * (1.f - reflex * 0.01);
 
         float scroll = globals.mouseScrollOffset().y;
         float &preflex = GG::playerUniqueInfos->infos.state.reflex;
@@ -804,12 +570,9 @@ void Game::mainloop()
             preflex = clamp(preflex + scroll * 5.f, 0.f, 100.f);
         globals.clearMouseScroll();
 
-        menu.trackCursor();
-        menu.updateText();
-
         effects.update();
 
-        if (GG::playerEntity->comp<EntityStats>().alive)
+        if (GG::playerEntity && GG::playerEntity->comp<EntityStats>().alive)
             GG::playerEntity->comp<EntityState3D>().lookDirection = camera.getDirection();
 
         /***** Updating animations
@@ -911,7 +674,7 @@ void Game::mainloop()
             else
                 model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue));
 
-            if (&entity == GG::playerEntity.get() && globals._currentController != &this->spectator)
+            if (GG::playerEntity && &entity == GG::playerEntity.get() && globals._currentController != &this->spectator)
             {
                 // vec3 pos = this->playerControl.cameraShiftPos;
 
@@ -991,11 +754,6 @@ void Game::mainloop()
         ManageGarbage<WidgetBackground>();
         ManageGarbage<WidgetSprite>();
         ManageGarbage<WidgetText>();
-        // GlobalComponentToggler<InfosStatsHelpers>::update(GG::entities);
-        // GlobalComponentToggler<PhysicsHelpers>::update(GG::entities);
-        // std::vector<EntityRef> p = {GG::playerEntity};
-        // GlobalComponentToggler<InfosStatsHelpers>::update(p);
-        // GlobalComponentToggler<PhysicsHelpers>::update(p);
 
         GlobalComponentToggler<PhysicsHelpers>::updateALL();
         GlobalComponentToggler<InfosStatsHelpers>::updateALL();
@@ -1025,9 +783,7 @@ void Game::mainloop()
         glDepthFunc(GL_GREATER);
         glEnable(GL_DEPTH_TEST);
 
-        tmpTimer.start();
         scene.updateAllObjects();
-        tmpTimer.end();
 
         /***** Items follow the skeleton
         *****/
@@ -1078,8 +834,8 @@ void Game::mainloop()
         }
 
         /* 3D Early Depth Testing */
-        // scene.depthOnlyDraw(*globals.currentCamera, true);
-        // glDepthFunc(GL_EQUAL);
+        scene.depthOnlyDraw(*globals.currentCamera, true);
+        glDepthFunc(GL_EQUAL);
 
         /* 3D Render */
         EnvironementMap.bind(4);

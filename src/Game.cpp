@@ -66,8 +66,10 @@ void Game::mainloop()
 
     float widgetTileSPace = 0.01;
 
-    vec3 sunDir = vec3(0);
+    vec3 sunDir = vec3(0.0f);
+    vec3 planetRot = vec3(1.0f);
     skybox->uniforms.add(ShaderUniform(&sunDir, 21));
+    skybox->uniforms.add(ShaderUniform(&planetRot, 22));
 
     EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
@@ -508,6 +510,10 @@ void Game::mainloop()
         // plottest->push(globals.appTime.getDeltaMS());
         // plottest->updateData();
 
+        // this allows us to close the window when pressing the close button
+        if (glfwWindowShouldClose(globals.getWindow()))
+            state = AppState::quit;
+
         static unsigned int itcnt = 0;
         itcnt++;
         if (doAutomaticShaderRefresh)
@@ -531,36 +537,99 @@ void Game::mainloop()
         }
 
 
-        /****** SUN / TIMEOF DAY LOGIC GESTION 
+        
+        // {
+
+            
+
+        //     // float theta = PI * (todayNorm * 2.f - 1.f);
+        //     // float phi = 0;
+
+        //     // Parameters for sun movement
+        //     float latitude = radians(45.0f); // Example latitude (e.g., 45 degrees)
+        //     float declination = radians(23.5f); // Max tilt of Earth's axis
+        //     float maxElevation = PI / 2 - fabs(latitude - declination); // Adjust for seasonality if needed
+
+        //     // Calculate theta (elevation) and phi (azimuth)
+        //     float theta = maxElevation * sin(todayNorm * PI * 2.f - PI / 2.f); // Shift to center day at noon (PI/2 shift)
+        //     float phi = todayNorm * 2.f * PI; // Azimuth angle across the sky
+
+        //     sunDir = PhiThetaToDir(vec2(phi, theta));
+        //     sun->setDirection(-sunDir);
+
+
+
+        
+        // }
+
+
+        /****** SUN / TIME OF DAY LOGIC
          * 
          *  TODO : move in another place
          * 
          * ***/
         {
             if (enableTime) {
-                GG::timeOfDay += globals.appTime.getDelta() * 5.f;
+                GG::timeOfDay += globals.appTime.getDelta() * 2.f;
                 GG::timeOfDay = fmod(GG::timeOfDay, 24.f);
             }
 
-            float todayNorm = GG::timeOfDay/24.f;
-
-            // float theta = PI * (todayNorm * 2.f - 1.f);
-            // float phi = 0;
-
-            // Parameters for sun movement
-            float latitude = radians(45.0f); // Example latitude (e.g., 45 degrees)
-            float declination = radians(23.5f); // Max tilt of Earth's axis
-            float maxElevation = PI / 2 - fabs(latitude - declination); // Adjust for seasonality if needed
-
-            // Calculate theta (elevation) and phi (azimuth)
-            float theta = maxElevation * sin(todayNorm * PI * 2.f - PI / 2.f); // Shift to center day at noon (PI/2 shift)
-            float phi = todayNorm * 2.f * PI; // Azimuth angle across the sky
-
-            sunDir = PhiThetaToDir(vec2(phi, theta));
-            sun->setDirection(-sunDir);
+            float timeNorm = GG::timeOfDay/24.f;
 
 
+            constexpr double distanceToSun = 149.6e9;
+            constexpr double planetRadius = 6371e3;
+            constexpr double axialTilt = 23.44;
+            constexpr double eccentricity = 0.0167;
+            constexpr double orbitTilt = 7.25;
 
+            constexpr double latitude = 43.6109;
+            constexpr double longitude = 3.8761;
+
+            constexpr double orbitTime = fromDayMonth(20, 6);
+
+            // adjust for sidereal time 
+            double adjustedTime = fmod(timeNorm - orbitTime, 1.0);
+
+            vec3 planetRotation = vec3(
+                radians(axialTilt) * cos(adjustedTime * 2.0 * PI),
+                adjustedTime * 2.0 * PI,
+                radians(axialTilt) * sin(adjustedTime * 2.0 * PI)
+            );
+
+            planetRot = planetRotation;
+
+            quat rotQuat = quat(planetRotation);
+
+            vec3 surfPos = vec3(
+                cos(radians(latitude)) * cos(radians(longitude)),
+                sin(radians(latitude)),
+                cos(radians(latitude)) * sin(radians(longitude))
+            );
+
+            vec3 surfPosTransformed = (rotQuat * surfPos) * (float)planetRadius;
+
+            vec3 orbitPos = vec3(
+                cos(orbitTime * 2.0 * PI) * distanceToSun * (1.0 - eccentricity * eccentricity),
+                sin(orbitTime * 2.0 * PI) * distanceToSun * sin(radians(orbitTilt)),
+                sin(orbitTime * 2.0 * PI) * distanceToSun * cos(radians(orbitTilt))
+            );
+            
+            vec3 surfaceWorldPos = surfPosTransformed + orbitPos;
+            vec3 sunPos = vec3(0);
+            vec3 sunDirWorld = normalize(sunPos - surfaceWorldPos);
+            
+            vec3 surfaceNormal = normalize(surfPosTransformed);
+            vec3 tangent = normalize(cross(surfaceNormal, vec3(0, 1, 0)));
+            vec3 bitangent = normalize(cross(surfaceNormal, tangent));
+
+            mat3 tangentSpace = mat3(tangent, bitangent, surfaceNormal);
+            vec3 sunDirLocal = tangentSpace * sunDirWorld;
+
+            sunDir = vec3(sunDirLocal.x, sunDirLocal.z, sunDirLocal.y);
+
+            // not sure about this theta
+            float theta = acos(sunDir.y);
             sun->setIntensity(smoothstep(-0.1f, 0.5f, theta));
 
             sun->setColor(
@@ -571,11 +640,10 @@ void Game::mainloop()
                 )
             );
 
+            sun->setDirection(-sunDir);
+
             ambientLight = vec3(0.07);
         }
-
-
-
 
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);

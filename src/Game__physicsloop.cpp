@@ -38,13 +38,13 @@ void Game::physicsLoop()
         physicsTimer.start();
         physicsMutex.lock();
 
-        if(globals._currentController == &spectator && GG::playerEntity->hasComp<RigidBody>())
+        if(GG::playerEntity && globals._currentController == &spectator && GG::playerEntity->hasComp<RigidBody>())
         {
             auto body = GG::playerEntity->comp<RigidBody>();
             if(body)
                 body->setIsActive(false);
         }
-
+        
         physicsWorldUpdateTimer.start();
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
         physicsWorldUpdateTimer.end();
@@ -153,7 +153,7 @@ void Game::physicsLoop()
     /***** COMBAT DEMO AGENTS *****/
         static int i = 0;
         if((i++)%10 == 0)
-        System<EntityState3D, EntityDeplacementState, AgentState, ActionState>([&, this](Entity &entity){
+        System<EntityState3D, EntityDeplacementState, AgentState, ActionState, Target>([&, this](Entity &entity){
 
             auto &s = entity.comp<EntityState3D>();
             auto &ds = entity.comp<EntityDeplacementState>();

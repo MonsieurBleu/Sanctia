@@ -7,13 +7,15 @@
 #include <GameConstants.hpp>
 #include <GameGlobals.hpp>
 
-void Blueprint::Terrain(
+EntityRef Blueprint::Terrain(
     const char *mapPath, 
     vec3 terrainSize,
     vec3 terrainPosition,
     int cellSize
 )
 {
+    EntityRef terrainRoot = newEntity("Terrain Root");
+
     Texture2D HeightMap = Texture2D()
         .loadFromFileHDR(mapPath)
         .setFormat(GL_RGB)
@@ -50,6 +52,7 @@ void Blueprint::Terrain(
         ModelRef t = terrain->copy();
 
         t->defaultMode = GL_PATCHES;
+        t->noBackFaceCulling = true;
         t->tessActivate(vec2(1, 16), vec2(25, 250));
         t->tessHeighFactors(1, terrainSize.y/terrainSize.x);
 
@@ -111,8 +114,11 @@ void Blueprint::Terrain(
             }, {});
 
 
-        GG::entities.push_back(e);
+        // GG::entities.push_back(e);
+        ComponentModularity::addChild(*terrainRoot, e);
     }
+
+    return terrainRoot;
 }
 
 
@@ -200,10 +206,10 @@ EntityRef Blueprint::TestManequin()
     Items::equip(e, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
     Items::equip(e, Blueprint::Foot(), LEFT_FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
 
-    GG::entities.push_back(e);
+    // GG::entities.push_back(e);
 
     i++;
-    return GG::entities.back();
+    return e;
 }
 
 EntityRef Blueprint::Zweihander()
@@ -270,7 +276,7 @@ EntityRef Blueprint::Foot()
 
     body->setType(rp3d::BodyType::KINEMATIC);
 
-    GG::entities.push_back(feet);
+    // GG::entities.push_back(feet);
 
     return feet;
 }

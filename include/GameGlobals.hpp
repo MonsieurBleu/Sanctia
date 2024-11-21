@@ -19,7 +19,8 @@ class GG
         static inline MeshMaterial PBRstencil;
         static inline MeshMaterial PBRinstanced;
 
-        static inline Player* playerUniqueInfos;
+        /* TODO : remove*/
+        static inline Player* playerUniqueInfos = nullptr;
 
         static inline GameConditionsHandler currentConditions;
 
@@ -31,7 +32,7 @@ class GG
 
         static inline EntityRef playerEntity;
 
-        static inline float timeOfDay = 0.33f;
+        static inline float timeOfDay = 10.0f;
 };
 
 namespace EDITOR 
@@ -49,8 +50,8 @@ namespace EDITOR
 
         namespace COLOR
         {
-            #define BASE_ALPHA 0.90f*255.f
-            #define ALPHA2     0.65f*255.f
+            #define BASE_ALPHA 0.85f*255.f
+            #define ALPHA2     0.60f*255.f
 
             inline vec4 LightBackgroundColor1 = vec4(242, 234,  222, BASE_ALPHA)/255.f;
             inline vec4 LightBackgroundColor2 = vec4(242, 234,  222, ALPHA2)/255.f;

@@ -190,7 +190,7 @@ DATA_READ_END_FUNC
 DATA_WRITE_FUNC_INIT(Items)
 
     for(uint64_t i = 0; i < sizeof(data.equipped)/sizeof(Items::Equipement); i++)
-        if(data.equipped[i].item.get())
+        if(data.equipped[i].item)
         {
             out->Entry();
             out->write(CONST_STRING_SIZED(EquipementSlotsReverseMap[i]));

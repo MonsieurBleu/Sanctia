@@ -94,7 +94,7 @@ DATA_READ_FUNC(EntityRef) {
         }
     }
 
-    GG::entities.push_back(data);
+    // GG::entities.push_back(data);
 
     DATA_READ_END
 }

@@ -4,8 +4,6 @@
 #include <Helpers.hpp>
 #include <Game.hpp>
 
-#define UI_BASE_COMP EDITOR::UIcontext, WidgetState()
-
 
 WidgetBox::FittingFunc Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc = [](Entity* parent, Entity* child){ 
     auto &cbox = child->comp<WidgetBox>();
@@ -530,9 +528,9 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
-            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-        , WidgetBackground()
+        //     .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+        //     .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        // , WidgetBackground()
         , EntityGroupInfo({
             newEntity("Global Benchmark values"
                 , UI_BASE_COMP
@@ -546,14 +544,14 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         EDITOR::MENUS::COLOR::LightBackgroundColor1
                     ),
                     ColoredConstEntry(
-                        "GPU",
-                        [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
-                        EDITOR::MENUS::COLOR::HightlightColor3
-                    ),
-                    ColoredConstEntry(
                         "CPU",
                         [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
                         EDITOR::MENUS::COLOR::HightlightColor2
+                    ),
+                    ColoredConstEntry(
+                        "GPU",
+                        [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
+                        EDITOR::MENUS::COLOR::HightlightColor3
                     )
                 })
             ),
@@ -566,9 +564,9 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
-            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-        , WidgetBackground()
+            // .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            // .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        // , WidgetBackground()
         , EntityGroupInfo({
             newEntity("Physic Benchmark values"
                 , UI_BASE_COMP
@@ -652,7 +650,6 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetStyle()
             .setautomaticTabbing(2)
         , EntityGroupInfo({
-
             newEntity("Main Thread Benchmark Menu"
                 , UI_BASE_COMP
                 , WidgetBox()
@@ -729,7 +726,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColoredConstEntry(
                 })
                 , WidgetStyle()
                     // .setbackgroundColor1(color2)
-                    // .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     // .settextColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
 
                     .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
@@ -738,6 +735,95 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColoredConstEntry(
 
                 , WidgetText(U" ")
             )
+        })
+    );
+}
+
+void Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    EntityRef titlesParent, 
+    EntityRef infosParent,  
+    EntityRef info,
+    const std::string &name,
+    const std::string &icon
+)
+{
+    auto title = newEntity(name
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+            .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        , WidgetBackground()
+        , WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER_INDIRECT).setusr((uint64)info.get())
+    );
+
+    if(icon.size())
+        title->set<WidgetSprite>(WidgetSprite(icon));
+    else 
+        title->set<WidgetText>(WidgetText(UFTconvert.from_bytes(name)));
+
+    title->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
+
+    ComponentModularity::addChild(*titlesParent, title);
+    ComponentModularity::addChild(*infosParent , info);
+}
+
+
+EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
+{
+
+    return newEntity("Scene Info View"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+
+            newEntity("Scene Info View Values"
+                , UI_BASE_COMP
+                , WidgetBox()
+                , WidgetStyle()
+                    .setautomaticTabbing(8)
+                , EntityGroupInfo({
+                    ColoredConstEntry("DRAW CALLS", [&scene](){return ftou32str(scene.getDrawCalls(), 4);}),
+
+                    ColoredConstEntry("TRIANGLES", [&scene](){return ftou32str(scene.getPolyCount(), 6);}),
+
+                    ColoredConstEntry("VERTEX", [&scene](){return ftou32str(scene.getVertexCount(), 6);}),
+
+                    ColoredConstEntry("TOTAL MESHES", [&scene](){return ftou32str(scene.getTotalMeshes(), 6);}),
+
+                    ColoredConstEntry("MATERIALS", [&scene](){return ftou32str(scene.getMaterialCount());}),
+
+                    ColoredConstEntry("LIGHTS", [&scene](){return ftou32str(scene.getLights().size());}),
+
+                    ColoredConstEntry("SHADOW MAPS", [&scene](){return ftou32str(scene.getShadowMapCount());}),
+
+                    ColoredConstEntry("BINDLESS TEXTURES", [&scene](){return scene.useBindlessTextures ? U"Activated" : U"Disabled";}),
+
+                    ColoredConstEntry("CULL TIME", [&scene](){return ftou32str(scene.cullTime.getLastAvg().count(), 4) + U" ms";}),
+
+                    ColoredConstEntry("DRAW CALL TIME", [&scene](){return ftou32str(scene.callsTime.getLastAvg().count(), 4) + U" ms";}),
+
+                    ColoredConstEntry("DEPTH DRAW CALL TIME", [&scene](){return ftou32str(scene.depthOnlyCallsTime.getLastAvg().count(), 4) + U" ms";}),
+
+                    ColoredConstEntry("SHADOWMAP CALL TIME", [&scene](){return ftou32str(scene.shadowPassCallsTime.getLastAvg().count(), 4) + U" ms";}),
+
+                    ColoredConstEntry("LIGHT BUFFER GEN", [&scene](){return ftou32str(scene.lightBufferTime.getLastAvg().count(), 4) + U" ms";}),
+
+                    ColoredConstEntry("FRUSTUM CLUSTER DIMENTION", [&scene]()
+                    {
+                        auto dim = scene.getClusteredLight().dim();
+                        return ftou32str(dim.x) + U"x" + ftou32str(dim.y) + U"x" + ftou32str(dim.z);
+                    }),
+
+                    ColoredConstEntry("FRUSTUM CLUSTER VFAR", [&scene](){ return ftou32str(scene.getClusteredLight().vFar, 5) + U" m";}),
+
+                    ColoredConstEntry("CLUSTER LIGHTING", [&scene](){ return scene.isUSingClusteredLighting() ? U"Activated" : U"Disabled";;}),
+                })
+            ),
         })
     );
 }

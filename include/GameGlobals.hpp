@@ -31,7 +31,7 @@ class GG
 
         static inline EntityRef playerEntity;
 
-        static inline float timeOfDay = 0.0f;
+        static inline float timeOfDay = 0.33f;
 };
 
 namespace EDITOR 

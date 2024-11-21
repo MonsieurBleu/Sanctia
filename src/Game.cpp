@@ -150,7 +150,9 @@ void Game::mainloop()
     float widgetTileSPace = 0.01;
 
     vec3 sunDir = vec3(0.0f);
+    vec3 planetRot = vec3(1.0f);
     skybox->uniforms.add(ShaderUniform(&sunDir, 21));
+    skybox->uniforms.add(ShaderUniform(&planetRot, 22));
 
     EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
@@ -335,34 +337,25 @@ void Game::mainloop()
             0, 24, 240, 
             [](float v)
             {
-                // 8 = 0
-                // 0 = -8 = = 16 = 0.666
-                float t = (v - 8.0f);
-                if (t < 0)
-                    t += 24;
+                float t = fmod(v, 24.0);
                 GG::timeOfDay = t / 24.f;
             },
             []()
             {
                 float t = GG::timeOfDay * 24.f;
-                if (t > 16)
-                    t -= 24;
-                return t + 8;
+                return t;
             },
             [](std::u32string text)
             {
-                float t = u32strtof2(text, GG::timeOfDay) - 8;
-                if (t < 0)
-                    t += 24;
+                float t = u32strtof2(text, GG::timeOfDay);
+                t = fmod(t, 24.0);
                 GG::timeOfDay = t / 24.f;
             }, 
             []()
             {
                 std::stringstream s;
                 float t = GG::timeOfDay * 24.f;
-                if (t > 16)
-                    t -= 24;
-                s << t + 8;
+                s << t;
                 return UFTconvert.from_bytes(s.str());
             }
         )
@@ -638,6 +631,10 @@ void Game::mainloop()
         // plottest->push(globals.appTime.getDeltaMS());
         // plottest->updateData();
 
+        // this allows us to close the window when pressing the close button
+        if (glfwWindowShouldClose(globals.getWindow()))
+            state = AppState::quit;
+
         static unsigned int itcnt = 0;
         itcnt++;
         if (doAutomaticShaderRefresh)
@@ -670,24 +667,64 @@ void Game::mainloop()
 
         // temporary
         if (enableTime) {
-            GG::timeOfDay += globals.appTime.getDelta() * 0.005;
+            GG::timeOfDay += globals.appTime.getDelta() * 0.01;
             GG::timeOfDay = fmod(GG::timeOfDay, 1.f);
         }
 
-        double axialTilt = radians(23.5);
-        double sunYaw = radians(-90.0) + axialTilt;
-        double sunPitch = radians(180.0 - GG::timeOfDay * 360.0);
 
-        double d = 9e10;
-        vec3 sunPos = vec3(
-            sin(sunYaw) * d * cos(sunPitch), 
-            sin(sunPitch) * d,  
-            cos(sunYaw) * d * cos(sunPitch)
+        constexpr double distanceToSun = 149.6e9;
+        constexpr double planetRadius = 6371e3;
+        constexpr double axialTilt = 23.44;
+        constexpr double eccentricity = 0.0167;
+        constexpr double orbitTilt = 7.25;
+
+        constexpr double latitude = 43.6109;
+        constexpr double longitude = 3.8761;
+
+        constexpr double orbitTime = fromDayMonth(20, 6);
+
+        // adjust for sidereal time 
+        double adjustedTime = fmod(GG::timeOfDay - orbitTime, 1.0);
+
+        vec3 planetRotation = vec3(
+            radians(axialTilt) * cos(adjustedTime * 2.0 * PI),
+            adjustedTime * 2.0 * PI,
+            radians(axialTilt) * sin(adjustedTime * 2.0 * PI)
+        );
+
+        planetRot = planetRotation;
+
+        quat rotQuat = quat(planetRotation);
+
+        vec3 surfPos = vec3(
+            cos(radians(latitude)) * cos(radians(longitude)),
+            sin(radians(latitude)),
+            cos(radians(latitude)) * sin(radians(longitude))
+        );
+
+        vec3 surfPosTransformed = (rotQuat * surfPos) * (float)planetRadius;
+
+        vec3 orbitPos = vec3(
+            cos(orbitTime * 2.0 * PI) * distanceToSun * (1.0 - eccentricity * eccentricity),
+            sin(orbitTime * 2.0 * PI) * distanceToSun * sin(radians(orbitTilt)),
+            sin(orbitTime * 2.0 * PI) * distanceToSun * cos(radians(orbitTilt))
         );
         
-        constexpr double PLANET_RADIUS = 6371e3;
-        vec3 planetPos = vec3(0, PLANET_RADIUS, 0);
-        sunDir = normalize(sunPos - planetPos);
+        vec3 surfaceWorldPos = surfPosTransformed + orbitPos;
+        vec3 sunPos = vec3(0);
+        vec3 sunDirWorld = normalize(sunPos - surfaceWorldPos);
+        
+        vec3 surfaceNormal = normalize(surfPosTransformed);
+        vec3 tangent = normalize(cross(surfaceNormal, vec3(0, 1, 0)));
+        vec3 bitangent = normalize(cross(surfaceNormal, tangent));
+
+        mat3 tangentSpace = mat3(tangent, bitangent, surfaceNormal);
+        vec3 sunDirLocal = tangentSpace * sunDirWorld;
+
+        sunDir = vec3(sunDirLocal.x, sunDirLocal.z, sunDirLocal.y);
+
+
+        
 
         sun->setDirection(-sunDir);
 

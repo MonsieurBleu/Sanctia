@@ -25,8 +25,11 @@
         layout(binding = 1) uniform sampler2D bMaterial;
     #endif
 #else
+    layout (location = 18) uniform vec2 bBloDirVal;
+    layout (location = 19) uniform vec4 bPapStrBloDir;
     layout (location = 20) uniform vec3 bColor;
-    layout (location = 21) uniform vec2 bRougMet;
+    layout (location = 21) uniform vec3 bRougMetEmm;
+
 #endif
 
 #ifdef USING_VERTEX_PACKING
@@ -409,8 +412,19 @@ void main()
         color = CE.rgb;
     #else
         color = bColor;
-        mMetallic = clamp(bRougMet.y, 0.05, 1.0);
-        mRoughness = clamp(bRougMet.x, 0.05, 1.0);
+        mMetallic = clamp(bRougMetEmm.y, 0.05, 1.0);
+        mRoughness = clamp(1.0 - bRougMetEmm.x, 0.05, 1.0);
+        mEmmisive = clamp(bRougMetEmm.z, 0.05, 1.0);
+
+        mPaperness = bPapStrBloDir.x;
+        mClearness = 1.0 - bPapStrBloDir.y;
+        mBloodynessFactor = bPapStrBloDir.z;
+        mDirtynessFactor = bPapStrBloDir.w;
+
+        mBloodyness = bBloDirVal.x;
+        mDirtyness = bBloDirVal.y;
+
+
     #endif
 #endif
 

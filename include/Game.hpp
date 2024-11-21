@@ -29,10 +29,6 @@ private:
     // B_PhysicsScene physics;
     void physicsLoop();
 
-    /* Player Controller */
-    SpectatorController spectator;
-    PlayerController playerControl;
-    DialogueController dialogueControl;
 
     EffectHandler effects;
 
@@ -41,10 +37,17 @@ private:
     int editorModeEnable = true;
     EntityRef gameScreenWidget;
 
-    bool doAutomaticShaderRefresh = false;
 
 
 public:
+    
+    static inline bool doAutomaticShaderRefresh = false;
+
+    /* Player Controller */
+    static inline SpectatorController spectator;
+    static inline PlayerController playerControl = PlayerController(nullptr);
+    static inline DialogueController dialogueControl;
+
     static inline LimitTimer physicsTicks;
     static inline BenchTimer physicsTimer = BenchTimer("Physics Timer");
     static inline BenchTimer physicsWorldUpdateTimer = BenchTimer("Physics World");

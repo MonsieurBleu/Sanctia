@@ -7,7 +7,10 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include <Inputs.hpp>
+#include <Game.hpp>
 
+
+Entity *mergetest = nullptr;
 
 Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
 {
@@ -103,6 +106,45 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
         },
         []() {return globals.currentCamera->getMouseFollow();}, false)
     );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "toggle free cam", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { 
+            if (globals.getController() == &Game::playerControl && GG::playerEntity)
+            {
+                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
+
+                for (auto &i : GG::playerEntity->comp<Items>().equipped)
+                    if (i.item.get() && i.item->hasComp<EntityModel>())
+                        i.item->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
+                App::setController(&Game::spectator);
+            }
+            else if (globals.getController() == &Game::spectator && GG::playerEntity)
+            {
+                App::setController(&Game::playerControl);
+                // playerControl.body->position = globals.currentCamera->getPosition();
+
+                if (GG::playerEntity->hasComp<RigidBody>())
+                {
+                    auto body = GG::playerEntity->comp<RigidBody>();
+                    if (body)
+                    {
+                        body->setIsActive(true);
+                        body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 5, 0)),
+                                                           rp3d::Quaternion::identity()));
+                    }
+                }
+
+                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
+                for (auto &i : GG::playerEntity->comp<Items>().equipped)
+                    if (i.item.get() && i.item->hasComp<EntityModel>())
+                        i.item->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
+            }
+        })
+    );
+
+    for(auto &i : inputs)
+        i->activated = false;
 }
 
 EntityRef Apps::MainGameApp::UImenu()
@@ -129,11 +171,15 @@ void Apps::MainGameApp::init()
     {
         appRoot = newEntity();
         globals.simulationTime.resume();
+        globals.currentCamera->getState().FOV = radians(90.f);
         GG::currentConditions.readTxt("saves/gameConditions.txt");
 
         Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
         Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
         Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
+
+        Game::playerControl = PlayerController(globals.currentCamera);
+        App::setController(&Game::playerControl);
 
     }
 
@@ -147,80 +193,109 @@ void Apps::MainGameApp::init()
                         vec3(256, 64, 256), vec3(0), 128)
     );
 
-    /***** Creatign Player *****/
+    /***** Creating Player *****/
     {
         VulpineTextBuffRef in(new VulpineTextBuff("data/entities/playerDemo.vulpineEntity"));
         GG::playerEntity = DataLoader<EntityRef>::read(in);
     }
 
     /***** Setting up material helpers *****/
-    if(false)
-    {
-        vec3 position = vec3(0, 2, 5);
-        float jump = 0.25;
-        float hueJump = 0.2;
+    // {
+    //     vec3 position = vec3(0, 2, 5);
+    //     float jump = 0.25;
+    //     float hueJump = 0.2;
 
-        int c = 0;
-        std::vector<vec3> colors(5);
+    //     int c = 0;
+    //     std::vector<vec3> colors(5);
 
-        u32strtocolorHTML(U"#63462D", colors[0]);
-        u32strtocolorHTML(U"#ABABAB", colors[1]);
-        u32strtocolorHTML(U"#FFD700", colors[2]);
-        u32strtocolorHTML(U"#008AD8", colors[3]);
-        u32strtocolorHTML(U"#FF003F", colors[4]);
+    //     u32strtocolorHTML(U"#63462D", colors[0]);
+    //     u32strtocolorHTML(U"#ABABAB", colors[1]);
+    //     u32strtocolorHTML(U"#FFD700", colors[2]);
+    //     u32strtocolorHTML(U"#008AD8", colors[3]);
+    //     u32strtocolorHTML(U"#FF003F", colors[4]);
 
-        for (float h = 0.f; h < 1.f; h += hueJump, c++)
-            for (float i = 1e-6; i < 1.f; i += jump)
-                for (float j = 1e-6; j < 1.f; j += jump)
-                {
-                    ModelRef helper = Loader<MeshModel3D>::get("materialHelper").copy();
+    //     for (float h = 0.f; h < 1.f; h += hueJump, c++)
+    //         for (float i = 1e-6; i < 1.f; i += jump)
+    //             for (float j = 1e-6; j < 1.f; j += jump)
+    //             {
+    //                 ModelRef helper = Loader<MeshModel3D>::get("materialHelper").copy();
 
-                    helper->uniforms.add(ShaderUniform(colors[c], 20));
-                    helper->uniforms.add(ShaderUniform(vec2(i, j), 21));
+    //                 helper->uniforms.add(ShaderUniform(colors[c], 20));
+    //                 helper->uniforms.add(ShaderUniform(vec2(i, j), 21));
 
-                    helper->state.setPosition(position + 2.f * vec3(4 * i, 4 * h - 2, 4 * j) / jump + vec3(25, 0, 0));
+    //                 helper->state.setPosition(position + 2.f * vec3(4 * i, 4 * h - 2, 4 * j) / jump + vec3(25, 0, 0));
 
-                    // globals.getScene()->add(helper);
+    //                 // globals.getScene()->add(helper);
 
-                    EntityModel model(EntityModel{newObjectGroup()}); 
-                    model->add(helper);
-                    ComponentModularity::addChild(*appRoot, newEntity("materialHelper", model));
-                }
+    //                 EntityModel model(EntityModel{newObjectGroup()}); 
+    //                 model->add(helper);
+    //                 ComponentModularity::addChild(*appRoot, newEntity("materialHelper", model));
+    //             }
 
-        EntityModel model(EntityModel{newObjectGroup()}); 
-        model->add(Loader<MeshModel3D>::get("packingPaintHelper").copy());
-        ComponentModularity::addChild(*appRoot, newEntity("materialHelper", model));
-    }
+    //     EntityModel model(EntityModel{newObjectGroup()}); 
+    //     model->add(Loader<MeshModel3D>::get("packingPaintHelper").copy());
+    //     ComponentModularity::addChild(*appRoot, newEntity("materialHelper", model));
+    // }
+
+
+    /***** Testing instanced Mesh *****/
+    // {
+    //     InstancedModelRef test(new InstancedMeshModel3D(GG::PBRinstanced, Loader<MeshVao>().get("Zweihander")));
+
+    //     int size = 256;
+
+    //     test->allocate(size);
+
+    //     for(int i = 0; i < size; i++)
+    //     {
+    //         ModelInstance* inst = test->createInstance();
+
+    //         inst->scaleScalar(10);
+    //         inst->setPosition(vec3(0, 0, (i - size/2)*1.5));
+
+    //         inst->frustumCulled = false;
+    //     }
+
+    //     test->updateInstances();
+    //     globals.getScene()->add(test);
+    // }
 
 
 
     /***** Spawning a lot of swords for merging testing *****/
-    {
-        Entity *parent = nullptr;
-        EntityRef firstChild;
-        for (int i = 0; i < 128; i++)
-        {
-            EntityRef child = Blueprint::Zweihander();
+    // {
+    //     Entity *parent = nullptr;
+    //     EntityRef firstChild;
+    //     for (int i = 0; i < 64; i++)
+    //     {
+    //         EntityRef child = Blueprint::Zweihander();
 
-            if (!i)
-                firstChild = child;
+    //         if (!i)
+    //             firstChild = child;
 
-            child->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
-            child->comp<RigidBody>()->setTransform(rp3d::Transform(rp3d::Vector3(0.0f, 0.2f, 0.0f),
-                                                                // PG::torp3d(quat(vec3(0, cos(i/PI), 0)))
-                                                                DEFQUAT));
-            child->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
+    //         // child->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
+    //         child->comp<RigidBody>()->setType(rp3d::BodyType::STATIC);
+    //         // child->comp<RigidBody>()->setTransform(rp3d::Transform(rp3d::Vector3(0.0f, 0.2f, 0.0f),
+    //         //                                                     // PG::torp3d(quat(vec3(0, cos(i/PI), 0)))
+    //         //                                                     DEFQUAT));
+    //         child->comp<RigidBody>()->setTransform(rp3d::Transform(rp3d::Vector3(0.0f, 0.0f, 0.2f),
+    //                                                             // PG::torp3d(quat(vec3(0, cos(i/PI), 0)))
+    //                                                             DEFQUAT));
+    //         // child->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
 
-            if (parent && parent != child.get())
-            {
-                ComponentModularity::addChild(*parent, child);
-            }
+    //         if (parent && parent != child.get())
+    //         {
+    //             ComponentModularity::addChild(*parent, child);
+    //         }
 
-            parent = child.get();
-        }
+    //         parent = child.get();
+    //     }
 
-        ComponentModularity::addChild(*appRoot, firstChild);
-    }
+    //     ComponentModularity::addChild(*appRoot, firstChild);
+
+    //     // ComponentModularity::mergeChildren(*firstChild);
+    //     mergetest = firstChild.get();
+    // }
 
     
     // /***** Testing Entity Loading *****/
@@ -315,10 +390,11 @@ void Apps::MainGameApp::update()
     itcnt++;
 
     /*** Merging test ***/
-    // if(itcnt == 50)
+    // if(itcnt == 2)
     // {
     //     physicsMutex.lock();
-    //     ComponentModularity::mergeChildren(*firstChild);
+    //     // ComponentModularity::mergeChildren(*firstChild);
+    //     ComponentModularity::mergeChildren(*mergetest);
     //     physicsMutex.unlock();
     // }
 
@@ -350,4 +426,7 @@ void Apps::MainGameApp::clean()
 
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
+    globals.currentCamera->getState().FOV = radians(90.f);
+
+    App::setController(nullptr);
 };

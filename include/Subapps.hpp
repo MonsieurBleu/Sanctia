@@ -59,4 +59,35 @@ namespace Apps
 
             virtual void clean() override;
     };
+
+    class MaterialViewerApp : public SubApps
+    {
+
+        private : 
+
+            std::vector<vec3> color;
+            std::vector<vec3> SME;
+            std::vector<vec4> PSBD;
+            std::vector<vec2> BD;
+            std::vector<ModelRef> helpers;
+
+            EntityRef menuInfosTab;
+            EntityRef titleTab;
+
+            OrbitController orbitController;
+
+        public : 
+
+            MaterialViewerApp();
+
+            void spawnHelper();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
 }

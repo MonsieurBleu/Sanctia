@@ -40,13 +40,6 @@ void Game::mainloop()
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
-    // Blueprint::Terrain("ressources/maps/testPlayground.hdr",
-    //                    // "ressources/maps/RuggedTerrain.hdr",
-    //                    // "ressources/maps/generated_512x512.hdr",
-    //                    // "ressources/maps/RT512.hdr",
-    //                    // vec3(512, 64, 512),
-    //                    vec3(256, 64, 256), vec3(0), 128);
-
     SceneDirectionalLight sun = newDirectionLight(DirectionLight()
                                                       // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
                                                       .setColor(vec3(1))
@@ -54,6 +47,8 @@ void Game::mainloop()
                                                       .setIntensity(1.0));
 
     sun->cameraResolution = vec2(8192);
+    // sun->cameraResolution = vec2(2048);
+    // sun->cameraResolution = vec2(4096);
     sun->shadowCameraSize = vec2(256, 256);
     sun->activateShadows();
     scene.add(sun);
@@ -191,13 +186,13 @@ void Game::mainloop()
     Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab,
         Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene),
-        "3D Scene Infos", "VulpineIcon"
+        "3D Scene Infos", ""
     );
 
     Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab,
         Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene2D),
-        "2D Scene Infos", "VulpineIcon"
+        "2D Scene Infos", ""
     );
 
 
@@ -226,70 +221,65 @@ void Game::mainloop()
 
     // EDITOR::MENUS::AppMenu->comp<WidgetStyle>().setautomaticTabbing(1);
 
-    for(int i = 0; i < 1; i++)
-    ComponentModularity::addChild(*EDITOR::MENUS::AppMenu,
-        Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
-            "Sun color", 
-            [&sun](){return vec3(sun->getInfos()._color);},
-            [&sun](vec3 color){sun->setColor(color);}
-        )
-    );
+    // for(int i = 0; i < 1; i++)
+    // ComponentModularity::addChild(*EDITOR::MENUS::AppMenu,
+    //     Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
+    //         "Sun color", 
+    //         [&sun](){return vec3(sun->getInfos()._color);},
+    //         [&sun](vec3 color){sun->setColor(color);}
+    //     )
+    // );
 
-    for (auto &i : Loader<Texture2D>::loadingInfos)
-        std::cout << i.first << "\n";
+// #define TEST_ELEMENT_COMPONENT                                                                                         \
+//     , WidgetUI_Context{&ui}, WidgetState(),                                                                            \
+//         WidgetBox(vec2(-0.9, +0.9), vec2(+1.1, +2.6), WidgetBox::Type::FOLLOW_SIBLINGS_BOX), WidgetBackground(),       \
+//         WidgetText(), WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER), WidgetStyle()
 
-    // EDITOR::MENUS::AppMenu->set<WidgetSprite>(WidgetSprite("icon_gizmo"));
+//     EntityRef first = newEntity(
+//         "first", WidgetUI_Context{&ui}, WidgetState(), WidgetBox(vec2(-0.25, +0.25), vec2(-0.9, -0.8)),
+//         WidgetBackground(), WidgetText(U"Titre important"),
+//         WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER
+//                      // WidgetButton::Type::CHECKBOX,
+//                      // WidgetButton::func([](float v)
+//                      // {
+//                      //     // std::cout << v << "\n";
+//                      //     GlobalComponentToggler<PhysicsHelpers>::activated =
+//                      //     !GlobalComponentToggler<PhysicsHelpers>::activated;
+//                      // })
+//                      ),
+//         WidgetStyle(),
+//         EntityGroupInfo({
+//             newEntity("Sous élément 1" TEST_ELEMENT_COMPONENT,
+//                       EntityGroupInfo({
+//                           newEntity("Sous élément 1-1" TEST_ELEMENT_COMPONENT),
+//                           newEntity("Sous élément 1-2" TEST_ELEMENT_COMPONENT),
+//                           newEntity("Sous élément 1-3" TEST_ELEMENT_COMPONENT),
+//                           newEntity("Sous élément 1-4" TEST_ELEMENT_COMPONENT,
+//                                     EntityGroupInfo({
+//                                         newEntity("Sous élément 1-4-1" TEST_ELEMENT_COMPONENT),
+//                                         newEntity("Sous élément 1-4-2" TEST_ELEMENT_COMPONENT),
+//                                         newEntity("Sous élément 1-4-3" TEST_ELEMENT_COMPONENT),
+//                                         newEntity("Sous élément 1-4-4" TEST_ELEMENT_COMPONENT),
+//                                     })),
+//                       })),
+//             newEntity("Sous élément 2" TEST_ELEMENT_COMPONENT, EntityGroupInfo({
+//                                                                    newEntity("Sous élément 2-1" TEST_ELEMENT_COMPONENT),
+//                                                                    newEntity("Sous élément 2-2" TEST_ELEMENT_COMPONENT),
+//                                                                    newEntity("Sous élément 2-3" TEST_ELEMENT_COMPONENT),
+//                                                                    newEntity("Sous élément 2-4" TEST_ELEMENT_COMPONENT),
+//                                                                })),
+//             newEntity("Sous élément 3" TEST_ELEMENT_COMPONENT), newEntity("Sous élément 4" TEST_ELEMENT_COMPONENT),
+//             // newEntity("Sous élément 5"
+//             //     TEST_ELEMENT_COMPONENT
+//             //     , WidgetBox(
+//             //         vec2(-0.9, +0.9),
+//             //         vec2(-2.5, -1.1),
+//             //         WidgetBox::Type::FOLLOW_SIBLINGS_BOX
+//             //     )
+//             // ),
+//         }));
 
-#define TEST_ELEMENT_COMPONENT                                                                                         \
-    , WidgetUI_Context{&ui}, WidgetState(),                                                                            \
-        WidgetBox(vec2(-0.9, +0.9), vec2(+1.1, +2.6), WidgetBox::Type::FOLLOW_SIBLINGS_BOX), WidgetBackground(),       \
-        WidgetText(), WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER), WidgetStyle()
-
-    // EntityRef first = newEntity(
-    //     "first", WidgetUI_Context{&ui}, WidgetState(), WidgetBox(vec2(-0.25, +0.25), vec2(-0.9, -0.8)),
-    //     WidgetBackground(), WidgetText(U"Titre important"),
-    //     WidgetButton(WidgetButton::Type::HIDE_SHOW_TRIGGER
-    //                  // WidgetButton::Type::CHECKBOX,
-    //                  // WidgetButton::func([](float v)
-    //                  // {
-    //                  //     // std::cout << v << "\n";
-    //                  //     GlobalComponentToggler<PhysicsHelpers>::activated =
-    //                  //     !GlobalComponentToggler<PhysicsHelpers>::activated;
-    //                  // })
-    //                  ),
-    //     WidgetStyle(),
-    //     EntityGroupInfo({
-    //         newEntity("Sous élément 1" TEST_ELEMENT_COMPONENT,
-    //                   EntityGroupInfo({
-    //                       newEntity("Sous élément 1-1" TEST_ELEMENT_COMPONENT),
-    //                       newEntity("Sous élément 1-2" TEST_ELEMENT_COMPONENT),
-    //                       newEntity("Sous élément 1-3" TEST_ELEMENT_COMPONENT),
-    //                       newEntity("Sous élément 1-4" TEST_ELEMENT_COMPONENT,
-    //                                 EntityGroupInfo({
-    //                                     newEntity("Sous élément 1-4-1" TEST_ELEMENT_COMPONENT),
-    //                                     newEntity("Sous élément 1-4-2" TEST_ELEMENT_COMPONENT),
-    //                                     newEntity("Sous élément 1-4-3" TEST_ELEMENT_COMPONENT),
-    //                                     newEntity("Sous élément 1-4-4" TEST_ELEMENT_COMPONENT),
-    //                                 })),
-    //                   })),
-    //         newEntity("Sous élément 2" TEST_ELEMENT_COMPONENT, EntityGroupInfo({
-    //                                                                newEntity("Sous élément 2-1" TEST_ELEMENT_COMPONENT),
-    //                                                                newEntity("Sous élément 2-2" TEST_ELEMENT_COMPONENT),
-    //                                                                newEntity("Sous élément 2-3" TEST_ELEMENT_COMPONENT),
-    //                                                                newEntity("Sous élément 2-4" TEST_ELEMENT_COMPONENT),
-    //                                                            })),
-    //         newEntity("Sous élément 3" TEST_ELEMENT_COMPONENT), newEntity("Sous élément 4" TEST_ELEMENT_COMPONENT),
-    //         // newEntity("Sous élément 5"
-    //         //     TEST_ELEMENT_COMPONENT
-    //         //     , WidgetBox(
-    //         //         vec2(-0.9, +0.9),
-    //         //         vec2(-2.5, -1.1),
-    //         //         WidgetBox::Type::FOLLOW_SIBLINGS_BOX
-    //         //     )
-    //         // ),
-    //     }));
-
-    // ComponentModularity::addChild(*EDITOR::MENUS::AppMenu, first);
+//     ComponentModularity::addChild(*EDITOR::MENUS::AppMenu, first);
 
     EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
     EDITOR::MENUS::AppChoice->comp<WidgetStyle>().setautomaticTabbing(1);
@@ -376,7 +366,7 @@ void Game::mainloop()
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
             Blueprint::EDITOR_ENTITY::INO::Toggable(
                 "Bloom", 
-                "VulpineIcon",
+                "",
                 [&bloom](float v)
                 {
                     bloom.toggle();
@@ -393,7 +383,7 @@ void Game::mainloop()
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
             Blueprint::EDITOR_ENTITY::INO::Toggable(
                 "AO", 
-                "VulpineIcon",
+                "",
                 [&ssao](float v)
                 {
                     ssao.toggle();
@@ -406,7 +396,42 @@ void Game::mainloop()
         );
     }
 
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        Blueprint::EDITOR_ENTITY::INO::Toggable(
+            "Physic Interpolation", 
+            "",
+            [](float v)
+            {
+                PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
+            },
+            []()
+            {
+                return PG::doPhysicInterpolation ? 0.f : 1.f;
+            }
+        )
+    );
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        Blueprint::EDITOR_ENTITY::INO::Toggable(
+            "Auto Shader Refresh", 
+            "",
+            [](float v)
+            {
+                Game::doAutomaticShaderRefresh = !Game::doAutomaticShaderRefresh;
+            },
+            []()
+            {
+                return Game::doAutomaticShaderRefresh ? 0.f : 1.f;
+            }
+        )
+    );
+
+
     Apps::MainGameApp testsubapps1;
+    Apps::MaterialViewerApp materialView;
+
+    // SubApps::switchTo(materialView);
+
     // Apps::MainGameApp testsubapps2;
     // Apps::MainGameApp testsubapps3;
     // Apps::MainGameApp testsubapps4;
@@ -447,7 +472,8 @@ void Game::mainloop()
     scene2D.updateAllObjects();
     fuiBatch->batch();
     fuiBatch->state.frustumCulled = false;
-    // SSAO.disable();
+    SSAO.disable();
+    Bloom.disable();
 
     glPointSize(3.f);
 
@@ -472,6 +498,13 @@ void Game::mainloop()
     /******  Main Loop ******/
     while (state != AppState::quit)
     {
+        mainloopStartRoutine();
+
+        for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input))
+            ;
+
+        InputManager::processContinuousInputs();
+
         // plottest->push(globals.appTime.getDeltaMS());
         // plottest->updateData();
 
@@ -553,22 +586,15 @@ void Game::mainloop()
         ComponentModularity::synchronizeChildren(gameScreenWidget);
         updateWidgetsStyle();
 
-        mainloopStartRoutine();
-
-        for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input))
-            ;
-
-        InputManager::processContinuousInputs();
-
         // float maxSlow = player1.getStats().reflexMaxSlowFactor;
         // float reflex = player1.getInfos().state.reflex;
         // globals.simulationTime.speed = maxSlow + (1.f - maxSlow) * (1.f - reflex * 0.01);
 
-        float scroll = globals.mouseScrollOffset().y;
-        float &preflex = GG::playerUniqueInfos->infos.state.reflex;
-        if (GG::playerUniqueInfos)
-            preflex = clamp(preflex + scroll * 5.f, 0.f, 100.f);
-        globals.clearMouseScroll();
+        // float scroll = globals.mouseScrollOffset().y;
+        // float &preflex = GG::playerUniqueInfos->infos.state.reflex;
+        // if (GG::playerUniqueInfos)
+        //     preflex = clamp(preflex + scroll * 5.f, 0.f, 100.f);
+        // globals.clearMouseScroll();
 
         effects.update();
 
@@ -834,8 +860,8 @@ void Game::mainloop()
         }
 
         /* 3D Early Depth Testing */
-        scene.depthOnlyDraw(*globals.currentCamera, true);
-        glDepthFunc(GL_EQUAL);
+        // scene.depthOnlyDraw(*globals.currentCamera, true);
+        // glDepthFunc(GL_EQUAL);
 
         /* 3D Render */
         EnvironementMap.bind(4);
@@ -854,7 +880,7 @@ void Game::mainloop()
         /* Final Screen Composition */
         glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
         finalProcessingStage.activate();
-        // sun->shadowMap.bindTexture(0, 6);
+        sun->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();
 

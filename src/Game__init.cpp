@@ -11,13 +11,13 @@
 #include <PhysicsGlobals.hpp>
 #include <Graphics/Shadinclude.hpp>
 
-Game::Game(GLFWwindow *window) : App(window), playerControl(&camera) {}
+Game::Game(GLFWwindow *window) : App(window){}
 
 void Game::init(int paramSample)
 {
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
    
-    // globals._renderScale = 0.25;
+    // globals._renderScale = 0.5;
 
     App::init();
     
@@ -41,7 +41,8 @@ void Game::init(int paramSample)
         .addUniform(ShaderUniform(&globals.sceneHsvShift, 20));
 
     setIcon("ressources/icon.png");
-    setController(&playerControl);
+    // setController(&playerControl);
+    App::setController(nullptr);
 
     ambientLight = vec3(0.1);
 

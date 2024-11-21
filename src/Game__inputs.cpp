@@ -18,40 +18,6 @@ void Game::initInput()
         "quit game", GLFW_KEY_ESCAPE, 0, GLFW_PRESS, [&]() { state = quit; },
         InputManager::Filters::always, false);
 
-    Inputs::toggleFreeCam = InputManager::addEventInput(
-        "toggle free cam", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { 
-            if (globals.getController() == &playerControl && GG::playerEntity)
-            {
-                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
-
-                for (auto &i : GG::playerEntity->comp<Items>().equipped)
-                    if (i.item.get() && i.item->hasComp<EntityModel>())
-                        i.item->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
-                setController(&spectator);
-            }
-            else if (globals.getController() == &spectator && GG::playerEntity)
-            {
-                setController(&playerControl);
-                // playerControl.body->position = globals.currentCamera->getPosition();
-
-                if (GG::playerEntity->hasComp<RigidBody>())
-                {
-                    auto body = GG::playerEntity->comp<RigidBody>();
-                    if (body)
-                    {
-                        body->setIsActive(true);
-                        body->setTransform(rp3d::Transform(PG::torp3d(camera.getPosition() + vec3(0, 5, 0)),
-                                                           rp3d::Quaternion::identity()));
-                    }
-                }
-
-                GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
-                for (auto &i : GG::playerEntity->comp<Items>().equipped)
-                    if (i.item.get() && i.item->hasComp<EntityModel>())
-                        i.item->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
-            }
-        });
-
     Inputs::toggleSimTime = InputManager::addEventInput(
         "toggle sim time", GLFW_KEY_F11, 0, GLFW_PRESS, [&]() { globals.simulationTime.toggle(); },
         InputManager::Filters::always, false);
@@ -59,7 +25,6 @@ void Game::initInput()
     Inputs::toggleWireframe = InputManager::addEventInput(
         "toggle wireframe", GLFW_KEY_F1, 0, GLFW_PRESS, [&]() { wireframe = !wireframe; },
         InputManager::Filters::always, false);
-
 
     Inputs::interact = InputManager::addEventInput(
         "interact", GLFW_KEY_E, 0, GLFW_PRESS, [&]() {
@@ -121,17 +86,6 @@ void Game::initInput()
         },
         InputManager::Filters::always, false);
 
-    Inputs::clearEntities = InputManager::addEventInput(
-        "clear entities", GLFW_KEY_T, 0, GLFW_PRESS, [&]() { GG::entities.clear(); },
-        InputManager::Filters::always, false);
-
-    Inputs::clearOneEntity = InputManager::addEventInput(
-        "clear one entity", GLFW_KEY_M, 0, GLFW_PRESS, [&]() {
-            if (GG::entities.size())
-                GG::entities.pop_back();
-        },
-        InputManager::Filters::always, false);
-
     Inputs::toggleInfoStatHelper = InputManager::addEventInput(
         "toggle info stat helper", GLFW_KEY_9, 0, GLFW_PRESS, [&]() {
             GlobalComponentToggler<InfosStatsHelpers>::activated =
@@ -186,33 +140,4 @@ void Game::initInput()
         },
         InputManager::Filters::always, false);
 
-    Inputs::addWidget = InputManager::addEventInput(
-        "add widget", GLFW_KEY_KP_ADD, 0, GLFW_PRESS, [&]() {
-            ComponentModularity::addChild(
-                *EDITOR::MENUS::GlobalInfos,
-                newEntity("Info Stat Helper", EDITOR::MENUS::AppMenu->comp<WidgetUI_Context>(), WidgetState(),
-                          WidgetBox(vec2(0), vec2(0)), WidgetBackground(), WidgetSprite("VulpineIcon"), WidgetStyle(),
-                          WidgetButton(WidgetButton::Type::CHECKBOX, WidgetButton::InteractFunc([](float v) {
-                                           GlobalComponentToggler<InfosStatsHelpers>::activated =
-                                               !GlobalComponentToggler<InfosStatsHelpers>::activated;
-                                       }),
-                                       WidgetButton::UpdateFunc([]() {
-                                           return GlobalComponentToggler<InfosStatsHelpers>::activated ? 0.f : 1.f;
-                                       }))));
-        },
-        InputManager::Filters::always, false);
-
-    Inputs::removeWidget = InputManager::addEventInput(
-        "remove widget", GLFW_KEY_KP_SUBTRACT, 0, GLFW_PRESS, [&]() {
-            if (EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.size())
-                EDITOR::MENUS::GlobalInfos->comp<EntityGroupInfo>().children.pop_back();
-
-            ManageGarbage<Items>();
-            ManageGarbage<EntityModel>();
-            ManageGarbage<PhysicsHelpers>();
-            ManageGarbage<WidgetBackground>();
-            ManageGarbage<WidgetSprite>();
-            ManageGarbage<WidgetText>();
-        },
-        InputManager::Filters::always, false);
 }

@@ -11,9 +11,14 @@ WidgetBox::FittingFunc Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc = 
 
     cbox.initMin = vec2(-1);
     float v = pbutton.cur/(pbutton.max - pbutton.min) - pbutton.min;
+
+    vec2 tmpMax = cbox.initMax;
     cbox.initMax = vec2(v*2.f - 1, 1);
 
     cbox.depth = parent->comp<WidgetBox>().depth + 0.00001;
+
+    cbox.useClassicInterpolation = tmpMax != cbox.initMax;
+
     return;
 };
 
@@ -54,17 +59,24 @@ EntityRef  Blueprint::EDITOR_ENTITY::INO::Toggable(
     WidgetButton::UpdateFunc ufunc
 )
 {
-    return newEntity(name
+    auto e = newEntity(name
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetBackground()
-        , WidgetSprite(icon)
         , WidgetStyle()
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
             .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
             .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
         , WidgetButton(WidgetButton::Type::CHECKBOX, ifunc, ufunc)
     );
+
+    if(icon.size())
+        e->set<WidgetSprite>(WidgetSprite(icon));
+    else
+        e->set<WidgetText>(UFTconvert.from_bytes(name));
+
+    return e;
 }
 
 
@@ -164,25 +176,24 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 {
     auto hue = ValueInputSlider(
         name + " - hue", 0., 0.9999, 360,
-        [&setColor, &getColor](float v)
+        [setColor, getColor](float v)
         {
-            // std::cout << "==== DEBUG PRINT 1 ====\n";
             vec3 hsv = rgb2hsv(getColor());
             hsv.r = v;
             setColor(hsv2rgb(hsv));
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
-            // std::cout << "==== DEBUG PRINT 2 ====\n";
+            vec3 c = rgb2hsv(getColor());
             return rgb2hsv(getColor()).r;
         },
-        [&setColor, &getColor](std::u32string text)
+        [setColor, getColor](std::u32string text)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.r = u32strtof2(text, round(hsv.r*360.f))/360.f;
             setColor(hsv2rgb(hsv));
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             char str[8];
             float f = round(rgb2hsv(getColor()).r*360.f);
@@ -193,23 +204,23 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto saturation = ValueInputSlider(
         name + " - saturation", 0., 1.0, 100,
-        [&setColor, &getColor](float v)
+        [setColor, getColor](float v)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.g = v;
             setColor(hsv2rgb(hsv));
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             return rgb2hsv(getColor()).g;
         },
-        [&setColor, &getColor](std::u32string text)
+        [setColor, getColor](std::u32string text)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.g = u32strtof2(text, round(hsv.g*100.f))/100.f;
             setColor(hsv2rgb(hsv));
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             char str[8];
             float f = round(rgb2hsv(getColor()).g*100.f);
@@ -220,23 +231,23 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto value = ValueInputSlider(
         name + " - value", 0., 1.0, 100,
-        [&setColor, &getColor](float v)
+        [setColor, getColor](float v)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.b = v;
             setColor(hsv2rgb(hsv));
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             return rgb2hsv(getColor()).b;
         },
-        [&setColor, &getColor](std::u32string text)
+        [setColor, getColor](std::u32string text)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.b = u32strtof2(text, round(hsv.b*100.f))/100.f;
             setColor(hsv2rgb(hsv));
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             char str[8];
             float f = round(rgb2hsv(getColor()).b*100.f);
@@ -247,23 +258,23 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto red = ValueInputSlider(
         name + " - red", 0., 1.0, 255,
-        [&setColor, &getColor](float v)
+        [setColor, getColor](float v)
         {
             vec3 rgb = getColor();
             rgb.r = v;
             setColor(rgb);
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             return getColor().r;
         },
-        [&setColor, &getColor](std::u32string text)
+        [setColor, getColor](std::u32string text)
         {
             vec3 rgb = getColor();
             rgb.r = u32strtof2(text, round(rgb.r*255.f))/255.f;
             setColor(rgb);
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             char str[8];
             float f = round(getColor().r*255.f);
@@ -274,23 +285,23 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto green = ValueInputSlider(
         name + " - green", 0., 1.0, 255,
-        [&setColor, &getColor](float v)
+        [setColor, getColor](float v)
         {
             vec3 rgb = getColor();
             rgb.g = v;
             setColor(rgb);
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             return getColor().g;
         },
-        [&setColor, &getColor](std::u32string text)
+        [setColor, getColor](std::u32string text)
         {
             vec3 rgb = getColor();
             rgb.g = u32strtof2(text, round(rgb.g*255.f))/255.f;
             setColor(rgb);
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             char str[8];
             float f = round(getColor().g*255.f);
@@ -301,23 +312,23 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto blue = ValueInputSlider(
         name + " - blue", 0., 1.0, 255,
-        [&setColor, &getColor](float v)
+        [setColor, getColor](float v)
         {
             vec3 rgb = getColor();
             rgb.b = v;
             setColor(rgb);
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             return getColor().b;
         },
-        [&setColor, &getColor](std::u32string text)
+        [setColor, getColor](std::u32string text)
         {
             vec3 rgb = getColor();
             rgb.b = u32strtof2(text, round(rgb.b*255.f))/255.f;
             setColor(rgb);
         },
-        [&setColor, &getColor]()
+        [setColor, getColor]()
         {
             char str[8];
             float f = round(getColor().b*255.f);
@@ -326,31 +337,178 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
         }
     );
 
+    auto hex = newEntity(name
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            .setbackgroundColor2(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+
+            .settextColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+            .settextColor2(EDITOR::MENUS::COLOR::HightlightColor1)
+        , WidgetText(U"")
+    );
+
+    auto &hexText = hex->comp<WidgetText>().text;
+
+    hex->set<WidgetButton>(WidgetButton(
+        WidgetButton::Type::TEXT_INPUT,
+        [&hexText, setColor](float v)
+        {
+            vec3 c;
+            if(u32strtocolorHTML(hexText, c))
+                setColor(c);
+        },
+        [&hexText, getColor]()
+        {
+            hexText = rgbtou32str(getColor());
+            return 0.f;
+        }
+    ));
+
+    auto finalColorVisualisation = newEntity(name + " - hue "
+        , UI_BASE_COMP
+        , WidgetBox([getColor](Entity *parent, Entity *child)
+            {
+                child->comp<WidgetStyle>()
+                    .setbackgroundColor1(
+                        vec4(getColor(), 1)
+                    );
+            })
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+    );
+
+
     auto sliders = newEntity(name + " - Slider Menu"
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            .setautomaticTabbing(7)
+            .setautomaticTabbing(10)
         , EntityGroupInfo({
+            
+            finalColorVisualisation,
+            NamedEntry(U"Hex", hex, 0.25),
+            
+            newEntity("separator", UI_BASE_COMP, WidgetBox()),
+
             NamedEntry(U"H", hue, 0.25), 
             NamedEntry(U"S", saturation, 0.25), 
             NamedEntry(U"V", value, 0.25), 
             
-            newEntity("test"
-                , UI_BASE_COMP
-                , WidgetBox()
-                // , WidgetBackground()
-                // , WidgetStyle()
-                //     .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
-            ),
+            newEntity("separator", UI_BASE_COMP, WidgetBox()),
 
             NamedEntry(U"R", red, 0.25), 
             NamedEntry(U"G", green, 0.25), 
-            NamedEntry(U"B", blue, 0.25)
+            NamedEntry(U"B", blue, 0.25),
+
+
             })
     );
 
-    auto chromaticZone = newEntity(name + " - chromatic zone"
+    auto valueSatPicker = newEntity(name + " - saturation & value picker"
+        , UI_BASE_COMP
+        , WidgetBox(
+            [getColor](Entity *p, Entity*c)
+            {
+                c->comp<WidgetStyle>().setbackgroundColor1(
+                    vec4(getColor(), 1)
+                );
+            }
+        )
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackGroundStyle(UiTileType::SATURATION_VALUE_PICKER)
+        , WidgetSprite("picker_cursor")
+        , WidgetButton(
+            WidgetButton::Type::SLIDER_2D, 
+            [getColor, setColor](vec2 uv)
+            {
+                vec3 hsv = rgb2hsv(getColor());
+                hsv.g = uv.x;
+                hsv.b = 1.0 - uv.y;
+                setColor(hsv2rgb(hsv));
+            },
+            [getColor, setColor]()
+            {
+                vec3 hsv = rgb2hsv(getColor());
+                return vec2(hsv.g, 1.0 - hsv.b);
+            }
+        ).setpadding(100).setmin(0.001).setmax(0.9999)
+    );
+
+    auto hueButMoreVisual = newEntity(name + " - hue "
+        , UI_BASE_COMP
+        , WidgetBackground()
+        , WidgetBox()
+        , WidgetStyle()
+            .setbackGroundStyle(UiTileType::HUE_PICKER)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+        , WidgetButton(WidgetButton::Type::SLIDER, 
+
+            [setColor, getColor](float v)   
+            {
+                vec3 hsv = rgb2hsv(getColor());
+                hsv.r = v;
+                setColor(hsv2rgb(hsv));
+            },
+            [setColor, getColor]()
+            {
+                return rgb2hsv(getColor()).r;
+            }
+            ).setmin(0).setmax(0.99999).setpadding(360)
+        , WidgetSprite("VulpineIcon")
+
+        // , EntityGroupInfo({
+        //     newEntity(name + " - SLIDER HELPER" 
+        //         , UI_BASE_COMP
+        //         , WidgetBackground()
+        //         , WidgetStyle()
+        //             .setbackGroundStyle(UiTileType::SQUARE)
+        //             .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+        //         , WidgetBox(Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc)
+        //     )
+        // }) 
+    );
+    
+
+
+    // ValueInputSlider(
+    //     name + " - hue", 0., 0.9999, 360,
+    //     [setColor, getColor](float v)
+    //     {
+    //         // std::cout << "==== DEBUG PRINT 1 ====\n";
+    //         vec3 hsv = rgb2hsv(getColor());
+    //         hsv.r = v;
+    //         setColor(hsv2rgb(hsv));
+    //     },
+    //     [setColor, getColor]()
+    //     {
+    //         // std::cout << "==== DEBUG PRINT 2 ====\n";
+    //         return rgb2hsv(getColor()).r;
+    //     },
+    //     [setColor, getColor](std::u32string text)
+    //     {
+    //         vec3 hsv = rgb2hsv(getColor());
+    //         hsv.r = u32strtof2(text, round(hsv.r*360.f))/360.f;
+    //         setColor(hsv2rgb(hsv));
+    //     },
+    //     [setColor, getColor]()
+    //     {
+    //         char str[8];
+    //         float f = round(rgb2hsv(getColor()).r*360.f);
+    //         std::snprintf(str, 5, "%*.f", 0, f); 
+    //         return UFTconvert.from_bytes(str);
+    //     }
+    // );
+
+    valueSatPicker->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, 0.7));
+    hueButMoreVisual->comp<WidgetBox>().set(vec2(-1, 1), vec2(0.75, 1));
+
+    auto chromaticZone = newEntity(name + " - chromatic zone background parent"
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetBackground()
@@ -358,38 +516,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
             .setautomaticTabbing(1)
             .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
         , EntityGroupInfo({
-            newEntity(name + " - saturation & value picker"
+            newEntity(name + " - chromatic zone"
                 , UI_BASE_COMP
-                , WidgetBox(
-                    [&getColor](Entity *p, Entity*c)
-                    {
-                        c->comp<WidgetStyle>().setbackgroundColor1(
-                            vec4(getColor(), 1)
-                        );
-                    }
-                )
-                , WidgetBackground()
-                , WidgetStyle()
-                    .setbackGroundStyle(UiTileType::SATURATION_VALUE_PICKER)
-                , WidgetSprite("picker_cursor")
-                , WidgetButton(
-                    WidgetButton::Type::SLIDER_2D, 
-                    [&getColor, &setColor](vec2 uv)
-                    {
-                        vec3 hsv = rgb2hsv(getColor());
-                        hsv.g = uv.x;
-                        hsv.b = 1.0 - uv.y;
-                        setColor(hsv2rgb(hsv));
-                    },
-                    [&getColor, &setColor]()
-                    {
-                        vec3 hsv = rgb2hsv(getColor());
-                        return vec2(hsv.g, 1.0 - hsv.b);
-                    }
-                ).setpadding(100).setmin(0.001).setmax(0.9999)
+                , WidgetBox()
+                , EntityGroupInfo({
+                    valueSatPicker, hueButMoreVisual
+                })
             )
+
         })
     );
+
 
     auto p = newEntity(name + " + Menu "
         , UI_BASE_COMP

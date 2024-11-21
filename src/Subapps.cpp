@@ -10,10 +10,11 @@ SubApps::SubApps(const std::string  &name) : name(name)
         EDITOR::MENUS::AppChoice, EDITOR::MENUS::AppMenu, 
 
         uiMenuParentTMP = newEntity(name + " - PARENT MENU"
-            , UI_BASE_COMP
+            // , UI_BASE_COMP
+            , EDITOR::UIcontext
             , WidgetBox()
             , WidgetStyle().setautomaticTabbing(1)
-            , WidgetText(UFTconvert.from_bytes(name))
+            // , WidgetText(UFTconvert.from_bytes(name))
         ), 
         name
     );

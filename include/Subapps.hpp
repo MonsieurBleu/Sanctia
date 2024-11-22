@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SanctiaEntity.hpp>
+#include <EventGraph.hpp>
 
 class SubApps
 {
@@ -89,5 +90,33 @@ namespace Apps
             virtual void update() override;
 
             virtual void clean() override;
+    };
+
+    class EventGraphApp : public SubApps
+    {
+
+        private : 
+            EventNodePtr a;
+            EventNodePtr b;
+            EventNodePtr c;
+            EventNodePtr d;
+            EventNodePtr e;
+            EventNodePtr f;
+            EventNodePtr and1;
+            EventNodePtr and2;
+            EventNodePtr or1;
+
+            OrbitController orbitController;
+        public:
+            
+                EventGraphApp();
+    
+                virtual EntityRef UImenu() override;
+    
+                virtual void init() override;
+    
+                virtual void update() override;
+    
+                virtual void clean() override;
     };
 }

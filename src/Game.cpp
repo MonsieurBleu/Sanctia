@@ -431,6 +431,7 @@ void Game::mainloop()
 
     Apps::MainGameApp testsubapps1;
     Apps::MaterialViewerApp materialView;
+    Apps::EventGraphApp eventGraph;
 
     // SubApps::switchTo(materialView);
 

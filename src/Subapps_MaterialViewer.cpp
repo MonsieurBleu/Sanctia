@@ -107,30 +107,28 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(BD[id].y);}
     );
 
-    colorSelector->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, 0.35));
-
     auto finalMenu = newEntity("Material Helper Config Menu"
         , UI_BASE_COMP
         , WidgetBox(vec2(-1, 1), vec2(-0.85, 1))
         , WidgetStyle()
-            // .setautomaticTabbing(2)
+            .setautomaticTabbing(1)
         , EntityGroupInfo({
             colorSelector,
             newEntity("Material Misc Properties"
                 , UI_BASE_COMP
-                , WidgetBox(vec2(-1, 1), vec2(0.4, 1.0))
+                , WidgetBox()
                 , WidgetStyle()
-                    .setautomaticTabbing(5)
+                    .setautomaticTabbing(9)
                 , EntityGroupInfo({
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"METALNESS", metalnessSelector,          0.3333),
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"SMOOTHNESS", smoothnessSelector,        0.3333), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"EMMISIVE", emmisiveSelector,            0.3333), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"PAPERNESS", papernessSelector,          0.3333), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"STREAKING", streakingSelector,          0.3333), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"BLOODY FACTOR", bloodynessSelector,     0.3333), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"BLOODY LEVEL", bloodynessCurSelector,   0.3333), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"DIRTY FACTOR", dirtynessSelector,       0.3333), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"DIRTY LEVEL", dirtynessCurSelector,     0.3333), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Metalness", metalnessSelector,          0.5),
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Smoothness", smoothnessSelector,        0.5), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Emmisive", emmisiveSelector,            0.5), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Paperness", papernessSelector,          0.5), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Streaking", streakingSelector,          0.5), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Blood Factor", bloodynessSelector,     0.5), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Blood Level", bloodynessCurSelector,   0.5), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Dirt Factor", dirtynessSelector,       0.5), 
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Dirt Level", dirtynessCurSelector,     0.5), 
                 })
             )
         })
@@ -175,8 +173,6 @@ void Apps::MaterialViewerApp::spawnHelper()
         );
 
         orbitController.distance = 12.f * pow((float)(1 + helpers.size()/4), 0.575);
-        std::cout << orbitController.distance << "\n";
-        std::cout << helpers.size() << "\n";
     }
 
     ComponentModularity::addChild(*menuInfosTab->comp<EntityGroupInfo>().children[id/4], p);
@@ -258,10 +254,9 @@ EntityRef Apps::MaterialViewerApp::UImenu()
 
 void Apps::MaterialViewerApp::init()
 {
-    /***** Preparing App Settings */
+    /***** Preparing App Settings *****/
     {
         appRoot = newEntity();
-        globals.simulationTime.resume();
         GG::currentConditions.readTxt("saves/gameConditions.txt");
 
         App::setController(&orbitController);

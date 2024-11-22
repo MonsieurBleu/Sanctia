@@ -431,6 +431,7 @@ void Game::mainloop()
 
     Apps::MainGameApp testsubapps1;
     Apps::MaterialViewerApp materialView;
+    Apps::SceneMergeApp sceneMerge;
 
     // SubApps::switchTo(materialView);
 
@@ -645,10 +646,10 @@ void Game::mainloop()
             ambientLight = vec3(0.07);
         }
 
+        SubApps::UpdateApps();
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
 
-        SubApps::UpdateApps();
         /* TODO : remove */
         // ComponentModularity::synchronizeChildren(first);
         ComponentModularity::synchronizeChildren(gameScreenWidget);

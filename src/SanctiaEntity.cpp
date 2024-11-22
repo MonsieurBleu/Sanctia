@@ -450,7 +450,6 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
     ValueHelperRef<std::string> N(new ValueHelper(entity->comp<EntityInfos>().name, U"Name ", vec3(0.85)));
     ADD_VALUE_HELPER(N)
 
-
     if(entity->hasComp<EntityStats>())
     {
         auto &s = entity->comp<EntityStats>();

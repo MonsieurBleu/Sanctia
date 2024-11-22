@@ -119,4 +119,23 @@ namespace Apps
     
                 virtual void clean() override;
     };
+    
+    class SceneMergeApp : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+        public : 
+
+            SceneMergeApp();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
 }

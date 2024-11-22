@@ -607,10 +607,10 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         globals.cpuTime, 
                         EDITOR::MENUS::COLOR::HightlightColor2,
                         getMinmaxMainThread),
-                    TimerPlot(
-                        globals.gpuTime, 
-                        EDITOR::MENUS::COLOR::HightlightColor3,
-                        getMinmaxMainThread)
+                    // TimerPlot(
+                    //     globals.gpuTime, 
+                    //     EDITOR::MENUS::COLOR::HightlightColor3,
+                    //     getMinmaxMainThread)
                 })
             )
         })
@@ -688,7 +688,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     ColoredConstEntry(
                         "GPU",
                         [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
-                        EDITOR::MENUS::COLOR::HightlightColor3
+                        EDITOR::MENUS::COLOR::HightlightColor1
                     )
                 })
             ),

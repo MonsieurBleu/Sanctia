@@ -27,6 +27,8 @@ void SubApps::cleanActiveApp()
     activeApp->uiMenuParentTMP->comp<EntityGroupInfo>().children.clear();
     activeApp->clean();
 
+    globals.mainThreadTime.reset();
+
     ManageGarbage<Items>();
     ManageGarbage<WidgetBackground>();
     ManageGarbage<WidgetSprite>();
@@ -83,6 +85,7 @@ void SubApps::switchTo(SubApps *ptr)
     for(auto &i : activeApp->inputs)
         i->activated = true;
 
+    globals.mainThreadTime.reset();
     ptr->init();
     auto newUI = ptr->UImenu();
     // ptr->uiMenuParentTMP->comp<EntityGroupInfo>().children.push_back();

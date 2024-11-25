@@ -12,16 +12,6 @@
 
 Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
 {
-    inputs.push_back(&
-        InputManager::addEventInput(
-        "toggle event graph", GLFW_KEY_J, 0, GLFW_PRESS, [&]() {
-            if (activeApp == this)
-                SubApps::switchTo(nullptr);
-            else
-                SubApps::switchTo(this);
-        })
-    );
-
     // toggle A, B, C, D and E
     inputs.push_back(&
         InputManager::addEventInput(

@@ -82,6 +82,8 @@ void SubApps::switchTo(SubApps *ptr)
 
     activeApp = ptr;
 
+    activeApp->uiChoiceParentTMP->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
     for(auto &i : activeApp->inputs)
         i->activated = true;
 
@@ -105,4 +107,16 @@ void SubApps::switchTo(SubApps *ptr)
     //     if(!a->uiMenuParentTMP->comp<EntityGroupInfo>().children.size())
     //         a->uiMenuParentTMP->comp<EntityGroupInfo>().children.push_back(ptr->UImenu());
     // }    
+}
+
+void SubApps::switchTo(const std::string &name)
+{
+    for(auto a : apps)
+    {
+        if(a->name == name)
+        {
+            switchTo(a);
+            return;
+        }
+    }
 }

@@ -12,16 +12,6 @@
 
 Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
 {
-    inputs.push_back(&
-        InputManager::addEventInput(
-        "toggle event graph", GLFW_KEY_J, 0, GLFW_PRESS, [&]() {
-            if (activeApp == this)
-                SubApps::switchTo(nullptr);
-            else
-                SubApps::switchTo(this);
-        })
-    );
-
     // toggle A, B, C, D and E
     inputs.push_back(&
         InputManager::addEventInput(
@@ -98,6 +88,7 @@ void Apps::EventGraphApp::init()
     and1 = EventNodeAndPtr(new EventNodeAnd());
     and2 = EventNodeAndPtr(new EventNodeAnd());
     or1 = EventNodeOrPtr(new EventNodeOr());
+    not1 = EventNodeNotPtr(new EventNodeNot());
 
     a->addChild(b);
     b->addChild(and1);
@@ -107,6 +98,8 @@ void Apps::EventGraphApp::init()
     and2->addChild(or1);
     e->addChild(or1);
     or1->addChild(f);
+    f->addChild(not1);
+    not1->addChild(a);
 
     EventGraph::createModel();
 
@@ -124,6 +117,7 @@ void Apps::EventGraphApp::init()
 void Apps::EventGraphApp::update()
 {
     // std::cout << "====== UPDATE ======\n";
+    EventGraph::update();
 };
 
 void Apps::EventGraphApp::clean()

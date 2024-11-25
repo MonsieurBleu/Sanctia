@@ -36,6 +36,8 @@ class SubApps
         virtual void clean() = 0;
 
         static void switchTo(SubApps *ptr);
+        static void switchTo(const std::string &name);
+        static std::string getActiveAppName() {return activeApp->name;}
 
         static void UpdateApps();
 
@@ -105,6 +107,7 @@ namespace Apps
             EventNodePtr and1;
             EventNodePtr and2;
             EventNodePtr or1;
+            EventNodePtr not1;
 
             OrbitController orbitController;
         public:

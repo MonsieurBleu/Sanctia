@@ -23,6 +23,8 @@
 
 #include <Subapps.hpp>
 
+#include <Settings.hpp>
+
 void Game::mainloop()
 {
 
@@ -476,8 +478,8 @@ void Game::mainloop()
     scene2D.updateAllObjects();
     fuiBatch->batch();
     fuiBatch->state.frustumCulled = false;
-    SSAO.disable();
-    Bloom.disable();
+    // SSAO.disable();
+    // Bloom.disable();
 
     glPointSize(3.f);
 
@@ -493,7 +495,10 @@ void Game::mainloop()
 
     std::cout << "Press " << k << " to toggle HUD\n";
 
-
+    if (Settings::lastOpenedApp != "")
+    {
+        SubApps::switchTo(Settings::lastOpenedApp);      
+    }
 
     // PlottingHelperRef plottest(new PlottingHelper(vec4(1), 256));
     // scene2D.add(plottest);
@@ -957,6 +962,15 @@ void Game::mainloop()
         /* Main loop End */
         mainloopEndRoutine();
     }
+
+
+    Settings::bloomEnabled = Bloom.isPassEnable();
+    Settings::ssaoEnabled = SSAO.isPassEnable();
+    Settings::renderScale = globals.renderScale();
+    Settings::lastOpenedApp = SubApps::getActiveAppName();
+
+    // save settings to file
+    Settings::save();
 
     physicsThreads.join();
 

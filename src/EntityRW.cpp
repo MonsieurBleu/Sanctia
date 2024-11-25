@@ -28,9 +28,9 @@ DATA_READ_FUNC(EntityRef) {
     while(NEW_VALUE)
     {
         const char *member = buff->read();
-        auto i = ComponentGlobals::ComponentNamesMap.find(member);
+        auto i = ComponentGlobals::ComponentNamesMap->find(member);
 
-        if(i == ComponentGlobals::ComponentNamesMap.end())
+        if(i == ComponentGlobals::ComponentNamesMap->end())
         {
             MEMBER_NOTRECOGNIZED_ERROR
             return data;

@@ -11,6 +11,8 @@
 #include <PhysicsGlobals.hpp>
 #include <Graphics/Shadinclude.hpp>
 
+#include <Settings.hpp>
+
 Game::Game(GLFWwindow *window) : App(window){}
 
 void Game::init(int paramSample)
@@ -18,6 +20,20 @@ void Game::init(int paramSample)
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
    
     // globals._renderScale = 0.5;
+
+    // load settings
+    Settings::load();
+    if (Settings::ssaoEnabled)
+        SSAO.enable();
+    else
+        SSAO.disable();
+
+    if (Settings::bloomEnabled)
+        Bloom.enable();
+    else
+        Bloom.disable();
+
+    globals._renderScale = Settings::renderScale;
 
     App::init();
     

@@ -107,6 +107,7 @@ namespace Apps
             EventNodePtr and1;
             EventNodePtr and2;
             EventNodePtr or1;
+            EventNodePtr not1;
 
             OrbitController orbitController;
         public:

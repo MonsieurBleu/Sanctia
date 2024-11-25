@@ -88,6 +88,7 @@ void Apps::EventGraphApp::init()
     and1 = EventNodeAndPtr(new EventNodeAnd());
     and2 = EventNodeAndPtr(new EventNodeAnd());
     or1 = EventNodeOrPtr(new EventNodeOr());
+    not1 = EventNodeNotPtr(new EventNodeNot());
 
     a->addChild(b);
     b->addChild(and1);
@@ -97,6 +98,8 @@ void Apps::EventGraphApp::init()
     and2->addChild(or1);
     e->addChild(or1);
     or1->addChild(f);
+    f->addChild(not1);
+    not1->addChild(a);
 
     EventGraph::createModel();
 
@@ -114,6 +117,7 @@ void Apps::EventGraphApp::init()
 void Apps::EventGraphApp::update()
 {
     // std::cout << "====== UPDATE ======\n";
+    EventGraph::update();
 };
 
 void Apps::EventGraphApp::clean()

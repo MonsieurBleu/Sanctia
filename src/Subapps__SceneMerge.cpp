@@ -12,7 +12,29 @@
 
 Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
 {
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "merge scene", GLFW_KEY_SEMICOLON, 0, GLFW_PRESS, [&]() {
+                
+                std::cout <<"MERGING OMG\n";
+                physicsMutex.lock();
 
+                ComponentModularity::mergeChildren(*appRoot);
+
+                ManageGarbage<Items>();
+                ManageGarbage<WidgetBackground>();
+                ManageGarbage<WidgetSprite>();
+                ManageGarbage<WidgetText>();
+                ManageGarbage<EntityModel>();
+                ManageGarbage<PhysicsHelpers>();
+
+                physicsMutex.unlock();
+            },
+            InputManager::Filters::always, false)
+    );    
+
+    for(auto &i : inputs)
+        i->activated = false;
 };
 
 EntityRef Apps::SceneMergeApp::UImenu()
@@ -30,12 +52,13 @@ void Apps::SceneMergeApp::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity();
+        appRoot = newEntity("AppRoot");
         App::setController(&orbitController);
 
         globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
         globals.currentCamera->getState().FOV = radians(90.f);
-        orbitController.distance = 150;
+        // orbitController.distance = 150;
+        orbitController.distance = 5;
     }
 
     /***** Creatign Terrain *****/
@@ -49,7 +72,7 @@ void Apps::SceneMergeApp::init()
     // );
 
     /***** Creating Scene To Stress Test *****/
-    int size = 50;
+    int size = 5;
 
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
@@ -109,6 +132,8 @@ void Apps::SceneMergeApp::init()
 
         ComponentModularity::addChild(*appRoot, table);
     }
+
+    // ComponentModularity::mergeChildren(*appRoot);
 
     globals.simulationTime.resume();
 }

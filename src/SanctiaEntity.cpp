@@ -111,30 +111,161 @@ COMPONENT_DEFINE_MERGE(EntityModel)
 {
     globals.getScene()->remove(child->comp<EntityModel>());
 
-    auto childModel = child->comp<EntityModel>()->copy();
-    auto &parentModel = parent.comp<EntityModel>();
+    // std::cout << "MERGING ENTITY MODEL FOR CHILD : " << child->comp<EntityInfos>().name << "\t"
+    // << " AND PARENT " << parent.comp<EntityInfos>().name << "\n";
 
-    if(parent.hasComp<EntityModel>() && parent.hasComp<EntityModel>())
+    if(!parent.hasComp<EntityModel>())
     {
-        auto &childState = child->comp<EntityState3D>();
-        auto &parentState = parent.comp<EntityState3D>();
+        // parent.set<EntityModel>(child->comp<EntityModel>());
+        parent.set<EntityModel>({newObjectGroup()});
 
-        childModel->state.setPosition(childState.position - parentState.position);
-
-        /* TODO : investigate if rotation need to be merged too */
-        // if(childState.usequat)
-        // {
-
-        // }
+        // std::cout << "PARENT COMP ENTITY MODEL WAS CREATED\n";
+        // return;
     }
 
-    parentModel->add(childModel);
-    globals.getScene()->add(childModel);
+    auto childModel = child->comp<EntityModel>()->copy();
+    // auto childModel = child->comp<EntityModel>();
+    auto &parentModel = parent.comp<EntityModel>();
+
+    auto &childState = child->comp<EntityState3D>();
+
+    auto parentState = parent.hasComp<EntityState3D>() ? parent.comp<EntityState3D>() : EntityState3D();
+
+    
+
+    /* TODO : investigate if rotation need to be merged too */
+    // if(childState.usequat)
+    // {
+
+    // }
+
+    // if(parent.hasComp<EntityModel>())
+    if(!parentModel->getChildren().size())
+    {
+        childModel->state.setPosition(childState.position - parentState.position);
+
+        parentModel->add(childModel);
+        globals.getScene()->add(childModel);
+        // std::cout << glm::to_string(childModel->state.position) << "\n";
+    
+        // std::cout << "SIMPLE ENTITY MODEL MERGE\n";
+    }
+    else 
+    {
+        // std::cout << "BATCHING ENTITY MODEL MERGE\n";
+
+        auto mesh1 = parentModel->getChildren()[0]->getMeshes()[0];
+        auto mesh2 = childModel->getMeshes()[0];
+
+        auto vao1 = mesh1->getVao();
+        auto vao2 = mesh2->getVao();
+
+        auto &m1 = vao1->attributes[0];
+        auto &m2 = vao2->attributes[0];
+
+        // m1->getVao();
+        int vcount = m2.getVertexCount();
+        
+        GenericSharedBuffer nbuff(new char[sizeof(ivec4)*(m1.getVertexCount() + m2.getVertexCount())]);
+        memcpy(nbuff.get(), m1.getBufferAddr(), sizeof(ivec4)*m1.getVertexCount());
+
+        // childModel->state.update();
+        mat4 pt = mesh1->state.modelMatrix;
+        mat4 ct = mesh2->state.modelMatrix;
+        mat4 transform = inverse(pt) * ct;
+
+        for(int i = 0; i < vcount; i++)
+        {
+            ivec4 v = ((ivec4*)m2.getBufferAddr())[i];
+
+            
+
+            vec3 modelPosition = vec3(ivec3(ivec3(v) & (0x00FFFFFF)) - 0x800000)*1e-3f;
+            // std::cout << to_string(modelPosition)<< "\t";
+
+            modelPosition = vec3(transform * vec4(modelPosition, 1));
+            // modelPosition = vec3(childModel->state.modelMatrix * vec4(modelPosition, 1));
+            // modelPosition = modelPosition + childModel->state.position;
+            // modelPosition = modelPosition + vec3(1, 0, 0);
+            // std::cout << to_string(modelPosition) << "\n";
+
+            ivec3 packedPosition = (ivec3(modelPosition*1e3f) + 0x800000) 
+            // & (0x00FFFFFF)
+            ;
+            // std::cout << to_string(vec3(packedPosition - 0x800000)*1e-3f) << "\n";
+
+            v.x &= ~(0x00FFFFFF);
+            v.x |= packedPosition.x;
+
+            v.y &= ~(0x00FFFFFF);
+            v.y |= packedPosition.y;
+
+            v.z &= ~(0x00FFFFFF);
+            v.z |= packedPosition.z;
+
+            ((ivec4*)nbuff.get())[i + m1.getVertexCount()] = v;
+        }
+
+        // m1.updateData(nbuff, m1.getVertexCount() + m2.getVertexCount());
+
+        MeshVao finalVao(new VertexAttributeGroup({
+            VertexAttribute(nbuff, 0, m1.getVertexCount() + m2.getVertexCount(), 4, GL_UNSIGNED_INT, false)
+        }));
+
+        GenericSharedBuffer nfaces(new char[sizeof(ivec3)*(vao1.nbFaces/3 + vao2.nbFaces/3)]);
+        memcpy(nfaces.get(), vao1.faces.get(), sizeof(ivec3)*vao1.nbFaces/3);
+        // memset(nfaces.get(), 0, sizeof(ivec3)*vao1.nbFaces/3);
+        
+        for(int i = 0; i < vao2.nbFaces/3; i++)
+        {
+            ((ivec3*)nfaces.get())[i + vao1.nbFaces/3] = ((ivec3*)vao2.faces.get())[i] + (int)m1.getVertexCount();
+
+            // ((ivec3*)nfaces.get())[i + vao1.nbFaces/3] = ((ivec3*)vao2.faces.get())[i];
+
+            // std::cout << 
+            // // ((int*)vao2.get())[i]
+            // glm::to_string(((ivec3*)vao2.faces.get())[i]) << "\t" <<
+            // glm::to_string(((ivec3*)nfaces.get())[i + vao1.nbFaces/3]) 
+            // << "\n";
+        }
+
+        // for(int i = 0; i < 10; i++)
+        // {
+        //     std::cout << 
+        //     ((int*)vao2.faces.get())[i]
+        //     // glm::to_string(((ivec3*)vao2.get())[i]) << "\t" <<
+        //     // glm::to_string(((ivec3*)nfaces.get())[i + vao1.nbFaces/3]) 
+        //     << "\n";
+        // }
+
+        // vao1.faces = nfaces;
+        // vao1.nbFaces = vao1.nbFaces + vao2.nbFaces;
+        // vao1->generate();
+
+        finalVao.faces = nfaces;
+        finalVao.nbFaces = vao1.nbFaces + vao2.nbFaces;
+        mesh1->setVao(finalVao);
+    }
 }
 
 COMPONENT_DEFINE_MERGE(RigidBody)
 {
+    // std::cout << "MERGING RIGIDBODY\n";
     auto &childBody = child->comp<RigidBody>();
+
+    if(!parent.hasComp<RigidBody>())
+    {
+        // std::cout << "OVERWRITTING\n";
+        // parent.set<RigidBody>(child->comp<RigidBody>());
+        parent.set<RigidBody>(PG::world->createRigidBody(
+            // childBody->getTransform()
+            rp3d::Transform()
+            ));
+        parent.comp<RigidBody>()->setType(childBody->getType());
+        // return;
+    }
+    // return;
+
     auto &parentBody = parent.comp<RigidBody>();
     
     auto &childTransform = childBody->getTransform();
@@ -504,7 +635,7 @@ template<> void Component<RigidBody>::ComponentElem::init()
     }
 
     /* TODO : maybe remove this and make a special static rigid body component */
-    if(data->getType() == rp3d::BodyType::STATIC)
+    if(data->getType() == rp3d::BodyType::STATIC && entity->hasComp<EntityState3D>())
     {
         auto &t = data->getTransform();
         auto &s = entity->comp<EntityState3D>();

@@ -57,6 +57,9 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
             orbitController.position = EventGraph::getNodePos("E");
         })
     );
+
+    for(auto i : inputs)
+        i->activated = false;
 };
 
 EntityRef Apps::EventGraphApp::UImenu()
@@ -112,6 +115,9 @@ void Apps::EventGraphApp::init()
     orbitController.distance = 5;
 
     glLineWidth(3.0f);
+
+    for(auto i : inputs)
+        i->activated = true;
 }
 
 void Apps::EventGraphApp::update()
@@ -126,4 +132,7 @@ void Apps::EventGraphApp::clean()
     appRoot = EntityRef();
 
     glLineWidth(1.0f);
+
+    for(auto i : inputs)
+        i->activated = false;
 };

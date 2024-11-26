@@ -16,6 +16,8 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
         InputManager::addEventInput(
             "merge scene", GLFW_KEY_SEMICOLON, 0, GLFW_PRESS, [&]() {
                 
+                globals.mainThreadTime.hold();
+
                 std::cout <<"MERGING OMG\n";
                 physicsMutex.lock();
 
@@ -29,6 +31,12 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
                 ManageGarbage<PhysicsHelpers>();
 
                 physicsMutex.unlock();
+                
+                auto model = appRoot->comp<EntityModel>()->optimizedBatchedCopy();
+                globals.getScene()->remove(appRoot->comp<EntityModel>());
+                appRoot->set<EntityModel>(EntityModel{model});
+                
+                globals.mainThreadTime.start();
             },
             InputManager::Filters::always, false)
     );    
@@ -58,7 +66,8 @@ void Apps::SceneMergeApp::init()
         globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
         globals.currentCamera->getState().FOV = radians(90.f);
         // orbitController.distance = 150;
-        orbitController.distance = 5;
+        orbitController.distance = 75;
+        // orbitController.distance = 5;
     }
 
     /***** Creatign Terrain *****/
@@ -72,7 +81,7 @@ void Apps::SceneMergeApp::init()
     // );
 
     /***** Creating Scene To Stress Test *****/
-    int size = 5;
+    int size = 25;
 
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
@@ -96,7 +105,7 @@ void Apps::SceneMergeApp::init()
             rp3d::Transform(
                 PG::torp3d(
                     vec3(4.0 * (i-size/2), 
-                    -10, 
+                    0, 
                     4 * (j-size/2))
                 ),
                 DEFQUAT)
@@ -119,15 +128,24 @@ void Apps::SceneMergeApp::init()
         {
             auto z = Blueprint::Zweihander();
 
+            // z->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
+
             z->comp<RigidBody>()->setTransform(rp3d::Transform(
+
+                table->comp<RigidBody>()->getTransform().getPosition() + 
+
                 PG::torp3d(
-                    // table->comp<EntityState3D>().position + 
                     vec3(0, 2, 0)
+                    // + vec3(i, 0, j)
                 ),
                 DEFQUAT));
 
-            z->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
+
+            z->comp<RigidBody>()->setType(rp3d::BodyType::STATIC);
+            z->set<RigidBody>(z->comp<RigidBody>());
+
             ComponentModularity::addChild(*table, z);
+            // ComponentModularity::addChild(*appRoot, z);
         }
 
         ComponentModularity::addChild(*appRoot, table);

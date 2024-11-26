@@ -22,18 +22,18 @@ void Game::init(int paramSample)
     // globals._renderScale = 0.5;
 
     // load settings
-    // Settings::load();
-    // if (Settings::ssaoEnabled)
-    //     SSAO.enable();
-    // else
-    //     SSAO.disable();
+    Settings::load();
+    if (Settings::ssaoEnabled)
+        SSAO.enable();
+    else
+        SSAO.disable();
 
-    // if (Settings::bloomEnabled)
-    //     Bloom.enable();
-    // else
-    //     Bloom.disable();
+    if (Settings::bloomEnabled)
+        Bloom.enable();
+    else
+        Bloom.disable();
 
-    // globals._renderScale = Settings::renderScale;
+    globals._renderScale = Settings::renderScale;
 
     App::init();
     

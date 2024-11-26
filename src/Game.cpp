@@ -52,7 +52,7 @@ void Game::mainloop()
     // sun->cameraResolution = vec2(2048);
     // sun->cameraResolution = vec2(4096);
     sun->shadowCameraSize = vec2(256, 256);
-    sun->activateShadows();
+    // sun->activateShadows();
     scene.add(sun);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -955,7 +955,7 @@ void Game::mainloop()
         /* Final Screen Composition */
         glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
         finalProcessingStage.activate();
-        sun->shadowMap.bindTexture(0, 6);
+        // sun->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();
 

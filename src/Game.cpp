@@ -42,18 +42,19 @@ void Game::mainloop()
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
-    SceneDirectionalLight sun = newDirectionLight(DirectionLight()
+    SceneDirectionalLight sunLight = newDirectionLight(DirectionLight()
                                                       // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
                                                       .setColor(vec3(1))
                                                       .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
                                                       .setIntensity(1.0));
 
-    sun->cameraResolution = vec2(8192);
-    // sun->cameraResolution = vec2(2048);
-    // sun->cameraResolution = vec2(4096);
-    sun->shadowCameraSize = vec2(256, 256);
-    // sun->activateShadows();
-    scene.add(sun);
+    GG::sun = sunLight;
+
+    GG::sun->cameraResolution = vec2(8192);
+    GG::sun->shadowCameraSize = vec2(0, 0);
+
+    GG::sun->activateShadows();
+    scene.add(sunLight);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
@@ -637,9 +638,9 @@ void Game::mainloop()
 
             // not sure about this theta
             float theta = acos(sunDir.y);
-            sun->setIntensity(smoothstep(-0.1f, 0.5f, theta));
+            sunLight->setIntensity(smoothstep(-0.1f, 0.5f, theta));
 
-            sun->setColor(
+            sunLight->setColor(
                 mix(
                     vec3(255, 198, 0)/255.f,
                     vec3(1, 1, 1),
@@ -647,7 +648,7 @@ void Game::mainloop()
                 )
             );
 
-            sun->setDirection(-sunDir);
+            sunLight->setDirection(-sunDir);
 
             ambientLight = vec3(0.07);
         }
@@ -856,8 +857,15 @@ void Game::mainloop()
         ManageGarbage<WidgetSprite>();
         ManageGarbage<WidgetText>();
 
-        GlobalComponentToggler<PhysicsHelpers>::updateALL();
-        GlobalComponentToggler<InfosStatsHelpers>::updateALL();
+
+        if(GlobalComponentToggler<PhysicsHelpers>::needUpdate() || GlobalComponentToggler<InfosStatsHelpers>::needUpdate())
+        {
+            physicsMutex.lock();
+            GlobalComponentToggler<PhysicsHelpers>::updateALL();
+            GlobalComponentToggler<InfosStatsHelpers>::updateALL();
+            physicsMutex.unlock();
+        }
+
 
         mainloopPreRenderRoutine();
 

@@ -18,7 +18,9 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
                 
                 globals.mainThreadTime.hold();
 
-                std::cout <<"MERGING OMG\n";
+                NAMED_TIMER(MerginSceneBackground);
+
+                MerginSceneBackground.start();
                 physicsMutex.lock();
 
                 ComponentModularity::mergeChildren(*appRoot);
@@ -36,7 +38,10 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
                 globals.getScene()->remove(appRoot->comp<EntityModel>());
                 appRoot->set<EntityModel>(EntityModel{model});
                 
+                MerginSceneBackground.end();
                 globals.mainThreadTime.start();
+
+                std::cout << MerginSceneBackground << "\n";
             },
             InputManager::Filters::always, false)
     );    
@@ -66,8 +71,12 @@ void Apps::SceneMergeApp::init()
         globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
         globals.currentCamera->getState().FOV = radians(90.f);
         // orbitController.distance = 150;
-        orbitController.distance = 75;
+        // orbitController.distance = 75;
         // orbitController.distance = 5;
+        orbitController.distance = 200;
+
+        GG::sun->cameraResolution = vec2(8192);
+        GG::sun->shadowCameraSize = vec2(2048, 2048);
     }
 
     /***** Creatign Terrain *****/
@@ -81,7 +90,8 @@ void Apps::SceneMergeApp::init()
     // );
 
     /***** Creating Scene To Stress Test *****/
-    int size = 25;
+    // int size = 100;
+    int size = 60;
 
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
@@ -108,7 +118,10 @@ void Apps::SceneMergeApp::init()
                     0, 
                     4 * (j-size/2))
                 ),
-                DEFQUAT)
+                // DEFQUAT
+                PG::torp3d(quat(vec3(0, 1, 0)))
+                // PG::torp3d(quat(vec3(0, 0, 1))) /* TODO : rotation problem before merging*/
+                )
         );
 
         Blueprint::Assembly::AddEntityBodies(body, table.get(),
@@ -128,11 +141,10 @@ void Apps::SceneMergeApp::init()
         {
             auto z = Blueprint::Zweihander();
 
-            // z->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
 
             z->comp<RigidBody>()->setTransform(rp3d::Transform(
 
-                table->comp<RigidBody>()->getTransform().getPosition() + 
+                // table->comp<RigidBody>()->getTransform().getPosition() + 
 
                 PG::torp3d(
                     vec3(0, 2, 0)
@@ -142,6 +154,7 @@ void Apps::SceneMergeApp::init()
 
 
             z->comp<RigidBody>()->setType(rp3d::BodyType::STATIC);
+            // z->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
             z->set<RigidBody>(z->comp<RigidBody>());
 
             ComponentModularity::addChild(*table, z);
@@ -184,5 +197,7 @@ void Apps::SceneMergeApp::clean()
     globals.currentCamera->getState().FOV = radians(90.f);
     appRoot = EntityRef();
     App::setController(nullptr);
+
+    GG::sun->shadowCameraSize = vec2(0, 0);
 }
 

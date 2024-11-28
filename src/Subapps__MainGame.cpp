@@ -181,6 +181,7 @@ void Apps::MainGameApp::init()
         Game::playerControl = PlayerController(globals.currentCamera);
         App::setController(&Game::playerControl);
 
+        GG::sun->shadowCameraSize = vec2(256, 256);
     }
 
     /***** Creatign Terrain *****/
@@ -427,6 +428,8 @@ void Apps::MainGameApp::clean()
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
     globals.currentCamera->getState().FOV = radians(90.f);
+
+    GG::sun->shadowCameraSize = vec2(1, 1);
 
     App::setController(nullptr);
 };

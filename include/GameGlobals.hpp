@@ -33,6 +33,8 @@ class GG
         static inline EntityRef playerEntity;
 
         static inline float timeOfDay = 10.0f;
+
+        static inline SceneDirectionalLight sun;
 };
 
 namespace EDITOR 

@@ -1,0 +1,241 @@
+"Mannequin"
+	: EntityState3D 
+		: position -5.000000e+00 +3.000000e+00 +0.000000e+00
+		: lookDirection +1.000000e+00 +0.000000e+00 +0.000000e+00
+		: usequat f
+		: useinit f
+		;
+	: EntityDeplacementState 
+		: speed +0.000000e+00
+		: deplacementDirection +1.000000e+00 +0.000000e+00 +0.000000e+00
+		: wantedDepDirection +0.000000e+00 +0.000000e+00 +0.000000e+00
+		: grounded f
+		: wantedSpeed +0.000000e+00
+		: walkSpeed +2.000000e+00
+		: sprintSpeed +7.000000e+00
+		: airSpeed +1.000000e+00
+		;
+	: EntityStats 
+		: alive t
+		: health 
+			: min +0.000000e+00
+			: max +:.000000e+01
+			: cur +:.000000e+01
+			;
+		: stamina 
+			: min +0.000000e+00
+			: max +:.000000e+01
+			: cur +:.000000e+01
+			;
+		: resistances 
+			: Pure +0.000000e+00
+			: Blunt +0.000000e+00
+			: Slash +0.000000e+00
+			: Piercing +0.000000e+00
+			;
+		;
+	: CharacterDialogues 
+		: filename "ressources/dialogues/Fariah Grisnier.md"
+		: name "Fariah Grisnier"
+		;
+	: NpcPcRelation 
+		: known f
+		: affinity +0
+		;
+	: ActionState 
+		: lockedDirection +1.000000e+00 +0.000000e+00 +0.000000e+00
+		: isTryingToAttack f
+		: isTryingToBlock f
+		: stun f
+		: blocking f
+		: attacking f
+		: lockedMaxSpeed +0.000000e+00
+		;
+	: Faction 
+		: type PLAYER_ENEMY
+		;
+	: Items 
+		: WEAPON_SLOT
+			: boneAttachementID 24
+			: "ZweiHander"
+				: EntityState3D 
+					: usequat t
+					: useinit f
+					;
+				: ItemInfos 
+					: price +100
+					: damageMultiplier +1.000000e+01
+					: damageType Slash
+					;
+				: ItemTransform 
+					: mat +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 
+					;
+				: EntityModel Zweihander
+					;
+				: Effect 
+					;
+				: RigidBody 
+					: type KINEMATIC
+					: canSleep t
+					: sleeping t
+					: gravity t
+					: Colliders 
+						: Collider *Shape must always be given first*
+							: BoxShape 
+								: extent +1.000000e+00 +1.000000e-01 +1.000000e-01
+								;
+							: Transform 
+								: position +2.000000e-01 +0.000000e+00 +0.000000e+00
+								;
+							: CollisionCategory 
+								: ENVIRONEMENT
+								;
+							: CollideWith 
+								: ENVIRONEMENT
+								;
+							: ColliderMaterial 
+								: bounciness +0.000000e+00
+								: friction +4.999999e-01
+								;
+							: isTrigger f
+							;
+						: Collider *Shape must always be given first*
+							: CapsuleShape 
+								: height +1.230000e+00
+								: radius +1.000000e-01
+								;
+							: Transform 
+								: position +6.199999e-01 +0.000000e+00 +0.000000e+00
+								: quaternion +7.071067e-01 +0.000000e+00 +0.000000e+00 +7.071067e-01
+								;
+							: CollisionCategory 
+								: HITZONE
+								;
+							: CollideWith 
+								: HITZONE
+								;
+							: ColliderMaterial 
+								: bounciness +5.000000e-01
+								: friction +3.000000e-01
+								;
+							: isTrigger t
+							;
+						;
+					: active f
+					;
+				;
+			;
+		: LEFT_FOOT_SLOT
+			: boneAttachementID 7
+			: "right foot"
+				: EntityState3D 
+					: lookDirection +1.000000e+00 +0.000000e+00 +0.000000e+00
+					: usequat f
+					: useinit f
+					;
+				: ItemInfos 
+					: price +0
+					: damageMultiplier +5.000000e+00
+					: damageType Blunt
+					;
+				: ItemTransform 
+					: mat +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 +0.000000e+00 
+					;
+				: Effect 
+					;
+				: RigidBody 
+					: type KINEMATIC
+					: canSleep t
+					: sleeping t
+					: gravity t
+					: Colliders 
+						: Collider *Shape must always be given first*
+							: CapsuleShape 
+								: height +3.500000e-01
+								: radius +2.000000e-01
+								;
+							: Transform 
+								: position +0.000000e+00 +2.500000e-01 +0.000000e+00
+								;
+							: CollisionCategory 
+								: HITZONE
+								;
+							: CollideWith 
+								: HITZONE
+								;
+							: ColliderMaterial 
+								: bounciness +5.000000e-01
+								: friction +3.000000e-01
+								;
+							: isTrigger t
+							;
+						;
+					: active f
+					;
+				;
+			;
+		;
+	: EntityModel NpcTest
+		;
+	: AnimationControllerInfos 
+		: name 65_2HSword
+		: type Biped
+		;
+	: RigidBody 
+		: type DYNAMIC
+		: mass +7.500000e+01
+		: angularLockFactor +0.000000e+00 +1.000000e+00 +0.000000e+00
+		: canSleep t
+		: gravity t
+		: Colliders 
+			: Collider *Shape must always be given first*
+				: CapsuleShape 
+					: height +8.750000e-01
+					: radius +4.375000e-01
+					;
+				: Transform 
+					: position +0.000000e+00 +8.750000e-01 +0.000000e+00
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +4.999999e-01
+					;
+				: isTrigger f
+				;
+			: Collider *Shape must always be given first*
+				: CapsuleShape 
+					: height +8.750000e-01
+					: radius +4.156250e-01
+					;
+				: Transform 
+					: position +0.000000e+00 +8.750000e-01 +0.000000e+00
+					;
+				: CollisionCategory 
+					: HITZONE
+					;
+				: CollideWith 
+					: HITZONE
+					;
+				: ColliderMaterial 
+					: bounciness +5.000000e-01
+					: friction +3.000000e-01
+					;
+				: isTrigger t
+				;
+			;
+		: active t
+		;
+	: DeplacementBehaviour FOLLOW_WANTED_DIR
+		;
+	: AgentState 
+		: state COMBAT_POSITIONING
+		: timeSinceLastState +0.000000e+00
+		: randomTime +0.000000e+00
+		;
+	;

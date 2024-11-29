@@ -79,34 +79,20 @@ EntityRef  Blueprint::EDITOR_ENTITY::INO::Toggable(
     return e;
 }
 
-
-EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+EntityRef Blueprint::EDITOR_ENTITY::INO::TextInput(
     const std::string &name,
-    float min, float max, int padding, 
-    WidgetButton::InteractFunc ifunc, 
-    WidgetButton::UpdateFunc ufunc,
-    std::function<void(std::u32string&)> fromText, 
+    std::function<void(std::u32string &)> fromText, 
     std::function<std::u32string()> toText
     )
 {
-    auto s = Blueprint::EDITOR_ENTITY::INO::SmoothSlider(name, min, max, padding, ifunc, ufunc);
-
-    s->comp<WidgetBox>() = WidgetBox(
-        vec2(-1, 1./3.), vec2(-1, 1)
-    );
-
     auto t = newEntity(name
         , UI_BASE_COMP
-        , WidgetBox(
-            vec2(1./3., 1),
-            vec2(-1, 1)
-            )
+        , WidgetBox()
         , WidgetBackground()
         , WidgetStyle()
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
             .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
             .setbackgroundColor2(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
-
             .settextColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
             .settextColor2(EDITOR::MENUS::COLOR::HightlightColor1)
         , WidgetText(U"")
@@ -127,10 +113,35 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         }
     ));
 
+    return t;
+}
+
+EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    const std::string &name,
+    float min, float max, int padding, 
+    WidgetButton::InteractFunc ifunc, 
+    WidgetButton::UpdateFunc ufunc,
+    std::function<void(std::u32string&)> fromText, 
+    std::function<std::u32string()> toText
+    )
+{
+    auto s = Blueprint::EDITOR_ENTITY::INO::SmoothSlider(name, min, max, padding, ifunc, ufunc);
+
+    s->comp<WidgetBox>() = WidgetBox(
+        vec2(-1, 1./3.), vec2(-1, 1)
+    );
+
+    auto t = Blueprint::EDITOR_ENTITY::INO::TextInput(name, fromText, toText);
+
+    t->comp<WidgetBox>() = WidgetBox(
+        vec2(1./3., 1), vec2(-1, 1)
+    );
+
     auto p = newEntity(name + " - Menu"
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
+            .setautomaticTabbing(1)
         , EntityGroupInfo({s, t})
     );
 
@@ -152,6 +163,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::NamedEntry(
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
+            // .setautomaticTabbing(1)
         , EntityGroupInfo({
             newEntity(entryName + " - Helper Name"
                 , UI_BASE_COMP

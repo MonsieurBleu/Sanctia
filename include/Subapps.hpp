@@ -29,6 +29,8 @@ class SubApps
 
         virtual EntityRef UImenu() = 0;
 
+        virtual EntityRef UIcontrols();
+
         virtual void init() = 0;
 
         virtual void update() = 0;
@@ -134,6 +136,33 @@ namespace Apps
             SceneMergeApp();
 
             virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
+    class EntityCreator : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+            struct CurrentEntityInfo
+            {
+                std::string name;
+
+            } currentEntity;
+
+        public : 
+
+            EntityCreator();
+
+            virtual EntityRef UImenu() override;
+
+            virtual EntityRef UIcontrols() override;
 
             virtual void init() override;
 

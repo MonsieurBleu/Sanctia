@@ -437,6 +437,8 @@ void Game::mainloop()
     Apps::EventGraphApp eventGraph;
     Apps::SceneMergeApp sceneMerge;
 
+    Apps::EntityCreator entityCreator;
+
     // SubApps::switchTo(materialView);
 
     // Apps::MainGameApp testsubapps2;

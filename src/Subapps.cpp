@@ -27,6 +27,8 @@ void SubApps::cleanActiveApp()
     activeApp->uiMenuParentTMP->comp<EntityGroupInfo>().children.clear();
     activeApp->clean();
 
+    EDITOR::MENUS::AppControl->comp<EntityGroupInfo>().children.clear();
+
     globals.mainThreadTime.reset();
 
     ManageGarbage<Items>();
@@ -92,6 +94,10 @@ void SubApps::switchTo(SubApps *ptr)
     auto newUI = ptr->UImenu();
     // ptr->uiMenuParentTMP->comp<EntityGroupInfo>().children.push_back();
     ComponentModularity::addChild(*ptr->uiMenuParentTMP, newUI);
+
+    ComponentModularity::addChild(
+        *EDITOR::MENUS::AppControl, ptr->UIcontrols()
+    );
     
     newUI->comp<WidgetBox>().displayMax = vec2(UNINITIALIZED_FLOAT);
     newUI->comp<WidgetBox>().displayMin = vec2(UNINITIALIZED_FLOAT);
@@ -119,4 +125,12 @@ void SubApps::switchTo(const std::string &name)
             return;
         }
     }
+}
+
+EntityRef SubApps::UIcontrols()
+{
+    return newEntity(name + "APP CONTROLS"
+        , UI_BASE_COMP
+        , WidgetBox()
+    );
 }

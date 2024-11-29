@@ -53,6 +53,12 @@ namespace Blueprint
                 WidgetButton::UpdateFunc ufunc
             );
 
+            EntityRef TextInput(
+                const std::string &name,
+                std::function<void(std::u32string &)> fromText, 
+                std::function<std::u32string()> toText
+                );
+
             EntityRef ValueInputSlider(
                 const std::string &name,
                 float min, float max, int padding, 

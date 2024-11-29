@@ -99,6 +99,18 @@ DATA_READ_FUNC(EntityRef) {
     DATA_READ_END
 }
 
+template<>
+EntityRef& Loader<EntityRef>::loadFromInfos()
+{
+    EARLY_RETURN_IF_LOADED
+    LOADER_ASSERT(NEW_VALUE)
+
+    DataLoader<EntityRef>::read(buff);
+
+    LOADER_ASSERT(END_VALUE)
+    EXIT_ROUTINE_AND_RETURN
+}
+
 
 AUTOGEN_COMPONENT_RWFUNC(EntityState3D)
 AUTOGEN_COMPONENT_RWFUNC(EntityDeplacementState)

@@ -72,8 +72,8 @@ void Apps::SceneMergeApp::init()
         globals.currentCamera->getState().FOV = radians(90.f);
         // orbitController.distance = 150;
         // orbitController.distance = 75;
-        // orbitController.distance = 5;
-        orbitController.distance = 200;
+        orbitController.distance = 5;
+        // orbitController.distance = 200;
 
         GG::sun->cameraResolution = vec2(8192);
         GG::sun->shadowCameraSize = vec2(2048, 2048);
@@ -91,12 +91,12 @@ void Apps::SceneMergeApp::init()
 
     /***** Creating Scene To Stress Test *****/
     // int size = 100;
-    int size = 60;
+    int size = 25;
 
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
     {
-        ModelRef tableMesh = Loader<MeshModel3D>::get("SceneTest_Table").copy();
+        ModelRef tableMesh = Loader<MeshModel3D>::get("table").copy();
         EntityModel model(EntityModel{newObjectGroup()}); 
         model->add(tableMesh);
 
@@ -160,6 +160,34 @@ void Apps::SceneMergeApp::init()
             ComponentModularity::addChild(*table, z);
             // ComponentModularity::addChild(*appRoot, z);
         }
+
+
+        /* Adding chair */
+        {
+            ModelRef chaiseMesh = Loader<MeshModel3D>::get("chaise").copy();
+            EntityModel chaise_model(EntityModel{newObjectGroup()}); 
+            chaise_model->add(chaiseMesh);
+
+            auto chaise = newEntity("table ^_^", chaise_model, EntityState3D(true));
+
+            rp3d::RigidBody *chaise_body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(1.5, 0, 0), DEFQUAT));
+
+            Blueprint::Assembly::AddEntityBodies(chaise_body, table.get(),
+            {
+                {
+                    PG::common.createBoxShape(rp3d::Vector3(0.4, 1.09, 0.444)),
+                    rp3d::Transform(rp3d::Vector3(0.2, 0.545, 0.222), DEFQUAT)
+                }
+            },
+            {});
+
+            chaise_body->setType(rp3d::BodyType::STATIC);
+
+            chaise->set<RigidBody>(chaise_body);
+
+            ComponentModularity::addChild(*table, chaise);
+        }
+
 
         ComponentModularity::addChild(*appRoot, table);
     }

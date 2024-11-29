@@ -102,8 +102,11 @@ void main()
     exposure += 0.5*rgb2hsv(_fragColor.rgb).g;
 
     vec3 bloom = texture(bEmmisive, uv).rgb;
-    if(bloomEnable != 0) 
-        _fragColor.rgb += exposure * 0.1 * pow(bloom, vec3(2.0 - 1.0/exposure));
+    if(bloomEnable != 0 && 1.0/texture(bDepth, uv).r < 1e5)
+    {
+        // _fragColor.rgb += exposure * 0.1 * pow(bloom, vec3(2.0 - 1.0/exposure));
+        _fragColor.rgb += bloom * 0.5;
+    } 
 
     vec3 mapped = vec3(1.0) - exp(-_fragColor.rgb * exposure);
     mapped = pow(mapped, vec3(1.0 / gamma));

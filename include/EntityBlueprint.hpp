@@ -104,6 +104,15 @@ namespace Blueprint
             EntityRef GlobalBenchmarkScreen();
 
             EntityRef SceneInfos(Scene& scene);
+
+
+            EntityRef StringListSelectionMenu(
+                const std::string &name,
+                std::unordered_map<std::string, EntityRef>& list,
+                WidgetButton::InteractFunc ifunc, 
+                WidgetButton::UpdateFunc ufunc
+            );
+
         };        
     };
 };

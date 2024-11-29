@@ -20,34 +20,49 @@ Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 
 EntityRef Apps::EntityCreator::UImenu()
 {
-    auto menu = newEntity("ENTITY EDITOR APP CONTROLS"
-        , UI_BASE_COMP
-        , WidgetBox()
-        , WidgetStyle()
-            // .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1)
-            .setautomaticTabbing(30)
-        // , WidgetBackground()
+    // auto menu = newEntity("ENTITY EDITOR APP CONTROLS"
+    //     , UI_BASE_COMP
+    //     , WidgetBox()
+    //     , WidgetStyle()
+    //         // .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+    //         .setautomaticTabbing(30)
+    //     // , WidgetBackground()
+    // );
+
+
+    // for(auto &i : Loader<EntityRef>::loadingInfos)
+    // {
+    //     ComponentModularity::addChild(
+    //         *menu,
+    //         newEntity(i.second->buff->getSource()
+    //             , UI_BASE_COMP
+    //             , WidgetBox()
+    //             , WidgetStyle()
+    //                 .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+    //                 .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+    //             , WidgetBackground()
+    //             , WidgetText(UFTconvert.from_bytes(i.first))
+    //             , WidgetButton()
+    //         )
+    //     );
+    // }
+
+    // return menu;
+
+    auto toLoadMenu = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+        "Entities To Load",
+        toLoadList, 
+        [](float v){}, 
+        [](){return 0;}
     );
 
-
-    for(auto &i : Loader<EntityRef>::loadingInfos)
-    {
-        ComponentModularity::addChild(
-            *menu,
-            newEntity(i.second->buff->getSource()
-                , UI_BASE_COMP
-                , WidgetBox()
-                , WidgetStyle()
-                    .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-                    .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
-                , WidgetBackground()
-                , WidgetText(UFTconvert.from_bytes(i.first))
-                , WidgetButton()
-            )
-        );
-    }
-
-    return menu;
+    return newEntity("ENTITY EDITOR APP CONTROLS"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , EntityGroupInfo({
+            toLoadMenu
+        })
+    );
 }
 
 
@@ -95,7 +110,11 @@ void Apps::EntityCreator::init()
         GG::sun->shadowCameraSize = vec2(256, 256);
     }
 
-
+    // for(auto &i : Loader<EntityRef>::loadingInfos)
+    //     toLoadList[i.first] = EntityRef();
+    /* TODO : change to Entiyref later*/
+    for(auto &i : Loader<Texture2D>::loadingInfos)
+        toLoadList[i.first] = EntityRef();
 
     // globals.simulationTime.resume();
 }
@@ -116,6 +135,8 @@ void Apps::EntityCreator::clean()
     globals.currentCamera->getState().FOV = radians(90.f);
     appRoot = EntityRef();
     App::setController(nullptr);
+
+    toLoadList.clear();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
 }

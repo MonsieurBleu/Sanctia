@@ -114,6 +114,44 @@ void Apps::EventGraphApp::init()
     App::setController(&orbitController);
     orbitController.distance = 5;
 
+
+
+    // EDITOR::MENUS::GameScreen->set<WidgetBackground>(
+    //     WidgetBackground()
+    // );
+
+    // EDITOR::MENUS::GameScreen->set<WidgetStyle>(
+    //     WidgetStyle()
+    // ); 
+
+    ComponentModularity::addChild(
+        *EDITOR::MENUS::GameScreen,
+        graphView = newEntity("Graph View"
+            , UI_BASE_COMP
+            , WidgetBox(
+                [](Entity *parent, Entity *child){
+                    // child->comp<WidgetStyle>().backgroundColor1.a = 0.5 + 0.5*sin(globals.appTime.getElapsedTime());
+                
+                    auto &b = child->comp<WidgetBox>();
+                    
+                    b.useClassicInterpolation = true;
+
+                    b.set(vec2(-0.1, 0.1), vec2(-0.1, 0.1));
+
+                    b.set(
+                        vec2(b.initMin.x, b.initMax.x) + 0.1f*(0.5f + 0.5f*sin(globals.appTime.getElapsedTime())),
+                        vec2(b.initMin.y, b.initMax.y) + 0.1f*(0.5f + 0.5f*sin(globals.appTime.getElapsedTime()))
+                    );
+                })
+            , WidgetBackground()
+            , WidgetStyle()
+                .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+        )
+    );
+
+    graphView->comp<WidgetStyle>().backgroundColor1.a = 1;
+
+
     glLineWidth(3.0f);
 
     for(auto i : inputs)
@@ -129,10 +167,15 @@ void Apps::EventGraphApp::update()
 void Apps::EventGraphApp::clean()
 {
     EventGraph::clear();
+    
+    ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, graphView);
+    graphView = EntityRef();
+
     appRoot = EntityRef();
 
     glLineWidth(1.0f);
 
+    
     for(auto i : inputs)
         i->activated = false;
 };

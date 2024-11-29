@@ -112,6 +112,10 @@ namespace Apps
             EventNodePtr not1;
 
             OrbitController orbitController;
+
+            EntityRef graphView;
+            vec2 viewPos;
+
         public:
             
                 EventGraphApp();
@@ -149,6 +153,8 @@ namespace Apps
         private :
 
             OrbitController orbitController;
+
+            std::unordered_map<std::string, EntityRef> toLoadList;
 
             struct CurrentEntityInfo
             {

@@ -9,6 +9,7 @@
 #include <Inputs.hpp>
 #include <Game.hpp>
 #include <EventGraph.hpp>
+#include <Utils.hpp>
 
 Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
 {
@@ -113,15 +114,62 @@ void Apps::EventGraphApp::init()
     f->addChild(not1);
     not1->addChild(a);
 
-    EventGraph::createModel();
+    // EventGraph::createModel();
 
-    ComponentModularity::addChild(
-        *appRoot,
-        newEntity("Event Graph", EventGraph::getModel())
+    // ComponentModularity::addChild(
+    //     *appRoot,
+    //     newEntity("Event Graph", EventGraph::getModel())
+    // );
+
+    App::setController(&dragController);
+    // auto controller = new OrbitController();
+    // App::setController(controller);
+    // controller->distance = 10.0f;
+
+    viewBG = newEntity("Graph View background"
+        , UI_BASE_COMP
+        , WidgetBox(
+            vec2(-1, 1), vec2(-1, 1)
+        )
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1Opaque)
     );
 
-    App::setController(&orbitController);
-    orbitController.distance = 5;
+    graphView = newEntity("Graph View"
+        , UI_BASE_COMP
+        , WidgetBox(
+            [&](Entity *parent, Entity *child){
+                auto &b = child->comp<WidgetBox>();
+                
+                b.useClassicInterpolation = true;
+
+                // std::cout << dragController.getPosition().x << " " << dragController.getPosition().y << std::endl;
+
+                b.set(
+                    vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().x, 
+                    vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().y
+                );
+            }
+        )
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2Opaque)
+    );
+
+    ComponentModularity::addChild(
+        *EDITOR::MENUS::GameScreen,
+        viewBG
+    );
+
+    ComponentModularity::addChild(
+        *viewBG,
+        graphView
+    );
+
+    // vec4 c = "#463f3cd8"_rgba;
+
+    // std::cout << c.r << " " << c.g << " " << c.b << " " << c.a << std::endl;
 
     glLineWidth(3.0f);
 

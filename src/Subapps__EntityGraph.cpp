@@ -18,7 +18,7 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
         "toggle A", GLFW_KEY_A, 0, GLFW_PRESS, [&]() {
             a->set(!a->get());
             EventGraph::updateModel();
-            orbitController.position = EventGraph::getNodePos("A");
+            // orbitController.position = EventGraph::getNodePos("A");
         })
     );
 
@@ -27,7 +27,7 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
         "toggle B", GLFW_KEY_B, 0, GLFW_PRESS, [&]() {
             b->set(!b->get());
             EventGraph::updateModel();
-            orbitController.position = EventGraph::getNodePos("B");
+            // orbitController.position = EventGraph::getNodePos("B");
         })
     );
 
@@ -36,7 +36,7 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
         "toggle C", GLFW_KEY_C, 0, GLFW_PRESS, [&]() {
             c->set(!c->get());
             EventGraph::updateModel();
-            orbitController.position = EventGraph::getNodePos("C");
+            // orbitController.position = EventGraph::getNodePos("C");
         })
     );
 
@@ -45,7 +45,7 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
         "toggle D", GLFW_KEY_D, 0, GLFW_PRESS, [&]() {
             d->set(!d->get());
             EventGraph::updateModel();
-            orbitController.position = EventGraph::getNodePos("D");
+            // orbitController.position = EventGraph::getNodePos("D");
         })
     );
 
@@ -54,8 +54,19 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
         "toggle E", GLFW_KEY_E, 0, GLFW_PRESS, [&]() {
             e->set(!e->get());
             EventGraph::updateModel();
-            orbitController.position = EventGraph::getNodePos("E");
+            // orbitController.position = EventGraph::getNodePos("E");
         })
+    );
+
+    inputs.push_back(
+        &InputManager::addEventInput(
+            "click eventgraph", GLFW_MOUSE_BUTTON_LEFT, 0, GLFW_PRESS, [&]() {
+                // get the mouse position
+                vec2 mousePos = InputManager::getMousePosition();
+                
+            },
+            InputManager::Filters::always, false
+        )
     );
 
     for(auto i : inputs)
@@ -72,8 +83,6 @@ EntityRef Apps::EventGraphApp::UImenu()
         , WidgetText(std::u32string(U"hello :)"))
         , WidgetBackground()
     );
-
-
 };
 
 void Apps::EventGraphApp::init()

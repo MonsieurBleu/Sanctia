@@ -33,6 +33,7 @@ class GG
         static inline EntityRef playerEntity;
 
         static inline float timeOfDay = 10.0f;
+        static inline float moonOrbitTime = 0.50; // normalized to [0, 1] cause it's like over 27.3 days otherwise
 };
 
 namespace EDITOR 

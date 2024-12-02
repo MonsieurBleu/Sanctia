@@ -12,6 +12,14 @@
 
 Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 {
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Add Material Helper", GLFW_KEY_KP_ADD, 0, GLFW_PRESS, [&]() {
+                static int cnt = 1;
+                this->toLoadList["Hey !!!!!!" + std::to_string(cnt++)] = EntityRef();
+            },
+            InputManager::Filters::always, false)
+    );
 
 
     for(auto &i : inputs)

@@ -95,7 +95,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::TextInput(
             .setbackgroundColor2(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
             .settextColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
             .settextColor2(EDITOR::MENUS::COLOR::HightlightColor1)
-        , WidgetText(U"")
+        , WidgetText(U"...")
     );
 
     auto &text = t->comp<WidgetText>().text;
@@ -984,70 +984,203 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
     WidgetButton::UpdateFunc ufunc
 )
 {
+    auto searchInput = NamedEntry(U"Search", TextInput(
+        name + " search bar", [](std::u32string &name)
+        {
+            if(!name.size())
+                name = U"...";
+        },
+        []()
+        {
+            return U"";
+        }
+    ));
+
+    Entity *searchInputPTR = searchInput.get();
+
     auto listScreen = newEntity(name + " string list"
         , UI_BASE_COMP
         , WidgetStyle()
             // .setautomaticTabbing(50)
-        , WidgetBox([&list, ufunc, ifunc](Entity *parent, Entity *child)
+        , WidgetBox([&list, ufunc, ifunc, searchInputPTR](Entity *parent, Entity *child)
         {
-            // #define TYPE_TMP std::pair<std::string, EntityRef*>
-            // std::vector<TYPE_TMP> tmp;
-
-            // for(auto &i : list) 
-            //     tmp.push_back({i.first, &i.second});
-
-            // std::sort(
-            //     tmp.begin(), tmp.end()
-            //     , [](const TYPE_TMP &a, const TYPE_TMP &b)
-            //     {
-            //         return strcmp(a.first.c_str(), b.first.c_str()) > 0;
-            //     }
-            // );
-
             /**** Creating Children *****/
             for(auto &i : list)
-            if(!i.second.get())
-            {
-                ComponentModularity::addChild(
-                    *child,
-                    i.second = newEntity(i.first
-                        , UI_BASE_COMP
-                        , WidgetBox()
-                        , WidgetStyle()
-                            .setautomaticTabbing(1)
-                        , EntityGroupInfo({
-                            Toggable(
-                                i.first, "", ifunc, ufunc
-                            )
-                        })
-                    )
-                );
+                if(!i.second.get())
+                {
+                    EntityRef button;
+                    ComponentModularity::addChild(
+                        *child,
+                        i.second = newEntity(i.first
+                            , UI_BASE_COMP
+                            , WidgetBox()
+                            , WidgetStyle()
+                                .setautomaticTabbing(1)
+                            , EntityGroupInfo({
+                                button = Toggable(
+                                    i.first, "", ifunc, ufunc
+                                )
+                            })
+                        )
+                    );
 
-                i.second->comp<WidgetBox>()
-                    .set(vec2(-1, 1), vec2(1, 3))
-                    .type = WidgetBox::Type::FOLLOW_SIBLINGS_BOX;
-            }
+                    i.second->comp<WidgetBox>()
+                        .set(vec2(-1, 1), vec2(1, 3))
+                        .type = WidgetBox::Type::FOLLOW_SIBLINGS_BOX;
+                    
+                    i.second->comp<WidgetBox>().useClassicInterpolation = true;
+                }
 
-            /* TODO : fix */
             auto &children = child->comp<EntityGroupInfo>().children;
-            std::cout << children.size() << "\n";
             std::sort(
                 children.begin(),
                 children.end(),
                 [](const EntityRef &a, const EntityRef &b)
                 {
-                    auto &str1 = a->comp<EntityInfos>().name;
-                    auto &str2 = b->comp<EntityInfos>().name;
+                    auto str1 = a->comp<EntityInfos>().name;
+                    auto str2 = b->comp<EntityInfos>().name;
 
-                    return str1 < str2;
+                    for(auto &c : str1)
+                        c = std::tolower(c);
+
+                    for(auto &c : str2)
+                        c = std::tolower(c);
+
+                    return str1 <= str2;
                 }
             );
 
-            // child->comp<EntityGroupInfo>().children = children;
+            // child->comp<WidgetState>().status = ModelStatus::UNDEFINED;
+
+            std::string str = UFTconvert.to_bytes(searchInputPTR
+                ->comp<EntityGroupInfo>().children[1]
+                // ->comp<EntityGroupInfo>().children[1]
+            ->comp<WidgetText>().text);
+
+            for(auto &c : str)
+                c = std::tolower(c);
+            
+            // std::cout << st
+
+            for(auto c : child->comp<EntityGroupInfo>().children)
+            {
+
+                auto str2 = c->comp<EntityInfos>().name;
+
+                for(auto &c : str2)
+                    c = std::tolower(c);
+
+                if(!str.size() || str2.find(str) != std::string::npos)
+                {
+                    c->comp<WidgetState>().status = ModelStatus::SHOW;
+
+                    c->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
+                    // c->comp<WidgetBox>().useClassicInterpolation = false;
+                    
+                    std::cout << str2 << "\n";
+                }
+                else
+                {
+                    c->comp<WidgetState>().status = ModelStatus::HIDE;
+                    c->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
+                } 
+            }
         })
     );
 
     listScreen->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95));
 
-    return listScreen;
+    // Entity *listScreenPTR = listScreen.get();
+
+    // auto searchInput = NamedEntry(U"Search", TextInput(
+    //     name + " search bar", [listScreenPTR](std::u32string &name)
+    //     {
+    //         std::string str = UFTconvert.to_bytes(name);
+
+    //         for(auto &c : str)
+    //             c = std::tolower(c);
+
+    //         for(auto c : listScreenPTR->comp<EntityGroupInfo>().children)
+    //         {
+
+    //             auto str2 = c->comp<EntityInfos>().name;
+
+    //             for(auto &c : str2)
+    //                 c = std::tolower(c);
+
+    //             if(!str.size() || str2.find(str) != std::string::npos)
+    //             {
+    //                 c->comp<WidgetState>().status = ModelStatus::SHOW;
+
+    //                 c->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
+    //                 // c->comp<WidgetBox>().useClassicInterpolation = false;
+                    
+    //                 // std::cout << str2 << "\n";
+    //             }
+    //             else
+    //             {
+    //                 c->comp<WidgetState>().status = ModelStatus::HIDE;
+    //                 c->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
+    //             } 
+    //         }
+
+    //         if(!name.size())
+    //             name = U"...";
+    //     },
+    //     []()
+    //     {
+    //         return U"";
+    //     }
+    // ));
+
+    auto scrollZone = newEntity(name + " scroll zone list"
+        , UI_BASE_COMP
+        , WidgetStyle()
+            // .setautomaticTabbing(1)
+            // .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+        // , WidgetBackground()
+        , WidgetBox([](Entity *parent, Entity *child){
+            auto &box = child->comp<WidgetBox>();
+
+            vec2 off = globals.mouseScrollOffset();
+
+            if(box.isUnderCursor)
+            {
+                box.scrollOffset.y -= off.y*0.1;
+
+                box.scrollOffset.y = clamp(
+                    box.scrollOffset.y,
+                    -0.025f*child->comp<EntityGroupInfo>().children[0]->comp<EntityGroupInfo>().children.size(),
+                    0.f
+                );
+
+                globals.clearMouseScroll();
+            }
+
+            box.displayRangeMin = box.min;
+            box.displayRangeMax = box.max;
+
+        })
+        , EntityGroupInfo({listScreen})
+    );
+
+    scrollZone->comp<WidgetBox>().set(vec2(-1, 1), vec2(-0.95, 1));
+
+    searchInput->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95));
+
+    searchInput->comp<WidgetStyle>().setautomaticTabbing(1);
+
+    auto p = newEntity(name
+        , UI_BASE_COMP
+        , WidgetBox(vec2(-1, 1), vec2(-1, 0.9))
+        , EntityGroupInfo({
+            scrollZone, 
+            searchInput
+            
+        })
+        );
+
+    return p;
 }

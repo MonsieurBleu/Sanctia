@@ -16,7 +16,11 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
         InputManager::addEventInput(
             "merge scene", GLFW_KEY_SEMICOLON, 0, GLFW_PRESS, [&]() {
                 
-                std::cout <<"MERGING OMG\n";
+                globals.mainThreadTime.hold();
+
+                NAMED_TIMER(MerginSceneBackground);
+
+                MerginSceneBackground.start();
                 physicsMutex.lock();
 
                 ComponentModularity::mergeChildren(*appRoot);
@@ -29,6 +33,15 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
                 ManageGarbage<PhysicsHelpers>();
 
                 physicsMutex.unlock();
+                
+                auto model = appRoot->comp<EntityModel>()->optimizedBatchedCopy();
+                globals.getScene()->remove(appRoot->comp<EntityModel>());
+                appRoot->set<EntityModel>(EntityModel{model});
+                
+                MerginSceneBackground.end();
+                globals.mainThreadTime.start();
+
+                std::cout << MerginSceneBackground << "\n";
             },
             InputManager::Filters::always, false)
     );    
@@ -58,7 +71,12 @@ void Apps::SceneMergeApp::init()
         globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
         globals.currentCamera->getState().FOV = radians(90.f);
         // orbitController.distance = 150;
+        // orbitController.distance = 75;
         orbitController.distance = 5;
+        // orbitController.distance = 200;
+
+        GG::sun->cameraResolution = vec2(8192);
+        GG::sun->shadowCameraSize = vec2(2048, 2048);
     }
 
     /***** Creatign Terrain *****/
@@ -72,12 +90,13 @@ void Apps::SceneMergeApp::init()
     // );
 
     /***** Creating Scene To Stress Test *****/
-    int size = 5;
+    // int size = 100;
+    int size = 25;
 
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
     {
-        ModelRef tableMesh = Loader<MeshModel3D>::get("SceneTest_Table").copy();
+        ModelRef tableMesh = Loader<MeshModel3D>::get("table").copy();
         EntityModel model(EntityModel{newObjectGroup()}); 
         model->add(tableMesh);
 
@@ -96,10 +115,13 @@ void Apps::SceneMergeApp::init()
             rp3d::Transform(
                 PG::torp3d(
                     vec3(4.0 * (i-size/2), 
-                    -10, 
+                    0, 
                     4 * (j-size/2))
                 ),
-                DEFQUAT)
+                // DEFQUAT
+                PG::torp3d(quat(vec3(0, 1, 0)))
+                // PG::torp3d(quat(vec3(0, 0, 1))) /* TODO : rotation problem before merging*/
+                )
         );
 
         Blueprint::Assembly::AddEntityBodies(body, table.get(),
@@ -119,16 +141,53 @@ void Apps::SceneMergeApp::init()
         {
             auto z = Blueprint::Zweihander();
 
+
             z->comp<RigidBody>()->setTransform(rp3d::Transform(
+
+                // table->comp<RigidBody>()->getTransform().getPosition() + 
+
                 PG::torp3d(
-                    // table->comp<EntityState3D>().position + 
                     vec3(0, 2, 0)
+                    // + vec3(i, 0, j)
                 ),
                 DEFQUAT));
 
-            z->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
+
+            z->comp<RigidBody>()->setType(rp3d::BodyType::STATIC);
+            // z->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
+            z->set<RigidBody>(z->comp<RigidBody>());
+
             ComponentModularity::addChild(*table, z);
+            // ComponentModularity::addChild(*appRoot, z);
         }
+
+
+        /* Adding chair */
+        {
+            ModelRef chaiseMesh = Loader<MeshModel3D>::get("chaise").copy();
+            EntityModel chaise_model(EntityModel{newObjectGroup()}); 
+            chaise_model->add(chaiseMesh);
+
+            auto chaise = newEntity("table ^_^", chaise_model, EntityState3D(true));
+
+            rp3d::RigidBody *chaise_body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(1.5, 0, 0), DEFQUAT));
+
+            Blueprint::Assembly::AddEntityBodies(chaise_body, table.get(),
+            {
+                {
+                    PG::common.createBoxShape(rp3d::Vector3(0.4, 1.09, 0.444)),
+                    rp3d::Transform(rp3d::Vector3(0.2, 0.545, 0.222), DEFQUAT)
+                }
+            },
+            {});
+
+            chaise_body->setType(rp3d::BodyType::STATIC);
+
+            chaise->set<RigidBody>(chaise_body);
+
+            ComponentModularity::addChild(*table, chaise);
+        }
+
 
         ComponentModularity::addChild(*appRoot, table);
     }
@@ -166,5 +225,7 @@ void Apps::SceneMergeApp::clean()
     globals.currentCamera->getState().FOV = radians(90.f);
     appRoot = EntityRef();
     App::setController(nullptr);
+
+    GG::sun->shadowCameraSize = vec2(0, 0);
 }
 

@@ -2,7 +2,7 @@
 
 #define MAX_COMP    64
 // #define MAX_ENTITY  0x8000
-#define MAX_ENTITY  (1<<17)
+#define MAX_ENTITY  (1<<15)
 
 #include <GlobalOptions.hpp>
 #include <ECS/ModularEntityGroupping.hpp>

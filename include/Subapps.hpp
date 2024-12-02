@@ -29,6 +29,8 @@ class SubApps
 
         virtual EntityRef UImenu() = 0;
 
+        virtual EntityRef UIcontrols();
+
         virtual void init() = 0;
 
         virtual void update() = 0;
@@ -110,6 +112,10 @@ namespace Apps
             EventNodePtr not1;
 
             OrbitController orbitController;
+
+            EntityRef graphView;
+            vec2 viewPos;
+
         public:
             
                 EventGraphApp();
@@ -134,6 +140,35 @@ namespace Apps
             SceneMergeApp();
 
             virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
+    class EntityCreator : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+            std::unordered_map<std::string, EntityRef> toLoadList;
+
+            struct CurrentEntityInfo
+            {
+                std::string name;
+
+            } currentEntity;
+
+        public : 
+
+            EntityCreator();
+
+            virtual EntityRef UImenu() override;
+
+            virtual EntityRef UIcontrols() override;
 
             virtual void init() override;
 

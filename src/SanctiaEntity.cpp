@@ -81,17 +81,17 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
 
     auto &childBody = child->comp<RigidBody>();
     auto &parentBody = parent.comp<RigidBody>();
-    
-    auto &childTransform = childBody->getTransform();
-    auto &parentTransform = parentBody->getTransform();
-
-    t.setPosition(childTransform.getPosition() + parentTransform.getPosition());
-    t.setOrientation(childTransform.getOrientation() * parentTransform.getOrientation());
 
     auto childBodyType = childBody->getType();
     childBody->setType(rp3d::BodyType::KINEMATIC);
-    childBody->setTransform(t);
+
+    childBody->setTransform(
+        parentBody->getTransform() * childBody->getTransform()
+    );
+
     childBody->setType(childBodyType);
+
+    child->set<RigidBody>(childBody);
 }   
 
 COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)
@@ -109,162 +109,37 @@ COMPONENT_DEFINE_COMPATIBILITY_CHECK(EntityState3D)
 
 COMPONENT_DEFINE_MERGE(EntityModel)
 {
-    globals.getScene()->remove(child->comp<EntityModel>());
-
-    // std::cout << "MERGING ENTITY MODEL FOR CHILD : " << child->comp<EntityInfos>().name << "\t"
-    // << " AND PARENT " << parent.comp<EntityInfos>().name << "\n";
-
     if(!parent.hasComp<EntityModel>())
     {
-        // parent.set<EntityModel>(child->comp<EntityModel>());
         parent.set<EntityModel>({newObjectGroup()});
-
-        // std::cout << "PARENT COMP ENTITY MODEL WAS CREATED\n";
-        // return;
     }
 
-    auto childModel = child->comp<EntityModel>()->copy();
-    // auto childModel = child->comp<EntityModel>();
+    auto childModel = child->comp<EntityModel>();
     auto &parentModel = parent.comp<EntityModel>();
 
-    auto &childState = child->comp<EntityState3D>();
-
-    auto parentState = parent.hasComp<EntityState3D>() ? parent.comp<EntityState3D>() : EntityState3D();
-
-    
-
-    /* TODO : investigate if rotation need to be merged too */
-    // if(childState.usequat)
-    // {
-
-    // }
-
-    // if(parent.hasComp<EntityModel>())
-    if(!parentModel->getChildren().size())
+    if(true)
     {
-        childModel->state.setPosition(childState.position - parentState.position);
+        mat4 t = inverse(parentModel->state.modelMatrix) * childModel->state.modelMatrix;
+
+        childModel->state.setPosition(t[3]);
+        childModel->state.setQuaternion(quat(mat3(t))); 
 
         parentModel->add(childModel);
-        globals.getScene()->add(childModel);
-        // std::cout << glm::to_string(childModel->state.position) << "\n";
-    
-        // std::cout << "SIMPLE ENTITY MODEL MERGE\n";
-    }
-    else 
-    {
-        // std::cout << "BATCHING ENTITY MODEL MERGE\n";
-
-        auto mesh1 = parentModel->getChildren()[0]->getMeshes()[0];
-        auto mesh2 = childModel->getMeshes()[0];
-
-        auto vao1 = mesh1->getVao();
-        auto vao2 = mesh2->getVao();
-
-        auto &m1 = vao1->attributes[0];
-        auto &m2 = vao2->attributes[0];
-
-        // m1->getVao();
-        int vcount = m2.getVertexCount();
-        
-        GenericSharedBuffer nbuff(new char[sizeof(ivec4)*(m1.getVertexCount() + m2.getVertexCount())]);
-        memcpy(nbuff.get(), m1.getBufferAddr(), sizeof(ivec4)*m1.getVertexCount());
-
-        // childModel->state.update();
-        mat4 pt = mesh1->state.modelMatrix;
-        mat4 ct = mesh2->state.modelMatrix;
-        mat4 transform = inverse(pt) * ct;
-
-        for(int i = 0; i < vcount; i++)
-        {
-            ivec4 v = ((ivec4*)m2.getBufferAddr())[i];
-
-            
-
-            vec3 modelPosition = vec3(ivec3(ivec3(v) & (0x00FFFFFF)) - 0x800000)*1e-3f;
-            // std::cout << to_string(modelPosition)<< "\t";
-
-            modelPosition = vec3(transform * vec4(modelPosition, 1));
-            // modelPosition = vec3(childModel->state.modelMatrix * vec4(modelPosition, 1));
-            // modelPosition = modelPosition + childModel->state.position;
-            // modelPosition = modelPosition + vec3(1, 0, 0);
-            // std::cout << to_string(modelPosition) << "\n";
-
-            ivec3 packedPosition = (ivec3(modelPosition*1e3f) + 0x800000) 
-            // & (0x00FFFFFF)
-            ;
-            // std::cout << to_string(vec3(packedPosition - 0x800000)*1e-3f) << "\n";
-
-            v.x &= ~(0x00FFFFFF);
-            v.x |= packedPosition.x;
-
-            v.y &= ~(0x00FFFFFF);
-            v.y |= packedPosition.y;
-
-            v.z &= ~(0x00FFFFFF);
-            v.z |= packedPosition.z;
-
-            ((ivec4*)nbuff.get())[i + m1.getVertexCount()] = v;
-        }
-
-        // m1.updateData(nbuff, m1.getVertexCount() + m2.getVertexCount());
-
-        MeshVao finalVao(new VertexAttributeGroup({
-            VertexAttribute(nbuff, 0, m1.getVertexCount() + m2.getVertexCount(), 4, GL_UNSIGNED_INT, false)
-        }));
-
-        GenericSharedBuffer nfaces(new char[sizeof(ivec3)*(vao1.nbFaces/3 + vao2.nbFaces/3)]);
-        memcpy(nfaces.get(), vao1.faces.get(), sizeof(ivec3)*vao1.nbFaces/3);
-        // memset(nfaces.get(), 0, sizeof(ivec3)*vao1.nbFaces/3);
-        
-        for(int i = 0; i < vao2.nbFaces/3; i++)
-        {
-            ((ivec3*)nfaces.get())[i + vao1.nbFaces/3] = ((ivec3*)vao2.faces.get())[i] + (int)m1.getVertexCount();
-
-            // ((ivec3*)nfaces.get())[i + vao1.nbFaces/3] = ((ivec3*)vao2.faces.get())[i];
-
-            // std::cout << 
-            // // ((int*)vao2.get())[i]
-            // glm::to_string(((ivec3*)vao2.faces.get())[i]) << "\t" <<
-            // glm::to_string(((ivec3*)nfaces.get())[i + vao1.nbFaces/3]) 
-            // << "\n";
-        }
-
-        // for(int i = 0; i < 10; i++)
-        // {
-        //     std::cout << 
-        //     ((int*)vao2.faces.get())[i]
-        //     // glm::to_string(((ivec3*)vao2.get())[i]) << "\t" <<
-        //     // glm::to_string(((ivec3*)nfaces.get())[i + vao1.nbFaces/3]) 
-        //     << "\n";
-        // }
-
-        // vao1.faces = nfaces;
-        // vao1.nbFaces = vao1.nbFaces + vao2.nbFaces;
-        // vao1->generate();
-
-        finalVao.faces = nfaces;
-        finalVao.nbFaces = vao1.nbFaces + vao2.nbFaces;
-        mesh1->setVao(finalVao);
     }
 }
 
 COMPONENT_DEFINE_MERGE(RigidBody)
 {
-    // std::cout << "MERGING RIGIDBODY\n";
     auto &childBody = child->comp<RigidBody>();
 
     if(!parent.hasComp<RigidBody>())
     {
-        // std::cout << "OVERWRITTING\n";
-        // parent.set<RigidBody>(child->comp<RigidBody>());
         parent.set<RigidBody>(PG::world->createRigidBody(
             // childBody->getTransform()
             rp3d::Transform()
             ));
         parent.comp<RigidBody>()->setType(childBody->getType());
-        // return;
     }
-    // return;
 
     auto &parentBody = parent.comp<RigidBody>();
     
@@ -277,16 +152,12 @@ COMPONENT_DEFINE_MERGE(RigidBody)
     {
         auto collider = childBody->getCollider(i);
 
-        auto t = collider->getLocalToWorldTransform();
-
-        t.setPosition(t.getPosition() - parentTransform.getPosition());
-        auto newCollider = parentBody->addCollider(collider->getCollisionShape(), t);
-
+        rp3d::Transform transform = parentTransform.getInverse() * collider->getLocalToWorldTransform();
+        auto newCollider = parentBody->addCollider(collider->getCollisionShape(), transform);
         newCollider->setCollisionCategoryBits(collider->getCollisionCategoryBits());
         newCollider->setCollideWithMaskBits(collider->getCollideWithMaskBits());
         newCollider->setIsTrigger(collider->getIsTrigger());
         newCollider->setMaterial(collider->getMaterial());
-        newCollider->setLocalToBodyTransform(t);
     }
 
     parentBody->updateLocalCenterOfMassFromColliders();
@@ -329,6 +200,59 @@ template<> void Component<Items>::ComponentElem::clean()
 
 ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 {
+    // {
+    //     rp3d::AABB aabb = c->getWorldAABB();
+
+    //     // c->getLocalToWorldTransform();    
+
+    //     vec3 aabbmin = PG::toglm(aabb.getMin());
+    //     vec3 aabbmax = PG::toglm(aabb.getMax()) - aabbmin;
+
+    //     vec3 laabbmin_tmp = PG::toglm(c->getLocalToWorldTransform().getInverse() * aabb.getMin());
+    //     vec3 laabbmax_tmp = PG::toglm(c->getLocalToWorldTransform().getInverse() * aabb.getMax());
+
+    //     vec3 laabbmax = max(laabbmax_tmp, laabbmin_tmp);
+    //     vec3 laabbmin = min(laabbmax_tmp, laabbmin_tmp);
+
+
+    //     std::vector<vec3> points;
+
+    //     int res = max(aabbmax.x, max(aabbmax.y, aabbmax.z))*10;
+
+    //     float resdiv = 1.f/(res-1.f);
+    //     bool voxels[res][res][res];
+
+    //     for(int i = 0; i < res; i++)
+    //     for(int j = 0; j < res; j++)
+    //     for(int k = 0; k < res; k++)
+    //     {
+    //         vec3 pos = aabbmin + aabbmax*vec3(i, j, k)*resdiv - sign(vec3(i, j, k) - res*0.5f)*resdiv*0.1f;
+            
+    //         voxels[i][j][k] = c->testPointInside(PG::torp3d(pos));
+    //     }
+
+    //     for(int i = 0; i < res; i++)
+    //     for(int j = 0; j < res; j++)
+    //     for(int k = 0; k < res; k++)
+    //     if(voxels[i][j][k])
+    //     {
+    //         if(!j || !i || !k || i == res-1 || j == res-1 || k == res-1)
+    //             points.push_back(laabbmin + laabbmax*vec3(i, j, k)*resdiv);
+
+    //         else if(!voxels[i-1][j][k] || !voxels[i+1][j][k] ||
+    //                 !voxels[i][j-1][k] || !voxels[i][j+1][k] ||
+    //                 !voxels[i][j][k-1] || !voxels[i][j][k+1]
+    //         )
+    //             points.push_back(laabbmin + laabbmax*vec3(i, j, k)*resdiv);
+    //     }
+
+
+    //     std::cout << "Creating Physics helper of size " << points.size() << "\n";
+
+    //     return PointsHelperRef(new PointsHelper(points, color));
+    // }
+
+
     rp3d::AABB aabb = c->getWorldAABB();
     vec3 aabbmin = PG::toglm(aabb.getMin());
     vec3 aabbmax = PG::toglm(aabb.getMax()) - aabbmin;
@@ -345,7 +269,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
     vec3 laabbmin = min(laabbmax_tmp, laabbmin_tmp);
 
     std::vector<vec3> points;
-
+    
 
     vec3 jump = (laabbmax - laabbmin)/25.f;
 
@@ -367,7 +291,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             c->raycast(rp3d::Ray(a, b), infos);
 
-            if(infos.collider)
+            if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
 
             cnt ++;
@@ -383,7 +307,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             c->raycast(rp3d::Ray(b, a), infos);
 
-            if(infos.collider)
+            if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
 
             cnt ++;
@@ -399,7 +323,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             c->raycast(rp3d::Ray(a, b), infos);
 
-            if(infos.collider)
+            if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
 
             cnt ++;
@@ -415,7 +339,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             c->raycast(rp3d::Ray(b, a), infos);
 
-            if(infos.collider)
+            if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
 
             cnt ++;
@@ -431,7 +355,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             c->raycast(rp3d::Ray(a, b), infos);
 
-            if(infos.collider)
+            if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
 
             cnt ++;
@@ -447,7 +371,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             c->raycast(rp3d::Ray(b, a), infos);
 
-            if(infos.collider)
+            if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
 
             cnt ++;
@@ -467,7 +391,7 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             c->raycast(rp3d::Ray(b, a), infos);
 
-            if(infos.collider)
+            if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
 
             cnt ++;

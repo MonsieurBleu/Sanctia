@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include <Game.hpp>
 #include <Globals.hpp>
 #include <CompilingOptions.hpp>
@@ -22,18 +24,18 @@ void Game::init(int paramSample)
     // globals._renderScale = 0.5;
 
     // load settings
-    // Settings::load();
-    // if (Settings::ssaoEnabled)
-    //     SSAO.enable();
-    // else
-    //     SSAO.disable();
+    Settings::load();
+    if (Settings::ssaoEnabled)
+        SSAO.enable();
+    else
+        SSAO.disable();
 
-    // if (Settings::bloomEnabled)
-    //     Bloom.enable();
-    // else
-    //     Bloom.disable();
+    if (Settings::bloomEnabled)
+        Bloom.enable();
+    else
+        Bloom.disable();
 
-    // globals._renderScale = Settings::renderScale;
+    globals._renderScale = Settings::renderScale;
 
     App::init();
     
@@ -173,6 +175,22 @@ void Game::init(int paramSample)
 
     loadAllAssetsInfos("data");
     loadAllAssetsInfos("shader/vulpineMaterials");
+
+    for (auto f : std::filesystem::recursive_directory_iterator("data"))
+    {
+        if (f.is_directory())
+            continue;
+
+        char ext[1024];
+        char p[4096];
+
+        strcpy(ext, (char *)f.path().extension().string().c_str());
+        strcpy(p, (char *)f.path().string().c_str());
+
+        if (!strcmp(ext, ".vulpineEntity"))
+            Loader<EntityRef>::addInfos(p);
+    }
+
     AnimBlueprint::PrepareAnimationsCallbacks();
 
     initInput();

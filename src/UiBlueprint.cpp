@@ -976,3 +976,78 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
         })
     );
 }
+
+EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+    const std::string &name,
+    std::unordered_map<std::string, EntityRef>& list,
+    WidgetButton::InteractFunc ifunc, 
+    WidgetButton::UpdateFunc ufunc
+)
+{
+    auto listScreen = newEntity(name + " string list"
+        , UI_BASE_COMP
+        , WidgetStyle()
+            // .setautomaticTabbing(50)
+        , WidgetBox([&list, ufunc, ifunc](Entity *parent, Entity *child)
+        {
+            // #define TYPE_TMP std::pair<std::string, EntityRef*>
+            // std::vector<TYPE_TMP> tmp;
+
+            // for(auto &i : list) 
+            //     tmp.push_back({i.first, &i.second});
+
+            // std::sort(
+            //     tmp.begin(), tmp.end()
+            //     , [](const TYPE_TMP &a, const TYPE_TMP &b)
+            //     {
+            //         return strcmp(a.first.c_str(), b.first.c_str()) > 0;
+            //     }
+            // );
+
+            /**** Creating Children *****/
+            for(auto &i : list)
+            if(!i.second.get())
+            {
+                ComponentModularity::addChild(
+                    *child,
+                    i.second = newEntity(i.first
+                        , UI_BASE_COMP
+                        , WidgetBox()
+                        , WidgetStyle()
+                            .setautomaticTabbing(1)
+                        , EntityGroupInfo({
+                            Toggable(
+                                i.first, "", ifunc, ufunc
+                            )
+                        })
+                    )
+                );
+
+                i.second->comp<WidgetBox>()
+                    .set(vec2(-1, 1), vec2(1, 3))
+                    .type = WidgetBox::Type::FOLLOW_SIBLINGS_BOX;
+            }
+
+            /* TODO : fix */
+            auto &children = child->comp<EntityGroupInfo>().children;
+            std::cout << children.size() << "\n";
+            std::sort(
+                children.begin(),
+                children.end(),
+                [](const EntityRef &a, const EntityRef &b)
+                {
+                    auto &str1 = a->comp<EntityInfos>().name;
+                    auto &str2 = b->comp<EntityInfos>().name;
+
+                    return str1 < str2;
+                }
+            );
+
+            // child->comp<EntityGroupInfo>().children = children;
+        })
+    );
+
+    listScreen->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95));
+
+    return listScreen;
+}

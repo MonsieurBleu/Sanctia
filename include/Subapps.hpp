@@ -153,6 +153,8 @@ namespace Apps
 
             OrbitController orbitController;
 
+            std::unordered_map<std::string, EntityRef> toLoadList;
+
             struct CurrentEntityInfo
             {
                 std::string name;

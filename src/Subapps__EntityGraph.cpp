@@ -171,6 +171,17 @@ void Apps::EventGraphApp::init()
 
     // std::cout << c.r << " " << c.g << " " << c.b << " " << c.a << std::endl;
 
+
+
+    // EDITOR::MENUS::GameScreen->set<WidgetBackground>(
+    //     WidgetBackground()
+    // );
+
+    // EDITOR::MENUS::GameScreen->set<WidgetStyle>(
+    //     WidgetStyle()
+    // ); 
+
+
     glLineWidth(3.0f);
 
     for(auto i : inputs)
@@ -186,10 +197,15 @@ void Apps::EventGraphApp::update()
 void Apps::EventGraphApp::clean()
 {
     EventGraph::clear();
+    
+    ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, graphView);
+    graphView = EntityRef();
+
     appRoot = EntityRef();
 
     glLineWidth(1.0f);
 
+    
     for(auto i : inputs)
         i->activated = false;
 };

@@ -327,32 +327,32 @@ void Game::mainloop()
         )
     );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
-            "moon orbit time", 
-            0, 1, 100, 
-            [](float v)
-            {
-                float t = v;
-                GG::moonOrbitTime = t;
-            },
-            []()
-            {
-                float t = GG::moonOrbitTime;
-                return t;
-            },
-            [](std::u32string text)
-            {
-                float t = u32strtof2(text, GG::moonOrbitTime);
-                GG::moonOrbitTime = t;
-            }, 
-            []()
-            {
-                float t = GG::moonOrbitTime;
-                return ftou32str(t);
-            }
-        )
-    );
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    //     Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    //         "moon orbit time", 
+    //         0, 1, 100, 
+    //         [](float v)
+    //         {
+    //             float t = v;
+    //             GG::moonOrbitTime = t;
+    //         },
+    //         []()
+    //         {
+    //             float t = GG::moonOrbitTime;
+    //             return t;
+    //         },
+    //         [](std::u32string text)
+    //         {
+    //             float t = u32strtof2(text, GG::moonOrbitTime);
+    //             GG::moonOrbitTime = t;
+    //         }, 
+    //         []()
+    //         {
+    //             float t = GG::moonOrbitTime;
+    //             return ftou32str(t);
+    //         }
+    //     )
+    // );
 
     bool enableTime = false;
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,

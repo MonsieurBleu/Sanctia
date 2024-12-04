@@ -34,5 +34,5 @@ obj/*.obj
 .vscode
 
 Game
-
+.gdb_history
 settings.vulpineSettings

@@ -144,7 +144,6 @@ void Apps::EventGraphApp::init()
                 
                 b.useClassicInterpolation = true;
 
-                // std::cout << dragController.getPosition().x << " " << dragController.getPosition().y << std::endl;
 
                 b.set(
                     vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().x, 

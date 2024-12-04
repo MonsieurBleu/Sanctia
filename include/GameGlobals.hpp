@@ -36,6 +36,25 @@ class GG
         static inline float moonOrbitTime = 0.50; // normalized to [0, 1] cause it's like over 27.3 days otherwise
 
         static inline SceneDirectionalLight sun;
+
+
+        static inline void ManageEntityGarbage()
+        {
+            ManageGarbage<Items>();
+            ManageGarbage<WidgetBackground>();
+            ManageGarbage<WidgetSprite>();
+            ManageGarbage<WidgetText>();
+            ManageGarbage<EntityModel>();
+            ManageGarbage<PhysicsHelpers>();
+
+        };
+
+        static inline void ManageEntityGarbage__WithPhysics()
+        {
+            ManageEntityGarbage();
+
+            ManageGarbage<RigidBody>();
+        };
 };
 
 namespace EDITOR 

@@ -20,10 +20,18 @@ DATA_WRITE_FUNC(EntityRef)
     out->Break();
 }
 
+std::string tmpEntityName;
+
 DATA_READ_FUNC(EntityRef) { 
     
     DATA_READ_INIT(EntityRef)
-    data = newEntity(buff->read());
+
+    if(tmpEntityName.size())
+        data = newEntity(tmpEntityName);
+    else
+        data = newEntity(buff->read());
+
+    tmpEntityName = "";
 
     while(NEW_VALUE)
     {
@@ -103,11 +111,12 @@ template<>
 EntityRef& Loader<EntityRef>::loadFromInfos()
 {
     EARLY_RETURN_IF_LOADED
-    LOADER_ASSERT(NEW_VALUE)
+    // LOADER_ASSERT(NEW_VALUE)
 
-    DataLoader<EntityRef>::read(buff);
+    tmpEntityName = name;
+    r = DataLoader<EntityRef>::read(buff);
 
-    LOADER_ASSERT(END_VALUE)
+    // LOADER_ASSERT(END_VALUE)
     EXIT_ROUTINE_AND_RETURN
 }
 

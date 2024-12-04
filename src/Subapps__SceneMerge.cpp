@@ -25,12 +25,7 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
 
                 ComponentModularity::mergeChildren(*appRoot);
 
-                ManageGarbage<Items>();
-                ManageGarbage<WidgetBackground>();
-                ManageGarbage<WidgetSprite>();
-                ManageGarbage<WidgetText>();
-                ManageGarbage<EntityModel>();
-                ManageGarbage<PhysicsHelpers>();
+                GG::ManageEntityGarbage__WithPhysics();
 
                 physicsMutex.unlock();
                 
@@ -96,9 +91,9 @@ void Apps::SceneMergeApp::init()
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
     {
-        ModelRef tableMesh = Loader<MeshModel3D>::get("table").copy();
-        EntityModel model(EntityModel{newObjectGroup()}); 
-        model->add(tableMesh);
+        // ModelRef tableMesh = Loader<MeshModel3D>::get("table").copy();
+        EntityModel model(EntityModel{Loader<ObjectGroup>::get("table").copy()}); 
+        // model->add(tableMesh);
 
         // model->state.setPosition(
         //     vec3(i, j)
@@ -164,9 +159,9 @@ void Apps::SceneMergeApp::init()
 
         /* Adding chair */
         {
-            ModelRef chaiseMesh = Loader<MeshModel3D>::get("chaise").copy();
-            EntityModel chaise_model(EntityModel{newObjectGroup()}); 
-            chaise_model->add(chaiseMesh);
+            // ModelRef chaiseMesh = Loader<MeshModel3D>::get("chaise").copy();
+            EntityModel chaise_model(EntityModel{Loader<ObjectGroup>::get("chaise").copy()}); 
+            // chaise_model->add(chaiseMesh);
 
             auto chaise = newEntity("table ^_^", chaise_model, EntityState3D(true));
 

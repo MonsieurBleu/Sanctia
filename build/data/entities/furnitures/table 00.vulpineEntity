@@ -1,0 +1,33 @@
+"Table 00"
+    : EntityState3D
+        : usequat t
+        : useinit t
+        ;
+    : EntityModel "table"
+        ;
+	: RigidBody 
+		: type STATIC
+        : Colliders
+            : Collider 
+                : BoxShape
+                    : extent +1.000000e+00 +0.350000e-00 +0.500000e+00
+                    ;
+				: Transform 
+					: position +0.000000e+00 +0.350000e-00 +0.000000e+00
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +4.999999e-01
+					;
+				: isTrigger f
+				;
+            ;
+        ;
+    ;
+;

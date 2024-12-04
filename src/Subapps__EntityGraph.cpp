@@ -197,8 +197,9 @@ void Apps::EventGraphApp::clean()
 {
     EventGraph::clear();
     
-    ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, graphView);
+    ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, viewBG);
     graphView = EntityRef();
+    viewBG = EntityRef();
 
     appRoot = EntityRef();
 

@@ -1,0 +1,33 @@
+"Chair 00"
+    : EntityState3D
+        : usequat t
+        : useinit t
+        ;
+    : EntityModel "chaise"
+        ;
+	: RigidBody 
+		: type STATIC
+        : Colliders
+            : Collider 
+                : BoxShape
+                    : extent +0.200000e+00 +0.545000e-00 +0.222000e+00
+                    ;
+				: Transform 
+					: position +0.000000e+00 +0.545000e-00 +0.000000e+00
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +4.999999e-01
+					;
+				: isTrigger f
+				;
+            ;
+        ;
+    ;
+;

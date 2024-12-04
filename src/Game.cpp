@@ -294,12 +294,12 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
             "Time of day", 
             0, 24, 24*4, 
-            [](float v)
+            [](Entity *e, float v)
             {
                 float t = v;
                 GG::timeOfDay = t;
             },
-            []()
+            [](Entity *e)
             {
                 float t = GG::timeOfDay;
                 return t;
@@ -322,11 +322,11 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::Toggable(
             "Enable Time", 
             "icon_light",
-            [&enableTime](float v)
+            [&enableTime](Entity *e, float v)
             {
                 enableTime = !enableTime;
             },
-            [&enableTime]()
+            [&enableTime](Entity *e)
             {
                 return enableTime ? 0.f : 1.f;
             }
@@ -337,12 +337,12 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::Toggable(
             "Entity Infos Stats Helper", 
             "icon_idcard",
-            [&](float v)
+            [&](Entity *e, float v)
             {
                 GlobalComponentToggler<InfosStatsHelpers>::activated =
                     !GlobalComponentToggler<InfosStatsHelpers>::activated;
             },
-            [&]()
+            [&](Entity *e)
             {
                 return GlobalComponentToggler<InfosStatsHelpers>::activated  ? 0.f : 1.f;
             }
@@ -354,12 +354,12 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::Toggable(
             "Entity Physic Helper", 
             "icon_hitbox",
-            [&](float v)
+            [&](Entity *e, float v)
             {
                 GlobalComponentToggler<PhysicsHelpers>::activated =
                     !GlobalComponentToggler<PhysicsHelpers>::activated;
             },
-            [&]()
+            [&](Entity *e)
             {
                 return GlobalComponentToggler<PhysicsHelpers>::activated  ? 0.f : 1.f;
             }
@@ -372,11 +372,11 @@ void Game::mainloop()
             Blueprint::EDITOR_ENTITY::INO::Toggable(
                 "Bloom", 
                 "",
-                [&bloom](float v)
+                [&bloom](Entity *e, float v)
                 {
                     bloom.toggle();
                 },
-                [&bloom]()
+                [&bloom](Entity *e)
                 {
                     return bloom.isPassEnable() ? 0.f : 1.f;
                 }
@@ -389,11 +389,11 @@ void Game::mainloop()
             Blueprint::EDITOR_ENTITY::INO::Toggable(
                 "AO", 
                 "",
-                [&ssao](float v)
+                [&ssao](Entity *e, float v)
                 {
                     ssao.toggle();
                 },
-                [&ssao]()
+                [&ssao](Entity *e)
                 {
                     return ssao.isPassEnable() ? 0.f : 1.f;
                 }
@@ -405,11 +405,11 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::Toggable(
             "Physic Interpolation", 
             "",
-            [](float v)
+            [](Entity *e, float v)
             {
                 PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
             },
-            []()
+            [](Entity *e)
             {
                 return PG::doPhysicInterpolation ? 0.f : 1.f;
             }
@@ -420,11 +420,11 @@ void Game::mainloop()
         Blueprint::EDITOR_ENTITY::INO::Toggable(
             "Auto Shader Refresh", 
             "",
-            [](float v)
+            [](Entity *e, float v)
             {
                 Game::doAutomaticShaderRefresh = !Game::doAutomaticShaderRefresh;
             },
-            []()
+            [](Entity *e)
             {
                 return Game::doAutomaticShaderRefresh ? 0.f : 1.f;
             }
@@ -852,12 +852,7 @@ void Game::mainloop()
             }
         });
 
-        ManageGarbage<Items>();
-        ManageGarbage<EntityModel>();
-        ManageGarbage<PhysicsHelpers>();
-        ManageGarbage<WidgetBackground>();
-        ManageGarbage<WidgetSprite>();
-        ManageGarbage<WidgetText>();
+        GG::ManageEntityGarbage();
 
 
         if(GlobalComponentToggler<PhysicsHelpers>::needUpdate() || GlobalComponentToggler<InfosStatsHelpers>::needUpdate())
@@ -877,6 +872,7 @@ void Game::mainloop()
 
         glDepthFunc(GL_GEQUAL);
         glEnable(GL_DEPTH_TEST);
+        // glDisable(GL_DEPTH_TEST);
 
         scene2D.updateAllObjects();
         fuiBatch->batch();

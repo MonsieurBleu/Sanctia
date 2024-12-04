@@ -1,5 +1,0 @@
-table
-*:	mesh      |  SceneTest_Table*
-:   mesh      |  table
-:   material  |  packingPaint
-;

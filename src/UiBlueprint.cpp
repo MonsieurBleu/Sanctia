@@ -102,11 +102,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::TextInput(
 
     t->set<WidgetButton>(WidgetButton(
         WidgetButton::Type::TEXT_INPUT,
-        [&text, fromText](float v)
+        [&text, fromText](Entity *e, float v)
         {
             fromText(text);
         },
-        [&text, toText]()
+        [&text, toText](Entity *e)
         {
             text = toText();
             return 0.f;
@@ -188,13 +188,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 {
     auto hue = ValueInputSlider(
         name + " - hue", 0., 0.9999, 360,
-        [setColor, getColor](float v)
+        [setColor, getColor](Entity *e, float v)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.r = v;
             setColor(hsv2rgb(hsv));
         },
-        [setColor, getColor]()
+        [setColor, getColor](Entity *e)
         {
             vec3 c = rgb2hsv(getColor());
             return rgb2hsv(getColor()).r;
@@ -216,13 +216,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto saturation = ValueInputSlider(
         name + " - saturation", 0., 1.0, 100,
-        [setColor, getColor](float v)
+        [setColor, getColor](Entity *e, float v)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.g = v;
             setColor(hsv2rgb(hsv));
         },
-        [setColor, getColor]()
+        [setColor, getColor](Entity *e)
         {
             return rgb2hsv(getColor()).g;
         },
@@ -243,13 +243,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto value = ValueInputSlider(
         name + " - value", 0., 1.0, 100,
-        [setColor, getColor](float v)
+        [setColor, getColor](Entity *e, float v)
         {
             vec3 hsv = rgb2hsv(getColor());
             hsv.b = v;
             setColor(hsv2rgb(hsv));
         },
-        [setColor, getColor]()
+        [setColor, getColor](Entity *e)
         {
             return rgb2hsv(getColor()).b;
         },
@@ -270,13 +270,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto red = ValueInputSlider(
         name + " - red", 0., 1.0, 255,
-        [setColor, getColor](float v)
+        [setColor, getColor](Entity *e, float v)
         {
             vec3 rgb = getColor();
             rgb.r = v;
             setColor(rgb);
         },
-        [setColor, getColor]()
+        [setColor, getColor](Entity *e)
         {
             return getColor().r;
         },
@@ -297,13 +297,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto green = ValueInputSlider(
         name + " - green", 0., 1.0, 255,
-        [setColor, getColor](float v)
+        [setColor, getColor](Entity *e, float v)
         {
             vec3 rgb = getColor();
             rgb.g = v;
             setColor(rgb);
         },
-        [setColor, getColor]()
+        [setColor, getColor](Entity *e)
         {
             return getColor().g;
         },
@@ -324,13 +324,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     auto blue = ValueInputSlider(
         name + " - blue", 0., 1.0, 255,
-        [setColor, getColor](float v)
+        [setColor, getColor](Entity *e, float v)
         {
             vec3 rgb = getColor();
             rgb.b = v;
             setColor(rgb);
         },
-        [setColor, getColor]()
+        [setColor, getColor](Entity *e)
         {
             return getColor().b;
         },
@@ -367,13 +367,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
 
     hex->set<WidgetButton>(WidgetButton(
         WidgetButton::Type::TEXT_INPUT,
-        [&hexText, setColor](float v)
+        [&hexText, setColor](Entity *e, float v)
         {
             vec3 c;
             if(u32strtocolorHTML(hexText, c))
                 setColor(c);
         },
-        [&hexText, getColor]()
+        [&hexText, getColor](Entity *e)
         {
             hexText = rgbtou32str(getColor());
             return 0.f;
@@ -437,14 +437,14 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
         , WidgetSprite("picker_cursor")
         , WidgetButton(
             WidgetButton::Type::SLIDER_2D, 
-            [getColor, setColor](vec2 uv)
+            [getColor, setColor](Entity *e, vec2 uv)
             {
                 vec3 hsv = rgb2hsv(getColor());
                 hsv.g = uv.x;
                 hsv.b = 1.0 - uv.y;
                 setColor(hsv2rgb(hsv));
             },
-            [getColor, setColor]()
+            [getColor, setColor](Entity *e)
             {
                 vec3 hsv = rgb2hsv(getColor());
                 return vec2(hsv.g, 1.0 - hsv.b);
@@ -461,13 +461,13 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
             .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
         , WidgetButton(WidgetButton::Type::SLIDER, 
 
-            [setColor, getColor](float v)   
+            [setColor, getColor](Entity *e, float v)   
             {
                 vec3 hsv = rgb2hsv(getColor());
                 hsv.r = v;
                 setColor(hsv2rgb(hsv));
             },
-            [setColor, getColor]()
+            [setColor, getColor](Entity *e)
             {
                 return rgb2hsv(getColor()).r;
             }
@@ -1025,7 +1025,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
                     );
 
                     i.second->comp<WidgetBox>()
-                        .set(vec2(-1, 1), vec2(1, 3))
+                        .set(vec2(-1, 1), vec2(1, 5))
                         .type = WidgetBox::Type::FOLLOW_SIBLINGS_BOX;
                     
                     i.second->comp<WidgetBox>().useClassicInterpolation = true;
@@ -1078,7 +1078,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
 
                     // c->comp<WidgetBox>().useClassicInterpolation = false;
                     
-                    std::cout << str2 << "\n";
+                    // std::cout << str2 << "\n";
                 }
                 else
                 {
@@ -1166,9 +1166,9 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
         , EntityGroupInfo({listScreen})
     );
 
-    scrollZone->comp<WidgetBox>().set(vec2(-1, 1), vec2(-0.95, 1));
+    scrollZone->comp<WidgetBox>().set(vec2(-1, 1), vec2(-0.90, 1));
 
-    searchInput->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95));
+    searchInput->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.90));
 
     searchInput->comp<WidgetStyle>().setautomaticTabbing(1);
 

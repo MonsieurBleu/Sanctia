@@ -154,11 +154,16 @@ namespace Apps
 
             OrbitController orbitController;
 
-            std::unordered_map<std::string, EntityRef> toLoadList;
+            std::unordered_map<std::string, EntityRef> UI_loadableEntity;
+
+            std::unordered_map<std::string, EntityRef> UI_currentEntityComponent;
+
+            bool autoRefreshFromDisk = false;
 
             struct CurrentEntityInfo
             {
                 std::string name;
+                EntityRef ref;
 
             } currentEntity;
 

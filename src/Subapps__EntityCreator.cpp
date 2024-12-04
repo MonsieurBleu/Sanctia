@@ -16,7 +16,7 @@ Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
         InputManager::addEventInput(
             "Add Material Helper", GLFW_KEY_KP_ADD, 0, GLFW_PRESS, [&]() {
                 static int cnt = 1;
-                this->toLoadList["Hey !!!!!!" + std::to_string(cnt++)] = EntityRef();
+                this->UI_loadableEntity["Hey !!!!!!" + std::to_string(cnt++)] = EntityRef();
             },
             InputManager::Filters::always, false)
     );
@@ -59,16 +59,73 @@ EntityRef Apps::EntityCreator::UImenu()
 
     auto toLoadMenu = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
         "Entities To Load",
-        toLoadList, 
-        [](float v){}, 
-        [](){return 0;}
+        UI_loadableEntity, 
+        [&](Entity *e, float v)
+        {
+            physicsMutex.lock();
+
+            std::string str = e->comp<EntityInfos>().name;
+
+            this->currentEntity.name = str;
+
+            if(this->currentEntity.ref.get())
+            {
+                ComponentModularity::removeChild(
+                    *this->appRoot,
+                    this->currentEntity.ref
+                );
+
+                this->currentEntity.ref = EntityRef();
+                GG::ManageEntityGarbage__WithPhysics();
+            }
+            
+            VulpineTextBuffRef source(new VulpineTextBuff(
+                Loader<EntityRef>::loadingInfos[str]->buff->getSource().c_str()
+            ));
+
+            ComponentModularity::addChild(
+                *this->appRoot,
+                this->currentEntity.ref = DataLoader<EntityRef>::read(source)
+            );
+
+            physicsMutex.unlock();
+
+        }, 
+        [&](Entity *e)
+        {
+
+            return 0.;
+        }
     );
+
+
+    auto currentComponents = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+        "Current Entity Component List",
+        UI_currentEntityComponent, 
+        [&](Entity *e, float v)
+        {
+            std::string str = e->comp<EntityInfos>().name;
+
+            
+        }, 
+        [&](Entity *e)
+        {
+
+            return 0.;
+        }
+    );
+
+
+
+
 
     return newEntity("ENTITY EDITOR APP CONTROLS"
         , UI_BASE_COMP
         , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(2)
         , EntityGroupInfo({
-            toLoadMenu
+            currentComponents, toLoadMenu
         })
     );
 }
@@ -93,8 +150,17 @@ EntityRef Apps::EntityCreator::UIcontrols()
         // , WidgetBackground()
         // , WidgetText()
         , EntityGroupInfo({
-            Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Entity Name", entityNameEntry)
-
+            Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Entity Name", entityNameEntry), 
+            Blueprint::EDITOR_ENTITY::INO::Toggable("Entity Auto Refresh", "", 
+            [&](Entity *e, float v)
+            {
+                this->autoRefreshFromDisk = v == 0.f;
+            },
+            [&](Entity *e)
+            {
+                return this->autoRefreshFromDisk ? 0.f : 1.f;
+            }
+            )
         })
     );
 }
@@ -116,20 +182,88 @@ void Apps::EntityCreator::init()
 
         GG::sun->cameraResolution = vec2(8192);
         GG::sun->shadowCameraSize = vec2(256, 256);
+
+        PG::world->setIsGravityEnabled(false);
     }
 
-    // for(auto &i : Loader<EntityRef>::loadingInfos)
-    //     toLoadList[i.first] = EntityRef();
-    /* TODO : change to Entiyref later*/
-    for(auto &i : Loader<Texture2D>::loadingInfos)
-        toLoadList[i.first] = EntityRef();
+    // for(int cnt = 0; cnt < 128; cnt++)
+    for(auto &i : Loader<EntityRef>::loadingInfos)
+        UI_loadableEntity[i.first] = EntityRef();
 
-    // globals.simulationTime.resume();
+    /* TODO : change to Entiyref later*/
+    // for(auto &i : Loader<Texture2D>::loadingInfos)
+    //     UI_loadableEntity[i.first] = EntityRef();
+
+    /***** Creatign Terrain *****/
+    // ComponentModularity::addChild(*appRoot,
+    //     Blueprint::Terrain("ressources/maps/testPlayground.hdr",
+    //                     // "ressources/maps/RuggedTerrain.hdr",
+    //                     // "ressources/maps/generated_512x512.hdr",
+    //                     // "ressources/maps/RT512.hdr",
+    //                     // vec3(512, 64, 512),
+    //                     vec3(256, 64, 256), vec3(0), 128)
+    // );
+
+    globals.simulationTime.resume();
 }
 
 void Apps::EntityCreator::update()
 {
     ComponentModularity::synchronizeChildren(appRoot);
+
+    vec2 screenPos = globals.mousePosition();
+    screenPos = (screenPos/vec2(globals.windowSize()))*2.f - 1.f;
+
+    auto &box = EDITOR::MENUS::GameScreen->comp<WidgetBox>();
+    vec2 cursor = ((screenPos-box.min)/(box.max - box.min));
+
+    if(cursor.x < 0 || cursor.y < 0 || cursor.x > 1 || cursor.y > 1)
+        globals.currentCamera->setMouseFollow(false);
+    else
+        globals.currentCamera->setMouseFollow(true);
+    
+
+    for(auto &i : *ComponentGlobals::ComponentNamesMap)
+        if(
+            currentEntity.ref.get() 
+            && currentEntity.ref->state[i.second] 
+            && !UI_currentEntityComponent[i.first].get()
+        )
+            UI_currentEntityComponent[i.first] = EntityRef();
+
+    static int cnt = 0;
+    cnt ++;
+    if(autoRefreshFromDisk && (cnt%144) == 0)
+    {
+        physicsMutex.lock();
+
+        std::string str = this->currentEntity.name;
+
+        if(this->currentEntity.ref.get())
+        {
+            ComponentModularity::removeChild(
+                *this->appRoot,
+                this->currentEntity.ref
+            );
+
+            this->currentEntity.ref = EntityRef();
+            GG::ManageEntityGarbage__WithPhysics();
+        }
+
+        if(Loader<EntityRef>::loadingInfos[str].get())
+        {
+            VulpineTextBuffRef source(new VulpineTextBuff(
+                Loader<EntityRef>::loadingInfos[str]->buff->getSource().c_str()
+            ));
+
+            ComponentModularity::addChild(
+                *this->appRoot,
+                this->currentEntity.ref = DataLoader<EntityRef>::read(source)
+            );
+
+        }
+        physicsMutex.unlock();
+    }
 }
 
 
@@ -142,10 +276,18 @@ void Apps::EntityCreator::clean()
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
     globals.currentCamera->getState().FOV = radians(90.f);
     appRoot = EntityRef();
+    currentEntity.ref = EntityRef();
+
+    physicsMutex.lock();
+    GG::ManageEntityGarbage__WithPhysics;
+    physicsMutex.unlock();
+
     App::setController(nullptr);
 
-    toLoadList.clear();
+    UI_loadableEntity.clear();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
+
+    PG::world->setIsGravityEnabled(true);
 }
 

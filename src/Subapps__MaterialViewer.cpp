@@ -37,72 +37,72 @@ void Apps::MaterialViewerApp::spawnHelper()
 
     auto metalnessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "Metalness", 0, 1, 1, 
-        [&, id](float v){SME[id].y = v;},
-        [&, id](){return SME[id].y;},
+        [&, id](Entity *e, float v){SME[id].y = v;},
+        [&, id](Entity *e){return SME[id].y;},
         [&, id](std::u32string t){SME[id].y = u32strtof2(t, SME[id].y);},
         [&, id](){return ftou32str(SME[id].y);}
     );
 
     auto smoothnessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "Smoothness", 0, 1, 15, 
-        [&, id](float v){SME[id].x = v;},
-        [&, id](){return SME[id].x;},
+        [&, id](Entity *e, float v){SME[id].x = v;},
+        [&, id](Entity *e){return SME[id].x;},
         [&, id](std::u32string t){SME[id].x = u32strtof2(t, SME[id].x);},
         [&, id](){return ftou32str(SME[id].x);}
     );
 
     auto emmisiveSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "Emmisive", 0, 1, 7, 
-        [&, id](float v){SME[id].z = v;},
-        [&, id](){return SME[id].z;},
+        [&, id](Entity *e, float v){SME[id].z = v;},
+        [&, id](Entity *e){return SME[id].z;},
         [&, id](std::u32string t){SME[id].z = u32strtof2(t, SME[id].z);},
         [&, id](){return ftou32str(SME[id].z);}
     );
 
     auto papernessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "paperness", 0, 1, 1, 
-        [&, id](float v){PSBD[id].x = v;},
-        [&, id](){return PSBD[id].x;},
+        [&, id](Entity *e, float v){PSBD[id].x = v;},
+        [&, id](Entity *e){return PSBD[id].x;},
         [&, id](std::u32string t){PSBD[id].x = u32strtof2(t, PSBD[id].x);},
         [&, id](){return ftou32str(PSBD[id].x);}
     );
 
     auto streakingSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "streaking", 0, 1, 7, 
-        [&, id](float v){PSBD[id].y = v;},
-        [&, id](){return PSBD[id].y;},
+        [&, id](Entity *e, float v){PSBD[id].y = v;},
+        [&, id](Entity *e){return PSBD[id].y;},
         [&, id](std::u32string t){PSBD[id].y = u32strtof2(t, PSBD[id].y);},
         [&, id](){return ftou32str(PSBD[id].y);}
     );
 
     auto bloodynessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "bloodyness", 0, 1, 3, 
-        [&, id](float v){PSBD[id].z = v;},
-        [&, id](){return PSBD[id].z;},
+        [&, id](Entity *e, float v){PSBD[id].z = v;},
+        [&, id](Entity *e){return PSBD[id].z;},
         [&, id](std::u32string t){PSBD[id].z = u32strtof2(t, PSBD[id].z);},
         [&, id](){return ftou32str(PSBD[id].z);}
     );
 
     auto dirtynessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "dirtyness", 0, 1, 3, 
-        [&, id](float v){PSBD[id].w = v;},
-        [&, id](){return PSBD[id].w;},
+        [&, id](Entity *e, float v){PSBD[id].w = v;},
+        [&, id](Entity *e){return PSBD[id].w;},
         [&, id](std::u32string t){PSBD[id].w = u32strtof2(t, PSBD[id].w);},
         [&, id](){return ftou32str(PSBD[id].w);}
     );
 
     auto bloodynessCurSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "bloodyness", 0, 1, 4, 
-        [&, id](float v){BD[id].x = v;},
-        [&, id](){return BD[id].x;},
+        [&, id](Entity *e, float v){BD[id].x = v;},
+        [&, id](Entity *e){return BD[id].x;},
         [&, id](std::u32string t){BD[id].x = u32strtof2(t, BD[id].x);},
         [&, id](){return ftou32str(BD[id].x);}
     );
 
     auto dirtynessCurSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         "dirtyness", 0, 1, 4, 
-        [&, id](float v){BD[id].y = v;},
-        [&, id](){return BD[id].y;},
+        [&, id](Entity *e, float v){BD[id].y = v;},
+        [&, id](Entity *e){return BD[id].y;},
         [&, id](std::u32string t){BD[id].y = u32strtof2(t, BD[id].y);},
         [&, id](){return ftou32str(BD[id].y);}
     );

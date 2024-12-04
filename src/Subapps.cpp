@@ -31,13 +31,8 @@ void SubApps::cleanActiveApp()
 
     globals.mainThreadTime.reset();
 
-    ManageGarbage<Items>();
-    ManageGarbage<WidgetBackground>();
-    ManageGarbage<WidgetSprite>();
-    ManageGarbage<WidgetText>();
-    ManageGarbage<EntityModel>();
-    ManageGarbage<PhysicsHelpers>();
-
+    GG::ManageEntityGarbage();
+    
     physicsMutex.lock();
     ManageGarbage<RigidBody>();
     physicsMutex.unlock();

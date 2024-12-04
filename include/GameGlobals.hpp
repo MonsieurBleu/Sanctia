@@ -35,6 +35,25 @@ class GG
         static inline float timeOfDay = 10.0f;
 
         static inline SceneDirectionalLight sun;
+
+
+        static inline void ManageEntityGarbage()
+        {
+            ManageGarbage<Items>();
+            ManageGarbage<WidgetBackground>();
+            ManageGarbage<WidgetSprite>();
+            ManageGarbage<WidgetText>();
+            ManageGarbage<EntityModel>();
+            ManageGarbage<PhysicsHelpers>();
+
+        };
+
+        static inline void ManageEntityGarbage__WithPhysics()
+        {
+            ManageEntityGarbage();
+
+            ManageGarbage<RigidBody>();
+        };
 };
 
 namespace EDITOR 

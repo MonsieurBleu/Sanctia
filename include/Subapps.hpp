@@ -111,11 +111,10 @@ namespace Apps
             EventNodePtr or1;
             EventNodePtr not1;
 
-            OrbitController orbitController;
+            DragController2D dragController;
 
             EntityRef graphView;
-            vec2 viewPos;
-
+            EntityRef viewBG;
         public:
             
                 EventGraphApp();

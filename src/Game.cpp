@@ -1,6 +1,7 @@
 #include <fstream>
 #include <thread>
 
+#include <Utils.hpp>
 #include <Game.hpp>
 #include <Globals.hpp>
 // #include <GameObject.hpp>
@@ -14,6 +15,7 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <AnimationBlueprint.hpp>
 #include <Graphics/Animation.hpp>
@@ -70,9 +72,17 @@ void Game::mainloop()
     float widgetTileSPace = 0.01;
 
     vec3 sunDir = vec3(0.0f);
+    vec3 moonPos = vec3(0.0f);
+    vec3 planetPos = vec3(0.0f);
     vec3 planetRot = vec3(1.0f);
+    vec3 moonRot = vec3(1.0f);
+    mat3 tangentSpace = mat3(1.0f);
     skybox->uniforms.add(ShaderUniform(&sunDir, 21));
     skybox->uniforms.add(ShaderUniform(&planetRot, 22));
+    skybox->uniforms.add(ShaderUniform(&moonPos, 23));
+    skybox->uniforms.add(ShaderUniform(&planetPos, 24));
+    skybox->uniforms.add(ShaderUniform(&moonRot, 25));
+    skybox->uniforms.add(ShaderUniform(&tangentSpace, 26));
 
     EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
@@ -316,6 +326,33 @@ void Game::mainloop()
             }
         )
     );
+
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    //     Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    //         "moon orbit time", 
+    //         0, 1, 100, 
+    //         [](float v)
+    //         {
+    //             float t = v;
+    //             GG::moonOrbitTime = t;
+    //         },
+    //         []()
+    //         {
+    //             float t = GG::moonOrbitTime;
+    //             return t;
+    //         },
+    //         [](std::u32string text)
+    //         {
+    //             float t = u32strtof2(text, GG::moonOrbitTime);
+    //             GG::moonOrbitTime = t;
+    //         }, 
+    //         []()
+    //         {
+    //             float t = GG::moonOrbitTime;
+    //             return ftou32str(t);
+    //         }
+    //     )
+    // );
 
     bool enableTime = false;
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
@@ -580,8 +617,17 @@ void Game::mainloop()
          * ***/
         {
             if (enableTime) {
-                GG::timeOfDay += globals.appTime.getDelta() * 2.f;
+                float timeOfDaySpeed = 2.0f;
+                float timeOfDayIncrement = globals.appTime.getDelta() * timeOfDaySpeed;
+                GG::timeOfDay += timeOfDayIncrement;
                 GG::timeOfDay = fmod(GG::timeOfDay, 24.f);
+
+                constexpr float moonOrbitTime = 27.321661f * 24.f;
+                constexpr float moonOrbitIncrementPerTimeOfDay = 1.f / moonOrbitTime;
+
+                float moonOrbitIncrement = timeOfDayIncrement * moonOrbitIncrementPerTimeOfDay;
+
+                GG::moonOrbitTime += moonOrbitIncrement;
             }
 
             float timeNorm = GG::timeOfDay/24.f;
@@ -593,7 +639,7 @@ void Game::mainloop()
             constexpr double eccentricity = 0.0167;
             constexpr double orbitTilt = 7.25;
 
-            constexpr double latitude = 43.6109;
+            constexpr double latitude = -20.6109;
             constexpr double longitude = 3.8761;
 
             constexpr double orbitTime = fromDayMonth(20, 6);
@@ -609,7 +655,14 @@ void Game::mainloop()
 
             planetRot = planetRotation;
 
-            quat rotQuat = quat(planetRotation);
+            quat rotQuat = glm::quat(planetRotation);
+
+            // quat axialTiltQuat = angleAxis((float)radians(axialTilt), vec3(0, 0, 1)); // Axial tilt
+            // quat dailyRotationQuat = angleAxis((float)adjustedTime * 2.0f * (float)PI, vec3(0, 1, 0)); // Daily rotation
+
+            // quat rotQuat = dailyRotationQuat * axialTiltQuat;
+
+            // planetRot = glm::eulerAngles(rotQuat);
 
             vec3 surfPos = vec3(
                 cos(radians(latitude)) * cos(radians(longitude)),
@@ -628,15 +681,24 @@ void Game::mainloop()
             vec3 surfaceWorldPos = surfPosTransformed + orbitPos;
             vec3 sunPos = vec3(0);
             vec3 sunDirWorld = normalize(sunPos - surfaceWorldPos);
+
             
             vec3 surfaceNormal = normalize(surfPosTransformed);
             vec3 tangent = normalize(cross(surfaceNormal, vec3(0, 1, 0)));
             vec3 bitangent = normalize(cross(surfaceNormal, tangent));
+            tangentSpace = mat3(tangent, surfaceNormal, bitangent); // ?? 👽
+            // std::cout << "surf norm: vec3(" << surfaceNormal.x << ", " << surfaceNormal.y << ", " << surfaceNormal.z << ")\n"
+            //           << "tangent: vec3(" << tangent.x << ", " << tangent.y << ", " << tangent.z << ")\n"
+            //           << "bitangent: vec3(" << bitangent.x << ", " << bitangent.y << ", " << bitangent.z << ")\n"
+            //           << "tangent space up: vec3(" << (tangentSpace * vec3(0, 1, 0)).x << ", " << (tangentSpace * vec3(0, 1, 0)).y << ", " << (tangentSpace * vec3(0, 1, 0)).z << ")\n\n\n\n"
+            //           << std::flush;
 
-            mat3 tangentSpace = mat3(tangent, bitangent, surfaceNormal);
-            vec3 sunDirLocal = tangentSpace * sunDirWorld;
 
-            sunDir = vec3(sunDirLocal.x, sunDirLocal.z, sunDirLocal.y);
+            vec3 sunDirLocal = transpose(tangentSpace) * sunDirWorld;
+
+            // sunDir = vec3(sunDirLocal.x, sunDirLocal.z, sunDirLocal.y);
+            sunDir = sunDirLocal;
+            planetPos = orbitPos;
 
             // not sure about this theta
             float theta = acos(sunDir.y);
@@ -653,6 +715,24 @@ void Game::mainloop()
             sunLight->setDirection(-sunDir);
 
             ambientLight = vec3(0.07);
+
+            // compute moon position and rotation
+
+            constexpr double distanceToMoon = 384400e3;
+            constexpr double moonOrbitTilt = 5.145;
+            constexpr double moonOrbitEccentricity = 0.0549;
+            
+
+            moonPos = vec3(
+                cos(GG::moonOrbitTime * 2.0 * PI) * distanceToMoon * (1.0 - moonOrbitEccentricity * moonOrbitEccentricity),
+                sin(GG::moonOrbitTime * 2.0 * PI) * distanceToMoon * sin(radians(moonOrbitTilt)),
+                sin(GG::moonOrbitTime * 2.0 * PI) * distanceToMoon * cos(radians(moonOrbitTilt))
+            ); 
+
+            vec3 moonDirWorld = normalize(moonPos);
+            quat moonRotQuat = quatLookAt(moonDirWorld, vec3(0, 1, 0));
+
+            moonRot = glm::eulerAngles(moonRotQuat);
         }
 
         SubApps::UpdateApps();

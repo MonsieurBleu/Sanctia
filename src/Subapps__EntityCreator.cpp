@@ -279,7 +279,7 @@ void Apps::EntityCreator::clean()
     currentEntity.ref = EntityRef();
 
     physicsMutex.lock();
-    GG::ManageEntityGarbage__WithPhysics;
+    GG::ManageEntityGarbage__WithPhysics();
     physicsMutex.unlock();
 
     App::setController(nullptr);

@@ -4,8 +4,11 @@ else
 	GEXEC = Game
 endif
 
-MAKE_FLAGS = --no-print-directory
+CC = clang++
+
+MAKE_FLAGS = --no-print-directory CC="$(CC)"
 MAKE_PARALLEL = -j -k
+
 
 default : build-debug
 

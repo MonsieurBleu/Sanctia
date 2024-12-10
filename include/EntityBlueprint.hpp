@@ -77,7 +77,8 @@ namespace Blueprint
             EntityRef NamedEntry(
                 const std::u32string &name,
                 EntityRef entry,
-                float nameRatioSize = 0.5f
+                float nameRatioSize = 0.5f,
+                bool vertical = false
             );
 
 

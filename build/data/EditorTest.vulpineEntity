@@ -1,0 +1,50 @@
+"new Entity"
+	: EntityState3D 
+		: usequat t
+		: useinit t
+		;
+	: EntityGroupInfo 
+		: child : "Table 00 [001]"
+			: EntityState3D 
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "Table 00"
+				;
+			;
+		: child : "Chair 00 [001]"
+			: EntityState3D 
+				: position +1.133323e+00 +0.000000e+00 +0.000000e+00
+				: initPosition +1.133323e+00 +0.000000e+00 +0.000000e+00
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "Chair 00"
+				;
+			;
+		: child : "ZweiHander [001]"
+			: EntityState3D 
+				: position -2.006793e-01 +7.847246e-01 +0.000000e+00
+				: initPosition -2.006793e-01 +7.847246e-01 +0.000000e+00
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "ZweiHander"
+				;
+			;
+		: child : "ZweiHander [002]"
+			: EntityState3D 
+				: position -3.847563e-01 +7.833338e-01 -2.750028e-01
+				: initPosition -3.847563e-01 +7.833338e-01 -2.750028e-01
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "ZweiHander"
+				;
+			;
+		;
+	;

@@ -7,7 +7,7 @@ endif
 CC = clang++
 
 MAKE_FLAGS = --no-print-directory CC="$(CC)"
-MAKE_PARALLEL = -j -k
+MAKE_PARALLEL = -j16 -k
 
 
 default : build-debug

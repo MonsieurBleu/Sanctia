@@ -222,6 +222,73 @@ DATA_READ_FUNC_INIT(Items)
     }
 DATA_READ_END_FUNC
 
+DATA_WRITE_FUNC_INIT(EntityGroupInfo)
+
+    // out->Entry();
+    // WRITE_NAME(children, out);
+    // out->Tabulate();
+    
+    for(auto i : data.children)
+    {
+        out->Entry();
+        WRITE_NAME(child, out);
+
+        std::string name = i->comp<EntityInfos>().name;
+        if(Loader<EntityRef>::loadingInfos.find(name) != Loader<EntityRef>::loadingInfos.end())
+        {
+            WRITE_NAME(|, out);
+            name = "\"" + name + "\"";
+            out->write(CONST_STRING_SIZED(name));
+        }
+        else
+        {
+            WRITE_NAME(:, out);
+            DataLoader<EntityRef>::write(i, out);
+        }
+    }
+    
+    // out->Break();
+
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC_ENTITY(EntityGroupInfo)
+{
+    DATA_READ_INIT(EntityGroupInfo);
+
+    WHILE_NEW_VALUE
+
+        // std::cout << member << "\n";
+
+        IF_MEMBER_READ_VALUE(child)
+        {
+            EntityRef c;
+
+            if(*value == ':')
+            {
+                c = DataLoader<EntityRef>::read(buff);
+            }
+            else if(*value == '|')
+            {
+                std::string name(buff->read());
+
+                VulpineTextBuffRef source(new VulpineTextBuff(
+                    Loader<EntityRef>::loadingInfos[name]->buff->getSource().c_str()
+                ));
+
+                c = DataLoader<EntityRef>::read(source);
+            }
+
+            ComponentModularity::addChild(*e, c);
+            data.children.push_back(c);
+        }
+
+    WHILE_NEW_VALUE_END
+
+    DATA_READ_END
+}
+
+
+
 AUTOGEN_DATA_RW_FUNC(ItemTransform, mat);
 
 DATA_WRITE_FUNC_INIT(EntityModel)
@@ -637,7 +704,7 @@ DATA_READ_FUNC_ENTITY(RigidBody)
             }
 
             data->updateLocalCenterOfMassFromColliders();
-            data->updateLocalInertiaTensorFromColliders();
+            // data->updateLocalInertiaTensorFromColliders();
         }
     WHILE_NEW_VALUE_END 
 

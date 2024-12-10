@@ -51,6 +51,9 @@ namespace Apps
 {
     class MainGameApp : public SubApps
     {
+        private : 
+
+            EntityRef gameUI;
 
         public : 
 
@@ -151,11 +154,19 @@ namespace Apps
     {
         private :
 
+            std::string processNewLoadedChild(Entity *c);
+
+            void UpdateCurrentEntityTransform();
+
             OrbitController orbitController;
 
             std::unordered_map<std::string, EntityRef> UI_loadableEntity;
+            std::unordered_map<std::string, EntityRef> UI_loadableChildren;
 
             std::unordered_map<std::string, EntityRef> UI_currentEntityComponent;
+            std::unordered_map<std::string, EntityRef> UI_currentEntityChildren;
+
+            Entity *controlledEntity = nullptr;
 
             bool autoRefreshFromDisk = false;
 

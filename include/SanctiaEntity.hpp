@@ -29,7 +29,7 @@
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY DATA
 
-    Coherent_Component(EntityState3D)
+    Contextual_Component(EntityState3D)
 
     Ephemeral_Component(EntityDeplacementState)
 

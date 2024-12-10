@@ -10,6 +10,15 @@
 
 #include <App.hpp>
 
+std::string formatedCounter(int n)
+{
+    if(n < 10) return " [00" + std::to_string(n) + "]"; 
+    if(n < 100) return " [0" + std::to_string(n) + "]"; 
+    return " [" + std::to_string(n) + "]"; 
+}
+
+
+
 Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 {
     inputs.push_back(&
@@ -21,10 +30,59 @@ Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
             InputManager::Filters::always, false)
     );
 
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "test moving", GLFW_KEY_LEFT, 0, GLFW_PRESS, [&]() {
+                
+                std::cout << "MOVING ENTITY\n";
+
+                if(!controlledEntity)
+                    return;
+
+                auto &s = controlledEntity->comp<EntityState3D>();
+                s.position.y += 0.1;
+                s.initPosition.y += 0.1;
+                
+                // UpdateCurrentEntityTransform();
+            },
+            InputManager::Filters::always, false)
+    );
+
+
 
     for(auto &i : inputs)
         i->activated = false;
 };
+
+void Apps::EntityCreator::UpdateCurrentEntityTransform()
+{
+    ComponentModularity::ReparentChildren(*controlledEntity);
+
+    // auto children = controlledEntity->comp<EntityGroupInfo>().children;
+
+    // controlledEntity->comp<EntityGroupInfo>().children.clear();
+    
+    // for(auto c : children)
+    // {
+    //     ComponentModularity::addChild(
+    //         *controlledEntity,
+    //         c
+    //     );
+    // }
+}
+
+std::string Apps::EntityCreator::processNewLoadedChild(Entity *c)
+{
+    std::string str = c->comp<EntityInfos>().name;
+
+    int nb = 0;
+    while(UI_currentEntityChildren.find(str + formatedCounter(++nb)) != UI_currentEntityChildren.end());
+
+    std::string finalName = str + formatedCounter(nb);
+    UI_currentEntityChildren[finalName] = EntityRef();
+
+    return finalName;
+}
 
 EntityRef Apps::EntityCreator::UImenu()
 {
@@ -64,6 +122,9 @@ EntityRef Apps::EntityCreator::UImenu()
         {
             physicsMutex.lock();
 
+            UI_currentEntityComponent.clear();
+            UI_currentEntityChildren.clear();
+
             std::string str = e->comp<EntityInfos>().name;
 
             this->currentEntity.name = str;
@@ -88,6 +149,18 @@ EntityRef Apps::EntityCreator::UImenu()
                 this->currentEntity.ref = DataLoader<EntityRef>::read(source)
             );
 
+            UI_currentEntityChildren.clear();
+
+            for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
+            {
+                for(auto c2 : c->comp<EntityGroupInfo>().children)
+                {
+                    processNewLoadedChild(c2.get());
+                }
+                
+            }
+
+
             physicsMutex.unlock();
 
         }, 
@@ -99,14 +172,12 @@ EntityRef Apps::EntityCreator::UImenu()
     );
 
 
-    auto currentComponents = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+    auto componentNameViewer = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
         "Current Entity Component List",
         UI_currentEntityComponent, 
         [&](Entity *e, float v)
         {
-            std::string str = e->comp<EntityInfos>().name;
 
-            
         }, 
         [&](Entity *e)
         {
@@ -116,8 +187,182 @@ EntityRef Apps::EntityCreator::UImenu()
     );
 
 
+    auto childrenToLoadMenu = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+        "Children To Load",
+        UI_loadableChildren, 
+        [&](Entity *e, float v)
+        {
+            physicsMutex.lock();
+
+            std::string str = e->comp<EntityInfos>().name;
+
+            this->currentEntity.name = "new Entity";
+
+            if(!this->currentEntity.ref.get())
+            {
+                this->currentEntity.ref = newEntity(this->currentEntity.name, EntityState3D(true));
+            
+            //     ComponentModularity::removeChild(
+            //         *this->appRoot,
+            //         this->currentEntity.ref
+            //     );
+
+            //     this->currentEntity.ref = EntityRef();
+            //     GG::ManageEntityGarbage__WithPhysics();
+            }
+            
+            VulpineTextBuffRef source(new VulpineTextBuff(
+                Loader<EntityRef>::loadingInfos[str]->buff->getSource().c_str()
+            ));
+
+            auto c = DataLoader<EntityRef>::read(source);
+
+            EntityState3D transform = EntityState3D(true);
+
+            static int cnt = 0;
+            // transform.useinit = true;
+            transform.position.x = transform.initPosition.x = cnt++;
+            
+            // int nb = 0;
+            // // for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
+            // //     for(auto c2 : c->comp<EntityGroupInfo>().children)
+            // //         if(c2->comp<EntityInfos>().name == str)
+            // //             nb++;
+                    
+            // while(UI_currentEntityChildren.find(str + formatedCounter(++nb)) != UI_currentEntityChildren.end());
+
+            // std::string finalName = str + formatedCounter(nb);
+            // UI_currentEntityChildren[finalName] = EntityRef();
+
+            auto p = newEntity(processNewLoadedChild(e), transform);
+
+            ComponentModularity::addChild(*p, c);
+
+            ComponentModularity::addChild(*this->currentEntity.ref,p);
+
+            physicsMutex.unlock();
+
+        }, 
+        [&](Entity *e)
+        {
+
+            return 0.;
+        }
+    );
 
 
+    auto currentChildren = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+        "Current Entity Component List",
+        UI_currentEntityChildren, 
+        [&](Entity *e, float v)
+        {
+            std::string str = e->comp<EntityInfos>().name;
+
+            controlledEntity = nullptr;
+
+            for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
+                if(str == c->comp<EntityInfos>().name)
+                    controlledEntity = c.get();
+        }, 
+        [&](Entity *e)
+        {
+
+            return 0.;
+        }
+    );
+
+
+    auto LoadEntity = Blueprint::EDITOR_ENTITY::INO::NamedEntry(
+        U"Load Entity", toLoadMenu, 
+        0.05, true
+    );
+
+    auto AddChildren = Blueprint::EDITOR_ENTITY::INO::NamedEntry(
+        U"Add Children", childrenToLoadMenu, 
+        0.05, true
+    );
+
+    auto CurrentComponent = Blueprint::EDITOR_ENTITY::INO::NamedEntry(
+        U"Current Components", componentNameViewer, 
+        0.05, true
+    );
+
+    LoadEntity->set<WidgetBackground>(WidgetBackground());
+    LoadEntity->comp<WidgetStyle>()
+        .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1*vec4(1,1,1,0)+vec4(0,0,0,0.5))
+        .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        ;
+
+    AddChildren->set<WidgetBackground>(WidgetBackground());
+    AddChildren->comp<WidgetStyle>()
+        .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor2*vec4(1,1,1,0)+vec4(0,0,0,0.5))
+        .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        ;
+
+    CurrentComponent->set<WidgetBackground>(WidgetBackground());
+    CurrentComponent->comp<WidgetStyle>()
+        .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor3*vec4(1,1,1,0)+vec4(0,0,0,0.5))
+        .setbackGroundStyle(UiTileType::SQUARE)
+        ;
+
+    auto referencedEntityMenu = newEntity("Referenced Entities Menu"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+            LoadEntity, AddChildren, CurrentComponent
+        })
+    );
+
+    auto ChildrenManipMenu = newEntity("Children Manipulation Menu"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+
+            currentChildren,
+
+            newEntity("Current Entity Control"
+                , UI_BASE_COMP
+                , WidgetBox()
+                , WidgetStyle().setautomaticTabbing(3)
+                , EntityGroupInfo({
+
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Position", 
+                        newEntity("Position Selector"
+                            , UI_BASE_COMP
+                            , WidgetBox()
+                            , WidgetStyle().setautomaticTabbing(3)
+                            , EntityGroupInfo({
+                                Blueprint::EDITOR_ENTITY::INO::TextInput("X Position", 
+                                [&](std::u32string &t)
+                                {
+                                    if(!controlledEntity) return;
+
+                                    auto &s = controlledEntity->comp<EntityState3D>();
+                                    s.position.x = u32strtof2(t, s.position.x);
+                                    s.initPosition = s.position;
+                                },
+                                [&]()
+                                {
+                                    if(!controlledEntity) return std::u32string();
+
+                                    float x = controlledEntity->comp<EntityState3D>().position.x;
+                                    return ftou32str(x);
+                                }
+                                )
+                            })
+                        )
+                        , 
+                        0.25, true
+                    )
+
+                })
+            )
+        })
+    );
 
     return newEntity("ENTITY EDITOR APP CONTROLS"
         , UI_BASE_COMP
@@ -125,7 +370,7 @@ EntityRef Apps::EntityCreator::UImenu()
         , WidgetStyle()
             .setautomaticTabbing(2)
         , EntityGroupInfo({
-            currentComponents, toLoadMenu
+            referencedEntityMenu, ChildrenManipMenu
         })
     );
 }
@@ -151,6 +396,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
         // , WidgetText()
         , EntityGroupInfo({
             Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Entity Name", entityNameEntry), 
+            
             Blueprint::EDITOR_ENTITY::INO::Toggable("Entity Auto Refresh", "", 
             [&](Entity *e, float v)
             {
@@ -159,8 +405,19 @@ EntityRef Apps::EntityCreator::UIcontrols()
             [&](Entity *e)
             {
                 return this->autoRefreshFromDisk ? 0.f : 1.f;
-            }
-            )
+            }),
+
+            Blueprint::EDITOR_ENTITY::INO::Toggable("Save Entity", "", 
+            [&](Entity *e, float v)
+            {
+                VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
+                DataLoader<EntityRef>::write(this->currentEntity.ref, out);
+                out->saveAs("data/EditorTest.vulpineEntity");
+            },
+            [&](Entity *e)
+            {
+                return 0.f;
+            })
         })
     );
 }
@@ -188,7 +445,11 @@ void Apps::EntityCreator::init()
 
     // for(int cnt = 0; cnt < 128; cnt++)
     for(auto &i : Loader<EntityRef>::loadingInfos)
+    {
         UI_loadableEntity[i.first] = EntityRef();
+
+        UI_loadableChildren[i.first] = EntityRef();
+    }
 
     /* TODO : change to Entiyref later*/
     // for(auto &i : Loader<Texture2D>::loadingInfos)
@@ -204,7 +465,7 @@ void Apps::EntityCreator::init()
     //                     vec3(256, 64, 256), vec3(0), 128)
     // );
 
-    globals.simulationTime.resume();
+    // globals.simulationTime.resume();
 }
 
 void Apps::EntityCreator::update()
@@ -237,6 +498,8 @@ void Apps::EntityCreator::update()
     {
         physicsMutex.lock();
 
+        // UI_currentEntityComponent.clear();
+
         std::string str = this->currentEntity.name;
 
         if(this->currentEntity.ref.get())
@@ -264,6 +527,60 @@ void Apps::EntityCreator::update()
         }
         physicsMutex.unlock();
     }
+
+    if(controlledEntity)
+    {
+        bool sprintActivated = false;
+        int upFactor = 0;
+        int frontFactor = 0;
+        int rightFactor = 0;
+
+        GLFWwindow *window = globals.getWindow();
+
+        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+            frontFactor ++;
+
+        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+            frontFactor --;
+
+        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+            rightFactor ++;
+
+        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+            rightFactor --;
+
+        if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            upFactor ++;
+
+        if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+            upFactor --;
+
+        if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            sprintActivated = true;
+
+        const float speed = 0.1;
+        const float sprintFactor = 5;
+
+        auto &s = controlledEntity->comp<EntityState3D>();
+        const vec3 cpos = s.position;
+        const float delta = globals.appTime.getDelta();
+        const float dspeed = speed * delta * (sprintActivated ? sprintFactor : 1.f);
+
+        s.position += dspeed*vec3(frontFactor, upFactor, rightFactor);
+        s.initPosition = s.position;
+
+        orbitController.position = 
+        controlledEntity
+            ->comp<EntityGroupInfo>().children[0]
+            ->comp<EntityState3D>().position;
+    }
+
+    if(currentEntity.ref)
+    {
+        physicsMutex.lock();
+        ComponentModularity::ReparentChildren(*currentEntity.ref);
+        physicsMutex.unlock();
+    }
 }
 
 
@@ -285,6 +602,9 @@ void Apps::EntityCreator::clean()
     App::setController(nullptr);
 
     UI_loadableEntity.clear();
+    UI_loadableChildren.clear();
+    UI_currentEntityComponent.clear();
+    UI_currentEntityChildren.clear();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
 

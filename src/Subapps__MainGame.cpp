@@ -159,7 +159,7 @@ EntityRef Apps::MainGameApp::UImenu()
         , WidgetBox()
         , WidgetStyle()
             .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
-        , WidgetText(ftou32str(cnt))
+        // , WidgetText(ftou32str(cnt))
         , WidgetBackground()
     );
 
@@ -297,6 +297,25 @@ void Apps::MainGameApp::init()
     //     // ComponentModularity::mergeChildren(*firstChild);
     //     mergetest = firstChild.get();
     // }
+    // {
+    //     physicsMutex.lock();
+
+    //     Entity *parent = nullptr;
+        
+    //     for (int i = 0; i < 16; i++)
+    //     {
+    //         VulpineTextBuffRef source(new VulpineTextBuff(
+    //             Loader<EntityRef>::loadingInfos["ZweiHander"]->buff->getSource().c_str()
+    //         ));
+
+    //         ComponentModularity::addChild(
+    //             *appRoot,
+    //             DataLoader<EntityRef>::read(source)
+    //         );
+    //     }
+
+    //     physicsMutex.unlock();
+    // }
 
     
     // /***** Testing Entity Loading *****/
@@ -333,53 +352,125 @@ void Apps::MainGameApp::init()
 
 
     // /***** Spawning a chill dude for small talking ******/
-    // {
-    //     auto e = Blueprint::TestManequin();
-    //     e->set<DeplacementBehaviour>(STAND_STILL);
-    //     vec4 &c1 = e->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-    //     c1 = vec4(ColorHexToV(0x00FF00), c1.a);
+    {
+        auto e = Blueprint::TestManequin();
+        e->set<DeplacementBehaviour>(STAND_STILL);
+        vec4 &c1 = e->comp<EntityModel>()->getLights()[0]->getInfos()._color;
+        c1 = vec4(ColorHexToV(0x00FF00), c1.a);
 
-    //     ComponentModularity::addChild(*appRoot, e);
-    // }
+        ComponentModularity::addChild(*appRoot, e);
+    }
 
 
     /***** Spawning a legion fight *****/
-    // {
-    //     for(int i = 0; i < 50; i++)
-    //     {
-    //         auto e1 = Blueprint::TestManequin();
-    //         auto e2 = Blueprint::TestManequin();
+    {
+        for(int i = 0; i < 50; i++)
+        {
+            auto e1 = Blueprint::TestManequin();
+            auto e2 = Blueprint::TestManequin();
 
-    //         e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //         e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
-    //         // e1->set<Target>(Target{e2});
-    //         e1->set<Target>(Target{GG::playerEntity});
-    //         e1->set<Faction>({Faction::Type::PLAYER});
+            e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+            e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
+            // e1->set<Target>(Target{e2});
+            e1->set<Target>(Target{GG::playerEntity});
+            e1->set<Faction>({Faction::Type::PLAYER});
 
-    //         e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //         e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
-    //         // e2->set<Target>(Target{e1});
-    //         e2->set<Target>(Target{GG::playerEntity});
-    //         e2->set<Faction>({Faction::Type::PLAYER_ENEMY});
+            e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+            e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
+            // e2->set<Target>(Target{e1});
+            e2->set<Target>(Target{GG::playerEntity});
+            e2->set<Faction>({Faction::Type::PLAYER_ENEMY});
 
-    //         // e2->comp<EntityState3D>().position.x += 50;
-    //         e2->comp<RigidBody>()->setTransform(
-    //             rp3d::Transform(
-    //                 PG::torp3d(e2->comp<EntityState3D>().position + vec3(50, 0, 0)),
-    //                 DEFQUAT
-    //             )
-    //         );
+            // e2->comp<EntityState3D>().position.x += 50;
+            e2->comp<RigidBody>()->setTransform(
+                rp3d::Transform(
+                    PG::torp3d(e2->comp<EntityState3D>().position + vec3(50, 0, 0)),
+                    DEFQUAT
+                )
+            );
 
-    //         vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-    //         c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
+            vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
+            c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
 
-    //         vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-    //         c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
+            vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
+            c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
 
-    //         ComponentModularity::addChild(*appRoot, e1);
-    //         ComponentModularity::addChild(*appRoot, e2);
-    //     }
-    // }
+            ComponentModularity::addChild(*appRoot, e1);
+            ComponentModularity::addChild(*appRoot, e2);
+        }
+    }
+
+    /***** GAME UI *****/
+    {
+        auto gs = EDITOR::MENUS::GameScreen;
+
+        gameUI = newEntity("Game UI", UI_BASE_COMP, WidgetBox());
+
+        ComponentModularity::addChild(*gs, gameUI);
+
+        ComponentModularity::addChild(
+            *gameUI,
+            newEntity("Stance UI"
+                , UI_BASE_COMP
+                , WidgetBox([](Entity *parent, Entity *child){
+                    
+                    globals.getScene2D()->remove(child->comp<WidgetSprite>().sprite);
+
+                    switch (GG::playerEntity->comp<ActionState>().stance())
+                    {
+                    case ActionState::Stance::LEFT :
+                            child->set<WidgetSprite>(WidgetSprite("stanceLEFT"));
+                        break;
+                    
+                    case ActionState::Stance::RIGHT :
+                            child->set<WidgetSprite>(WidgetSprite("stanceRIGHT"));
+                        break;
+
+                    case ActionState::Stance::SPECIAL :
+                            child->set<WidgetSprite>(WidgetSprite("stanceUP"));
+                        break;
+
+                    default:
+                        break;
+                    }
+
+                }).set(0.1f*vec2(-1, 1), 0.1f*vec2(-1, 1))
+                , WidgetSprite("stanceUP")
+            )
+        );
+
+
+        EntityRef healthBar = Blueprint::EDITOR_ENTITY::INO::SmoothSlider("Health Bar", 
+                0, GG::playerEntity->comp<EntityStats>().health.max, 1e6, 
+            [](Entity *e, float v){
+                GG::playerEntity->comp<EntityStats>().health.cur = v;
+            },
+            [](Entity *e)
+            {
+                return GG::playerEntity->comp<EntityStats>().health.cur;
+            }
+        );
+
+        healthBar->comp<EntityGroupInfo>().children[0]->comp<WidgetStyle>().setbackgroundColor1(
+            // "#CD3131FF"_rgba
+            vec4(vec3("#CD3131"_rgb), 0.9f)
+        );
+
+        // healthBar->comp<WidgetBox>().set(vec2(-0.9, -0.35), vec2(0.9, 0.95));
+
+        ComponentModularity::addChild(
+            *gameUI,
+            newEntity("Health Bar Background"
+                , UI_BASE_COMP
+                , WidgetBox(vec2(-0.9, -0.35), vec2(0.9, 0.95))
+                , WidgetStyle()
+                    .setautomaticTabbing(1)
+                    .setbackgroundColor1(vec4(vec3("#353130"_rgb), 0.8))
+                , WidgetBackground()
+                , EntityGroupInfo({healthBar})
+            )
+        );
+    }
 };
 
 void Apps::MainGameApp::update()
@@ -428,6 +519,8 @@ void Apps::MainGameApp::clean()
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
     globals.currentCamera->getState().FOV = radians(90.f);
+
+    ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, gameUI);
 
     GG::sun->shadowCameraSize = vec2(1, 1);
 

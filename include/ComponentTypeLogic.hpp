@@ -29,7 +29,7 @@ struct EntityState3D
     vec3 lookDirection = vec3(1, 0, 0);
 
     bool usequat = false;
-    bool useinit = false;
+    bool useinit = true;
     bool usePhysicInterpolation = true;
 
     vec3 initPosition = vec3(0);

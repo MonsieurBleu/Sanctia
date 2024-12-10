@@ -151,12 +151,21 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
 EntityRef Blueprint::EDITOR_ENTITY::INO::NamedEntry(
     const std::u32string &name,
     EntityRef entry,
-    float nameRatioSize
+    float nameRatioSize,
+    bool vertical
 )
 {
     nameRatioSize = nameRatioSize*2. - 1.;
 
-    entry->comp<WidgetBox>().set(vec2(nameRatioSize+0.05, 1), vec2(-1, 1));
+    vec2 titleRange = vec2(-1, nameRatioSize-0.01);
+    vec2 entryRange = vec2(nameRatioSize+0.01, 1);
+    vec2 d = vec2(-1, 1);
+
+    entry->comp<WidgetBox>().set(
+        !vertical ? entryRange : d, 
+        !vertical ? d : entryRange        
+        );
+        
     auto &entryName = entry->comp<EntityInfos>().name;
 
     return newEntity(entryName + " - Menu"
@@ -167,7 +176,10 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::NamedEntry(
         , EntityGroupInfo({
             newEntity(entryName + " - Helper Name"
                 , UI_BASE_COMP
-                , WidgetBox(vec2(-1, nameRatioSize-0.05), vec2(-1, 1))
+                , WidgetBox(
+                    !vertical ? titleRange : d, 
+                    !vertical ? d : titleRange
+                    )
                 , WidgetBackground()
                 , WidgetText(name)
                 , WidgetStyle()
@@ -1032,6 +1044,14 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
                 }
 
             auto &children = child->comp<EntityGroupInfo>().children;
+
+            std::vector<EntityRef> childrenCopy;
+            for(auto i : children)
+                if(list.find(i->comp<EntityInfos>().name) != list.end())
+                    childrenCopy.push_back(i);
+                
+            children = childrenCopy;
+
             std::sort(
                 children.begin(),
                 children.end(),
@@ -1148,11 +1168,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
 
             if(box.isUnderCursor)
             {
-                box.scrollOffset.y -= off.y*0.1;
+                box.scrollOffset.y += off.y*0.1;
 
                 box.scrollOffset.y = clamp(
                     box.scrollOffset.y,
-                    -0.025f*child->comp<EntityGroupInfo>().children[0]->comp<EntityGroupInfo>().children.size(),
+                    -0.05f*child->comp<EntityGroupInfo>().children[0]->comp<EntityGroupInfo>().children.size(),
                     0.f
                 );
 

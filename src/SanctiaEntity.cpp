@@ -80,7 +80,7 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
     rp3d::Transform t;
 
     auto &childBody = child->comp<RigidBody>();
-    auto &parentBody = parent.comp<RigidBody>();
+    auto &parentBody = newParent.comp<RigidBody>();
 
     auto childBodyType = childBody->getType();
     childBody->setType(rp3d::BodyType::KINEMATIC);
@@ -93,6 +93,73 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
 
     child->set<RigidBody>(childBody);
 }   
+
+COMPONENT_DEFINE_REPARENT(EntityState3D)
+{
+    // if(
+    //     child->hasComp<RigidBody>() &&
+    //     child->comp<RigidBody>()->getType() != rp3d::BodyType::KINEMATIC
+    //     )
+    //     return;
+
+    auto &ps = newParent.comp<EntityState3D>();
+    auto &cs = child->comp<EntityState3D>();
+    cs.position = cs.initPosition + ps.position;
+
+    if(ps.usequat)
+    {
+        if(cs.usequat)
+        {
+            cs.quaternion = ps.quaternion * cs.quaternion;
+        }
+        else
+        {
+            /*
+                TODO : maybe do this part
+            */  
+        }
+    }
+    else
+    {
+        if(cs.usequat)
+        {
+            cs.quaternion = directionToQuat(ps.lookDirection)*cs.initQuat;
+            // std::cout << glm::to_string(cs.quaternion) << "\n";
+        }
+        else
+        {
+            /*
+                TODO : maybe do this part
+            */
+        }
+    }
+
+    cs._PhysicTmpPos = cs.position;
+    cs._PhysicTmpQuat = cs.quaternion;
+
+
+    if(!newParent.hasComp<RigidBody>() && child->hasComp<RigidBody>())
+    {
+        auto &b = child->comp<RigidBody>();
+
+        if(b->getType() != rp3d::BodyType::STATIC)
+        {
+            auto childBodyType = b->getType();
+            b->setType(rp3d::BodyType::KINEMATIC);
+
+            b->setTransform(
+                rp3d::Transform(
+                    PG::torp3d(cs.position), PG::torp3d(cs.quaternion)
+                )
+            );
+
+            b->setType(childBodyType);
+
+            child->set<RigidBody>(b);
+        }
+
+    }
+}
 
 COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)
 {

@@ -81,7 +81,9 @@ void applyEffect(Entity *weapon, Entity *target)
                 float damageMult = 1.f;
                 bool stun = true;
 
-                if(tAction.blocking && angle > SANCTIA_COMBAT_BLOCK_ANGLE)
+                // std::cout << tAction.blocking << "\t" << angle << "\t" << SANCTIA_COMBAT_BLOCK_ANGLE << "\n";
+
+                if(tAction.blocking && angle < SANCTIA_COMBAT_BLOCK_ANGLE)
                 {
                     if(wAction.stance() != tAction.stance())
                     {

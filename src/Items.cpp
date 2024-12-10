@@ -12,7 +12,19 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
     }
     if(item->hasComp<RigidBody>())
     {
-        item->comp<RigidBody>()->setIsActive(false);
+        auto &b = item->comp<RigidBody>();
+
+        b->setIsActive(false);
+
+        int size = b->getNbColliders();
+
+        for(int i = 0; i < size; i++)
+        {
+            auto c = b->getCollider(i);
+
+            if(c->getCollisionCategoryBits() == 1<<CollideCategory::ENVIRONEMENT)
+                c->setCollideWithMaskBits(0);
+        }
     }
 }
 
@@ -30,6 +42,18 @@ void Items::unequip(EntityRef usr, EquipementSlots slot)
     }
     if(item->hasComp<RigidBody>())
     {
-        item->comp<RigidBody>()->setIsActive(true);
+        auto &b = item->comp<RigidBody>();
+
+        b->setIsActive(true);
+
+        int size = b->getNbColliders();
+
+        for(int i = 0; i < size; i++)
+        {
+            auto c = b->getCollider(i);
+
+            if(c->getCollisionCategoryBits() == 1<<CollideCategory::ENVIRONEMENT)
+                c->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+        }
     }
 }

@@ -15,9 +15,27 @@ Entity *mergetest = nullptr;
 Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
 {
     /*****  Setting up player entity & control *****/
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "kick key", GLFW_KEY_V, 0, GLFW_PRESS, [&]() {
+                auto &s = globals.simulationTime.speed;
+
+                if(s >= 1.f)
+                    s = 0.05;
+                else
+                    s = 1.f;
+                
+                // std::cout << s << "\n";
+            },
+            InputManager::Filters::always, false)
+    );
+
     inputs.push_back(&
         InputManager::addEventInput(
             "kick key", GLFW_KEY_F, 0, GLFW_PRESS, [&]() {
+                // std::cout << "KICK KEY PRESED\n";
+                // std::cout << GG::playerEntity->comp<ActionState>().stun << "\n"; 
                 GG::playerEntity->comp<ActionState>().isTryingToBlock = true;
                 GG::playerEntity->comp<ActionState>().setStance(ActionState::SPECIAL);
             },
@@ -171,7 +189,7 @@ void Apps::MainGameApp::init()
     {
         appRoot = newEntity();
         globals.simulationTime.resume();
-        globals.currentCamera->getState().FOV = radians(90.f);
+        globals.currentCamera->getState().FOV = radians(100.f);
         GG::currentConditions.readTxt("saves/gameConditions.txt");
 
         Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
@@ -363,42 +381,42 @@ void Apps::MainGameApp::init()
 
 
     /***** Spawning a legion fight *****/
-    {
-        for(int i = 0; i < 50; i++)
-        {
-            auto e1 = Blueprint::TestManequin();
-            auto e2 = Blueprint::TestManequin();
+    // {
+    //     for(int i = 0; i < 150; i++)
+    //     {
+    //         auto e1 = Blueprint::TestManequin();
+    //         auto e2 = Blueprint::TestManequin();
 
-            e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-            e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
-            // e1->set<Target>(Target{e2});
-            e1->set<Target>(Target{GG::playerEntity});
-            e1->set<Faction>({Faction::Type::PLAYER});
+    //         e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+    //         e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    //         e1->set<Target>(Target{e2});
+    //         // e1->set<Target>(Target{GG::playerEntity});
+    //         e1->set<Faction>({Faction::Type::PLAYER});
 
-            e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-            e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
-            // e2->set<Target>(Target{e1});
-            e2->set<Target>(Target{GG::playerEntity});
-            e2->set<Faction>({Faction::Type::PLAYER_ENEMY});
+    //         e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
+    //         e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    //         e2->set<Target>(Target{e1});
+    //         // e2->set<Target>(Target{GG::playerEntity});
+    //         e2->set<Faction>({Faction::Type::PLAYER_ENEMY});
 
-            // e2->comp<EntityState3D>().position.x += 50;
-            e2->comp<RigidBody>()->setTransform(
-                rp3d::Transform(
-                    PG::torp3d(e2->comp<EntityState3D>().position + vec3(50, 0, 0)),
-                    DEFQUAT
-                )
-            );
+    //         // e2->comp<EntityState3D>().position.x += 50;
+    //         e2->comp<RigidBody>()->setTransform(
+    //             rp3d::Transform(
+    //                 PG::torp3d(e2->comp<EntityState3D>().position + vec3(50, 0, 0)),
+    //                 DEFQUAT
+    //             )
+    //         );
 
-            vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-            c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
+    //         vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
+    //         c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
 
-            vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-            c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
+    //         vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
+    //         c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
 
-            ComponentModularity::addChild(*appRoot, e1);
-            ComponentModularity::addChild(*appRoot, e2);
-        }
-    }
+    //         ComponentModularity::addChild(*appRoot, e1);
+    //         ComponentModularity::addChild(*appRoot, e2);
+    //     }
+    // }
 
     /***** GAME UI *****/
     {
@@ -443,11 +461,15 @@ void Apps::MainGameApp::init()
         EntityRef healthBar = Blueprint::EDITOR_ENTITY::INO::SmoothSlider("Health Bar", 
                 0, GG::playerEntity->comp<EntityStats>().health.max, 1e6, 
             [](Entity *e, float v){
+                if(GG::playerEntity)
                 GG::playerEntity->comp<EntityStats>().health.cur = v;
             },
             [](Entity *e)
             {
+                if(GG::playerEntity)
                 return GG::playerEntity->comp<EntityStats>().health.cur;
+
+                return 0.f;
             }
         );
 
@@ -521,6 +543,7 @@ void Apps::MainGameApp::clean()
     globals.currentCamera->getState().FOV = radians(90.f);
 
     ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, gameUI);
+    gameUI = EntityRef();
 
     GG::sun->shadowCameraSize = vec2(1, 1);
 

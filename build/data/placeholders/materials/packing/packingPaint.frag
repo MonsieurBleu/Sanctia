@@ -2,8 +2,8 @@
 
 #include SceneDefines3D.glsl
 
-#define ESS_BASE_PENUMBRA_RADIUS 0.0002
-#define ESS_PENUMBRA_ITERATION 16
+#define ESS_BASE_PENUMBRA_RADIUS 0.0004
+#define ESS_PENUMBRA_ITERATION 32
 #define ESS_BASE_ITERATION 8
 
 // #define USING_VERTEX_TEXTURE_UV
@@ -25,10 +25,10 @@
         layout(binding = 1) uniform sampler2D bMaterial;
     #endif
 #else
-    layout (location = 18) uniform vec2 bBloDirVal;
-    layout (location = 19) uniform vec4 bPapStrBloDir;
-    layout (location = 20) uniform vec3 bColor;
-    layout (location = 21) uniform vec3 bRougMetEmm;
+    layout (location = 32) uniform vec2 bBloDirVal;
+    layout (location = 33) uniform vec4 bPapStrBloDir;
+    layout (location = 34) uniform vec3 bColor;
+    layout (location = 35) uniform vec3 bRougMetEmm;
 
 #endif
 
@@ -452,6 +452,10 @@ void main()
 
     lcalcPosition = position;
     paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
+
+    // mRoughness = 0.0;
+    // mMetallic = 1.0;
+
     mRoughness2 = mRoughness * mRoughness;
 
     // normalComposed = perturbNormal(normalComposed, viewVector, NRM.xy, uv);
@@ -460,16 +464,25 @@ void main()
 
     normalComposed = gl_FrontFacing ? normalComposed : -normalComposed;
 
+
     Material material = getMultiLight();
+    // sunLightMult = 1.0;
     vec3 rColor = getSkyboxReflection(viewDir, normalComposed);
     const float reflectFactor = getReflectionFactor(1.0 - nDotV, mMetallic, mRoughness);
+
+    // vec3 rColor2 = vec3(0.25, 0.2, 0.15)*0.75;
+    // rColor = mix(rColor, rColor2, 1 - sunLightMult);
+
     // fragColor.rgb = color * ambientLight + material.result + 
     //     (ambientLight + material.result + reflectFactor*0.1)*rColor*reflectFactor*5;
-    fragColor.rgb = color * ambientLight + material.result + rColor * reflectFactor * 0.5;
+    fragColor.rgb = color * ambientLight + material.result + rColor * reflectFactor;
 
     fragColor.rgb = mix(fragColor.rgb, color, mEmmisive);
     fragEmmisive = getStandardEmmisive(fragColor.rgb);
 
     // fragNormal = normalize((vec4(normalComposed, 0.0) * _cameraInverseViewMatrix).rgb)*0.5 + 0.5;
     fragNormal = normalize((vec4(normalComposed, 0.0) * inverse(_cameraViewMatrix)).rgb) * 0.5 + 0.5;
+
+    // fragColor.rgb = rColor;
+    // fragColor.rgb = vec3(sunLightMult);
 }

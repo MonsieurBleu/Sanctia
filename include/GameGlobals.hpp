@@ -36,7 +36,7 @@ class GG
         static inline float moonOrbitTime = 0.50; // normalized to [0, 1] cause it's like over 27.3 days otherwise
 
         static inline SceneDirectionalLight sun;
-
+        static inline ModelRef skybox;
 
         static inline void ManageEntityGarbage()
         {
@@ -72,8 +72,8 @@ namespace EDITOR
 
         namespace COLOR
         {
-            #define BASE_ALPHA 0.85f*255.f
-            #define ALPHA2     0.60f*255.f
+            #define BASE_ALPHA 0.95f*255.f
+            #define ALPHA2     0.8f*255.f
 
             inline vec4 LightBackgroundColor1 = vec4(242, 234,  222, BASE_ALPHA)/255.f;
             inline vec4 LightBackgroundColor2 = vec4(242, 234,  222, ALPHA2)/255.f;
@@ -83,11 +83,11 @@ namespace EDITOR
             inline vec4 DarkBackgroundColor2  = 0.5f*vec4( 53,  49,  48, BASE_ALPHA)/255.f;
             inline vec4 DarkBackgroundColor2Opaque  = 0.5f*vec4( 53,  49,  48, 255 * 2)/255.f;
 
-            inline vec4 HightlightColor1 = vec4(253, 103,  6,  255.f)/255.f;
-            inline vec4 HightlightColor2 = vec4(44, 211,  175, 255.f)/255.f;
-            inline vec4 HightlightColor3 = vec4(217, 38,  144, 255.f)/255.f;
-            inline vec4 HightlightColor4 = vec4(249, 192,  25, 255.f)/255.f;
-            inline vec4 HightlightColor5 = vec4(170, 60,   230, 255.f)/255.f;
+            inline vec4 HightlightColor1 = vec4(253, 103,  6,   BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor2 = vec4(44, 211,  175,  BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor3 = vec4(217, 38,  144,  BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor4 = vec4(249, 192,  25,  BASE_ALPHA)/255.f;
+            inline vec4 HightlightColor5 = vec4(170, 60,   230, BASE_ALPHA)/255.f;
         }   
     }
 }

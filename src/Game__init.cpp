@@ -19,6 +19,7 @@ Game::Game(GLFWwindow *window) : App(window){}
 
 void Game::init(int paramSample)
 {
+
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
    
     // globals._renderScale = 0.5;
@@ -50,13 +51,17 @@ void Game::init(int paramSample)
         globals.standartShaderUniform2D());
 
     finalProcessingStage
+        .addUniform(ShaderUniform(camera.getProjectionViewMatrixAddr(), 2))
+        .addUniform(ShaderUniform(camera.getViewMatrixAddr(), 3))
+        .addUniform(ShaderUniform(camera.getProjectionMatrixAddr(), 4))
+
         .addUniform(ShaderUniform(Bloom.getIsEnableAddr(), 10))
         .addUniform(ShaderUniform(&editorModeEnable, 11))
-        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor1, 16))
-        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor2, 17))
-        .addUniform(ShaderUniform(&globals.sceneChromaticAbbAngleAmplitude, 18))
-        .addUniform(ShaderUniform(&globals.sceneVignette, 19))
-        .addUniform(ShaderUniform(&globals.sceneHsvShift, 20));
+        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor1, 32))
+        .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor2, 33))
+        .addUniform(ShaderUniform(&globals.sceneChromaticAbbAngleAmplitude, 34))
+        .addUniform(ShaderUniform(&globals.sceneVignette, 35))
+        .addUniform(ShaderUniform(&globals.sceneHsvShift, 36));
 
     setIcon("ressources/icon.png");
     // setController(&playerControl);

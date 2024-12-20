@@ -22,10 +22,10 @@ void Apps::MaterialViewerApp::spawnHelper()
     BD.push_back(vec2(0));
 
     ModelRef helper = Loader<MeshModel3D>::get("materialHelper").copy();
-    helper->uniforms.add(ShaderUniform(&BD.back(), 18));
-    helper->uniforms.add(ShaderUniform(&PSBD.back(), 19));
-    helper->uniforms.add(ShaderUniform(&color.back(), 20));
-    helper->uniforms.add(ShaderUniform(&SME.back(), 21));
+    helper->uniforms.add(ShaderUniform(&BD.back(), 32));
+    helper->uniforms.add(ShaderUniform(&PSBD.back(), 33));
+    helper->uniforms.add(ShaderUniform(&color.back(), 34));
+    helper->uniforms.add(ShaderUniform(&SME.back(), 35));
 
     EntityModel model(EntityModel{newObjectGroup()}); 
     model->add(helper);
@@ -264,6 +264,8 @@ void Apps::MaterialViewerApp::init()
         globals.currentCamera->setPosition(vec3(-1, 0, 0));
         globals.currentCamera->getState().FOV = radians(40.f);
         orbitController.distance = 10;
+
+        GG::sun->shadowCameraSize = vec2(64, 64);
     }
 }
 
@@ -308,6 +310,8 @@ void Apps::MaterialViewerApp::clean()
     PSBD.clear();
     BD.clear();
     helpers.clear();
+
+    GG::sun->shadowCameraSize = vec2(0, 0);
 
     globals.currentCamera->setMouseFollow(false);
     globals.currentCamera->setPosition(vec3(0));

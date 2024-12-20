@@ -33,14 +33,15 @@ void Game::mainloop()
     /****** Loading Models and setting up the scene ******/
     globals.simulationTime.pause();
 
-    ModelRef skybox = newModel(skyboxMaterial);
-    skybox->loadFromFolder("ressources/models/skybox/", true, false);
+    GG::skybox = newModel(skyboxMaterial);
+    
+    GG::skybox->loadFromFolder("ressources/models/skybox/", true, false);
 
-    // skybox->invertFaces = true;
-    // skybox->depthWrite = true;
-    skybox->state.frustumCulled = false;
-    skybox->state.scaleScalar(1E6);
-    scene.add(skybox);
+    // GG::skybox->invertFaces = true;
+    // GG::skybox->depthWrite = true;
+    GG::skybox->state.frustumCulled = false;
+    GG::skybox->state.scaleScalar(1E6);
+    scene.add(GG::skybox);
 
     Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
 
@@ -62,6 +63,12 @@ void Game::mainloop()
     glEnable(GL_DEPTH_TEST);
     glLineWidth(1.0);
 
+
+    GlobalComponentToggler<LevelOfDetailsInfos>::activated = true;
+
+    // renderBuffer.clearColor = EDITOR::MENUS::COLOR::DarkBackgroundColor2;
+
+
     /****** Setting Up Debug UI *******/
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     ui.spriteMaterial = Loader<MeshMaterial>::get("sprite");
@@ -70,19 +77,6 @@ void Game::mainloop()
     ui.colorTitleBackground.a = 0.9f;
 
     float widgetTileSPace = 0.01;
-
-    vec3 sunDir = vec3(0.0f);
-    vec3 moonPos = vec3(0.0f);
-    vec3 planetPos = vec3(0.0f);
-    vec3 planetRot = vec3(1.0f);
-    vec3 moonRot = vec3(1.0f);
-    mat3 tangentSpace = mat3(1.0f);
-    skybox->uniforms.add(ShaderUniform(&sunDir, 21));
-    skybox->uniforms.add(ShaderUniform(&planetRot, 22));
-    skybox->uniforms.add(ShaderUniform(&moonPos, 23));
-    skybox->uniforms.add(ShaderUniform(&planetPos, 24));
-    skybox->uniforms.add(ShaderUniform(&moonRot, 25));
-    skybox->uniforms.add(ShaderUniform(&tangentSpace, 26));
 
     EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
@@ -736,6 +730,7 @@ void Game::mainloop()
         }
 
         SubApps::UpdateApps();
+        
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
 
@@ -943,6 +938,11 @@ void Game::mainloop()
             physicsMutex.unlock();
         }
 
+        if(GlobalComponentToggler<LevelOfDetailsInfos>::needUpdate())
+        {
+            GlobalComponentToggler<LevelOfDetailsInfos>::updateALL();
+        }
+
 
         mainloopPreRenderRoutine();
 
@@ -1012,12 +1012,12 @@ void Game::mainloop()
         if (wireframe)
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            skybox->state.hide = ModelStatus::HIDE;
+            // GG::skybox->state.hide = ModelStatus::HIDE;
         }
         else
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            skybox->state.hide = ModelStatus::SHOW;
+            // GG::skybox->state.hide = ModelStatus::SHOW;
         }
 
         /* 3D Early Depth Testing */

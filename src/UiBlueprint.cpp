@@ -44,7 +44,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SmoothSlider(
                 , UI_BASE_COMP
                 , WidgetBackground()
                 , WidgetStyle()
-                    .setbackGroundStyle(UiTileType::SQUARE)
+                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    // .setbackGroundStyle(UiTileType::SQUARE)
                     .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
                 , WidgetBox(Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc)
             )
@@ -116,6 +117,62 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::TextInput(
     return t;
 }
 
+EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInput(
+    const std::string &name,
+    std::function<void(float f)> setValue, 
+    std::function<float()> getValue,
+    float minV, float maxV,
+    float smallIncrement, float bigIncrement
+    )
+{
+    #define PASS_ARG_COPY setValue, getValue, minV, maxV, smallIncrement, bigIncrement
+
+    auto textInput = TextInput(name,
+        [PASS_ARG_COPY](std::u32string &t)
+        {
+            setValue(clamp(u32strtof2(t, getValue()), minV, maxV));
+        },
+        [PASS_ARG_COPY]()
+        {
+            return ftou32str(getValue());
+        }
+    );
+
+    auto incr = Toggable("n+", "", 
+        [PASS_ARG_COPY](Entity *e, float v){setValue(clamp(getValue() + smallIncrement, minV, maxV));},
+        [PASS_ARG_COPY](Entity *e){return 1.f;}
+    );
+
+    auto decr = Toggable("n-", "", 
+        [PASS_ARG_COPY](Entity *e, float v){setValue(clamp(getValue() - smallIncrement, minV, maxV));},
+        [PASS_ARG_COPY](Entity *e){return 1.f;}
+    );
+
+    auto Bincr = Toggable("n++", "", 
+        [PASS_ARG_COPY](Entity *e, float v){setValue(clamp(getValue() + bigIncrement, minV, maxV));},
+        [PASS_ARG_COPY](Entity *e){return 1.f;}
+    );
+
+    auto Bdecr = Toggable("n--", "", 
+        [PASS_ARG_COPY](Entity *e, float v){setValue(clamp(getValue() - bigIncrement, minV, maxV));},
+        [PASS_ARG_COPY](Entity *e){return 1.f;}
+    );
+
+    return newEntity(name + " - value input"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+            Bdecr, decr, textInput, incr, Bincr
+        })
+    );
+
+    #undef PASS_ARG_COPY
+}
+
+
+
 EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
     const std::string &name,
     float min, float max, int padding, 
@@ -148,11 +205,61 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
     return p;
 }
 
+EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    const std::string &name,
+    float min, float max, int padding, 
+    std::function<void(float f)> setValue, 
+    std::function<float()> getValue
+    )
+{
+    auto s = Blueprint::EDITOR_ENTITY::INO::SmoothSlider(name, min, max, padding, 
+        [setValue, getValue, min, max](Entity *e, float f)
+        {
+            setValue(f);
+        }, 
+        [setValue, getValue](Entity *e)
+        {
+            return getValue();
+        }
+    );
+
+    s->comp<WidgetBox>() = WidgetBox(
+        vec2(-1, 1./3.), vec2(-1, 1)
+    );
+
+    auto t = Blueprint::EDITOR_ENTITY::INO::TextInput(name, 
+        [setValue, getValue, min, max](std::u32string &t)
+        {
+            setValue(clamp(u32strtof2(t, getValue()), min, max));
+        },
+        [setValue, getValue, min, max]()
+        {
+            return ftou32str(getValue());
+        }
+    );
+
+    t->comp<WidgetBox>() = WidgetBox(
+        vec2(1./3., 1), vec2(-1, 1)
+    );
+
+    auto p = newEntity(name + " - Menu"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({s, t})
+    );
+
+    return p;
+}
+
+
 EntityRef Blueprint::EDITOR_ENTITY::INO::NamedEntry(
     const std::u32string &name,
     EntityRef entry,
     float nameRatioSize,
-    bool vertical
+    bool vertical,
+    vec4 color 
 )
 {
     nameRatioSize = nameRatioSize*2. - 1.;
@@ -183,7 +290,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::NamedEntry(
                 , WidgetBackground()
                 , WidgetText(name)
                 , WidgetStyle()
-                    .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+                    .setbackgroundColor1(color)
                     .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
             ),
@@ -617,7 +724,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetStyle()
             // .setautomaticTabbing(1)
             .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
-            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+            .setbackGroundStyle(UiTileType::SQUARE)
         , EntityGroupInfo({
             newEntity("Main Thread Plotters"
                 , UI_BASE_COMP
@@ -647,7 +754,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetStyle()
             // .setautomaticTabbing(1)
             .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
-            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+            .setbackGroundStyle(UiTileType::SQUARE)
         , EntityGroupInfo({
             newEntity("Physic Thread Plotters"
                 , UI_BASE_COMP

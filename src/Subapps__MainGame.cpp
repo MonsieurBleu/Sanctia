@@ -185,14 +185,21 @@ void Apps::MainGameApp::init()
     }
 
     /***** Creatign Terrain *****/
-    ComponentModularity::addChild(*appRoot,
-        Blueprint::Terrain("ressources/maps/testPlayground.hdr",
-                        // "ressources/maps/RuggedTerrain.hdr",
-                        // "ressources/maps/generated_512x512.hdr",
-                        // "ressources/maps/RT512.hdr",
-                        // vec3(512, 64, 512),
-                        vec3(256, 64, 256), vec3(0), 128)
-    );
+
+    int terrainGridDim = 5;
+
+    for(int i = -terrainGridDim; i <= terrainGridDim; i++)
+    for(int j = -terrainGridDim; j <= terrainGridDim; j++)
+    {
+        ComponentModularity::addChild(*appRoot,
+            Blueprint::Terrain("ressources/maps/testPlayground.hdr",
+                            // "ressources/maps/RuggedTerrain.hdr",
+                            // "ressources/maps/generated_512x512.hdr",
+                            // "ressources/maps/RT512.hdr",
+                            // vec3(512, 64, 512),
+                            vec3(256, 64, 256), 256.f*vec3(i, 0, j), 128)
+        );
+    }
 
     /***** Creating Player *****/
     {
@@ -443,11 +450,15 @@ void Apps::MainGameApp::init()
         EntityRef healthBar = Blueprint::EDITOR_ENTITY::INO::SmoothSlider("Health Bar", 
                 0, GG::playerEntity->comp<EntityStats>().health.max, 1e6, 
             [](Entity *e, float v){
-                GG::playerEntity->comp<EntityStats>().health.cur = v;
+                if(GG::playerEntity)
+                    GG::playerEntity->comp<EntityStats>().health.cur = v;
             },
             [](Entity *e)
             {
-                return GG::playerEntity->comp<EntityStats>().health.cur;
+                if(GG::playerEntity)
+                    return GG::playerEntity->comp<EntityStats>().health.cur;
+                else
+                    return 0.f;
             }
         );
 
@@ -522,7 +533,7 @@ void Apps::MainGameApp::clean()
 
     ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, gameUI);
 
-    GG::sun->shadowCameraSize = vec2(1, 1);
+    GG::sun->shadowCameraSize = vec2(0, 0);
 
     App::setController(nullptr);
 };

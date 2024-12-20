@@ -6,17 +6,18 @@
 layout(location = 0) uniform ivec2 iResolution;
 layout(location = 1) uniform float iTime;
 layout(location = 2) uniform mat4 MVP;
-
+layout(location = 3) uniform mat4 View;
+layout(location = 4) uniform mat4 Projection;
 
 layout(location = 10) uniform int bloomEnable;
 layout(location = 11) uniform int editorModeEnable;
 layout(location = 12) uniform vec4 gameScreenBox;
 
-layout(location = 16) uniform vec3 caColor1;
-layout(location = 17) uniform vec3 caColor2;
-layout(location = 18) uniform vec2 caAngleAmplitude;
-layout(location = 19) uniform vec4 vignette;
-layout(location = 20) uniform vec3 hsvShift;
+layout(location = 32) uniform vec3 caColor1;
+layout(location = 33) uniform vec3 caColor2;
+layout(location = 34) uniform vec2 caAngleAmplitude;
+layout(location = 35) uniform vec4 vignette;
+layout(location = 36) uniform vec3 hsvShift;
 
 layout(binding = 0) uniform sampler2D bColor;
 layout(binding = 1) uniform sampler2D bDepth;
@@ -26,6 +27,10 @@ layout(binding = 4) uniform sampler2D bEmmisive;
 layout(binding = 5) uniform sampler2D texNoise;
 layout(binding = 6) uniform sampler2D bSunMap;
 layout(binding = 7) uniform sampler2D bUI;
+
+
+#define SKYBOX_REFLECTION
+#include functions/Skybox.glsl
 
 in vec2 uvScreen;
 in vec2 ViewRay;
@@ -46,6 +51,30 @@ vec4 getBlurAO(vec2 TexCoords) {
         }
     }
     return result / (4.0 * 4.0);
+}
+
+
+vec3 aces(vec3 x) {
+  const float a = 2.51;
+  const float b = 0.03;
+  const float c = 2.43;
+  const float d = 0.59;
+  const float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+vec3 adjustColor(vec3 color, float contrast, float saturation, float brightness) {
+    // Adjust brightness
+    color += brightness;
+
+    // Adjust contrast
+    color = (color - 0.5) * contrast + 0.5;
+
+    // Convert to grayscale and interpolate for saturation
+    float gray = dot(color, vec3(0.299, 0.587, 0.114)); // Luma coefficient for RGB
+    color = mix(vec3(gray), color, saturation);
+
+    return color;
 }
 
 void main()
@@ -90,27 +119,83 @@ void main()
 
 /******* Ambient Occlusion *******/
     vec4 AO = getBlurAO(uv);
-    _fragColor.rgb *= vec3(1.0 - AO.a);
-    _fragColor.rgb += AO.rgb;
+    _fragColor.rgb *= max(vec3(1.0 - 2.0*pow(AO.a, 1.75)), 0);
+    _fragColor.rgb += AO.rgb * pow(AO.a, 0.5) * 1.0;
     
 
+    float depth = 1.0/texture(bDepth, uv).r;
+    float maxdepth = depth;
+    {        
+        float bias = 0.00005;
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(bias, 0.f)).r);
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(-bias, 0.f)).r);
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(0.f, bias)).r);
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(0.f, -bias)).r);
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(bias, bias)).r);
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(-bias, bias)).r);
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(-bias, bias)).r);
+        maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(-bias, -bias)).r);
+    }
+
+    bool isEditor3DView = length(texture(bNormal, uv).rgb) < 0.2;
+
+/******** DEPTH FOG ********/
+{
+    if(maxdepth < 1e6 && !isEditor3DView)
+    {
+        float density = 1.5e-4;
+        float fog = exp(-pow(maxdepth*density, 2.0));
+
+        float u_far = 1e6;
+        float u_near = 0.1;
+        float linearDepth = u_far * u_near / mix(u_far, u_near, depth);
+
+        vec4 ndc = vec4((uv * 2.0) - 1.0, Projection[3][2] / (1.0 -depth), -1.0);
+        vec4 viewpos = inverse(Projection) * ndc;
+        viewpos /= viewpos.w;
+        viewpos.z *= -1;
+        vec4 world = inverse(View) * viewpos;
+
+        vec3 dir = normalize(-world.rgb);
+        dir.y = clamp(dir.y, 0.0, 1.0);
+
+        vec3 fogColor = getAtmopshereColor(dir);
+
+        fog = 1.0 - clamp(fog, 0.0, 1.0);
+
+        // fog = 0.f;
+
+        _fragColor.rgb = mix(_fragColor.rgb, fogColor, fog*0.80);
+    }
+}
+
 /******* Blomm & Exposure Tonemapping *******/
-    float exposure = 2.5;
+    float exposure = 1.5;
     float gamma = 2.2;
 
-    gamma -= 0.4*rgb2hsv(_fragColor.rgb).g;
-    exposure += 0.5*rgb2hsv(_fragColor.rgb).g;
-
-    vec3 bloom = texture(bEmmisive, uv).rgb;
-    if(bloomEnable != 0 && 1.0/texture(bDepth, uv).r < 1e5)
+    if(!isEditor3DView)
     {
-        // _fragColor.rgb += exposure * 0.1 * pow(bloom, vec3(2.0 - 1.0/exposure));
-        _fragColor.rgb += bloom * 0.5;
-    } 
 
-    vec3 mapped = vec3(1.0) - exp(-_fragColor.rgb * exposure);
-    mapped = pow(mapped, vec3(1.0 / gamma));
-    _fragColor.rgb = mapped;
+        vec3 bloom = texture(bEmmisive, uv).rgb;
+        if(bloomEnable != 0
+        //  && depth < 1e5
+         )
+        {
+            _fragColor.rgb += bloom*0.25;
+        } 
+
+        vec3 mapped = _fragColor.rgb;
+        mapped = vec3(1.0) - exp(-mapped * exposure);
+        mapped = aces(mapped);
+        mapped = pow(mapped, vec3(1.0 / gamma));
+        // mapped = adjustColor(mapped, 1.1, 0.9, 0.0);
+
+        _fragColor.rgb = mapped;
+    }
+    else
+    {
+        // _fragColor.rgb = pow(_fragColor.rgb, vec3(1.0 / gamma));
+    }
 
 
 /******* HSV Shigting *******/
@@ -119,23 +204,6 @@ void main()
     hsv.gb = clamp(hsv.gb, vec2(0.0), vec2(1.0));
     hsv.r = mod(hsv.r, 1.0);
     _fragColor.rgb = hsv2rgb(hsv);
-
-/******** DEPTH FOG ********/
-{
-    float d = 1.0/texture(bDepth, uv).r;
-
-    if(d < 1e5)
-    {
-        float density = 2.5e-4;
-        float fog = exp(-pow(d*density, 2.0));
-        vec3 fogColor = vec3(0.5, 0.65, 0.75);
-
-        fog = 1.0 - clamp(fog, 0.0, 1.0);
-
-        _fragColor.rgb = mix(_fragColor.rgb, fogColor, fog*0.95);
-    }
-
-}
 
 /******* Vignette *******/
     float vignetteExp = 1.0/vignette.a;
@@ -157,10 +225,29 @@ void main()
     #endif
 
 /******* UI *******/
+
+    {
+        // float maxdepth = depth;
+        // float bias = 0.0007;
+        // maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(bias, 0.f)).r);
+        // maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(-bias, 0.f)).r);
+        // maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(0.f, bias)).r);
+        // maxdepth = max(maxdepth, 1.0/texture(bDepth, uv + vec2(0.f, -bias)).r);
+
+        if(maxdepth > 1e8)
+            _fragColor.rgb = 0.75*vec3( 53,  49,  48)/255.;
+    }
+
     if(uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0)
         _fragColor.rgb = vec3(70.,  63.,  60.)/255.;
 
+
     vec4 ui = texture(bUI, uvScreen);
+
+    // ui.rgb = pow(ui.rgb, vec3(1.0 / 1.8));
+
     _fragColor.rgb = mix(_fragColor.rgb, ui.rgb, ui.a);
     _fragColor.a = 1.0;
+
+    // _fragColor = abs(texture(bNormal, uv));
 }

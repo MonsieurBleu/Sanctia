@@ -172,3 +172,29 @@ struct AgentState
         randomTime = minTime + r*(maxTime-minTime);
     }
 };
+
+
+struct LevelOfDetailsInfos
+{
+    bool activated = false;
+
+    static inline const float distLevelNear = 50.f;
+    static inline const float distLevelFar  = 150.f;
+    static inline const float distLevelBias = 5.f;
+
+    vec3 aabbmin; 
+    vec3 aabbmax;
+
+    int level = 0;
+
+    struct ChildrenLoadInfo
+    {
+        const std::string name;
+        VulpineBitSet<3> lod;
+    };
+
+    std::vector<ChildrenLoadInfo> childrenLoadInfos;
+
+    void computeEntityAABB(Entity *e);
+    void computeLevel(vec3 p);
+};

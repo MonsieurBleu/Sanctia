@@ -53,6 +53,14 @@ namespace Blueprint
                 WidgetButton::UpdateFunc ufunc
             );
 
+            EntityRef ValueInput(
+                const std::string &name,
+                std::function<void(float f)> setValue, 
+                std::function<float()> getValue,
+                float minV, float maxV,
+                float smallIncrement, float bigIncrement
+                );
+
             EntityRef TextInput(
                 const std::string &name,
                 std::function<void(std::u32string &)> fromText, 
@@ -68,6 +76,13 @@ namespace Blueprint
                 std::function<std::u32string()> toText
                 );
             
+            EntityRef ValueInputSlider(
+                const std::string &name,
+                float min, float max, int padding, 
+                std::function<void(float f)> setValue, 
+                std::function<float()> getValue
+                );
+
             EntityRef ColorSelectionScreen(
                 const std::string &name,
                 std::function<vec3()> getColor, 
@@ -78,7 +93,8 @@ namespace Blueprint
                 const std::u32string &name,
                 EntityRef entry,
                 float nameRatioSize = 0.5f,
-                bool vertical = false
+                bool vertical = false,
+                vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
             );
 
 

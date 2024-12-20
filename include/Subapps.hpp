@@ -167,6 +167,9 @@ namespace Apps
             std::unordered_map<std::string, EntityRef> UI_currentEntityChildren;
 
             Entity *controlledEntity = nullptr;
+            vec3 controlledEntityEuleur = vec3(0);
+
+            EntityRef gizmo;
 
             bool autoRefreshFromDisk = false;
 

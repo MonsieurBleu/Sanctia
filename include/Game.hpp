@@ -38,7 +38,6 @@ private:
     EntityRef gameScreenWidget;
 
 
-
 public:
     
     static inline bool doAutomaticShaderRefresh = false;

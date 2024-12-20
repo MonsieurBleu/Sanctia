@@ -2,6 +2,8 @@
 #include <EntityBlueprint.hpp>
 #include <AssetManager.hpp>
 #include <MathsUtils.hpp>
+#include <Constants.hpp>
+#include <Helpers.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
@@ -17,38 +19,8 @@ std::string formatedCounter(int n)
     return " [" + std::to_string(n) + "]"; 
 }
 
-
-
 Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 {
-    inputs.push_back(&
-        InputManager::addEventInput(
-            "Add Material Helper", GLFW_KEY_KP_ADD, 0, GLFW_PRESS, [&]() {
-                static int cnt = 1;
-                this->UI_loadableEntity["Hey !!!!!!" + std::to_string(cnt++)] = EntityRef();
-            },
-            InputManager::Filters::always, false)
-    );
-
-    inputs.push_back(&
-        InputManager::addEventInput(
-            "test moving", GLFW_KEY_LEFT, 0, GLFW_PRESS, [&]() {
-                
-                std::cout << "MOVING ENTITY\n";
-
-                if(!controlledEntity)
-                    return;
-
-                auto &s = controlledEntity->comp<EntityState3D>();
-                s.position.y += 0.1;
-                s.initPosition.y += 0.1;
-                
-                // UpdateCurrentEntityTransform();
-            },
-            InputManager::Filters::always, false)
-    );
-
-
 
     for(auto &i : inputs)
         i->activated = false;
@@ -122,6 +94,8 @@ EntityRef Apps::EntityCreator::UImenu()
         {
             physicsMutex.lock();
 
+            controlledEntity = nullptr;
+
             UI_currentEntityComponent.clear();
             UI_currentEntityChildren.clear();
 
@@ -166,8 +140,9 @@ EntityRef Apps::EntityCreator::UImenu()
         }, 
         [&](Entity *e)
         {
+            return currentEntity.name == e->comp<EntityInfos>().name ? 0.f : 1.f;
 
-            return 0.;
+            // return 0.;
         }
     );
 
@@ -252,7 +227,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
 
     auto currentChildren = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
-        "Current Entity Component List",
+        "Current Entity Children List",
         UI_currentEntityChildren, 
         [&](Entity *e, float v)
         {
@@ -262,12 +237,18 @@ EntityRef Apps::EntityCreator::UImenu()
 
             for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
                 if(str == c->comp<EntityInfos>().name)
+                {
                     controlledEntity = c.get();
+
+                    controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+                }
         }, 
         [&](Entity *e)
         {
-
-            return 0.;
+            if(controlledEntity)
+                return controlledEntity->comp<EntityInfos>().name == e->comp<EntityInfos>().name ? 0.f : 1.f;
+            else
+                return 1.f;
         }
     );
 
@@ -290,13 +271,13 @@ EntityRef Apps::EntityCreator::UImenu()
     LoadEntity->set<WidgetBackground>(WidgetBackground());
     LoadEntity->comp<WidgetStyle>()
         .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1*vec4(1,1,1,0)+vec4(0,0,0,0.5))
-        .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        .setbackGroundStyle(UiTileType::SQUARE)
         ;
 
     AddChildren->set<WidgetBackground>(WidgetBackground());
     AddChildren->comp<WidgetStyle>()
         .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor2*vec4(1,1,1,0)+vec4(0,0,0,0.5))
-        .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        .setbackGroundStyle(UiTileType::SQUARE)
         ;
 
     CurrentComponent->set<WidgetBackground>(WidgetBackground());
@@ -327,37 +308,125 @@ EntityRef Apps::EntityCreator::UImenu()
             newEntity("Current Entity Control"
                 , UI_BASE_COMP
                 , WidgetBox()
-                , WidgetStyle().setautomaticTabbing(3)
+                , WidgetStyle().setautomaticTabbing(5)
                 , EntityGroupInfo({
 
+
                     Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Position", 
-                        newEntity("Position Selector"
+                        newEntity("Position controls"
                             , UI_BASE_COMP
                             , WidgetBox()
                             , WidgetStyle().setautomaticTabbing(3)
                             , EntityGroupInfo({
-                                Blueprint::EDITOR_ENTITY::INO::TextInput("X Position", 
-                                [&](std::u32string &t)
-                                {
-                                    if(!controlledEntity) return;
 
-                                    auto &s = controlledEntity->comp<EntityState3D>();
-                                    s.position.x = u32strtof2(t, s.position.x);
-                                    s.initPosition = s.position;
-                                },
-                                [&]()
-                                {
-                                    if(!controlledEntity) return std::u32string();
+                                Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"X",
+                                    Blueprint::EDITOR_ENTITY::INO::ValueInput("X Position"
+                                        , [&](float f)
+                                        {
+                                            if(!controlledEntity) return;
+                                            auto &s = controlledEntity->comp<EntityState3D>();
+                                            s.position.x = s.initPosition.x = f;
+                                        }
+                                        , [&]()
+                                        {
+                                            if(!controlledEntity) return 0.f;
+                                            return controlledEntity->comp<EntityState3D>().position.x;
+                                        }, 
+                                        -1e6f, 1e6f, 0.1f, 1.f
+                                    ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor1
+                                ),
+                                Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Y",
+                                    Blueprint::EDITOR_ENTITY::INO::ValueInput("Y Position"
+                                        , [&](float f)
+                                        {
+                                            if(!controlledEntity) return;
+                                            auto &s = controlledEntity->comp<EntityState3D>();
+                                            s.position.y = s.initPosition.y = f;
+                                        }
+                                        , [&]()
+                                        {
+                                            if(!controlledEntity) return 0.f;
+                                            return controlledEntity->comp<EntityState3D>().position.y;
+                                        }, 
+                                        -1e6f, 1e6f, 0.1f, 1.f
+                                    ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor2
+                                ),
+                                Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Z",
+                                    Blueprint::EDITOR_ENTITY::INO::ValueInput("Z Position"
+                                        , [&](float f)
+                                        {
+                                            if(!controlledEntity) return;
+                                            auto &s = controlledEntity->comp<EntityState3D>();
+                                            s.position.z = s.initPosition.z = f;
+                                        }
+                                        , [&]()
+                                        {
+                                            if(!controlledEntity) return 0.f;
+                                            return controlledEntity->comp<EntityState3D>().position.z;
+                                        }, 
+                                        -1e6f, 1e6f, 0.1f, 1.f
+                                    ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor3
+                                ),
+                            })
+                        ),
+                        0.25, true
+                    ),
 
-                                    float x = controlledEntity->comp<EntityState3D>().position.x;
-                                    return ftou32str(x);
-                                }
+
+                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Rotation", 
+                        newEntity("Rotation controls"
+                            , UI_BASE_COMP
+                            , WidgetBox()
+                            , WidgetStyle().setautomaticTabbing(3)
+                            , EntityGroupInfo({
+                                Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("X Rotation",
+                                    0.f, 360.f, 360/5, 
+                                    [&](float f)
+                                    {
+                                        if(!controlledEntity) return;
+                                        controlledEntityEuleur.x = radians(f - 180.f);
+                                        controlledEntity->comp<EntityState3D>().initQuat = quat(controlledEntityEuleur);
+                                    }
+                                    , [&]()
+                                    {
+                                        if(!controlledEntity) return 0.f;
+                                        return degrees(controlledEntityEuleur.x) + 180.f;
+                                    }
+                                ),
+                                Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("Y Rotation",
+                                    0.f, 360.f, 360/5, 
+                                    [&](float f)
+                                    {
+                                        if(!controlledEntity) return;
+                                        controlledEntityEuleur.y = radians(f - 180.f);
+                                        controlledEntity->comp<EntityState3D>().initQuat = quat(controlledEntityEuleur);
+                                    }
+                                    , [&]()
+                                    {
+                                        if(!controlledEntity) return 0.f;
+                                        return degrees(controlledEntityEuleur.y) + 180.f;
+                                    }
+                                ),
+                                Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("Z Rotation",
+                                    0.f, 360.f, 360/5, 
+                                    [&](float f)
+                                    {
+                                        if(!controlledEntity) return;
+                                        controlledEntityEuleur.z = radians(f - 180.f);
+                                        controlledEntity->comp<EntityState3D>().initQuat = quat(controlledEntityEuleur);
+                                    }
+                                    , [&]()
+                                    {
+                                        if(!controlledEntity) return 0.f;
+                                        return degrees(controlledEntityEuleur.z) + 180.f;
+                                    }
                                 )
                             })
-                        )
-                        , 
+                        ),
                         0.25, true
                     )
+
+
 
                 })
             )
@@ -437,10 +506,14 @@ void Apps::EntityCreator::init()
         orbitController.distance = 5;
         // orbitController.distance = 200;
 
-        GG::sun->cameraResolution = vec2(8192);
-        GG::sun->shadowCameraSize = vec2(256, 256);
+        // GG::sun->cameraResolution = vec2(8192);
+        // GG::sun->shadowCameraSize = vec2(256, 256);
+
+        GG::skybox->state.setHideStatus(ModelStatus::HIDE);
 
         PG::world->setIsGravityEnabled(false);
+
+        glLineWidth(3);
     }
 
     // for(int cnt = 0; cnt < 128; cnt++)
@@ -466,6 +539,92 @@ void Apps::EntityCreator::init()
     // );
 
     // globals.simulationTime.resume();
+
+
+    /****** Creating Gizmo Helper ******/
+    {
+        LineHelperRef x(new LineHelper(vec3(0), vec3(1, 0, 0), EDITOR::MENUS::COLOR::HightlightColor1));
+        LineHelperRef y(new LineHelper(vec3(0), vec3(0, 1, 0), EDITOR::MENUS::COLOR::HightlightColor2));
+        LineHelperRef z(new LineHelper(vec3(0), vec3(0, 0, 1), EDITOR::MENUS::COLOR::HightlightColor3));
+
+        EntityModel model = EntityModel{ObjectGroupRef(newObjectGroup())};
+        auto aabbhelper = CubeHelperRef(new CubeHelper(vec3(-0.5), vec3(0.5), EDITOR::MENUS::COLOR::LightBackgroundColor1));
+        model->add(aabbhelper);
+        model->add(x);
+        model->add(y);
+        model->add(z);
+
+        // x->depthWrite = false;
+        // y->depthWrite = false;
+        // z->depthWrite = false;
+
+        // x->sorted = false;
+        // y->sorted = false;
+        // z->sorted = false;
+
+        ComponentModularity::addChild(*appRoot, 
+            gizmo = newEntity("Gizmo Helper"
+                , model
+            )
+        );
+    }
+
+    /****** Creating World Grid Helper ******/
+    {
+        EntityModel model = EntityModel{ObjectGroupRef(newObjectGroup())};
+
+        float inf = 5000;
+
+        vec3 color = EDITOR::MENUS::COLOR::DarkBackgroundColor1;
+
+        model->add(
+            LineHelperRef(new LineHelper(
+                vec3(+inf, 0, 0), 
+                vec3(-inf, 0, 0), 
+                EDITOR::MENUS::COLOR::HightlightColor1))
+        );
+
+        model->add(
+            LineHelperRef(new LineHelper(
+                vec3(0, +inf, 0), 
+                vec3(0, -inf, 0), 
+                EDITOR::MENUS::COLOR::HightlightColor2))
+        );
+
+        model->add(
+            LineHelperRef(new LineHelper(
+                vec3(0, 0, +inf), 
+                vec3(0, 0, -inf), 
+                EDITOR::MENUS::COLOR::HightlightColor3))
+        );
+
+        int size = 50;
+        for(int i = -size; i <= size; i+=5)
+        {
+            if(i == 0) continue;
+
+            model->add(
+                LineHelperRef(new LineHelper(
+                    vec3(+size, 0, i), 
+                    vec3(-size, 0, i), 
+                    color))
+            );
+
+            model->add(
+                LineHelperRef(new LineHelper(
+                    vec3(i, 0, +size), 
+                    vec3(i, 0, -size), 
+                    color))
+            );
+        }
+
+
+        ComponentModularity::addChild(*appRoot, 
+            newEntity("World Grid Helper"
+                , model
+            )
+        );
+    }
 }
 
 void Apps::EntityCreator::update()
@@ -569,11 +728,29 @@ void Apps::EntityCreator::update()
         s.position += dspeed*vec3(frontFactor, upFactor, rightFactor);
         s.initPosition = s.position;
 
-        orbitController.position = 
-        controlledEntity
-            ->comp<EntityGroupInfo>().children[0]
-            ->comp<EntityState3D>().position;
+        // auto entity = controlledEntity->comp<EntityGroupInfo>().children[0];
+        // vec3 pos = entity->comp<EntityState3D>().position;
+        // orbitController.position = pos;
+        // gizmo->comp<EntityModel>()->state.setPosition(pos);
+
+
+        if(controlledEntity->hasComp<LevelOfDetailsInfos>())
+        {
+            auto &lodi = controlledEntity->comp<LevelOfDetailsInfos>();
+
+            vec3 extent = lodi.aabbmax - lodi.aabbmin;
+            vec3 position = lodi.aabbmin + extent*0.5f;
+
+            gizmo->comp<EntityModel>()->getMeshes()[0]->state.setScale(extent);
+            gizmo->comp<EntityModel>()->state.setPosition(position);
+
+            orbitController.position = position;
+        }
+
+        gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::SHOW);
     }
+    else
+        gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::HIDE);
 
     if(currentEntity.ref)
     {
@@ -592,8 +769,10 @@ void Apps::EntityCreator::clean()
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
     globals.currentCamera->getState().FOV = radians(90.f);
+
     appRoot = EntityRef();
     currentEntity.ref = EntityRef();
+    gizmo = EntityRef();
 
     physicsMutex.lock();
     GG::ManageEntityGarbage__WithPhysics();
@@ -607,7 +786,10 @@ void Apps::EntityCreator::clean()
     UI_currentEntityChildren.clear();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
+    GG::skybox->state.setHideStatus(ModelStatus::SHOW);
 
     PG::world->setIsGravityEnabled(true);
+
+    glLineWidth(1.0);
 }
 

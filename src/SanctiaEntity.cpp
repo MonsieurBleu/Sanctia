@@ -77,21 +77,36 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
 {
     if(&parent != &newParent) return;
 
-    rp3d::Transform t;
-
     auto &childBody = child->comp<RigidBody>();
-    auto &parentBody = newParent.comp<RigidBody>();
 
-    auto childBodyType = childBody->getType();
-    childBody->setType(rp3d::BodyType::KINEMATIC);
 
-    childBody->setTransform(
-        parentBody->getTransform() * childBody->getTransform()
-    );
+    if(newParent.hasComp<RigidBody>())
+    {
+        auto childBodyType = childBody->getType();
+        childBody->setType(rp3d::BodyType::KINEMATIC);
 
-    childBody->setType(childBodyType);
+        auto &parentBody = newParent.comp<RigidBody>();
 
-    child->set<RigidBody>(childBody);
+        childBody->setTransform(
+            parentBody->getTransform() * childBody->getTransform()
+        );
+
+        childBody->setType(childBodyType);
+
+        child->set<RigidBody>(childBody);
+    }
+    else if(child->hasComp<EntityState3D>())
+    {
+        auto &s = child->comp<EntityState3D>();
+
+        childBody->setTransform(
+            rp3d::Transform(
+                PG::torp3d(s.position), PG::torp3d(s.usequat ? s.quaternion : directionToQuat(s.lookDirection))
+            )
+        );
+    }
+
+    // child->set<RigidBody>(childBody);
 }   
 
 COMPONENT_DEFINE_REPARENT(EntityState3D)
@@ -102,6 +117,9 @@ COMPONENT_DEFINE_REPARENT(EntityState3D)
     //     )
     //     return;
 
+    if(!newParent.hasComp<EntityState3D>())
+        return;
+
     auto &ps = newParent.comp<EntityState3D>();
     auto &cs = child->comp<EntityState3D>();
     cs.position = cs.initPosition + ps.position;
@@ -110,7 +128,7 @@ COMPONENT_DEFINE_REPARENT(EntityState3D)
     {
         if(cs.usequat)
         {
-            cs.quaternion = ps.quaternion * cs.quaternion;
+            cs.quaternion = ps.quaternion * cs.initQuat;
         }
         else
         {
@@ -229,8 +247,6 @@ COMPONENT_DEFINE_MERGE(RigidBody)
 
     parentBody->updateLocalCenterOfMassFromColliders();
 }
-
-
 
 template<> void Component<EntityModel>::ComponentElem::init()
 {
@@ -645,4 +661,157 @@ template<> void Component<RigidBody>::ComponentElem::clean()
 {
     if(data)
         PG::world->destroyRigidBody(data);
+}
+
+
+void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
+{
+    
+    bool isPureUI = 
+        e->ids[ComponentCategory::UI]      != NO_ENTITY &&
+        e->ids[ComponentCategory::AI]      == NO_ENTITY &&
+        e->ids[ComponentCategory::PHYSIC]  == NO_ENTITY &&
+        e->ids[ComponentCategory::GRAPHIC] == NO_ENTITY
+        ;
+    
+    if(isPureUI)
+    {
+        // std::cout << e->toStr() << "IS PURE UI\n"; 
+
+        activated = false;
+        return;
+    }
+
+    activated = true;
+
+    bool hasModel = e->hasComp<EntityModel>();
+    bool hasRigidBody = e->hasComp<RigidBody>();
+    bool hasChildren = e->hasComp<EntityGroupInfo>() && e->comp<EntityGroupInfo>().children.size();
+
+    aabbmin = vec3(1e12);
+    aabbmax = vec3(-1e12);
+
+    if(hasModel)
+    {
+        auto &m = e->comp<EntityModel>();
+
+        auto aabb = m->getMeshesBoundingBox();
+
+        aabbmin = min(aabbmin, aabb.first);
+        aabbmax = max(aabbmax, aabb.second);
+    }
+    // else 
+    if(hasRigidBody)
+    {
+        auto &b = e->comp<RigidBody>();
+
+        auto aabb = b->getAABB();
+
+        // std::cout << b->getTransform().getPosition().x << "\n";
+
+        aabbmin = min(aabbmin, PG::toglm(aabb.getMin()));
+        aabbmax = max(aabbmax, PG::toglm(aabb.getMax()));
+    }
+    // else 
+    if(hasChildren)
+    {
+        for(auto c : e->comp<EntityGroupInfo>().children)
+            if(c->hasComp<LevelOfDetailsInfos>())
+            {
+                auto lodi = c->comp<LevelOfDetailsInfos>();
+
+                aabbmin = min(aabbmin, lodi.aabbmin);
+                aabbmax = max(aabbmax, lodi.aabbmax);
+            }
+    }
+
+    // std::cout 
+    //     << e->toStr() 
+    //     << "has AABB " << to_string(aabbmin) << " " << to_string(aabbmax) << "\n\n"; 
+}
+
+void LevelOfDetailsInfos::computeLevel(vec3 p)
+{
+    vec3 closest = clamp(p, aabbmin, aabbmax);
+    bool inside = all(greaterThanEqual(p, aabbmin) && lessThanEqual(p, aabbmax));
+    float dist = inside ? 0.f : length(closest - p);
+
+
+    switch (level)
+    {
+    case 0 :
+        
+        if(dist > distLevelFar + distLevelBias)
+            level = 2;
+        else
+        if(dist > distLevelNear + distLevelBias)
+            level = 1;
+
+        break;
+    
+    case 1 : 
+
+        if(dist < distLevelNear - distLevelBias)
+            level = 0;
+        else
+        if(dist > distLevelFar + distLevelBias)
+            level = 2;
+
+        break;
+
+    case 2 : 
+
+        if(dist < distLevelNear - distLevelBias)
+            level = 0;
+        else
+        if(dist < distLevelFar - distLevelBias)
+            level = 1;
+
+        break;
+
+    default:
+        break;
+    }
+}
+
+template<> void Component<LevelOfDetailsInfos>::ComponentElem::init()
+{
+    data.computeEntityAABB(entity);
+}
+
+COMPONENT_DEFINE_REPARENT(LevelOfDetailsInfos)
+{
+    child->comp<LevelOfDetailsInfos>().computeEntityAABB(child.get());
+    parent.comp<LevelOfDetailsInfos>().computeEntityAABB(&parent);
+}
+
+COMPONENT_DEFINE_MERGE(LevelOfDetailsInfos)
+{
+    if(parent.hasComp<LevelOfDetailsInfos>())
+    {
+        auto &clodi = child->comp<LevelOfDetailsInfos>();
+        auto &plodi = parent.comp<LevelOfDetailsInfos>();
+
+        plodi.aabbmin = min(plodi.aabbmin, clodi.aabbmin);
+        plodi.aabbmax = max(plodi.aabbmax, clodi.aabbmax);
+        
+        for(auto &i : clodi.childrenLoadInfos)
+            plodi.childrenLoadInfos.push_back(i);
+    }
+}
+
+COMPONENT_DEFINE_SYNCH(LevelOfDetailsInfos)
+{
+    if(&parent != child.get()) return;
+
+    auto &clodi = child->comp<LevelOfDetailsInfos>();
+
+    if(!clodi.activated) return;
+
+    clodi.computeLevel(globals.currentCamera->getPosition());
+
+    // std::cout << child->toStr() << "LOD level : " << clodi.level << "\n\n";
+
+    
+
 }

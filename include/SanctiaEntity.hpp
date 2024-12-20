@@ -43,6 +43,8 @@
 
     Ephemeral_Component(Faction)
 
+    Aligned_Resonant_Component(LevelOfDetailsInfos)
+    template<> void Component<LevelOfDetailsInfos>::ComponentElem::init();
 
 /***************** ITEMS *****************/
 

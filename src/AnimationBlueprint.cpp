@@ -292,6 +292,9 @@ std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
     e->comp<ActionState>().attacking = false;
     e->comp<ActionState>().lockType = ActionState::LockedDeplacement::NONE;
 
+    if(e->comp<ActionState>().stance() == ActionState::Stance::SPECIAL)
+        e->comp<ActionState>().setStance(ActionState::Stance::RIGHT);
+
     auto &slots = e->comp<Items>().equipped;
 
     if(slots[WEAPON_SLOT].item)

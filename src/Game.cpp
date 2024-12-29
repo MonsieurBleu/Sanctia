@@ -41,9 +41,13 @@ void Game::mainloop()
     // GG::skybox->depthWrite = true;
     GG::skybox->state.frustumCulled = false;
     GG::skybox->state.scaleScalar(1E6);
+    GG::skybox->uniforms.add(ShaderUniform(&GG::skyboxTye, 32));
     scene.add(GG::skybox);
 
-    Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
+    // Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
+    // Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI004_4K-TONEMAPPED");
+    Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
+    
 
     SceneDirectionalLight sunLight = newDirectionLight(DirectionLight()
                                                       // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
@@ -55,9 +59,16 @@ void Game::mainloop()
 
     GG::sun->cameraResolution = vec2(8192);
     GG::sun->shadowCameraSize = vec2(0, 0);
-
     GG::sun->activateShadows();
     scene.add(sunLight);
+
+    GG::moon = newDirectionLight(DirectionLight()
+        .setColor(vec3(0.6, 0.9, 1.0)));
+    scene.add(GG::moon);
+
+    GG::moon->cameraResolution = vec2(8192);
+    GG::moon->shadowCameraSize = vec2(256);
+    GG::moon->activateShadows();
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
@@ -97,7 +108,7 @@ void Game::mainloop()
                 newEntity("Current Application Controls"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-1, 1), vec2(1, 1.1) + vec2(widgetTileSPace, -widgetTileSPace))
+                    , WidgetBox(vec2(-1, 1), vec2(1, 1.1))
                     , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
@@ -105,7 +116,7 @@ void Game::mainloop()
                 newEntity("Global Controls"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-1, 1), vec2(1.1, 1.2) + vec2(widgetTileSPace, -widgetTileSPace) - vec2(widgetTileSPace))
+                    , WidgetBox(vec2(-1, 1), vec2(1.1, 1.2))
                     , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
@@ -113,7 +124,8 @@ void Game::mainloop()
                 newEntity("Global Informations"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-1, 1), vec2(1.2, 1.9) - vec2(widgetTileSPace * 1.f, 0.f)), WidgetBackground()
+                    , WidgetBox(vec2(-1, 1), vec2(1.2 + widgetTileSPace, 1.9-widgetTileSPace))
+                    , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::AppMenu =
@@ -185,6 +197,12 @@ void Game::mainloop()
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
+
+    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab, 
+        Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
+        "Global Benchmark", "icon_chrono"
+    );
 
     Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 
@@ -611,7 +629,8 @@ void Game::mainloop()
          * ***/
         {
             if (enableTime) {
-                float timeOfDaySpeed = 2.0f;
+                float timeOfDaySpeed = 4.0f;
+                // float timeOfDaySpeed = 64.0f;
                 float timeOfDayIncrement = globals.appTime.getDelta() * timeOfDaySpeed;
                 GG::timeOfDay += timeOfDayIncrement;
                 GG::timeOfDay = fmod(GG::timeOfDay, 24.f);
@@ -633,13 +652,14 @@ void Game::mainloop()
             constexpr double eccentricity = 0.0167;
             constexpr double orbitTilt = 7.25;
 
-            constexpr double latitude = -20.6109;
+            constexpr double latitude = 43.6109;
             constexpr double longitude = 3.8761;
 
-            constexpr double orbitTime = fromDayMonth(20, 6);
+            // constexpr double orbitTime = fromDayMonth(10, 4);
+            constexpr double orbitTime = 0.8;
 
             // adjust for sidereal time 
-            double adjustedTime = fmod(timeNorm - orbitTime, 1.0);
+            double adjustedTime = fmod(timeNorm - 0.8 - (1.5f/24.f), 1.0);
 
             vec3 planetRotation = vec3(
                 radians(axialTilt) * cos(adjustedTime * 2.0 * PI),
@@ -696,7 +716,11 @@ void Game::mainloop()
 
             // not sure about this theta
             float theta = acos(sunDir.y);
-            sunLight->setIntensity(smoothstep(-0.1f, 0.5f, theta));
+            float sunIntensity = smoothstep(-0.2f, 0.25f, sunDir.y);
+            // float sunIntensity = smoothstep(-0.2f, 0.25f, theta);            
+            sunLight->setIntensity(sunIntensity);
+
+            // std::cout << "Sun intensity " << sunIntensity << "\n";
 
             sunLight->setColor(
                 mix(
@@ -707,8 +731,6 @@ void Game::mainloop()
             );
 
             sunLight->setDirection(-sunDir);
-
-            ambientLight = vec3(0.07);
 
             // compute moon position and rotation
 
@@ -727,6 +749,9 @@ void Game::mainloop()
             quat moonRotQuat = quatLookAt(moonDirWorld, vec3(0, 1, 0));
 
             moonRot = glm::eulerAngles(moonRotQuat);
+
+            GG::moon->setDirection(-normalize(moonDirWorld * tangentSpace));
+            GG::moon->setIntensity(0.25 * (1.0 - sunIntensity));
         }
 
         SubApps::UpdateApps();
@@ -1041,7 +1066,8 @@ void Game::mainloop()
         /* Final Screen Composition */
         glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
         finalProcessingStage.activate();
-        // sun->shadowMap.bindTexture(0, 6);
+        // GG::sun->shadowMap.bindTexture(0, 6);
+        // GG::moon->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();
 

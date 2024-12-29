@@ -118,8 +118,6 @@ namespace Blueprint
                 const std::string &icon = ""
             );
         
-            EntityRef GlobalBenchmarkScreen();
-
             EntityRef SceneInfos(Scene& scene);
 
 
@@ -130,6 +128,10 @@ namespace Blueprint
                 WidgetButton::UpdateFunc ufunc
             );
 
+
+
+            EntityRef GlobalBenchmarkScreen();
+            EntityRef AmbientControls();
         };        
     };
 };

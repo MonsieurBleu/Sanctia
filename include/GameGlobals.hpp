@@ -38,7 +38,10 @@ class GG
         static inline SceneDirectionalLight sun;
         static inline SceneDirectionalLight moon;
         static inline ModelRef skybox;
-        static inline int skyboxTye = 0;
+        static inline int skyboxType = 0;
+
+        static inline bool timeOfDayCycleEnable = false;
+        static inline float timeOfDaySpeed = 1.f;
 
         static inline void ManageEntityGarbage()
         {

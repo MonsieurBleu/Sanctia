@@ -797,7 +797,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 
     auto mainMenuBench = newEntity("Main thread Benchmark"
         , UI_BASE_COMP
-        , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
+        , WidgetBox(vec2(-1, +1), vec2(-0.6, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
         //     .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
@@ -833,7 +833,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 
     auto physicMenuBench = newEntity("Physic thread Benchmark"
         , UI_BASE_COMP
-        , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
+        , WidgetBox(vec2(-1, +1), vec2(-0.6, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
             // .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
@@ -974,11 +974,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColoredConstEntry(
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            .setautomaticTabbing(1)
+            // .setautomaticTabbing(1)
         , EntityGroupInfo({
             newEntity(name
                 , UI_BASE_COMP
-                , WidgetBox()
+                , WidgetBox(vec2(-1, -0.01), vec2(-1, 1))
                 , WidgetText()
                 , WidgetBackground()
                 , WidgetStyle()
@@ -995,7 +995,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColoredConstEntry(
                 , WidgetBox([toText](Entity *parent, Entity *child)
                 {
                     child->comp<WidgetText>().text = toText();
-                })
+                }).set(vec2(0.01, 1), vec2(-1, 1))
                 , WidgetStyle()
                     // .setbackgroundColor1(color2)
                     .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
@@ -1104,7 +1104,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
     const std::string &name,
     std::unordered_map<std::string, EntityRef>& list,
     WidgetButton::InteractFunc ifunc, 
-    WidgetButton::UpdateFunc ufunc
+    WidgetButton::UpdateFunc ufunc,
+    float verticalLenghtReduction
 )
 {
     auto searchInput = NamedEntry(U"Search", TextInput(
@@ -1231,7 +1232,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
         })
     );
 
-    listScreen->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95));
+    listScreen->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95 - verticalLenghtReduction*0.05));
 
     // Entity *listScreenPTR = listScreen.get();
 
@@ -1308,15 +1309,15 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
         , EntityGroupInfo({listScreen})
     );
 
-    scrollZone->comp<WidgetBox>().set(vec2(-1, 1), vec2(-0.90, 1));
+    scrollZone->comp<WidgetBox>().set(vec2(-1, 1), vec2(-0.9 -0.1*verticalLenghtReduction, 1));
 
-    searchInput->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.90));
+    searchInput->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.90 -0.1*verticalLenghtReduction));
 
     searchInput->comp<WidgetStyle>().setautomaticTabbing(1);
 
     auto p = newEntity(name
         , UI_BASE_COMP
-        , WidgetBox(vec2(-1, 1), vec2(-1, 0.9))
+        , WidgetBox(vec2(-1, 1), vec2(-1, 0.9 -0.1*verticalLenghtReduction))
         , EntityGroupInfo({
             scrollZone, 
             searchInput
@@ -1339,12 +1340,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
     auto TimeOfDaySelector = newEntity("Time Of Day Selector"
         , UI_BASE_COMP
         , WidgetBox(
-            // [](Entity *p, Entity*c)
-            // {
-            //     auto s = c->comp<WidgetSprite>();
-            //     s.sprite->state.scaleScalar(0.1);
-            // }
-        )
+            0.75f*vec2(-1, 1), 0.75f*vec2(-1, 1)
+            )
         , WidgetStyle()
             .setspriteScale(0.2)
             .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor3)
@@ -1380,10 +1377,57 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
                 else
                     s.y *= ar;
 
-                return s;
+                return s * 1.175f;
             }
         ).setpadding(1e5).setmin(-1).setmax(1)
         , WidgetSprite("icon_light")
+    );
+
+    auto timeOfDayCircleControls = newEntity("Time Of Day - Parent"
+        , UI_BASE_COMP
+        // , WidgetBackground()
+        , WidgetBox()
+        , WidgetStyle()
+            // .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            // .setbackGroundStyle(UiTileType::CIRCLE)
+        , EntityGroupInfo({
+            TimeOfDaySelector
+        })
+    );
+
+    auto alternativeTimeControls = newEntity("Alternative Time Controls"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+            .setautomaticTabbing(8)
+        , EntityGroupInfo({
+
+            Toggable("Time Of Day Cycle", "", 
+            [](Entity *e, float v){GG::timeOfDayCycleEnable = v == 0.f;},
+            [](Entity *e){return GG::timeOfDayCycleEnable ? 0.f : 1.f;}
+            ),
+
+            NamedEntry(U"Time Of Day Speed", SmoothSlider("Time Of Day Speed", 0, 8, 16, 
+            [](Entity *e, float v){GG::timeOfDaySpeed = v;},
+            [](Entity *e){return GG::timeOfDaySpeed;}
+            )),
+
+            ColoredConstEntry("Current Time", []()
+            {
+                float hours = floor(GG::timeOfDay);
+                float minutes = floor(60.f*fract(GG::timeOfDay));
+                return ftou32str(hours) + U"h " + ftou32str(minutes); 
+            }),
+
+            // ValueInput("Skybox Type", [](float f){GG::skyboxType = f;}, [](){return GG::skyboxType;}, 0, 5, 1, 1),
+
+            NamedEntry(U"Skybox Type", SmoothSlider("Skybox Type", 0, 5, 5, 
+            [](Entity *e, float v){GG::skyboxType = v;},
+            [](Entity *e){return (float)GG::skyboxType;}
+            )),
+        })
     );
 
 
@@ -1393,7 +1437,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
         , WidgetStyle()
             .setautomaticTabbing(1)
         , EntityGroupInfo({
-            TimeOfDaySelector,
+            timeOfDayCircleControls,
+            alternativeTimeControls,
             ambientLightColor
         })
     );

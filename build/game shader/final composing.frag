@@ -171,7 +171,7 @@ void main()
 }
 
 /******* Blomm & Exposure Tonemapping *******/
-    float exposure = 1.5;
+    float exposure = 1.0;
     float gamma = 2.2;
 
     if(!isEditor3DView)
@@ -243,8 +243,9 @@ void main()
         //     _fragColor.rgb = 0.75*vec3( 53,  49,  48)/255.;
     }
 
-    if(uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0)
-        _fragColor.rgb = vec3(70.,  63.,  60.)/255.;
+
+    if(uv.x >= 1.0 || uv.x <= 0.0 || uv.y >= 1.0 || uv.y <= 0.0)
+        _fragColor.rgb = 0.6 * vec3(70.,  63.,  60.)/255.;
 
 
     vec4 ui = texture(bUI, uvScreen);

@@ -511,7 +511,7 @@ void Apps::EntityCreator::init()
 
         // GG::skybox->state.setHideStatus(ModelStatus::HIDE);
 
-        GG::skyboxTye = 1;
+        GG::skyboxType = 2;
 
         PG::world->setIsGravityEnabled(false);
 
@@ -861,7 +861,7 @@ void Apps::EntityCreator::clean()
 
     GG::sun->shadowCameraSize = vec2(0, 0);
     GG::skybox->state.setHideStatus(ModelStatus::SHOW);
-    GG::skyboxTye = 0;
+    GG::skyboxType = 0;
 
     PG::world->setIsGravityEnabled(true);
 

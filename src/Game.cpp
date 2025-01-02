@@ -41,7 +41,7 @@ void Game::mainloop()
     // GG::skybox->depthWrite = true;
     GG::skybox->state.frustumCulled = false;
     GG::skybox->state.scaleScalar(1E6);
-    GG::skybox->uniforms.add(ShaderUniform(&GG::skyboxTye, 32));
+    GG::skybox->uniforms.add(ShaderUniform(&GG::skyboxType, 32));
     scene.add(GG::skybox);
 
     // Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
@@ -88,6 +88,7 @@ void Game::mainloop()
     ui.colorTitleBackground.a = 0.9f;
 
     float widgetTileSPace = 0.01;
+    float controLWidgetSize = 0.08f;
 
     EDITOR::MENUS::GameScreen = gameScreenWidget = newEntity("Game Screen Widget"
         , WidgetUI_Context{&ui}
@@ -99,40 +100,39 @@ void Game::mainloop()
                 newEntity("Application Choice Menu"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-1, 1)
-                    , vec2(-1.1, -1) + vec2(0.f, -widgetTileSPace))
+                    , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(-1.1 + widgetTileSPace, -1 - widgetTileSPace))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ), 
             EDITOR::MENUS::AppControl = 
                 newEntity("Current Application Controls"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-1, 1), vec2(1, 1.1))
+                    , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + widgetTileSPace, 1.f + widgetTileSPace + controLWidgetSize))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ),
             EDITOR::MENUS::GlobalControl = 
                 newEntity("Global Controls"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-1, 1), vec2(1.1, 1.2))
+                    , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + 2.f*widgetTileSPace + controLWidgetSize, 1.f + 2.f*widgetTileSPace + 2.f*controLWidgetSize))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ),
             EDITOR::MENUS::GlobalInfos =
                 newEntity("Global Informations"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-1, 1), vec2(1.2 + widgetTileSPace, 1.9-widgetTileSPace))
-                    , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                    , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + 3.f*widgetTileSPace + 2.f*controLWidgetSize, 1.9-widgetTileSPace))
+                    // , WidgetBackground()
+                    // , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::AppMenu =
                 newEntity("Current Application Menus"
                     , WidgetUI_Context{&ui}
                     , WidgetState()
-                    , WidgetBox(vec2(-2, -1) + vec2(0, -widgetTileSPace), vec2(-1.1, 1.9))
+                    , WidgetBox(vec2(-2 + widgetTileSPace, -1 - widgetTileSPace), vec2(-1.1 + widgetTileSPace, 1.9-widgetTileSPace))
                     , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
                     ),
@@ -175,10 +175,12 @@ void Game::mainloop()
     //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
     // );
 
+    float TitleTabSize = 0.775f;
+
     EntityRef GlobalInfosTitleTab = newEntity("Global Infos Title Tab"
         , WidgetUI_Context{&ui}
         , WidgetState()
-        , WidgetBox(vec2(-1, 1), vec2(-1, -0.75))
+        , WidgetBox(vec2(-1, 1), vec2(-1, -TitleTabSize))
         , WidgetBackground()
         , WidgetStyle()
             .setautomaticTabbing(1)
@@ -189,19 +191,19 @@ void Game::mainloop()
     EntityRef GlobalInfosSubTab = newEntity("Global Infos Sub Tab"
         , WidgetUI_Context{&ui}
         // , WidgetState()
-        , WidgetBox(vec2(-1, 1), vec2(-0.75, 1))
-        , WidgetBackground()
+        , WidgetBox(vec2(-1, 1), vec2(-TitleTabSize, 1))
+        // , WidgetBackground()
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
-            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+            // .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            // .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
 
     Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 
         Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
-        "Global Benchmark", "icon_chrono"
+        "Ambient Controls", ""
     );
 
     Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
@@ -308,36 +310,9 @@ void Game::mainloop()
 
 //     ComponentModularity::addChild(*EDITOR::MENUS::AppMenu, first);
 
-    EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
+    // EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
     EDITOR::MENUS::AppChoice->comp<WidgetStyle>().setautomaticTabbing(1);
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
-
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
-            "Time of day", 
-            0, 24, 24*4, 
-            [](Entity *e, float v)
-            {
-                float t = v;
-                GG::timeOfDay = t;
-            },
-            [](Entity *e)
-            {
-                float t = GG::timeOfDay;
-                return t;
-            },
-            [](std::u32string text)
-            {
-                float t = u32strtof2(text, GG::timeOfDay);
-                GG::timeOfDay = t;
-            }, 
-            []()
-            {
-                float t = GG::timeOfDay;
-                return ftou32str(t);
-            }
-        )
-    );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
     //     Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
@@ -365,22 +340,6 @@ void Game::mainloop()
     //         }
     //     )
     // );
-
-    bool enableTime = false;
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        Blueprint::EDITOR_ENTITY::INO::Toggable(
-            "Enable Time", 
-            "icon_light",
-            [&enableTime](Entity *e, float v)
-            {
-                enableTime = !enableTime;
-            },
-            [&enableTime](Entity *e)
-            {
-                return enableTime ? 0.f : 1.f;
-            }
-        )
-    );
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         Blueprint::EDITOR_ENTITY::INO::Toggable(
@@ -628,10 +587,8 @@ void Game::mainloop()
          * 
          * ***/
         {
-            if (enableTime) {
-                float timeOfDaySpeed = 4.0f;
-                // float timeOfDaySpeed = 64.0f;
-                float timeOfDayIncrement = globals.appTime.getDelta() * timeOfDaySpeed;
+            if (GG::timeOfDayCycleEnable) {
+                float timeOfDayIncrement = globals.appTime.getDelta() * GG::timeOfDaySpeed;
                 GG::timeOfDay += timeOfDayIncrement;
                 GG::timeOfDay = fmod(GG::timeOfDay, 24.f);
 

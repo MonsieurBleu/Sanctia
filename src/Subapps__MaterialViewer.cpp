@@ -385,7 +385,8 @@ EntityRef Apps::MaterialViewerApp::UImenu()
             [&](Entity *e)
             {
                 return currentPalette == e->comp<EntityInfos>().name ? 0.f : 1.f;
-            }
+            }, 
+            0.3
         )
         , "Palettes List"
     );

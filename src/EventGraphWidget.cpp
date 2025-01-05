@@ -157,14 +157,10 @@ void EventGraphWidget::updateWidgets()
     // }
 }
 
-void EventGraphWidget::clearWidget(EntityRef widget)
+void EventGraphWidget::clearWidget(EntityRef parent)
 {
-    for (auto &node : nodeWidgets)
-    {
-        ComponentModularity::removeChild(*widget, node.second);
-    }
     nodeWidgets.clear();
-
+    node2Widget.clear();
 }
 
 std::pair<EventNodePtr, EntityRef> EventGraphWidget::getWidgetIntersect(vec2 position)

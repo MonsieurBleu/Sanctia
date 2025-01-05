@@ -509,11 +509,13 @@ void Apps::EntityCreator::init()
         // GG::sun->cameraResolution = vec2(8192);
         // GG::sun->shadowCameraSize = vec2(256, 256);
 
-        GG::skybox->state.setHideStatus(ModelStatus::HIDE);
+        // GG::skybox->state.setHideStatus(ModelStatus::HIDE);
+
+        GG::skyboxType = 2;
 
         PG::world->setIsGravityEnabled(false);
 
-        glLineWidth(3);
+        glLineWidth(5);
     }
 
     // for(int cnt = 0; cnt < 128; cnt++)
@@ -554,13 +556,13 @@ void Apps::EntityCreator::init()
         model->add(y);
         model->add(z);
 
-        // x->depthWrite = false;
-        // y->depthWrite = false;
-        // z->depthWrite = false;
+        x->depthWrite = false;
+        y->depthWrite = false;
+        z->depthWrite = false;
 
-        // x->sorted = false;
-        // y->sorted = false;
-        // z->sorted = false;
+        x->sorted = false;
+        y->sorted = false;
+        z->sorted = false;
 
         ComponentModularity::addChild(*appRoot, 
             gizmo = newEntity("Gizmo Helper"
@@ -581,21 +583,21 @@ void Apps::EntityCreator::init()
             LineHelperRef(new LineHelper(
                 vec3(+inf, 0, 0), 
                 vec3(-inf, 0, 0), 
-                EDITOR::MENUS::COLOR::HightlightColor1))
+                0.5f * EDITOR::MENUS::COLOR::HightlightColor1))
         );
 
         model->add(
             LineHelperRef(new LineHelper(
                 vec3(0, +inf, 0), 
                 vec3(0, -inf, 0), 
-                EDITOR::MENUS::COLOR::HightlightColor2))
+                0.5f * EDITOR::MENUS::COLOR::HightlightColor2))
         );
 
         model->add(
             LineHelperRef(new LineHelper(
                 vec3(0, 0, +inf), 
                 vec3(0, 0, -inf), 
-                EDITOR::MENUS::COLOR::HightlightColor3))
+                0.5f * EDITOR::MENUS::COLOR::HightlightColor3))
         );
 
         int size = 50;
@@ -637,10 +639,9 @@ void Apps::EntityCreator::update()
     auto &box = EDITOR::MENUS::GameScreen->comp<WidgetBox>();
     vec2 cursor = ((screenPos-box.min)/(box.max - box.min));
 
-    if(cursor.x < 0 || cursor.y < 0 || cursor.x > 1 || cursor.y > 1)
-        globals.currentCamera->setMouseFollow(false);
-    else
-        globals.currentCamera->setMouseFollow(true);
+    bool cursorOnGameScreen = !(cursor.x < 0 || cursor.y < 0 || cursor.x > 1 || cursor.y > 1);
+
+    globals.currentCamera->setMouseFollow(cursorOnGameScreen);
     
 
     for(auto &i : *ComponentGlobals::ComponentNamesMap)
@@ -685,6 +686,79 @@ void Apps::EntityCreator::update()
 
         }
         physicsMutex.unlock();
+    }
+
+    if(globals.mouseRightClick() && cursorOnGameScreen)
+    {
+        vec2 cursorPos = vec2(1, -1) * ((globals.mousePosition()/vec2(globals.windowSize()))*2.f - 1.f);
+
+        auto gsb = EDITOR::MENUS::GameScreen->comp<WidgetBox>();
+        float tmpf = gsb.min.y;
+        gsb.min.y = -gsb.max.y;
+        gsb.max.y = -tmpf;
+
+        vec2 gameScreenPos = (cursorPos-gsb.min)/(gsb.max - gsb.min);
+
+        vec4 ndc = vec4(
+            gameScreenPos*2.f - 1.f,
+            globals.currentCamera->getProjectionMatrix()[3][2] / (1e2),
+            -1.0
+        );
+
+        vec4 viewpos = inverse(globals.currentCamera->getProjectionMatrix()) * ndc;
+        viewpos /= viewpos.w;
+        viewpos.z *= -1;
+        vec4 world = inverse(globals.currentCamera->getViewMatrix()) * viewpos;
+
+        vec3 dir = normalize(vec3(world) - globals.currentCamera->getPosition());
+
+        // std::cout << "world pos " << glm::to_string(world) << "\n";
+        // std::cout << "direction " << glm::to_string(dir) << "\n";
+        // std::cout << "=====================\n";
+
+        // globals.getScene()->add(
+        //     LineHelperRef(new LineHelper(globals.currentCamera->getPosition(), world, EDITOR::MENUS::COLOR::HightlightColor5))
+        // );
+
+        // auto tmp = SphereHelperRef(new SphereHelper(EDITOR::MENUS::COLOR::HightlightColor4, 0.1));
+        // tmp->state.setPosition(world);
+        // globals.getScene()->add(tmp            );
+
+        /**** Computing click intersection with current entity child *****/
+        float mindist = 1e6;
+        EntityRef mindistChild;
+        if(currentEntity.ref)
+        {
+            for(auto c : currentEntity.ref->comp<EntityGroupInfo>().children)
+            {
+                auto &lodi = c->comp<LevelOfDetailsInfos>();
+
+                rp3d::AABB aabb(
+                    PG::torp3d(lodi.aabbmin), PG::torp3d(lodi.aabbmax)
+                );
+
+                rp3d::Ray ray(
+                    PG::torp3d(globals.currentCamera->getPosition()),
+                    PG::torp3d(world)
+                );
+                rp3d::Vector3 hitpoint;
+
+                if(aabb.raycast(ray, hitpoint))
+                {
+                    float dist = distance(PG::toglm(hitpoint), globals.currentCamera->getPosition());
+                    if(dist < mindist)
+                    {
+                        dist = mindist;
+                        mindistChild = c;
+                    }
+                }
+            }
+        }
+        if(mindistChild)
+        {
+            controlledEntity = mindistChild.get();
+            controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+        }
     }
 
     if(controlledEntity)
@@ -787,6 +861,7 @@ void Apps::EntityCreator::clean()
 
     GG::sun->shadowCameraSize = vec2(0, 0);
     GG::skybox->state.setHideStatus(ModelStatus::SHOW);
+    GG::skyboxType = 0;
 
     PG::world->setIsGravityEnabled(true);
 

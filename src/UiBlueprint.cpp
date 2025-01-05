@@ -3,6 +3,7 @@
 #include <MathsUtils.hpp>
 #include <Helpers.hpp>
 #include <Game.hpp>
+#include <Constants.hpp>
 
 
 WidgetBox::FittingFunc Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc = [](Entity* parent, Entity* child){ 
@@ -194,11 +195,14 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         vec2(1./3., 1), vec2(-1, 1)
     );
 
+    s->comp<WidgetBox>().set(vec2(-1, 0.5), vec2(-1, 1)*0.75f );
+    t->comp<WidgetBox>().set(vec2(0.5, 1),  vec2(-1, 1));
+
     auto p = newEntity(name + " - Menu"
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            .setautomaticTabbing(1)
+            // .setautomaticTabbing(1)
         , EntityGroupInfo({s, t})
     );
 
@@ -518,19 +522,19 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            .setautomaticTabbing(10)
+            .setautomaticTabbing(8)
         , EntityGroupInfo({
             
             finalColorVisualisation,
             NamedEntry(U"Hex", hex, 0.25),
             
-            newEntity("separator", UI_BASE_COMP, WidgetBox()),
+            // newEntity("separator", UI_BASE_COMP, WidgetBox()),
 
             NamedEntry(U"H", hue, 0.25), 
             NamedEntry(U"S", saturation, 0.25), 
             NamedEntry(U"V", value, 0.25), 
             
-            newEntity("separator", UI_BASE_COMP, WidgetBox()),
+            // newEntity("separator", UI_BASE_COMP, WidgetBox()),
 
             NamedEntry(U"R", red, 0.25), 
             NamedEntry(U"G", green, 0.25), 
@@ -793,7 +797,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 
     auto mainMenuBench = newEntity("Main thread Benchmark"
         , UI_BASE_COMP
-        , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
+        , WidgetBox(vec2(-1, +1), vec2(-0.6, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
         //     .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
@@ -829,7 +833,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 
     auto physicMenuBench = newEntity("Physic thread Benchmark"
         , UI_BASE_COMP
-        , WidgetBox(vec2(-1, +1), vec2(-0.5, +1))
+        , WidgetBox(vec2(-1, +1), vec2(-0.6, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
             // .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
@@ -970,11 +974,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColoredConstEntry(
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            .setautomaticTabbing(1)
+            // .setautomaticTabbing(1)
         , EntityGroupInfo({
             newEntity(name
                 , UI_BASE_COMP
-                , WidgetBox()
+                , WidgetBox(vec2(-1, -0.01), vec2(-1, 1))
                 , WidgetText()
                 , WidgetBackground()
                 , WidgetStyle()
@@ -991,7 +995,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ColoredConstEntry(
                 , WidgetBox([toText](Entity *parent, Entity *child)
                 {
                     child->comp<WidgetText>().text = toText();
-                })
+                }).set(vec2(0.01, 1), vec2(-1, 1))
                 , WidgetStyle()
                     // .setbackgroundColor1(color2)
                     .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
@@ -1053,7 +1057,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
                 , UI_BASE_COMP
                 , WidgetBox()
                 , WidgetStyle()
-                    .setautomaticTabbing(8)
+                    .setautomaticTabbing(7)
                 , EntityGroupInfo({
                     ColoredConstEntry("DRAW CALLS", [&scene](){return ftou32str(scene.getDrawCalls(), 4);}),
 
@@ -1069,7 +1073,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
 
                     ColoredConstEntry("SHADOW MAPS", [&scene](){return ftou32str(scene.getShadowMapCount());}),
 
-                    ColoredConstEntry("BINDLESS TEXTURES", [&scene](){return scene.useBindlessTextures ? U"Activated" : U"Disabled";}),
+                    // ColoredConstEntry("BINDLESS TEXTURES", [&scene](){return scene.useBindlessTextures ? U"Activated" : U"Disabled";}),
 
                     ColoredConstEntry("CULL TIME", [&scene](){return ftou32str(scene.cullTime.getLastAvg().count(), 4) + U" ms";}),
 
@@ -1081,11 +1085,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SceneInfos(Scene& scene)
 
                     ColoredConstEntry("LIGHT BUFFER GEN", [&scene](){return ftou32str(scene.lightBufferTime.getLastAvg().count(), 4) + U" ms";}),
 
-                    ColoredConstEntry("FRUSTUM CLUSTER DIMENTION", [&scene]()
-                    {
-                        auto dim = scene.getClusteredLight().dim();
-                        return ftou32str(dim.x) + U"x" + ftou32str(dim.y) + U"x" + ftou32str(dim.z);
-                    }),
+                    // ColoredConstEntry("FRUSTUM CLUSTER DIMENTION", [&scene]()
+                    // {
+                    //     auto dim = scene.getClusteredLight().dim();
+                    //     return ftou32str(dim.x) + U"x" + ftou32str(dim.y) + U"x" + ftou32str(dim.z);
+                    // }),
 
                     ColoredConstEntry("FRUSTUM CLUSTER VFAR", [&scene](){ return ftou32str(scene.getClusteredLight().vFar, 5) + U" m";}),
 
@@ -1100,7 +1104,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
     const std::string &name,
     std::unordered_map<std::string, EntityRef>& list,
     WidgetButton::InteractFunc ifunc, 
-    WidgetButton::UpdateFunc ufunc
+    WidgetButton::UpdateFunc ufunc,
+    float verticalLenghtReduction
 )
 {
     auto searchInput = NamedEntry(U"Search", TextInput(
@@ -1189,34 +1194,45 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
             
             // std::cout << st
 
-            for(auto c : child->comp<EntityGroupInfo>().children)
+            if(child->comp<WidgetState>().statusToPropagate != ModelStatus::HIDE)
             {
-
-                auto str2 = c->comp<EntityInfos>().name;
-
-                for(auto &c : str2)
-                    c = std::tolower(c);
-
-                if(!str.size() || str2.find(str) != std::string::npos)
+                for(auto c : child->comp<EntityGroupInfo>().children)
                 {
-                    c->comp<WidgetState>().status = ModelStatus::SHOW;
 
-                    c->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+                    auto str2 = c->comp<EntityInfos>().name;
 
-                    // c->comp<WidgetBox>().useClassicInterpolation = false;
-                    
-                    // std::cout << str2 << "\n";
+                    for(auto &c : str2)
+                        c = std::tolower(c);
+
+                    if(!str.size() || str2.find(str) != std::string::npos)
+                    {
+                        c->comp<WidgetState>().status = ModelStatus::SHOW;
+
+                        c->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
+                        // c->comp<WidgetBox>().useClassicInterpolation = false;
+                        
+                        // std::cout << str2 << "\n";
+                    }
+                    else
+                    {
+                        c->comp<WidgetState>().status = ModelStatus::HIDE;
+                        c->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
+                    } 
                 }
-                else
+            }
+            else
+            {
+                for(auto c : child->comp<EntityGroupInfo>().children)
                 {
                     c->comp<WidgetState>().status = ModelStatus::HIDE;
                     c->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
-                } 
+                }
             }
         })
     );
 
-    listScreen->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95));
+    listScreen->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.95 - verticalLenghtReduction*0.05));
 
     // Entity *listScreenPTR = listScreen.get();
 
@@ -1293,15 +1309,15 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
         , EntityGroupInfo({listScreen})
     );
 
-    scrollZone->comp<WidgetBox>().set(vec2(-1, 1), vec2(-0.90, 1));
+    scrollZone->comp<WidgetBox>().set(vec2(-1, 1), vec2(-0.9 -0.1*verticalLenghtReduction, 1));
 
-    searchInput->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.90));
+    searchInput->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, -0.90 -0.1*verticalLenghtReduction));
 
     searchInput->comp<WidgetStyle>().setautomaticTabbing(1);
 
     auto p = newEntity(name
         , UI_BASE_COMP
-        , WidgetBox(vec2(-1, 1), vec2(-1, 0.9))
+        , WidgetBox(vec2(-1, 1), vec2(-1, 0.9 -0.1*verticalLenghtReduction))
         , EntityGroupInfo({
             scrollZone, 
             searchInput
@@ -1310,4 +1326,120 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
         );
 
     return p;
+}
+
+EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
+{
+
+    auto ambientLightColor = ColorSelectionScreen(
+        "Ambient Color", 
+        [](){return App::ambientLight;},
+        [](vec3 c){App::ambientLight = c;}
+    );
+
+    auto TimeOfDaySelector = newEntity("Time Of Day Selector"
+        , UI_BASE_COMP
+        , WidgetBox(
+            0.75f*vec2(-1, 1), 0.75f*vec2(-1, 1)
+            )
+        , WidgetStyle()
+            .setspriteScale(0.2)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor3)
+            .setbackGroundStyle(UiTileType::ATMOSPHERE_VIEWER)
+        , WidgetBackground()
+        , WidgetButton(
+            WidgetButton::Type::SLIDER_2D,
+            [](Entity *e, vec2 v)
+            {
+                v = normalize(vec2(v.y, -v.x));
+                GG::timeOfDay = 12.f + 12.f*atan2(-v.y, -v.x)/PI;
+
+                auto &button = e->comp<WidgetButton>();
+
+                vec2 uv = button.valueUpdate2D(e);
+                button.cur = uv.x;
+                button.cur2 = uv.y;
+            },
+            [](Entity *e)
+            {
+                float iaspectRatio = (float)(globals.windowWidth())/(float)(globals.windowHeight());
+
+                vec2 s = vec2(-sin(GG::timeOfDay*PI*2.f/24.f), cos(GG::timeOfDay*PI*2.f/24.f));
+            
+                auto b = e->comp<WidgetBox>();
+                vec2 size = b.displayMax - b.displayMin;
+                size.y /= iaspectRatio;
+
+                float ar = size.x / size.y;
+
+                if(ar > 1.0)
+                    s.x /= ar;
+                else
+                    s.y *= ar;
+
+                return s * 1.175f;
+            }
+        ).setpadding(1e5).setmin(-1).setmax(1)
+        , WidgetSprite("icon_light")
+    );
+
+    auto timeOfDayCircleControls = newEntity("Time Of Day - Parent"
+        , UI_BASE_COMP
+        // , WidgetBackground()
+        , WidgetBox()
+        , WidgetStyle()
+            // .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            // .setbackGroundStyle(UiTileType::CIRCLE)
+        , EntityGroupInfo({
+            TimeOfDaySelector
+        })
+    );
+
+    auto alternativeTimeControls = newEntity("Alternative Time Controls"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+            .setautomaticTabbing(8)
+        , EntityGroupInfo({
+
+            Toggable("Time Of Day Cycle", "", 
+            [](Entity *e, float v){GG::timeOfDayCycleEnable = v == 0.f;},
+            [](Entity *e){return GG::timeOfDayCycleEnable ? 0.f : 1.f;}
+            ),
+
+            NamedEntry(U"Time Of Day Speed", SmoothSlider("Time Of Day Speed", 0, 8, 16, 
+            [](Entity *e, float v){GG::timeOfDaySpeed = v;},
+            [](Entity *e){return GG::timeOfDaySpeed;}
+            )),
+
+            ColoredConstEntry("Current Time", []()
+            {
+                float hours = floor(GG::timeOfDay);
+                float minutes = floor(60.f*fract(GG::timeOfDay));
+                return ftou32str(hours) + U"h " + ftou32str(minutes); 
+            }),
+
+            // ValueInput("Skybox Type", [](float f){GG::skyboxType = f;}, [](){return GG::skyboxType;}, 0, 5, 1, 1),
+
+            NamedEntry(U"Skybox Type", SmoothSlider("Skybox Type", 0, 5, 5, 
+            [](Entity *e, float v){GG::skyboxType = v;},
+            [](Entity *e){return (float)GG::skyboxType;}
+            )),
+        })
+    );
+
+
+    return newEntity("Ambient Controls Menu"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+            timeOfDayCircleControls,
+            alternativeTimeControls,
+            ambientLightColor
+        })
+    );
 }

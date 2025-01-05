@@ -3,8 +3,8 @@
 #include SceneDefines3D.glsl
 
 #define ESS_BASE_PENUMBRA_RADIUS 0.0004
-#define ESS_PENUMBRA_ITERATION 32
-#define ESS_BASE_ITERATION 8
+#define ESS_PENUMBRA_ITERATION 64
+#define ESS_BASE_ITERATION 16
 
 // #define USING_VERTEX_TEXTURE_UV
 #define SKYBOX_REFLECTION
@@ -286,6 +286,14 @@ void paintShader(
     _c = hsv2rgb(vec3(mod(_c.r, 1.0), clamp(_c.gb, vec2(0.0), vec2(1.0))));
 
 
+    /**** Correcting cell center with tangent based plane to greatly reduce shadow artifacts
+    *****/
+    vec3 is = (voronoi_scale*_modelScale);
+    #ifdef USING_TERRAIN_RENDERING
+        cell_center = projectPointOntoPlane(cell_center, position*is, _n);
+    #else
+        cell_center = projectPointOntoPlane(cell_center, modelPosition*is, _n);
+    #endif
 
     /**** Perturbing light-calculation related data
     *****/
@@ -451,6 +459,7 @@ void main()
     viewDir = normalize(_cameraPosition - position);
 
     lcalcPosition = position;
+    mClearness = 1.0 - mRoughness;
     paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
 
     // mRoughness = 0.0;
@@ -460,7 +469,7 @@ void main()
 
     // normalComposed = perturbNormal(normalComposed, viewVector, NRM.xy, uv);
 
-    mEmmisive = pow(mEmmisive*2.0, 2.0);
+    // mEmmisive = pow(mEmmisive, 0.5);
 
     normalComposed = gl_FrontFacing ? normalComposed : -normalComposed;
 
@@ -475,7 +484,16 @@ void main()
 
     // fragColor.rgb = color * ambientLight + material.result + 
     //     (ambientLight + material.result + reflectFactor*0.1)*rColor*reflectFactor*5;
-    fragColor.rgb = color * ambientLight + material.result + rColor * reflectFactor;
+
+    // fragColor.rgb = color * ambientLight + material.result + rColor * reflectFactor;
+    // fragColor.rgb = color * ambientLight + mix(material.result, rColor, reflectFactor);
+    // fragColor.rgb = color * ambientLight + mix(material.result, rColor, 0.1 + 0.9*reflectFactor);
+    // material.reflect = vec3(1);
+
+
+    // fragColor.rgb = color * ambientLight + mix(material.result, rColor, clamp(material.reflect * reflectFactor, vec3(0), vec3(1)));
+    fragColor.rgb = color * ambientLight + material.result + rColor * material.reflect * reflectFactor;
+
 
     fragColor.rgb = mix(fragColor.rgb, color, mEmmisive);
     fragEmmisive = getStandardEmmisive(fragColor.rgb);
@@ -483,6 +501,11 @@ void main()
     // fragNormal = normalize((vec4(normalComposed, 0.0) * _cameraInverseViewMatrix).rgb)*0.5 + 0.5;
     fragNormal = normalize((vec4(normalComposed, 0.0) * inverse(_cameraViewMatrix)).rgb) * 0.5 + 0.5;
 
+
+
+    // sunLightMult = max(dot(normalComposed, vec3(0, 1, 0)), 0);
+    // sunLightMult = 1.0 - sunLightMult;
     // fragColor.rgb = rColor;
     // fragColor.rgb = vec3(sunLightMult);
+    // fragColor.r
 }

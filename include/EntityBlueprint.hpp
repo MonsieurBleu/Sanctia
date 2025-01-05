@@ -118,8 +118,6 @@ namespace Blueprint
                 const std::string &icon = ""
             );
         
-            EntityRef GlobalBenchmarkScreen();
-
             EntityRef SceneInfos(Scene& scene);
 
 
@@ -127,9 +125,14 @@ namespace Blueprint
                 const std::string &name,
                 std::unordered_map<std::string, EntityRef>& list,
                 WidgetButton::InteractFunc ifunc, 
-                WidgetButton::UpdateFunc ufunc
+                WidgetButton::UpdateFunc ufunc,
+                float verticalLenghtReduction = 0.f
             );
 
+
+
+            EntityRef GlobalBenchmarkScreen();
+            EntityRef AmbientControls();
         };        
     };
 };

@@ -1,0 +1,51 @@
+
+: MaterialPalette "Unamed Palette 000"
+	: MaterialViewInfo 
+		: color +9.921568e-01 +4.039215e-01 +2.352941e-02
+		: metalness +0.000000e+00
+		: smoothness +0.000000e+00
+		: emmisive +0.000000e+00
+		: paperness +0.000000e+00
+		: streaking +0.000000e+00
+		: bloodyness +0.000000e+00
+		: bloodynessFactor +0.000000e+00
+		: dirtyness +0.000000e+00
+		: dirtynessFactor +0.000000e+00
+		;
+	: MaterialViewInfo 
+		: color +9.921568e-01 +4.039215e-01 +2.352941e-02
+		: metalness +0.000000e+00
+		: smoothness +0.000000e+00
+		: emmisive +0.000000e+00
+		: paperness +0.000000e+00
+		: streaking +0.000000e+00
+		: bloodyness +0.000000e+00
+		: bloodynessFactor +0.000000e+00
+		: dirtyness +0.000000e+00
+		: dirtynessFactor +0.000000e+00
+		;
+	: MaterialViewInfo 
+		: color +9.921568e-01 +4.039215e-01 +2.352941e-02
+		: metalness +0.000000e+00
+		: smoothness +0.000000e+00
+		: emmisive +0.000000e+00
+		: paperness +0.000000e+00
+		: streaking +0.000000e+00
+		: bloodyness +0.000000e+00
+		: bloodynessFactor +0.000000e+00
+		: dirtyness +0.000000e+00
+		: dirtynessFactor +0.000000e+00
+		;
+	: MaterialViewInfo 
+		: color +9.921568e-01 +4.039215e-01 +2.352941e-02
+		: metalness +0.000000e+00
+		: smoothness +0.000000e+00
+		: emmisive +0.000000e+00
+		: paperness +0.000000e+00
+		: streaking +0.000000e+00
+		: bloodyness +0.000000e+00
+		: bloodynessFactor +0.000000e+00
+		: dirtyness +0.000000e+00
+		: dirtynessFactor +0.000000e+00
+		;
+	;

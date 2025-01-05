@@ -9,6 +9,83 @@
 #include <Inputs.hpp>
 #include <Game.hpp>
 
+#include <filesystem>
+
+struct MaterialViewInfo
+{
+    vec3 color;
+    float metalness;
+    float smoothness;
+    float emmisive;
+    float paperness;
+    float streaking;
+    float bloodyness;
+    float bloodynessFactor;
+    float dirtyness;
+    float dirtynessFactor;
+};
+
+AUTOGEN_DATA_RW_FUNC(MaterialViewInfo
+    , color
+    , metalness
+    , smoothness
+    , emmisive
+    , paperness
+    , streaking
+    , bloodyness
+    , bloodynessFactor
+    , dirtyness
+    , dirtynessFactor
+);
+
+struct MaterialPalette : public std::vector<MaterialViewInfo>
+{
+    std::string name = "Unamed Palette 000";
+};
+
+DATA_READ_FUNC_INIT(MaterialPalette)
+    IF_MEMBER_READ_VALUE(MaterialPalette)
+        data.name = value;
+    else 
+    IF_MEMBER(MaterialViewInfo)
+        data.push_back(DataLoader<MaterialViewInfo>::read(buff));
+DATA_READ_END_FUNC
+
+DATA_WRITE_FUNC_INIT(MaterialPalette)
+
+    out->write("\"", 1);
+    out->write(CONST_STRING_SIZED(data.name));
+    out->write("\"", 1);
+
+    for(auto i : data)
+        DataLoader<MaterialViewInfo>::write(i, out);
+
+DATA_WRITE_END_FUNC
+
+void Apps::MaterialViewerApp::refreshPalettesList()
+{
+    // palettesList.clear();
+
+    for (auto f : std::filesystem::recursive_directory_iterator("data/editor/palettes"))
+    {
+        if (f.is_directory())
+            continue;
+
+        char ext[1024];
+        char p[4096];
+
+        strcpy(ext, (char *)f.path().extension().string().c_str());
+        strcpy(p, (char *)f.path().string().c_str());
+
+        if (!strcmp(ext, ".MaterialPalette"))
+        {
+            auto name = getNameOnlyFromPath(p);
+
+            if(palettesList.find(name) == palettesList.end())
+                palettesList[name] = EntityRef();
+        }
+    } 
+}
 
 void Apps::MaterialViewerApp::spawnHelper()
 {
@@ -169,13 +246,13 @@ void Apps::MaterialViewerApp::spawnHelper()
                 , WidgetStyle().setautomaticTabbing(4)
             )
             , 
-            std::to_string(id+1) + " - " + std::to_string(id+4)
+            "Material " + std::to_string(id+1) + " - " + std::to_string(id+4)
         );
 
         orbitController.distance = 12.f * pow((float)(1 + helpers.size()/4), 0.575);
     }
 
-    ComponentModularity::addChild(*menuInfosTab->comp<EntityGroupInfo>().children[id/4], p);
+    ComponentModularity::addChild(*menuInfosTab->comp<EntityGroupInfo>().children[1 + id/4], p);
 
 
     helpers.push_back(helper);
@@ -206,7 +283,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
 
     titleTab = newEntity("Material View Title Tab"
         , UI_BASE_COMP
-        , WidgetBox(vec2(-1, 1), vec2(-1, -0.95))
+        , WidgetBox(vec2(-1, 1), vec2(-1, -0.94))
         , WidgetBackground()
         , WidgetStyle()
             .setautomaticTabbing(1)
@@ -219,7 +296,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         , EDITOR::UIcontext
         // , UI_BASE_COMP
         // , WidgetState()
-        , WidgetBox(vec2(-1, 1), vec2(-0.95, 1))
+        , WidgetBox(vec2(-1, 1), vec2(-0.94, 1))
         // , WidgetBackground()
         , WidgetStyle()
             // .setautomaticTabbing(1)
@@ -240,6 +317,80 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         , EntityGroupInfo({titleTab, menuInfosTab})
     );
 
+    refreshPalettesList();
+
+    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(titleTab, menuInfosTab,
+        Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+            "Palettes List", palettesList,
+            [&](Entity *e, float v)
+            {
+                // TODO : debug
+                color.clear();
+                SME.clear();
+                PSBD.clear();
+                BD.clear();
+                helpers.clear();
+
+                MaterialPalette palette;
+
+                VulpineTextBuffRef in(new VulpineTextBuff(
+                    ("data/editor/palettes/" + e->comp<EntityInfos>().name + ".MaterialPalette").c_str()
+                    )
+                );
+                palette = DataLoader<MaterialPalette>::read(in);
+
+                color.reserve(16);
+                SME.reserve(16);
+                PSBD.reserve(16);
+                BD.reserve(16);
+                helpers.reserve(16);
+
+
+                titleTab->comp<EntityGroupInfo>().children = 
+                {
+                   titleTab->comp<EntityGroupInfo>().children[0] 
+                };
+
+                menuInfosTab->comp<EntityGroupInfo>().children = 
+                {
+                   menuInfosTab->comp<EntityGroupInfo>().children[0] 
+                };
+
+                appRoot->comp<EntityGroupInfo>().children.clear();
+
+                GG::ManageEntityGarbage();
+
+                currentPalette =  e->comp<EntityInfos>().name;
+
+                for(auto &i : palette)
+                {
+                    spawnHelper();
+
+                    color.back() = i.color;
+                    SME.back() = vec3(
+                        i.smoothness, i.metalness, i.emmisive
+                    );
+
+                    PSBD.back() = vec4(
+                        i.paperness, i.streaking,
+                        i.bloodynessFactor, i.dirtynessFactor
+                    );
+
+                    BD.back() = vec2(
+                        i.bloodyness, i.dirtyness
+                    );
+                }       
+
+            },
+            [&](Entity *e)
+            {
+                return currentPalette == e->comp<EntityInfos>().name ? 0.f : 1.f;
+            }, 
+            0.3
+        )
+        , "Palettes List"
+    );
+
     /***** Setting up material helpers *****/
     spawnHelper();
     spawnHelper();
@@ -250,6 +401,74 @@ EntityRef Apps::MaterialViewerApp::UImenu()
     titleTab->comp<EntityGroupInfo>().children[0]->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
 
     return root;
+}
+
+
+EntityRef Apps::MaterialViewerApp::UIcontrols()
+{
+    auto paletteNameEntry = Blueprint::EDITOR_ENTITY::INO::TextInput(
+        "Palette Name",
+        [&](std::u32string &t){this->currentPalette = UFTconvert.to_bytes(t);},
+        [&](){return UFTconvert.from_bytes(this->currentPalette);}
+    );
+
+    auto savePalette = Blueprint::EDITOR_ENTITY::INO::Toggable("Save Palette", "", 
+        [&](Entity *e, float v)
+        {
+            MaterialPalette palette;
+
+            for(int i = 0; i < color.size(); i++)
+            {
+                MaterialViewInfo info;
+                info.color = color[i];
+                info.smoothness = SME[i].x;
+                info.metalness  = SME[i].y;
+                info.emmisive   = SME[i].z;
+                info.paperness  = PSBD[i].x;
+                info.streaking  = PSBD[i].y;
+                info.bloodynessFactor = PSBD[i].z;
+                info.dirtynessFactor  = PSBD[i].w;
+                info.bloodyness = BD[i].x;
+                info.dirtyness  = BD[i].y;
+
+                palette.push_back(info);
+            }
+
+            palette.name = currentPalette;
+
+            VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
+            DataLoader<MaterialPalette>::write(palette, out);
+            out->saveAs(("data/editor/palettes/" + currentPalette + ".MaterialPalette").c_str());
+            refreshPalettesList();
+        },
+        [&](Entity *e)
+        {
+            return 0.f;
+        }
+    );
+
+    auto addMaterial = Blueprint::EDITOR_ENTITY::INO::Toggable("Add Material", "", 
+        [&](Entity *e, float v)
+        {
+            spawnHelper();
+        },
+        [&](Entity *e)
+        {
+            return 0.f;
+        }
+    );
+
+    return newEntity("Material Viwer Controls"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+        , EntityGroupInfo({
+            Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Palette Name", paletteNameEntry),
+            savePalette,
+            addMaterial
+        })
+    );
 }
 
 void Apps::MaterialViewerApp::init()
@@ -267,6 +486,19 @@ void Apps::MaterialViewerApp::init()
 
         GG::sun->shadowCameraSize = vec2(64, 64);
     }
+
+    // MaterialPalette palette;
+
+    // VulpineTextBuffRef in(new VulpineTextBuff("data/editor/palettes/test.MaterialPalette"));
+    // palette = DataLoader<MaterialPalette>::read(in);
+
+    // // palette.push_back({vec3(0, 0, 0), 0, 0, 0, 0, 0, 0, 0});
+    // // palette.push_back({vec3(1, 1, 1), 1, 2, 3, 4, 5, 6, 7});
+
+
+    // VulpineTextOutputRef test(new VulpineTextOutput());
+    // DataLoader<MaterialPalette>::write(palette, test);
+    // test->saveAs("data/editor/palettes/test2.MaterialPalette");
 }
 
 void Apps::MaterialViewerApp::update()
@@ -279,7 +511,7 @@ void Apps::MaterialViewerApp::update()
 
         h->state.setPosition(vec3(
             0, 
-            2.0  * (mod(cnt, 4.f) - 1.5f), 
+            2.0  * (mod(size - cnt, 4.f) - 1.5f), 
             2.0 * (cnt - mod(cnt, 4.f) - 0.5f*(size - mod(size, 4.f)))
             ));
         h->state.update();
@@ -310,6 +542,8 @@ void Apps::MaterialViewerApp::clean()
     PSBD.clear();
     BD.clear();
     helpers.clear();
+
+    palettesList.clear();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
 

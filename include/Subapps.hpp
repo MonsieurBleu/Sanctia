@@ -84,6 +84,11 @@ namespace Apps
 
             OrbitController orbitController;
 
+            std::string currentPalette;
+            std::unordered_map<std::string, EntityRef> palettesList;
+
+            void refreshPalettesList();
+
         public : 
 
             MaterialViewerApp();
@@ -91,6 +96,8 @@ namespace Apps
             void spawnHelper();
 
             virtual EntityRef UImenu() override;
+
+            virtual EntityRef UIcontrols() override;
 
             virtual void init() override;
 

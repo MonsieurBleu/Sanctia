@@ -36,7 +36,12 @@ class GG
         static inline float moonOrbitTime = 0.50; // normalized to [0, 1] cause it's like over 27.3 days otherwise
 
         static inline SceneDirectionalLight sun;
+        static inline SceneDirectionalLight moon;
         static inline ModelRef skybox;
+        static inline int skyboxType = 0;
+
+        static inline bool timeOfDayCycleEnable = false;
+        static inline float timeOfDaySpeed = 1.f;
 
         static inline void ManageEntityGarbage()
         {

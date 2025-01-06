@@ -1,0 +1,83 @@
+
+: EventGraph 
+	: nodes +10
+		: EventNodePrimitive 
+			: name "OR_0"
+			: state f
+			: type +2
+			: children +1
+				: child "F"
+				;
+			;
+		: EventNodePrimitive 
+			: name "AND_1"
+			: state f
+			: type +1
+			: children +1
+				: child "OR_0"
+				;
+			;
+		: EventNodePrimitive 
+			: name "AND_0"
+			: state f
+			: type +1
+			: children +1
+				: child "AND_1"
+				;
+			;
+		: EventNodePrimitive 
+			: name "F"
+			: state f
+			: type +0
+			: children +0
+				;
+			;
+		: EventNodePrimitive 
+			: name "E"
+			: state f
+			: type +0
+			: children +1
+				: child "OR_0"
+				;
+			;
+		: EventNodePrimitive 
+			: name "NOT_0"
+			: state f
+			: type +3
+			: children +0
+				;
+			;
+		: EventNodePrimitive 
+			: name "B"
+			: state f
+			: type +0
+			: children +1
+				: child "AND_0"
+				;
+			;
+		: EventNodePrimitive 
+			: name "D"
+			: state f
+			: type +0
+			: children +1
+				: child "AND_1"
+				;
+			;
+		: EventNodePrimitive 
+			: name "C"
+			: state t
+			: type +0
+			: children +1
+				: child "AND_0"
+				;
+			;
+		: EventNodePrimitive 
+			: name "A"
+			: state t
+			: type +0
+			: children +1
+				: child "B"
+				;
+			;
+		;
+	;

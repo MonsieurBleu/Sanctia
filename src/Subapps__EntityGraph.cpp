@@ -9,6 +9,7 @@
 #include <Inputs.hpp>
 #include <Game.hpp>
 #include <EventGraph.hpp>
+#include <EventGraphWidget.hpp>
 #include <Utils.hpp>
 
 Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
@@ -17,8 +18,9 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
     inputs.push_back(&
         InputManager::addEventInput(
         "toggle A", GLFW_KEY_A, 0, GLFW_PRESS, [&]() {
-            a->set(!a->get());
-            EventGraph::updateModel();
+            auto n = EventGraph::getNode("A");
+            n->set(!n->get());
+            EventGraphWidget::updateWidgets();
             // orbitController.position = EventGraph::getNodePos("A");
         })
     );
@@ -26,8 +28,9 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
     inputs.push_back(&
         InputManager::addEventInput(
         "toggle B", GLFW_KEY_B, 0, GLFW_PRESS, [&]() {
-            b->set(!b->get());
-            EventGraph::updateModel();
+            auto n = EventGraph::getNode("B");
+            n->set(!n->get());
+            EventGraphWidget::updateWidgets();
             // orbitController.position = EventGraph::getNodePos("B");
         })
     );
@@ -35,8 +38,9 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
     inputs.push_back(&
         InputManager::addEventInput(
         "toggle C", GLFW_KEY_C, 0, GLFW_PRESS, [&]() {
-            c->set(!c->get());
-            EventGraph::updateModel();
+            auto n = EventGraph::getNode("C");
+            n->set(!n->get());
+            EventGraphWidget::updateWidgets();
             // orbitController.position = EventGraph::getNodePos("C");
         })
     );
@@ -44,8 +48,9 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
     inputs.push_back(&
         InputManager::addEventInput(
         "toggle D", GLFW_KEY_D, 0, GLFW_PRESS, [&]() {
-            d->set(!d->get());
-            EventGraph::updateModel();
+            auto n = EventGraph::getNode("D");
+            n->set(!n->get());
+            EventGraphWidget::updateWidgets();
             // orbitController.position = EventGraph::getNodePos("D");
         })
     );
@@ -53,22 +58,43 @@ Apps::EventGraphApp::EventGraphApp() : SubApps("Event Graph")
     inputs.push_back(&
         InputManager::addEventInput(
         "toggle E", GLFW_KEY_E, 0, GLFW_PRESS, [&]() {
-            e->set(!e->get());
-            EventGraph::updateModel();
+            auto n = EventGraph::getNode("E");
+            n->set(!n->get());
+            EventGraphWidget::updateWidgets();
             // orbitController.position = EventGraph::getNodePos("E");
         })
     );
 
-    inputs.push_back(
-        &InputManager::addEventInput(
-            "click eventgraph", GLFW_MOUSE_BUTTON_LEFT, 0, GLFW_PRESS, [&]() {
-                // get the mouse position
-                vec2 mousePos = InputManager::getMousePosition();
-                
-            },
-            InputManager::Filters::always, false
-        )
-    );
+    // inputs.push_back(
+    //     &InputManager::addEventInput(
+    //         "click eventgraph", GLFW_MOUSE_BUTTON_LEFT, 0, GLFW_PRESS, [&]() {
+    //             // get the mouse position
+    //             vec2 mousePos = InputManager::getMousePosition();
+
+    //             // get the position in NDC
+    //             // vec2 ndc = vec2(
+    //             //     (2.0f * mousePos.x) / (float)globals.windowWidth() - 1.0f,
+    //             //     1.0f - (2.0f * mousePos.y) / (float)globals.windowHeight()
+    //             // );
+
+    //             // // get the intersected widget
+    //             // auto intersect = EventGraphWidget::getWidgetIntersect(ndc);
+
+    //             // if (intersect.first)
+    //             // {
+    //             //     std::cout << "Intersected node: " << intersect.first->getName() << std::endl;
+    //             // }
+    //             // else
+    //             // {
+    //             //     std::cout << "No intersected node" << std::endl;
+    //             // }
+
+    //             // std::cout << "Mouse position: " << ndc << std::endl;  
+
+    //         },
+    //         InputManager::Filters::always, false
+    //     )
+    // );
 
     for(auto i : inputs)
         i->activated = false;
@@ -91,30 +117,41 @@ void Apps::EventGraphApp::init()
     appRoot = newEntity();
 
     // create a new event graph
-    a = EventGraph::addNode("A");
-    b = EventGraph::addNode("B");
-    c = EventGraph::addNode("C");
-    d = EventGraph::addNode("D");
-    e = EventGraph::addNode("E");
-    f = EventGraph::addNode("F");
+    // a = EventGraph::addNode("A");
+    // b = EventGraph::addNode("B");
+    // c = EventGraph::addNode("C");
+    // d = EventGraph::addNode("D");
+    // e = EventGraph::addNode("E");
+    // f = EventGraph::addNode("F");
 
-    and1 = EventNodeAndPtr(new EventNodeAnd());
-    and2 = EventNodeAndPtr(new EventNodeAnd());
-    or1 = EventNodeOrPtr(new EventNodeOr());
-    not1 = EventNodeNotPtr(new EventNodeNot());
+    // and1 = EventGraph::addAnd();
+    // and2 = EventGraph::addAnd();
+    // or1 = EventGraph::addOr();
+    // not1 = EventGraph::addNot();
 
-    a->addChild(b);
-    b->addChild(and1);
-    c->addChild(and1);
-    and1->addChild(and2);
-    d->addChild(and2);
-    and2->addChild(or1);
-    e->addChild(or1);
-    or1->addChild(f);
-    f->addChild(not1);
-    not1->addChild(a);
+    // a->addChild(b);
+    // b->addChild(and1);
+    // c->addChild(and1);
+    // and1->addChild(and2);
+    // d->addChild(and2);
+    // and2->addChild(or1);
+    // e->addChild(or1);
+    // or1->addChild(f);
 
-    // EventGraph::createModel();
+    // VulpineTextOutputRef out(new VulpineTextOutput(4096));
+    // DataLoader<EventGraph>::write(EventGraph(), out);
+    // out->saveAs("zzz.txt");
+
+    // EventGraph::clear();
+
+    VulpineTextBuffRef in(new VulpineTextBuff("EntityGraph.vulpineGraph"));
+    if (in->data)
+        DataLoader<EventGraph>::read(in);
+    else
+        std::cout << "No data :(\n";
+
+    // f->addChild(not1);
+    // not1->addChild(a);
 
     // ComponentModularity::addChild(
     //     *appRoot,
@@ -133,7 +170,7 @@ void Apps::EventGraphApp::init()
         )
         , WidgetBackground()
         , WidgetStyle()
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1Opaque)
+            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2Opaque)
     );
 
     graphView = newEntity("Graph View"
@@ -151,9 +188,7 @@ void Apps::EventGraphApp::init()
                 );
             }
         )
-        , WidgetBackground()
         , WidgetStyle()
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2Opaque)
     );
 
     ComponentModularity::addChild(
@@ -165,6 +200,15 @@ void Apps::EventGraphApp::init()
         *viewBG,
         graphView
     );
+
+    EventGraph::update();
+
+    EventGraphWidget::createWidgets(graphView);
+
+    // ComponentModularity::addChild(
+    //     *graphView,
+    //     EventGraphWidget::getWidget()
+    // );  
 
     // vec4 c = "#463f3cd8"_rgba;
 
@@ -196,6 +240,7 @@ void Apps::EventGraphApp::update()
 void Apps::EventGraphApp::clean()
 {
     EventGraph::clear();
+    EventGraphWidget::clearWidget(graphView);
     
     ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, viewBG);
     graphView = EntityRef();

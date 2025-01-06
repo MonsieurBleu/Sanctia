@@ -318,12 +318,12 @@ void Game::mainloop()
     //     Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
     //         "moon orbit time", 
     //         0, 1, 100, 
-    //         [](float v)
+    //         [](Entity* e, float v)
     //         {
     //             float t = v;
     //             GG::moonOrbitTime = t;
     //         },
-    //         []()
+    //         [](Entity *e)
     //         {
     //             float t = GG::moonOrbitTime;
     //             return t;
@@ -462,7 +462,6 @@ void Game::mainloop()
 
     
     // Entity* parent = readTest.get();
-    
 
 
 
@@ -692,7 +691,7 @@ void Game::mainloop()
             // compute moon position and rotation
 
             constexpr double distanceToMoon = 384400e3;
-            constexpr double moonOrbitTilt = 5.145;
+            constexpr double moonOrbitTilt = 5.145 + orbitTilt;
             constexpr double moonOrbitEccentricity = 0.0549;
             
 

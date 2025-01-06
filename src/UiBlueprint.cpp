@@ -28,7 +28,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SmoothSlider(
     const std::string &name,
     float min, float max, int padding, 
     WidgetButton::InteractFunc ifunc, 
-    WidgetButton::UpdateFunc ufunc
+    WidgetButton::UpdateFunc ufunc,
+    vec4 color
     )
 {
     return newEntity(name
@@ -47,7 +48,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SmoothSlider(
                 , WidgetStyle()
                     .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     // .setbackGroundStyle(UiTileType::SQUARE)
-                    .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
+                    .setbackgroundColor1(color)
                 , WidgetBox(Blueprint::EDITOR_ENTITY::INO::SmoothSliderFittingFunc)
             )
         }) 
@@ -180,10 +181,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
     WidgetButton::InteractFunc ifunc, 
     WidgetButton::UpdateFunc ufunc,
     std::function<void(std::u32string&)> fromText, 
-    std::function<std::u32string()> toText
+    std::function<std::u32string()> toText,
+    vec4 color
     )
 {
-    auto s = Blueprint::EDITOR_ENTITY::INO::SmoothSlider(name, min, max, padding, ifunc, ufunc);
+    auto s = Blueprint::EDITOR_ENTITY::INO::SmoothSlider(name, min, max, padding, ifunc, ufunc, color);
 
     s->comp<WidgetBox>() = WidgetBox(
         vec2(-1, 1./3.), vec2(-1, 1)
@@ -213,7 +215,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
     const std::string &name,
     float min, float max, int padding, 
     std::function<void(float f)> setValue, 
-    std::function<float()> getValue
+    std::function<float()> getValue,
+    vec4 color
     )
 {
     auto s = Blueprint::EDITOR_ENTITY::INO::SmoothSlider(name, min, max, padding, 
@@ -224,7 +227,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
         [setValue, getValue](Entity *e)
         {
             return getValue();
-        }
+        }, color
     );
 
     s->comp<WidgetBox>() = WidgetBox(

@@ -26,7 +26,7 @@ void Game::physicsLoop()
 
     while (state != quit)
     {   
-        if(globals.simulationTime.isPaused())
+        if(globals.simulationTime.isPaused() && globals.enablePhysics)
         {
             PG::currentPhysicFreq = 0.f;
             continue;

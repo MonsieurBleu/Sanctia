@@ -43,7 +43,8 @@ namespace Blueprint
                 const std::string &name,
                 float min, float max, int padding, 
                 WidgetButton::InteractFunc ifunc, 
-                WidgetButton::UpdateFunc ufunc
+                WidgetButton::UpdateFunc ufunc,
+                vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
                 );
             
             EntityRef Toggable(
@@ -73,14 +74,16 @@ namespace Blueprint
                 WidgetButton::InteractFunc ifunc, 
                 WidgetButton::UpdateFunc ufunc,
                 std::function<void(std::u32string &)> fromText, 
-                std::function<std::u32string()> toText
+                std::function<std::u32string()> toText,
+                vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
                 );
             
             EntityRef ValueInputSlider(
                 const std::string &name,
                 float min, float max, int padding, 
                 std::function<void(float f)> setValue, 
-                std::function<float()> getValue
+                std::function<float()> getValue,
+                vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
                 );
 
             EntityRef ColorSelectionScreen(

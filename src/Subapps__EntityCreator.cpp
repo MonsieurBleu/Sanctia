@@ -12,6 +12,25 @@
 
 #include <App.hpp>
 
+vec3 GimzmoProject(int axis, vec3 gizmoPosition, vec3 rayOrigin, vec3 rayDirection)
+{
+    rayOrigin -= gizmoPosition;
+
+    int c1 = (axis + (axis == 0 ? 2 : 1))%3;
+    int c2 = (axis + (axis == 0 ? 1 : 2))%3;
+
+    vec3 projection = rayAlignedPlaneIntersect(
+        rayOrigin, rayDirection, c1, 0.f
+    );
+
+    vec3 normal(0);
+    normal[c2] = 1.0;
+    projection = projectPointOntoPlane(projection, vec3(0), normal);
+
+    return projection + gizmoPosition;
+}
+
+
 std::string formatedCounter(int n)
 {
     if(n < 10) return " [00" + std::to_string(n) + "]"; 
@@ -308,7 +327,7 @@ EntityRef Apps::EntityCreator::UImenu()
             newEntity("Current Entity Control"
                 , UI_BASE_COMP
                 , WidgetBox()
-                , WidgetStyle().setautomaticTabbing(5)
+                , WidgetStyle().setautomaticTabbing(4)
                 , EntityGroupInfo({
 
 
@@ -391,7 +410,8 @@ EntityRef Apps::EntityCreator::UImenu()
                                     {
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.x) + 180.f;
-                                    }
+                                    },
+                                    EDITOR::MENUS::COLOR::HightlightColor1
                                 ),
                                 Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("Y Rotation",
                                     0.f, 360.f, 360/5, 
@@ -405,7 +425,8 @@ EntityRef Apps::EntityCreator::UImenu()
                                     {
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.y) + 180.f;
-                                    }
+                                    },
+                                    EDITOR::MENUS::COLOR::HightlightColor2
                                 ),
                                 Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("Z Rotation",
                                     0.f, 360.f, 360/5, 
@@ -419,7 +440,8 @@ EntityRef Apps::EntityCreator::UImenu()
                                     {
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.z) + 180.f;
-                                    }
+                                    },
+                                    EDITOR::MENUS::COLOR::HightlightColor3
                                 )
                             })
                         ),
@@ -464,6 +486,29 @@ EntityRef Apps::EntityCreator::UIcontrols()
         // , WidgetBackground()
         // , WidgetText()
         , EntityGroupInfo({
+
+            Blueprint::EDITOR_ENTITY::INO::Toggable("Use Gizmo", "icon_gizmo", 
+            [&](Entity *e, float v)
+            {
+                this->gizmoActivated = v == 0.f;
+            },
+            [&](Entity *e)
+            {
+                return this->gizmoActivated ? 0.f : 1.f;
+            }),
+
+
+            Blueprint::EDITOR_ENTITY::INO::Toggable("Toggle Gravity", "", 
+            [&](Entity *e, float v)
+            {
+                PG::world->setIsGravityEnabled(v == 0.f);
+                globals.enablePhysics = v == 0.f;
+            },
+            [&](Entity *e)
+            {
+                return PG::world->isGravityEnabled() && globals.enablePhysics ? 0.f : 1.f;
+            }),
+
             Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Entity Name", entityNameEntry), 
             
             Blueprint::EDITOR_ENTITY::INO::Toggable("Entity Auto Refresh", "", 
@@ -486,11 +531,24 @@ EntityRef Apps::EntityCreator::UIcontrols()
             [&](Entity *e)
             {
                 return 0.f;
-            })
+            }),
         })
     );
 }
 
+vec4 gizmoColorsBase[3] = 
+{
+    EDITOR::MENUS::COLOR::HightlightColor1, 
+    EDITOR::MENUS::COLOR::HightlightColor2,
+    EDITOR::MENUS::COLOR::HightlightColor3 
+};
+
+vec4 gizmoColors[3] = 
+{
+    EDITOR::MENUS::COLOR::HightlightColor1, 
+    EDITOR::MENUS::COLOR::HightlightColor2,
+    EDITOR::MENUS::COLOR::HightlightColor3 
+};
 
 void Apps::EntityCreator::init()
 {
@@ -510,6 +568,10 @@ void Apps::EntityCreator::init()
         // GG::sun->shadowCameraSize = vec2(256, 256);
 
         // GG::skybox->state.setHideStatus(ModelStatus::HIDE);
+
+        globals.simulationTime.resume();
+        // globals.simulationTime.speed = 0.0001f;
+        globals.enablePhysics = false;
 
         GG::skyboxType = 2;
 
@@ -545,24 +607,44 @@ void Apps::EntityCreator::init()
 
     /****** Creating Gizmo Helper ******/
     {
-        LineHelperRef x(new LineHelper(vec3(0), vec3(1, 0, 0), EDITOR::MENUS::COLOR::HightlightColor1));
-        LineHelperRef y(new LineHelper(vec3(0), vec3(0, 1, 0), EDITOR::MENUS::COLOR::HightlightColor2));
-        LineHelperRef z(new LineHelper(vec3(0), vec3(0, 0, 1), EDITOR::MENUS::COLOR::HightlightColor3));
+        // LineHelperRef x(new LineHelper(vec3(0), vec3(1, 0, 0), EDITOR::MENUS::COLOR::HightlightColor1));
+        // LineHelperRef y(new LineHelper(vec3(0), vec3(0, 1, 0), EDITOR::MENUS::COLOR::HightlightColor2));
+        // LineHelperRef z(new LineHelper(vec3(0), vec3(0, 0, 1), EDITOR::MENUS::COLOR::HightlightColor3));
 
         EntityModel model = EntityModel{ObjectGroupRef(newObjectGroup())};
         auto aabbhelper = CubeHelperRef(new CubeHelper(vec3(-0.5), vec3(0.5), EDITOR::MENUS::COLOR::LightBackgroundColor1));
         model->add(aabbhelper);
-        model->add(x);
-        model->add(y);
-        model->add(z);
 
-        x->depthWrite = false;
-        y->depthWrite = false;
-        z->depthWrite = false;
+        ModelRef gizmoArrows[3];
 
-        x->sorted = false;
-        y->sorted = false;
-        z->sorted = false;
+        for(int i = 0; i < 3; i++)
+        {
+            gizmoArrows[i] = newModel(Loader<MeshMaterial>::get("basicHelper"), Loader<MeshVao>::get("arrow"));
+            gizmoArrows[i]->uniforms.add(ShaderUniform((vec3*)&gizmoColors[i], 20));
+            model->add(gizmoArrows[i]);
+            gizmoArrows[i]->depthWrite = false;
+            gizmoArrows[i]->sorted = false;
+            gizmoArrows[i]->defaultMode = GL_TRIANGLES;
+            // gizmoArrows[i]->state.scaleScalar(1.0).rotation[i] = i == 0 ? 0 : radians(90.f);
+            // if(i == 2)
+            //     gizmoArrows[i]->state.rotation[0] = radians(-90.f);
+            if(i == 0)
+            {
+                gizmoArrows[i]->state.rotation[0] = radians(90.f);
+            }
+            if(i == 1)
+            {
+                gizmoArrows[i]->state.rotation[1] = radians(180.f);
+                // gizmoArrows[i]->state.rotation[0] = radians(-90.f);
+                gizmoArrows[i]->state.rotation[2] = radians(90.f);
+            }
+            if(i == 2)
+            {
+                gizmoArrows[i]->state.rotation[1] = radians(-90.f);
+                gizmoArrows[i]->state.rotation[0] = radians(90.f); 
+                gizmoArrows[i]->state.rotation[2] = radians(90.f);
+            }
+        }
 
         ComponentModularity::addChild(*appRoot, 
             gizmo = newEntity("Gizmo Helper"
@@ -579,44 +661,44 @@ void Apps::EntityCreator::init()
 
         vec3 color = EDITOR::MENUS::COLOR::DarkBackgroundColor1;
 
-        model->add(
-            LineHelperRef(new LineHelper(
-                vec3(+inf, 0, 0), 
-                vec3(-inf, 0, 0), 
-                0.5f * EDITOR::MENUS::COLOR::HightlightColor1))
-        );
+        // model->add(
+        //     LineHelperRef(new LineHelper(
+        //         vec3(+inf, 0, 0), 
+        //         vec3(-inf, 0, 0), 
+        //         0.5f * EDITOR::MENUS::COLOR::HightlightColor1))
+        // );
 
-        model->add(
-            LineHelperRef(new LineHelper(
-                vec3(0, +inf, 0), 
-                vec3(0, -inf, 0), 
-                0.5f * EDITOR::MENUS::COLOR::HightlightColor2))
-        );
+        // model->add(
+        //     LineHelperRef(new LineHelper(
+        //         vec3(0, +inf, 0), 
+        //         vec3(0, -inf, 0), 
+        //         0.5f * EDITOR::MENUS::COLOR::HightlightColor2))
+        // );
 
-        model->add(
-            LineHelperRef(new LineHelper(
-                vec3(0, 0, +inf), 
-                vec3(0, 0, -inf), 
-                0.5f * EDITOR::MENUS::COLOR::HightlightColor3))
-        );
+        // model->add(
+        //     LineHelperRef(new LineHelper(
+        //         vec3(0, 0, +inf), 
+        //         vec3(0, 0, -inf), 
+        //         0.5f * EDITOR::MENUS::COLOR::HightlightColor3))
+        // );
 
         int size = 50;
         for(int i = -size; i <= size; i+=5)
         {
-            if(i == 0) continue;
+            // if(i == 0) continue;
 
             model->add(
                 LineHelperRef(new LineHelper(
                     vec3(+size, 0, i), 
                     vec3(-size, 0, i), 
-                    color))
+                    i == 0 ? color*2.f : color))
             );
 
             model->add(
                 LineHelperRef(new LineHelper(
                     vec3(i, 0, +size), 
                     vec3(i, 0, -size), 
-                    color))
+                    i == 0 ? color*2.f : color))
             );
         }
 
@@ -631,6 +713,7 @@ void Apps::EntityCreator::init()
 
 void Apps::EntityCreator::update()
 {
+    // if(!PG::world->isGravityEnabled())
     ComponentModularity::synchronizeChildren(appRoot);
 
     vec2 screenPos = globals.mousePosition();
@@ -688,42 +771,39 @@ void Apps::EntityCreator::update()
         physicsMutex.unlock();
     }
 
+
+    /****** Mouse Ray Casting ******/
+    vec2 cursorPos = vec2(1, -1) * ((globals.mousePosition()/vec2(globals.windowSize()))*2.f - 1.f);
+
+    auto gsb = EDITOR::MENUS::GameScreen->comp<WidgetBox>();
+    float tmpf = gsb.min.y;
+    gsb.min.y = -gsb.max.y;
+    gsb.max.y = -tmpf;
+
+    vec2 gameScreenPos = (cursorPos-gsb.min)/(gsb.max - gsb.min);
+
+    vec4 ndc = vec4(
+        gameScreenPos*2.f - 1.f,
+        globals.currentCamera->getProjectionMatrix()[3][2] / (1e2),
+        -1.0
+    );
+
+    vec4 viewpos = inverse(globals.currentCamera->getProjectionMatrix()) * ndc;
+    viewpos /= viewpos.w;
+    viewpos.z *= -1;
+    vec4 world = inverse(globals.currentCamera->getViewMatrix()) * viewpos;
+
+    vec3 dir = normalize(vec3(world) - globals.currentCamera->getPosition());
+
+    rp3d::Ray ray(
+        PG::torp3d(globals.currentCamera->getPosition()),
+        PG::torp3d(world)
+    );
+
+
+
     if(globals.mouseRightClick() && cursorOnGameScreen)
     {
-        vec2 cursorPos = vec2(1, -1) * ((globals.mousePosition()/vec2(globals.windowSize()))*2.f - 1.f);
-
-        auto gsb = EDITOR::MENUS::GameScreen->comp<WidgetBox>();
-        float tmpf = gsb.min.y;
-        gsb.min.y = -gsb.max.y;
-        gsb.max.y = -tmpf;
-
-        vec2 gameScreenPos = (cursorPos-gsb.min)/(gsb.max - gsb.min);
-
-        vec4 ndc = vec4(
-            gameScreenPos*2.f - 1.f,
-            globals.currentCamera->getProjectionMatrix()[3][2] / (1e2),
-            -1.0
-        );
-
-        vec4 viewpos = inverse(globals.currentCamera->getProjectionMatrix()) * ndc;
-        viewpos /= viewpos.w;
-        viewpos.z *= -1;
-        vec4 world = inverse(globals.currentCamera->getViewMatrix()) * viewpos;
-
-        vec3 dir = normalize(vec3(world) - globals.currentCamera->getPosition());
-
-        // std::cout << "world pos " << glm::to_string(world) << "\n";
-        // std::cout << "direction " << glm::to_string(dir) << "\n";
-        // std::cout << "=====================\n";
-
-        // globals.getScene()->add(
-        //     LineHelperRef(new LineHelper(globals.currentCamera->getPosition(), world, EDITOR::MENUS::COLOR::HightlightColor5))
-        // );
-
-        // auto tmp = SphereHelperRef(new SphereHelper(EDITOR::MENUS::COLOR::HightlightColor4, 0.1));
-        // tmp->state.setPosition(world);
-        // globals.getScene()->add(tmp            );
-
         /**** Computing click intersection with current entity child *****/
         float mindist = 1e6;
         EntityRef mindistChild;
@@ -737,10 +817,6 @@ void Apps::EntityCreator::update()
                     PG::torp3d(lodi.aabbmin), PG::torp3d(lodi.aabbmax)
                 );
 
-                rp3d::Ray ray(
-                    PG::torp3d(globals.currentCamera->getPosition()),
-                    PG::torp3d(world)
-                );
                 rp3d::Vector3 hitpoint;
 
                 if(aabb.raycast(ray, hitpoint))
@@ -761,46 +837,50 @@ void Apps::EntityCreator::update()
         }
     }
 
-    if(controlledEntity)
+    if(controlledEntity && gizmoActivated)
     {
-        bool sprintActivated = false;
-        int upFactor = 0;
-        int frontFactor = 0;
-        int rightFactor = 0;
-
-        GLFWwindow *window = globals.getWindow();
-
-        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-            frontFactor ++;
-
-        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-            frontFactor --;
-
-        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-            rightFactor ++;
-
-        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-            rightFactor --;
-
-        if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-            upFactor ++;
-
-        if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-            upFactor --;
-
-        if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-            sprintActivated = true;
-
-        const float speed = 0.1;
-        const float sprintFactor = 5;
-
         auto &s = controlledEntity->comp<EntityState3D>();
-        const vec3 cpos = s.position;
-        const float delta = globals.appTime.getDelta();
-        const float dspeed = speed * delta * (sprintActivated ? sprintFactor : 1.f);
 
-        s.position += dspeed*vec3(frontFactor, upFactor, rightFactor);
-        s.initPosition = s.position;
+        if(!globals.mouseLeftClickDown())
+        {
+            bool sprintActivated = false;
+            int upFactor = 0;
+            int frontFactor = 0;
+            int rightFactor = 0;
+
+            GLFWwindow *window = globals.getWindow();
+
+            if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+                frontFactor ++;
+
+            if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+                frontFactor --;
+
+            if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+                rightFactor ++;
+
+            if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+                rightFactor --;
+
+            if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+                upFactor ++;
+
+            if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+                upFactor --;
+
+            if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                sprintActivated = true;
+
+            const float speed = 0.1;
+            const float sprintFactor = 5;
+
+            const vec3 cpos = s.position;
+            const float delta = globals.appTime.getDelta();
+            const float dspeed = speed * delta * (sprintActivated ? sprintFactor : 1.f);
+
+            s.position += dspeed*vec3(frontFactor, upFactor, rightFactor);
+        }
+
 
         // auto entity = controlledEntity->comp<EntityGroupInfo>().children[0];
         // vec3 pos = entity->comp<EntityState3D>().position;
@@ -815,18 +895,149 @@ void Apps::EntityCreator::update()
             vec3 extent = lodi.aabbmax - lodi.aabbmin;
             vec3 position = lodi.aabbmin + extent*0.5f;
 
+            static vec3 aabbCenterToEntityPos = position - s.position;
+
             gizmo->comp<EntityModel>()->getMeshes()[0]->state.setScale(extent);
             gizmo->comp<EntityModel>()->state.setPosition(position);
 
-            orbitController.position = position;
+            gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::SHOW);
+
+            float scale = orbitController.distance / 3.5;
+            gizmo->comp<EntityModel>()->getMeshes()[1]->state.scaleScalar(scale);
+            gizmo->comp<EntityModel>()->getMeshes()[2]->state.scaleScalar(scale);
+            gizmo->comp<EntityModel>()->getMeshes()[3]->state.scaleScalar(scale);
+
+            gizmoColors[0] = gizmoColorsBase[0];
+            gizmoColors[1] = gizmoColorsBase[1];
+            gizmoColors[2] = gizmoColorsBase[2];
+
+            static int lastClickedGizmo = -1;
+            static vec3 lastCenter;
+            static vec3 lastClickAxePos;
+
+            bool hit = false;
+            
+            if(!(globals.mouseLeftClickDown()))
+            {
+                aabbCenterToEntityPos = position - s.position;
+
+                globals.currentCamera->setPosition(
+                    globals.currentCamera->getPosition() - (orbitController.position - position)
+                );
+                orbitController.position = position;
+
+                for(int i = 0; i < 3; i++)
+                {
+                    vec3 aabbmin(-0.15);
+                    vec3 aabbmax(+0.15);
+
+                    aabbmin[i] = 0;
+                    aabbmax[i] = 1.75;
+
+                    rp3d::AABB aabb(
+                            PG::torp3d(scale*aabbmin + position), 
+                            PG::torp3d(scale*aabbmax + position)
+                        );
+
+                    rp3d::Vector3 hitpoint;
+
+                    if((hit = aabb.raycast(ray, hitpoint)))
+                    {
+                        lastClickedGizmo = i;
+                        lastCenter = position;
+                        lastClickAxePos = GimzmoProject(
+                            i, position,
+                            globals.currentCamera->getPosition(), 
+                            world
+                        );
+
+                        break;
+                    }
+                }
+
+                if(!hit)
+                {
+                    for(int i = 0; i < 3; i++)
+                    {
+                        vec3 aabbmin(0.2);
+                        vec3 aabbmax(0.6);
+
+                        aabbmin[i] = -0.01;
+                        aabbmax[i] = +0.01;
+
+                        rp3d::AABB aabb(
+                            PG::torp3d(scale*aabbmin + position), 
+                            PG::torp3d(scale*aabbmax + position)
+                        );
+
+                        rp3d::Vector3 hitpoint;
+
+                        if((hit = aabb.raycast(ray, hitpoint)))
+                        {
+                            lastClickedGizmo = i+3;
+                            lastCenter = position;
+                            lastClickAxePos = rayAlignedPlaneIntersect(
+                                globals.currentCamera->getPosition(), world, i, position[i]
+                            );
+
+                            break;
+                        }
+                    }
+                }
+
+
+                if(!hit)
+                    lastClickedGizmo = -1;
+            }
+            else if(lastClickedGizmo != -1 && lastClickedGizmo < 3)
+            {
+                vec3 p = GimzmoProject(
+                    lastClickedGizmo, lastCenter,
+                    globals.currentCamera->getPosition(), 
+                    world
+                );
+                
+                s.position[lastClickedGizmo] = p[lastClickedGizmo] - (lastClickAxePos[lastClickedGizmo] - lastCenter[lastClickedGizmo]);
+                s.position[lastClickedGizmo] -= aabbCenterToEntityPos[lastClickedGizmo];
+            }
+            else if(lastClickedGizmo != -1 && lastClickedGizmo >= 3)
+            {
+                int axis = lastClickedGizmo-3;
+
+                vec3 p = rayAlignedPlaneIntersect(
+                    globals.currentCamera->getPosition(), world, axis, lastCenter[axis]
+                );
+
+                s.position = p 
+                - (lastClickAxePos - lastCenter)
+                ;
+                s.position[axis] = lastCenter[axis];
+
+                // s.position[axis] += (lodi.aabbmin-position)[axis];
+                // s.position[axis] -= (extent*0.5f)[axis];
+                s.position -= aabbCenterToEntityPos;
+            }
+
+            
+            if(lastClickedGizmo != -1 && lastClickedGizmo < 3)
+            {
+                gizmo->comp<EntityModel>()->getMeshes()[lastClickedGizmo + 1]->state.scaleScalar(scale*1.2);
+            }
+            if(lastClickedGizmo != -1 && lastClickedGizmo >= 3)
+            {
+                // gizmo->comp<EntityModel>()->getMeshes()[lastClickedGizmo - 2]->state.scaleScalar(scale*0.8);
+                gizmoColors[lastClickedGizmo - 3] = gizmoColorsBase[lastClickedGizmo - 3]*2.f;
+            }
+        
         }
 
-        gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::SHOW);
+        s.initPosition = s.position;
     }
     else
         gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::HIDE);
 
-    if(currentEntity.ref)
+
+    if(currentEntity.ref && !PG::world->isGravityEnabled())
     {
         physicsMutex.lock();
         ComponentModularity::ReparentChildren(*currentEntity.ref);
@@ -838,6 +1049,8 @@ void Apps::EntityCreator::update()
 void Apps::EntityCreator::clean()
 {
     globals.simulationTime.pause();
+    globals.simulationTime.speed = 1.f;
+    globals.enablePhysics = true;
 
     globals.currentCamera->setMouseFollow(false);
     globals.currentCamera->setPosition(vec3(0));

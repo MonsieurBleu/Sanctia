@@ -180,6 +180,8 @@ namespace Apps
 
             bool autoRefreshFromDisk = false;
 
+            bool gizmoActivated = true;
+
             struct CurrentEntityInfo
             {
                 std::string name;

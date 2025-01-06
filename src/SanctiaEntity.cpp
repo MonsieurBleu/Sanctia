@@ -705,12 +705,14 @@ void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
     {
         auto &b = e->comp<RigidBody>();
 
-        auto aabb = b->getAABB();
+        if(b->isActive())
+        {
+            auto aabb = b->getAABB();
 
-        // std::cout << b->getTransform().getPosition().x << "\n";
+            aabbmin = min(aabbmin, PG::toglm(aabb.getMin()));
+            aabbmax = max(aabbmax, PG::toglm(aabb.getMax()));
+        }
 
-        aabbmin = min(aabbmin, PG::toglm(aabb.getMin()));
-        aabbmax = max(aabbmax, PG::toglm(aabb.getMax()));
     }
     // else 
     if(hasChildren)
@@ -727,6 +729,7 @@ void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
 
     // std::cout 
     //     << e->toStr() 
+    //     << hasModel << "\n" << hasRigidBody << "\n" << hasChildren << "\n"
     //     << "has AABB " << to_string(aabbmin) << " " << to_string(aabbmax) << "\n\n"; 
 }
 

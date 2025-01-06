@@ -167,8 +167,8 @@ void Game::init(int paramSample)
 
     /* VSYNC and fps limit */
     globals.fpsLimiter.activate();
-    // globals.fpsLimiter.freq = 144.f;
-    globals.fpsLimiter.freq = 45.f;
+    globals.fpsLimiter.freq = 144.f;
+    // globals.fpsLimiter.freq = 45.f;
     glfwSwapInterval(0);
 
     ambientLight = vec3(0.07);

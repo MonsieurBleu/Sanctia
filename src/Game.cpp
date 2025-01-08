@@ -35,7 +35,7 @@ void Game::mainloop()
 
     GG::skybox = newModel(skyboxMaterial);
     
-    GG::skybox->loadFromFolder("ressources/models/skybox/", true, false);
+    GG::skybox->loadFromFolder("ressources/models/skybox/", false, false);
 
     // GG::skybox->invertFaces = true;
     // GG::skybox->depthWrite = true;

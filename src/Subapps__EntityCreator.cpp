@@ -115,7 +115,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
             controlledEntity = nullptr;
 
-            UI_currentEntityComponent.clear();
+            // UI_currentEntityComponent.clear();
             UI_currentEntityChildren.clear();
 
             std::string str = e->comp<EntityInfos>().name;
@@ -175,8 +175,10 @@ EntityRef Apps::EntityCreator::UImenu()
         }, 
         [&](Entity *e)
         {
-
-            return 0.;
+            if(currentEntity.ref)
+                return currentEntity.ref->state[ComponentGlobals::ComponentNamesMap->at(e->comp<EntityInfos>().name)] ? 0.f : 1.f;
+            else
+                return 1.f;
         }
     );
 
@@ -213,9 +215,9 @@ EntityRef Apps::EntityCreator::UImenu()
 
             EntityState3D transform = EntityState3D(true);
 
-            static int cnt = 0;
-            // transform.useinit = true;
-            transform.position.x = transform.initPosition.x = cnt++;
+            // static int cnt = 0;
+            // // transform.useinit = true;
+            // transform.position.x = transform.initPosition.x = cnt++;
             
             // int nb = 0;
             // // for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
@@ -524,9 +526,18 @@ EntityRef Apps::EntityCreator::UIcontrols()
             Blueprint::EDITOR_ENTITY::INO::Toggable("Save Entity", "", 
             [&](Entity *e, float v)
             {
+                this->currentEntity.ref->comp<EntityInfos>().name = this->currentEntity.name;
+                std::string fileName = "data/entities/" + this->currentEntity.name + ".vulpineEntity";
+
                 VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
                 DataLoader<EntityRef>::write(this->currentEntity.ref, out);
-                out->saveAs("data/EditorTest.vulpineEntity");
+
+                out->saveAs(fileName.c_str());
+
+                Loader<EntityRef>::addInfos(fileName.c_str());
+
+                this->UI_loadableEntity[this->currentEntity.name] = EntityRef();
+                this->UI_loadableChildren[this->currentEntity.name] = EntityRef();
             },
             [&](Entity *e)
             {
@@ -709,6 +720,9 @@ void Apps::EntityCreator::init()
             )
         );
     }
+
+    for(auto &i : *ComponentGlobals::ComponentNamesMap)
+        UI_currentEntityComponent[i.first] = EntityRef();
 }
 
 void Apps::EntityCreator::update()
@@ -727,13 +741,35 @@ void Apps::EntityCreator::update()
     globals.currentCamera->setMouseFollow(cursorOnGameScreen);
     
 
-    for(auto &i : *ComponentGlobals::ComponentNamesMap)
-        if(
-            currentEntity.ref.get() 
-            && currentEntity.ref->state[i.second] 
-            && !UI_currentEntityComponent[i.first].get()
-        )
-            UI_currentEntityComponent[i.first] = EntityRef();
+    // bool doClear = false;
+
+    // for(auto &i : *ComponentGlobals::ComponentNamesMap)
+    // {
+    //     if(
+    //         currentEntity.ref.get() 
+    //         && !currentEntity.ref->state[i.second] 
+    //         && UI_currentEntityComponent.find(i.first) != UI_currentEntityComponent.end()
+    //     )
+    //     {
+    //         doClear = true;
+    //         UI_currentEntityComponent.erase(i.first);
+    //     }
+    // }
+
+    // if(doClear)
+    //     GG::ManageEntityGarbage();
+
+    // for(auto &i : *ComponentGlobals::ComponentNamesMap)
+    // {
+    //     if(
+    //         currentEntity.ref.get() 
+    //         && currentEntity.ref->state[i.second] 
+    //         && !UI_currentEntityComponent[i.first].get()
+    //     )
+    //         UI_currentEntityComponent[i.first] = EntityRef();
+    // }
+
+
 
     static int cnt = 0;
     cnt ++;

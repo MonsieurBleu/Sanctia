@@ -105,16 +105,18 @@ EntityRef Apps::EventGraphApp::UImenu()
     return newEntity("MAIN GAME APP MENU"
         , UI_BASE_COMP
         , WidgetBox()
-        , WidgetStyle()
-            .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
-        , WidgetText(std::u32string(U"hello :)"))
-        , WidgetBackground()
+        // , WidgetStyle()
+        //     .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+        // , WidgetText(std::u32string(U"hello :)"))
+        // , WidgetBackground()
     );
 };
 
 void Apps::EventGraphApp::init()
 {
     appRoot = newEntity();
+
+    GG::skyboxType = 2;
 
     // create a new event graph
     // a = EventGraph::addNode("A");
@@ -163,14 +165,16 @@ void Apps::EventGraphApp::init()
     // App::setController(controller);
     // controller->distance = 10.0f;
 
+    dragController.scale = 0.6f;
+
     viewBG = newEntity("Graph View background"
         , UI_BASE_COMP
         , WidgetBox(
             vec2(-1, 1), vec2(-1, 1)
         )
-        , WidgetBackground()
-        , WidgetStyle()
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2Opaque)
+        // , WidgetBackground()
+        // , WidgetStyle()
+        //     .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2Opaque)
     );
 
     graphView = newEntity("Graph View"
@@ -180,7 +184,6 @@ void Apps::EventGraphApp::init()
                 auto &b = child->comp<WidgetBox>();
                 
                 b.useClassicInterpolation = true;
-
 
                 b.set(
                     vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().x, 
@@ -225,7 +228,7 @@ void Apps::EventGraphApp::init()
     // ); 
 
 
-    glLineWidth(3.0f);
+    glLineWidth(20.0f);
 
     for(auto i : inputs)
         i->activated = true;
@@ -234,6 +237,18 @@ void Apps::EventGraphApp::init()
 void Apps::EventGraphApp::update()
 {
     // std::cout << "====== UPDATE ======\n";
+
+    vec2 screenPos = globals.mousePosition();
+    screenPos = (screenPos/vec2(globals.windowSize()))*2.f - 1.f;
+    auto &box = EDITOR::MENUS::GameScreen->comp<WidgetBox>();
+    vec2 cursor = ((screenPos-box.min)/(box.max - box.min));
+    bool cursorOnGameScreen = !(cursor.x < 0 || cursor.y < 0 || cursor.x > 1 || cursor.y > 1);
+    globals.currentCamera->setMouseFollow(cursorOnGameScreen);
+
+    auto &b = graphView->comp<EntityGroupInfo>().children[0]->comp<WidgetBox>();
+    b.displayRangeMax = box.displayMax;
+    b.displayRangeMin = box.displayMin;
+
     EventGraph::update();
 };
 
@@ -241,6 +256,8 @@ void Apps::EventGraphApp::clean()
 {
     EventGraph::clear();
     EventGraphWidget::clearWidget(graphView);
+
+    GG::skyboxType = 0;
     
     ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, viewBG);
     graphView = EntityRef();
@@ -249,7 +266,6 @@ void Apps::EventGraphApp::clean()
     appRoot = EntityRef();
 
     glLineWidth(1.0f);
-
     
     for(auto i : inputs)
         i->activated = false;

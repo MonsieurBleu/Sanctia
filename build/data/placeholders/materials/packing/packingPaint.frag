@@ -492,7 +492,10 @@ void main()
 
 
     // fragColor.rgb = color * ambientLight + mix(material.result, rColor, clamp(material.reflect * reflectFactor, vec3(0), vec3(1)));
+
+
     fragColor.rgb = color * ambientLight + material.result + rColor * material.reflect * reflectFactor;
+    // fragColor.rgb = color * ambientLight + mix(material.result, rColor, clamp(material.reflect * reflectFactor, 0., 1.));
 
 
     fragColor.rgb = mix(fragColor.rgb, color, mEmmisive);

@@ -200,16 +200,17 @@ void Game::mainloop()
     );
 
 
-    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
-        GlobalInfosTitleTab, GlobalInfosSubTab, 
-        Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
-        "Ambient Controls", ""
-    );
 
     Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 
         Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen(),
         "Global Benchmark", "icon_chrono"
+    );
+
+    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab, 
+        Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
+        "Ambient Controls", ""
     );
 
     Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(

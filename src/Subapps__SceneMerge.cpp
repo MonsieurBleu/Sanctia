@@ -50,9 +50,9 @@ EntityRef Apps::SceneMergeApp::UImenu()
     return newEntity("SCENE MERGE APP MENU"
         , UI_BASE_COMP
         , WidgetBox()
-        , WidgetStyle()
-            .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
-        , WidgetBackground()
+        // , WidgetStyle()
+        //     .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+        // , WidgetBackground()
     );
 }
 

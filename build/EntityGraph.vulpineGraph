@@ -6,7 +6,7 @@
 			: state f
 			: type +2
 			: children +1
-				: child "F"
+				: child "Event F"
 				;
 			;
 		: EventNodePrimitive 
@@ -26,14 +26,14 @@
 				;
 			;
 		: EventNodePrimitive 
-			: name "F"
+			: name "Event F"
 			: state f
 			: type +0
 			: children +0
 				;
 			;
 		: EventNodePrimitive 
-			: name "E"
+			: name "Event E"
 			: state f
 			: type +0
 			: children +1
@@ -44,19 +44,20 @@
 			: name "NOT_0"
 			: state f
 			: type +3
-			: children +0
-				;
-			;
-		: EventNodePrimitive 
-			: name "B"
-			: state f
-			: type +0
 			: children +1
 				: child "AND_0"
 				;
 			;
 		: EventNodePrimitive 
-			: name "D"
+			: name "Event B"
+			: state f
+			: type +0
+			: children +1
+				: child "NOT_0"
+				;
+			;
+		: EventNodePrimitive 
+			: name "Event D"
 			: state f
 			: type +0
 			: children +1
@@ -64,7 +65,7 @@
 				;
 			;
 		: EventNodePrimitive 
-			: name "C"
+			: name "Event C"
 			: state t
 			: type +0
 			: children +1
@@ -72,11 +73,11 @@
 				;
 			;
 		: EventNodePrimitive 
-			: name "A"
+			: name "Event A"
 			: state t
 			: type +0
 			: children +1
-				: child "B"
+				: child "Event B"
 				;
 			;
 		;

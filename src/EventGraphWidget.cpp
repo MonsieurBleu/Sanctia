@@ -169,7 +169,16 @@ void EventGraphWidget::createWidgets(EntityRef parent)
     for (auto &spline : EventGraph:: Bsplines)
     {
         std::vector<vec3> s;
-        BSpline(spline, s);
+        // BSpline(spline, s);
+        vec3 p0 = spline[0];
+        vec3 p3 = spline[spline.size() - 1];
+        vec3 dir = normalize(p3 - p0);
+        
+        float midpoint = ((p3.z - p0.z) / 2.0f);
+        vec3 p1 = p0 + vec3(0, 0, midpoint);
+        vec3 p2 = p3 - vec3(0, 0, midpoint);
+
+        BezierCurve(p0, p1, p2, p3, s, 30);
         splines.push_back(s);
     }
 
@@ -191,8 +200,8 @@ void EventGraphWidget::createWidgets(EntityRef parent)
         vec4* tmp = (vec4*)p.get();
         for(int i = 0; i < size; i++)
         {  
-            float a = pow(distance((float)i, (float)0.f)/(size), 1.5);
-            // float a = 0.0;
+            // float a = pow(distance((float)i, (float)0.f)/(size), 2.5);
+            float a = 0.0;
 
             vec3 pos = vec3(vec2(spline[i].z, spline[i].y)*0.5f + 0.5f, 0.f);
 
@@ -225,6 +234,74 @@ void EventGraphWidget::createWidgets(EntityRef parent)
                 , WidgetSprite(mesh)
             )
         );
+
+        // add arrows along the spline
+        float arrowSize = 0.1f;
+        float arrowAngle = radians(45.0f);
+        int arrows = 2;
+        for (int i = 1; i < arrows + 1; i++)
+        {
+            float t = (float)i / (float)(arrows + 1);
+
+            vec3 currentPoint = spline[(int)(t * (size - 1))];
+            vec3 prevPoint    = spline[(int)(t * (size - 1)) - 1];
+
+            vec3 dir3D = normalize(currentPoint - prevPoint);
+            
+            vec2 dir = normalize(vec2(dir3D.z, dir3D.y));
+            vec2 arrowPos = vec2(currentPoint.z, currentPoint.y);
+
+            vec2 arrowDir1 = vec2(
+                dir.x * cos(arrowAngle) - dir.y * sin(arrowAngle),
+                dir.x * sin(arrowAngle) + dir.y * cos(arrowAngle)
+            );
+
+            vec2 arrowDir2 = vec2(
+                dir.x * cos(-arrowAngle) - dir.y * sin(-arrowAngle),
+                dir.x * sin(-arrowAngle) + dir.y * cos(-arrowAngle)
+            );
+
+            vec2 p0 = arrowPos - normalize(arrowDir1) * arrowSize;
+            vec2 p1 = arrowPos;
+            vec2 p2 = arrowPos - normalize(arrowDir2) * arrowSize;
+
+
+            GenericSharedBuffer p(new char[4 * sizeof(vec4)]);
+
+            vec4* tmp = (vec4*)p.get();
+            tmp[0] = vec4(vec3(vec2(p0.x, p0.y)*0.5f + 0.5f, 0.f), 0.f);
+            tmp[1] = vec4(vec3(vec2(p1.x, p1.y)*0.5f + 0.5f, 0.f), 0.f);
+
+            tmp[2] = vec4(vec3(vec2(p2.x, p2.y)*0.5f + 0.5f, 0.f), 0.f);
+            tmp[3] = vec4(vec3(vec2(p1.x, p1.y)*0.5f + 0.5f, 0.f), 0.f);
+
+            ModelRef mesh = newModel(
+                Loader<MeshMaterial>::get("plot"), 
+                MeshVao(new 
+                    VertexAttributeGroup(
+                        {VertexAttribute(p, 0, 4, 4, GL_FLOAT, false)}
+                    )
+                )
+            );
+
+            mesh->uniforms.add(ShaderUniform(
+                &nodeParent->comp<EntityGroupInfo>().children[EventGraph::spline2Node[cnt]]->comp<WidgetBackground>().tile->color, 
+                20
+            ));
+
+            mesh->defaultMode = GL_LINES;
+            mesh->state.frustumCulled = false;
+            mesh->noBackFaceCulling = true;
+
+            ComponentModularity::addChild(
+                *parent, 
+                newEntity("spline arrow " + std::to_string(i)
+                    , UI_BASE_COMP
+                    , WidgetBox()
+                    , WidgetSprite(mesh)
+                )
+            );
+        }
 
         cnt ++;
     }

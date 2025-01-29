@@ -6,12 +6,12 @@ SubApps::SubApps(const std::string  &name) : name(name)
 {
     apps.push_back(this);
 
-    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    VulpineBlueprintUI::AddToSelectionMenu(
         EDITOR::MENUS::AppChoice, EDITOR::MENUS::AppMenu, 
 
         uiMenuParentTMP = newEntity(name + " - PARENT MENU"
             // , UI_BASE_COMP
-            , EDITOR::UIcontext
+            , VulpineBlueprintUI::UIcontext
             , WidgetBox()
             , WidgetStyle().setautomaticTabbing(1)
             // , WidgetText(UFTconvert.from_bytes(name))

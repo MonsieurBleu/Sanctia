@@ -465,7 +465,7 @@ void Apps::MainGameApp::init()
         );
 
 
-        EntityRef healthBar = Blueprint::EDITOR_ENTITY::INO::SmoothSlider("Health Bar", 
+        EntityRef healthBar = VulpineBlueprintUI::SmoothSlider("Health Bar", 
                 0, GG::playerEntity->comp<EntityStats>().health.max, 1e6, 
             [](Entity *e, float v){
                 if(GG::playerEntity)

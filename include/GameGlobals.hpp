@@ -64,7 +64,7 @@ class GG
 
 namespace EDITOR 
 {
-    inline WidgetUI_Context UIcontext;
+    // inline WidgetUI_Context UIcontext;
 
     namespace MENUS
     {

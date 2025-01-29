@@ -106,7 +106,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
     // return menu;
 
-    auto toLoadMenu = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+    auto toLoadMenu = VulpineBlueprintUI::StringListSelectionMenu(
         "Entities To Load",
         UI_loadableEntity, 
         [&](Entity *e, float v)
@@ -166,7 +166,7 @@ EntityRef Apps::EntityCreator::UImenu()
     );
 
 
-    auto componentNameViewer = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+    auto componentNameViewer = VulpineBlueprintUI::StringListSelectionMenu(
         "Current Entity Component List",
         UI_currentEntityComponent, 
         [&](Entity *e, float v)
@@ -183,7 +183,7 @@ EntityRef Apps::EntityCreator::UImenu()
     );
 
 
-    auto childrenToLoadMenu = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+    auto childrenToLoadMenu = VulpineBlueprintUI::StringListSelectionMenu(
         "Children To Load",
         UI_loadableChildren, 
         [&](Entity *e, float v)
@@ -247,7 +247,7 @@ EntityRef Apps::EntityCreator::UImenu()
     );
 
 
-    auto currentChildren = Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+    auto currentChildren = VulpineBlueprintUI::StringListSelectionMenu(
         "Current Entity Children List",
         UI_currentEntityChildren, 
         [&](Entity *e, float v)
@@ -274,17 +274,17 @@ EntityRef Apps::EntityCreator::UImenu()
     );
 
 
-    auto LoadEntity = Blueprint::EDITOR_ENTITY::INO::NamedEntry(
+    auto LoadEntity = VulpineBlueprintUI::NamedEntry(
         U"Load Entity", toLoadMenu, 
         0.05, true
     );
 
-    auto AddChildren = Blueprint::EDITOR_ENTITY::INO::NamedEntry(
+    auto AddChildren = VulpineBlueprintUI::NamedEntry(
         U"Add Children", childrenToLoadMenu, 
         0.05, true
     );
 
-    auto CurrentComponent = Blueprint::EDITOR_ENTITY::INO::NamedEntry(
+    auto CurrentComponent = VulpineBlueprintUI::NamedEntry(
         U"Current Components", componentNameViewer, 
         0.05, true
     );
@@ -333,15 +333,15 @@ EntityRef Apps::EntityCreator::UImenu()
                 , EntityGroupInfo({
 
 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Position", 
+                    VulpineBlueprintUI::NamedEntry(U"Position", 
                         newEntity("Position controls"
                             , UI_BASE_COMP
                             , WidgetBox()
                             , WidgetStyle().setautomaticTabbing(3)
                             , EntityGroupInfo({
 
-                                Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"X",
-                                    Blueprint::EDITOR_ENTITY::INO::ValueInput("X Position"
+                                VulpineBlueprintUI::NamedEntry(U"X",
+                                    VulpineBlueprintUI::ValueInput("X Position"
                                         , [&](float f)
                                         {
                                             if(!controlledEntity) return;
@@ -356,8 +356,8 @@ EntityRef Apps::EntityCreator::UImenu()
                                         -1e6f, 1e6f, 0.1f, 1.f
                                     ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor1
                                 ),
-                                Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Y",
-                                    Blueprint::EDITOR_ENTITY::INO::ValueInput("Y Position"
+                                VulpineBlueprintUI::NamedEntry(U"Y",
+                                    VulpineBlueprintUI::ValueInput("Y Position"
                                         , [&](float f)
                                         {
                                             if(!controlledEntity) return;
@@ -372,8 +372,8 @@ EntityRef Apps::EntityCreator::UImenu()
                                         -1e6f, 1e6f, 0.1f, 1.f
                                     ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor2
                                 ),
-                                Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Z",
-                                    Blueprint::EDITOR_ENTITY::INO::ValueInput("Z Position"
+                                VulpineBlueprintUI::NamedEntry(U"Z",
+                                    VulpineBlueprintUI::ValueInput("Z Position"
                                         , [&](float f)
                                         {
                                             if(!controlledEntity) return;
@@ -394,13 +394,13 @@ EntityRef Apps::EntityCreator::UImenu()
                     ),
 
 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Rotation", 
+                    VulpineBlueprintUI::NamedEntry(U"Rotation", 
                         newEntity("Rotation controls"
                             , UI_BASE_COMP
                             , WidgetBox()
                             , WidgetStyle().setautomaticTabbing(3)
                             , EntityGroupInfo({
-                                Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("X Rotation",
+                                VulpineBlueprintUI::ValueInputSlider("X Rotation",
                                     0.f, 360.f, 360/5, 
                                     [&](float f)
                                     {
@@ -415,7 +415,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                     },
                                     EDITOR::MENUS::COLOR::HightlightColor1
                                 ),
-                                Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("Y Rotation",
+                                VulpineBlueprintUI::ValueInputSlider("Y Rotation",
                                     0.f, 360.f, 360/5, 
                                     [&](float f)
                                     {
@@ -430,7 +430,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                     },
                                     EDITOR::MENUS::COLOR::HightlightColor2
                                 ),
-                                Blueprint::EDITOR_ENTITY::INO::ValueInputSlider("Z Rotation",
+                                VulpineBlueprintUI::ValueInputSlider("Z Rotation",
                                     0.f, 360.f, 360/5, 
                                     [&](float f)
                                     {
@@ -471,7 +471,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
 EntityRef Apps::EntityCreator::UIcontrols()
 {
-    auto entityNameEntry = Blueprint::EDITOR_ENTITY::INO::TextInput(
+    auto entityNameEntry = VulpineBlueprintUI::TextInput(
         "Entity Name",
         [&](std::u32string &t){this->currentEntity.name = UFTconvert.to_bytes(t);},
         [&](){return UFTconvert.from_bytes(this->currentEntity.name);}
@@ -489,7 +489,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
         // , WidgetText()
         , EntityGroupInfo({
 
-            Blueprint::EDITOR_ENTITY::INO::Toggable("Use Gizmo", "icon_gizmo", 
+            VulpineBlueprintUI::Toggable("Use Gizmo", "icon_gizmo", 
             [&](Entity *e, float v)
             {
                 this->gizmoActivated = v == 0.f;
@@ -500,7 +500,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
             }),
 
 
-            Blueprint::EDITOR_ENTITY::INO::Toggable("Toggle Gravity", "", 
+            VulpineBlueprintUI::Toggable("Toggle Gravity", "", 
             [&](Entity *e, float v)
             {
                 PG::world->setIsGravityEnabled(v == 0.f);
@@ -511,9 +511,9 @@ EntityRef Apps::EntityCreator::UIcontrols()
                 return PG::world->isGravityEnabled() && globals.enablePhysics ? 0.f : 1.f;
             }),
 
-            Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Entity Name", entityNameEntry), 
+            VulpineBlueprintUI::NamedEntry(U"Entity Name", entityNameEntry), 
             
-            Blueprint::EDITOR_ENTITY::INO::Toggable("Entity Auto Refresh", "", 
+            VulpineBlueprintUI::Toggable("Entity Auto Refresh", "", 
             [&](Entity *e, float v)
             {
                 this->autoRefreshFromDisk = v == 0.f;
@@ -523,7 +523,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
                 return this->autoRefreshFromDisk ? 0.f : 1.f;
             }),
 
-            Blueprint::EDITOR_ENTITY::INO::Toggable("Save Entity", "", 
+            VulpineBlueprintUI::Toggable("Save Entity", "", 
             [&](Entity *e, float v)
             {
                 this->currentEntity.ref->comp<EntityInfos>().name = this->currentEntity.name;

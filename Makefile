@@ -7,7 +7,7 @@ endif
 CC = clang++
 
 MAKE_FLAGS = --no-print-directory CC="$(CC)"
-MAKE_PARALLEL = -j16 -k
+MAKE_PARALLEL = -j8 -k
 MAKE_PARALLEL_LIGHT = -j4 -k
 
 

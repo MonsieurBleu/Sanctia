@@ -5,4 +5,5 @@
 
 #include <ECS/EngineComponents_IMPL.hpp>
 
+#include <Blueprint/EngineBlueprintUI_IMPL.hpp>
 

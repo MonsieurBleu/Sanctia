@@ -45,7 +45,7 @@ EntityRef getNodeWidget(EventNodePtr node, vec2 position)
     //         .setusr((uint64)node.get())
     // );
 
-    auto e = Blueprint::EDITOR_ENTITY::INO::Toggable(nodeName
+    auto e = VulpineBlueprintUI::Toggable(nodeName
         , ""
         , [](Entity *e, float v)
         {

@@ -83,7 +83,7 @@ void Game::mainloop()
     /****** Setting Up Debug UI *******/
     FastUI_context ui(fuiBatch, FUIfont, scene2D, defaultFontMaterial);
     ui.spriteMaterial = Loader<MeshMaterial>::get("sprite");
-    EDITOR::UIcontext = WidgetUI_Context{&ui};
+    VulpineBlueprintUI::UIcontext = WidgetUI_Context{&ui};
 
     ui.colorTitleBackground.a = 0.9f;
 
@@ -148,7 +148,7 @@ void Game::mainloop()
 
     // for(int i = 0; i < 5; i++)
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     Blueprint::EDITOR_ENTITY::INO::Toggable("Ingo Stat Helper"
+    //     VulpineBlueprintUI::Toggable("Ingo Stat Helper"
     //         , "icon_idcard"
     //         , WidgetButton::InteractFunc([](float v){
     //             GlobalComponentToggler<InfosStatsHelpers>::activated = !GlobalComponentToggler<InfosStatsHelpers>::activated;
@@ -160,19 +160,19 @@ void Game::mainloop()
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.appTime, EDITOR::MENUS::COLOR::HightlightColor1)
+    //     VulpineBlueprintUI::TimerPlot(globals.appTime, EDITOR::MENUS::COLOR::HightlightColor1)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
+    //     VulpineBlueprintUI::TimerPlot(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.cpuTime, EDITOR::MENUS::COLOR::HightlightColor3)
+    //     VulpineBlueprintUI::TimerPlot(globals.cpuTime, EDITOR::MENUS::COLOR::HightlightColor3)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     Blueprint::EDITOR_ENTITY::INO::TimerPlot(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
+    //     VulpineBlueprintUI::TimerPlot(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
     // );
 
     float TitleTabSize = 0.775f;
@@ -201,33 +201,33 @@ void Game::mainloop()
 
 
 
-    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 
         Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen(),
         "Global Benchmark", "icon_chrono"
     );
 
-    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 
         Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
         "Ambient Controls", ""
     );
 
-    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab,
-        Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene),
+        VulpineBlueprintUI::SceneInfos(scene),
         "3D Scene Infos", ""
     );
 
-    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab,
-        Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene2D),
+        VulpineBlueprintUI::SceneInfos(scene2D),
         "2D Scene Infos", ""
     );
 
 
     /* TODO : finish*/
-    // Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(
+    // VulpineBlueprintUI::AddToSelectionMenu(
     //     GlobalInfosTitleTab, GlobalInfosSubTab,
 
     //     newEntity("Scenes Infos Menu", 
@@ -238,7 +238,7 @@ void Game::mainloop()
 
     //     ),
 
-    //     // Blueprint::EDITOR_ENTITY::INO::SceneInfos(scene),
+    //     // VulpineBlueprintUI::SceneInfos(scene),
 
     //     "Scenes Infos", "VulpineIcon"
     // );
@@ -253,7 +253,7 @@ void Game::mainloop()
 
     // for(int i = 0; i < 1; i++)
     // ComponentModularity::addChild(*EDITOR::MENUS::AppMenu,
-    //     Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
+    //     VulpineBlueprintUI::ColorSelectionScreen(
     //         "Sun color", 
     //         [&sun](){return vec3(sun->getInfos()._color);},
     //         [&sun](vec3 color){sun->setColor(color);}
@@ -316,7 +316,7 @@ void Game::mainloop()
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-    //     Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    //     VulpineBlueprintUI::ValueInputSlider(
     //         "moon orbit time", 
     //         0, 1, 100, 
     //         [](Entity* e, float v)
@@ -343,7 +343,7 @@ void Game::mainloop()
     // );
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        Blueprint::EDITOR_ENTITY::INO::Toggable(
+        VulpineBlueprintUI::Toggable(
             "Entity Infos Stats Helper", 
             "icon_idcard",
             [&](Entity *e, float v)
@@ -360,7 +360,7 @@ void Game::mainloop()
 
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        Blueprint::EDITOR_ENTITY::INO::Toggable(
+        VulpineBlueprintUI::Toggable(
             "Entity Physic Helper", 
             "icon_hitbox",
             [&](Entity *e, float v)
@@ -378,7 +378,7 @@ void Game::mainloop()
     {
         auto &bloom = Bloom;
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-            Blueprint::EDITOR_ENTITY::INO::Toggable(
+            VulpineBlueprintUI::Toggable(
                 "Bloom", 
                 "",
                 [&bloom](Entity *e, float v)
@@ -395,7 +395,7 @@ void Game::mainloop()
     {
         auto &ssao = SSAO;
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-            Blueprint::EDITOR_ENTITY::INO::Toggable(
+            VulpineBlueprintUI::Toggable(
                 "AO", 
                 "",
                 [&ssao](Entity *e, float v)
@@ -411,7 +411,7 @@ void Game::mainloop()
     }
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        Blueprint::EDITOR_ENTITY::INO::Toggable(
+        VulpineBlueprintUI::Toggable(
             "Physic Interpolation", 
             "",
             [](Entity *e, float v)
@@ -426,7 +426,7 @@ void Game::mainloop()
     );
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        Blueprint::EDITOR_ENTITY::INO::Toggable(
+        VulpineBlueprintUI::Toggable(
             "Auto Shader Refresh", 
             "",
             [](Entity *e, float v)

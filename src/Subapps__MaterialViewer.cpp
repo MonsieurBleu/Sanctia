@@ -108,11 +108,11 @@ void Apps::MaterialViewerApp::spawnHelper()
     model->add(helper);
     ComponentModularity::addChild(*appRoot, newEntity("materialHelper", model));
 
-    auto colorSelector = Blueprint::EDITOR_ENTITY::INO::ColorSelectionScreen(
+    auto colorSelector = VulpineBlueprintUI::ColorSelectionScreen(
         "Material Color", [&, id](){return color[id];}, [&, id](vec3 c){color[id] = c;}
     );
 
-    auto metalnessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto metalnessSelector = VulpineBlueprintUI::ValueInputSlider(
         "Metalness", 0, 1, 1, 
         [&, id](Entity *e, float v){SME[id].y = v;},
         [&, id](Entity *e){return SME[id].y;},
@@ -120,7 +120,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(SME[id].y);}
     );
 
-    auto smoothnessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto smoothnessSelector = VulpineBlueprintUI::ValueInputSlider(
         "Smoothness", 0, 1, 15, 
         [&, id](Entity *e, float v){SME[id].x = v;},
         [&, id](Entity *e){return SME[id].x;},
@@ -128,7 +128,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(SME[id].x);}
     );
 
-    auto emmisiveSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto emmisiveSelector = VulpineBlueprintUI::ValueInputSlider(
         "Emmisive", 0, 1, 7, 
         [&, id](Entity *e, float v){SME[id].z = v;},
         [&, id](Entity *e){return SME[id].z;},
@@ -136,7 +136,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(SME[id].z);}
     );
 
-    auto papernessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto papernessSelector = VulpineBlueprintUI::ValueInputSlider(
         "paperness", 0, 1, 1, 
         [&, id](Entity *e, float v){PSBD[id].x = v;},
         [&, id](Entity *e){return PSBD[id].x;},
@@ -144,7 +144,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(PSBD[id].x);}
     );
 
-    auto streakingSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto streakingSelector = VulpineBlueprintUI::ValueInputSlider(
         "streaking", 0, 1, 7, 
         [&, id](Entity *e, float v){PSBD[id].y = v;},
         [&, id](Entity *e){return PSBD[id].y;},
@@ -152,7 +152,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(PSBD[id].y);}
     );
 
-    auto bloodynessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto bloodynessSelector = VulpineBlueprintUI::ValueInputSlider(
         "bloodyness", 0, 1, 3, 
         [&, id](Entity *e, float v){PSBD[id].z = v;},
         [&, id](Entity *e){return PSBD[id].z;},
@@ -160,7 +160,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(PSBD[id].z);}
     );
 
-    auto dirtynessSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto dirtynessSelector = VulpineBlueprintUI::ValueInputSlider(
         "dirtyness", 0, 1, 3, 
         [&, id](Entity *e, float v){PSBD[id].w = v;},
         [&, id](Entity *e){return PSBD[id].w;},
@@ -168,7 +168,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(PSBD[id].w);}
     );
 
-    auto bloodynessCurSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto bloodynessCurSelector = VulpineBlueprintUI::ValueInputSlider(
         "bloodyness", 0, 1, 4, 
         [&, id](Entity *e, float v){BD[id].x = v;},
         [&, id](Entity *e){return BD[id].x;},
@@ -176,7 +176,7 @@ void Apps::MaterialViewerApp::spawnHelper()
         [&, id](){return ftou32str(BD[id].x);}
     );
 
-    auto dirtynessCurSelector = Blueprint::EDITOR_ENTITY::INO::ValueInputSlider(
+    auto dirtynessCurSelector = VulpineBlueprintUI::ValueInputSlider(
         "dirtyness", 0, 1, 4, 
         [&, id](Entity *e, float v){BD[id].y = v;},
         [&, id](Entity *e){return BD[id].y;},
@@ -197,15 +197,15 @@ void Apps::MaterialViewerApp::spawnHelper()
                 , WidgetStyle()
                     .setautomaticTabbing(9)
                 , EntityGroupInfo({
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Metalness", metalnessSelector,          0.5),
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Smoothness", smoothnessSelector,        0.5), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Emmisive", emmisiveSelector,            0.5), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Paperness", papernessSelector,          0.5), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Streaking", streakingSelector,          0.5), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Blood Factor", bloodynessSelector,     0.5), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Blood Level", bloodynessCurSelector,   0.5), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Dirt Factor", dirtynessSelector,       0.5), 
-                    Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Dirt Level", dirtynessCurSelector,     0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Metalness", metalnessSelector,          0.5),
+                    VulpineBlueprintUI::NamedEntry(U"Smoothness", smoothnessSelector,        0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Emmisive", emmisiveSelector,            0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Paperness", papernessSelector,          0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Streaking", streakingSelector,          0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Blood Factor", bloodynessSelector,     0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Blood Level", bloodynessCurSelector,   0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Dirt Factor", dirtynessSelector,       0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Dirt Level", dirtynessCurSelector,     0.5), 
                 })
             )
         })
@@ -239,7 +239,7 @@ void Apps::MaterialViewerApp::spawnHelper()
 
     if(id%4 == 0)
     {
-        Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(titleTab, menuInfosTab,
+        VulpineBlueprintUI::AddToSelectionMenu(titleTab, menuInfosTab,
             newEntity("Helper Group Tab"
                 , UI_BASE_COMP
                 , WidgetBox()
@@ -293,7 +293,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
     );
 
     menuInfosTab = newEntity("Material View Menu Infos Tab"
-        , EDITOR::UIcontext
+        , VulpineBlueprintUI::UIcontext
         // , UI_BASE_COMP
         // , WidgetState()
         , WidgetBox(vec2(-1, 1), vec2(-0.94, 1))
@@ -308,7 +308,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
 
     auto root = newEntity("MATERIAL VIEW APP MENU"
         // , UI_BASE_COMP
-        , EDITOR::UIcontext
+        , VulpineBlueprintUI::UIcontext
         , WidgetBox()
         , WidgetStyle()
             .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
@@ -319,8 +319,8 @@ EntityRef Apps::MaterialViewerApp::UImenu()
 
     refreshPalettesList();
 
-    Blueprint::EDITOR_ENTITY::INO::AddToSelectionMenu(titleTab, menuInfosTab,
-        Blueprint::EDITOR_ENTITY::INO::StringListSelectionMenu(
+    VulpineBlueprintUI::AddToSelectionMenu(titleTab, menuInfosTab,
+        VulpineBlueprintUI::StringListSelectionMenu(
             "Palettes List", palettesList,
             [&](Entity *e, float v)
             {
@@ -406,13 +406,13 @@ EntityRef Apps::MaterialViewerApp::UImenu()
 
 EntityRef Apps::MaterialViewerApp::UIcontrols()
 {
-    auto paletteNameEntry = Blueprint::EDITOR_ENTITY::INO::TextInput(
+    auto paletteNameEntry = VulpineBlueprintUI::TextInput(
         "Palette Name",
         [&](std::u32string &t){this->currentPalette = UFTconvert.to_bytes(t);},
         [&](){return UFTconvert.from_bytes(this->currentPalette);}
     );
 
-    auto savePalette = Blueprint::EDITOR_ENTITY::INO::Toggable("Save Palette", "", 
+    auto savePalette = VulpineBlueprintUI::Toggable("Save Palette", "", 
         [&](Entity *e, float v)
         {
             MaterialPalette palette;
@@ -447,7 +447,7 @@ EntityRef Apps::MaterialViewerApp::UIcontrols()
         }
     );
 
-    auto addMaterial = Blueprint::EDITOR_ENTITY::INO::Toggable("Add Material", "", 
+    auto addMaterial = VulpineBlueprintUI::Toggable("Add Material", "", 
         [&](Entity *e, float v)
         {
             spawnHelper();
@@ -464,7 +464,7 @@ EntityRef Apps::MaterialViewerApp::UIcontrols()
         , WidgetStyle()
             .setautomaticTabbing(1)
         , EntityGroupInfo({
-            Blueprint::EDITOR_ENTITY::INO::NamedEntry(U"Palette Name", paletteNameEntry),
+            VulpineBlueprintUI::NamedEntry(U"Palette Name", paletteNameEntry),
             savePalette,
             addMaterial
         })

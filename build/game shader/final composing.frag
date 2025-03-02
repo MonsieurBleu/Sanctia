@@ -207,10 +207,13 @@ void main()
     _fragColor.rgb = hsv2rgb(hsv);
 
 /******* Vignette *******/
-    float vignetteExp = 1.0/vignette.a;
-    float vignetteLerp = pow(distance(uvScreen, vec2(0.5)), vignetteExp);
-    vignetteLerp = smoothstep(0.5, 1.0, vignetteLerp);
-    _fragColor.rgb = mix(_fragColor.rgb, vignette.rgb, vignetteLerp);
+    if(!isEditor3DView)
+    {
+        float vignetteExp = 1.0/vignette.a;
+        float vignetteLerp = pow(distance(uvScreen, vec2(0.5)), vignetteExp);
+        vignetteLerp = smoothstep(0.5, 1.0, vignetteLerp);
+        _fragColor.rgb = mix(_fragColor.rgb, vignette.rgb, vignetteLerp);
+    }
 
 
 /******* DEBUG : Shadow Map Vizualisation *******/

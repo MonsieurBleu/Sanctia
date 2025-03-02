@@ -185,9 +185,19 @@ void Apps::EventGraphApp::init()
                 
                 b.useClassicInterpolation = true;
 
+                float iaspectRatio = (float)(globals.windowWidth())/(float)(globals.windowHeight());
+
+                vec2 xrange = vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().x;
+                vec2 yrange = vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().y;
+
+                if(iaspectRatio > 1.0)
+                    yrange *= iaspectRatio;
+                else  
+                    xrange /= iaspectRatio;
+
                 b.set(
-                    vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().x, 
-                    vec2(-.5, .5) * dragController.getScale() + dragController.getPosition().y
+                    xrange, 
+                    yrange
                 );
             }
         )
@@ -228,7 +238,7 @@ void Apps::EventGraphApp::init()
     // ); 
 
 
-    glLineWidth(20.0f);
+    glLineWidth(5.0f);
 
     for(auto i : inputs)
         i->activated = true;
@@ -248,6 +258,8 @@ void Apps::EventGraphApp::update()
     auto &b = graphView->comp<EntityGroupInfo>().children[0]->comp<WidgetBox>();
     b.displayRangeMax = box.displayMax;
     b.displayRangeMin = box.displayMin;
+
+
 
     EventGraph::update();
 };

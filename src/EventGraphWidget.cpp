@@ -4,7 +4,8 @@
 
 EntityRef getNodeWidget(EventNodePtr node, vec2 position)
 {
-    float iaspectRatio = (float)(globals.windowWidth())/(float)(globals.windowHeight());
+    // float iaspectRatio = (float)(globals.windowWidth())/(float)(globals.windowHeight());
+    float iaspectRatio = 1.0;
 
     vec2 size = vec2(0.2) * vec2(1, iaspectRatio);
 
@@ -201,6 +202,8 @@ void EventGraphWidget::createWidgets(EntityRef parent)
         for(int i = 0; i < size; i++)
         {  
             // float a = pow(distance((float)i, (float)0.f)/(size), 2.5);
+            // float a = pow(distance((float)i, (float)0.f)/(size), 2.5);
+            // a = min(0.9f, a);
             float a = 0.0;
 
             vec3 pos = vec3(vec2(spline[i].z, spline[i].y)*0.5f + 0.5f, 0.f);
@@ -235,10 +238,10 @@ void EventGraphWidget::createWidgets(EntityRef parent)
             )
         );
 
-        // add arrows along the spline
-        float arrowSize = 0.1f;
+        // // add arrows along the spline
+        float arrowSize = 0.06f;
         float arrowAngle = radians(45.0f);
-        int arrows = 2;
+        int arrows = 1;
         for (int i = 1; i < arrows + 1; i++)
         {
             float t = (float)i / (float)(arrows + 1);
@@ -264,7 +267,6 @@ void EventGraphWidget::createWidgets(EntityRef parent)
             vec2 p0 = arrowPos - normalize(arrowDir1) * arrowSize;
             vec2 p1 = arrowPos;
             vec2 p2 = arrowPos - normalize(arrowDir2) * arrowSize;
-
 
             GenericSharedBuffer p(new char[4 * sizeof(vec4)]);
 
@@ -301,6 +303,20 @@ void EventGraphWidget::createWidgets(EntityRef parent)
                     , WidgetSprite(mesh)
                 )
             );
+
+            // float scale = 0.5;
+            // EntityRef tmp;
+            // ComponentModularity::addChild(
+            //     *parent, 
+            //     tmp = newEntity("spline arrow " + std::to_string(i)
+            //         , UI_BASE_COMP
+            //         , WidgetBox(arrowPos.x + vec2(-scale, scale), -arrowPos.y + vec2(-scale, scale))
+            //         , WidgetStyle()
+            //         , WidgetSprite("icon_gizmo")
+            //     )
+            // );
+
+            // tmp->comp<WidgetSprite>().sprite->state.setRotation(vec3(0, 0, atan2(dir.y, dir.x)));
         }
 
         cnt ++;

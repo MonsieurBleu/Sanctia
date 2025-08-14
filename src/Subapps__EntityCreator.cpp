@@ -81,7 +81,7 @@ EntityRef Apps::EntityCreator::UImenu()
     //     , UI_BASE_COMP
     //     , WidgetBox()
     //     , WidgetStyle()
-    //         // .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+    //         // .setbackgroundColor1(VulpineColorUI::HightlightColor1)
     //         .setautomaticTabbing(30)
     //     // , WidgetBackground()
     // );
@@ -95,8 +95,8 @@ EntityRef Apps::EntityCreator::UImenu()
     //             , UI_BASE_COMP
     //             , WidgetBox()
     //             , WidgetStyle()
-    //                 .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-    //                 .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+    //                 .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
+    //                 .settextColor1(VulpineColorUI::DarkBackgroundColor1)
     //             , WidgetBackground()
     //             , WidgetText(UFTconvert.from_bytes(i.first))
     //             , WidgetButton()
@@ -291,19 +291,19 @@ EntityRef Apps::EntityCreator::UImenu()
 
     LoadEntity->set<WidgetBackground>(WidgetBackground());
     LoadEntity->comp<WidgetStyle>()
-        .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1*vec4(1,1,1,0)+vec4(0,0,0,0.5))
+        .setbackgroundColor1(VulpineColorUI::HightlightColor1*vec4(1,1,1,0)+vec4(0,0,0,0.5))
         .setbackGroundStyle(UiTileType::SQUARE)
         ;
 
     AddChildren->set<WidgetBackground>(WidgetBackground());
     AddChildren->comp<WidgetStyle>()
-        .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor2*vec4(1,1,1,0)+vec4(0,0,0,0.5))
+        .setbackgroundColor1(VulpineColorUI::HightlightColor2*vec4(1,1,1,0)+vec4(0,0,0,0.5))
         .setbackGroundStyle(UiTileType::SQUARE)
         ;
 
     CurrentComponent->set<WidgetBackground>(WidgetBackground());
     CurrentComponent->comp<WidgetStyle>()
-        .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor3*vec4(1,1,1,0)+vec4(0,0,0,0.5))
+        .setbackgroundColor1(VulpineColorUI::HightlightColor3*vec4(1,1,1,0)+vec4(0,0,0,0.5))
         .setbackGroundStyle(UiTileType::SQUARE)
         ;
 
@@ -354,7 +354,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                             return controlledEntity->comp<EntityState3D>().position.x;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
-                                    ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor1
+                                    ), 0.25, false, VulpineColorUI::HightlightColor1
                                 ),
                                 VulpineBlueprintUI::NamedEntry(U"Y",
                                     VulpineBlueprintUI::ValueInput("Y Position"
@@ -370,7 +370,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                             return controlledEntity->comp<EntityState3D>().position.y;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
-                                    ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor2
+                                    ), 0.25, false, VulpineColorUI::HightlightColor2
                                 ),
                                 VulpineBlueprintUI::NamedEntry(U"Z",
                                     VulpineBlueprintUI::ValueInput("Z Position"
@@ -386,7 +386,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                             return controlledEntity->comp<EntityState3D>().position.z;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
-                                    ), 0.25, false, EDITOR::MENUS::COLOR::HightlightColor3
+                                    ), 0.25, false, VulpineColorUI::HightlightColor3
                                 ),
                             })
                         ),
@@ -413,7 +413,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.x) + 180.f;
                                     },
-                                    EDITOR::MENUS::COLOR::HightlightColor1
+                                    VulpineColorUI::HightlightColor1
                                 ),
                                 VulpineBlueprintUI::ValueInputSlider("Y Rotation",
                                     0.f, 360.f, 360/5, 
@@ -428,7 +428,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.y) + 180.f;
                                     },
-                                    EDITOR::MENUS::COLOR::HightlightColor2
+                                    VulpineColorUI::HightlightColor2
                                 ),
                                 VulpineBlueprintUI::ValueInputSlider("Z Rotation",
                                     0.f, 360.f, 360/5, 
@@ -443,7 +443,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.z) + 180.f;
                                     },
-                                    EDITOR::MENUS::COLOR::HightlightColor3
+                                    VulpineColorUI::HightlightColor3
                                 )
                             })
                         ),
@@ -482,8 +482,8 @@ EntityRef Apps::EntityCreator::UIcontrols()
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            // .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
-            // .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            // .settextColor1(VulpineColorUI::HightlightColor1)
+            // .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
             .setautomaticTabbing(1)
         // , WidgetBackground()
         // , WidgetText()
@@ -549,16 +549,16 @@ EntityRef Apps::EntityCreator::UIcontrols()
 
 vec4 gizmoColorsBase[3] = 
 {
-    EDITOR::MENUS::COLOR::HightlightColor1, 
-    EDITOR::MENUS::COLOR::HightlightColor2,
-    EDITOR::MENUS::COLOR::HightlightColor3 
+    VulpineColorUI::HightlightColor1, 
+    VulpineColorUI::HightlightColor2,
+    VulpineColorUI::HightlightColor3 
 };
 
 vec4 gizmoColors[3] = 
 {
-    EDITOR::MENUS::COLOR::HightlightColor1, 
-    EDITOR::MENUS::COLOR::HightlightColor2,
-    EDITOR::MENUS::COLOR::HightlightColor3 
+    VulpineColorUI::HightlightColor1, 
+    VulpineColorUI::HightlightColor2,
+    VulpineColorUI::HightlightColor3 
 };
 
 void Apps::EntityCreator::init()
@@ -618,12 +618,12 @@ void Apps::EntityCreator::init()
 
     /****** Creating Gizmo Helper ******/
     {
-        // LineHelperRef x(new LineHelper(vec3(0), vec3(1, 0, 0), EDITOR::MENUS::COLOR::HightlightColor1));
-        // LineHelperRef y(new LineHelper(vec3(0), vec3(0, 1, 0), EDITOR::MENUS::COLOR::HightlightColor2));
-        // LineHelperRef z(new LineHelper(vec3(0), vec3(0, 0, 1), EDITOR::MENUS::COLOR::HightlightColor3));
+        // LineHelperRef x(new LineHelper(vec3(0), vec3(1, 0, 0), VulpineColorUI::HightlightColor1));
+        // LineHelperRef y(new LineHelper(vec3(0), vec3(0, 1, 0), VulpineColorUI::HightlightColor2));
+        // LineHelperRef z(new LineHelper(vec3(0), vec3(0, 0, 1), VulpineColorUI::HightlightColor3));
 
         EntityModel model = EntityModel{ObjectGroupRef(newObjectGroup())};
-        auto aabbhelper = CubeHelperRef(new CubeHelper(vec3(-0.5), vec3(0.5), EDITOR::MENUS::COLOR::LightBackgroundColor1));
+        auto aabbhelper = CubeHelperRef(new CubeHelper(vec3(-0.5), vec3(0.5), VulpineColorUI::LightBackgroundColor1));
         model->add(aabbhelper);
 
         ModelRef gizmoArrows[3];
@@ -670,27 +670,27 @@ void Apps::EntityCreator::init()
 
         float inf = 5000;
 
-        vec3 color = EDITOR::MENUS::COLOR::DarkBackgroundColor1;
+        vec3 color = VulpineColorUI::DarkBackgroundColor1;
 
         // model->add(
         //     LineHelperRef(new LineHelper(
         //         vec3(+inf, 0, 0), 
         //         vec3(-inf, 0, 0), 
-        //         0.5f * EDITOR::MENUS::COLOR::HightlightColor1))
+        //         0.5f * VulpineColorUI::HightlightColor1))
         // );
 
         // model->add(
         //     LineHelperRef(new LineHelper(
         //         vec3(0, +inf, 0), 
         //         vec3(0, -inf, 0), 
-        //         0.5f * EDITOR::MENUS::COLOR::HightlightColor2))
+        //         0.5f * VulpineColorUI::HightlightColor2))
         // );
 
         // model->add(
         //     LineHelperRef(new LineHelper(
         //         vec3(0, 0, +inf), 
         //         vec3(0, 0, -inf), 
-        //         0.5f * EDITOR::MENUS::COLOR::HightlightColor3))
+        //         0.5f * VulpineColorUI::HightlightColor3))
         // );
 
         int size = 50;

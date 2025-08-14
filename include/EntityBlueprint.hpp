@@ -45,7 +45,7 @@ namespace Blueprint
             //     float min, float max, int padding, 
             //     WidgetButton::InteractFunc ifunc, 
             //     WidgetButton::UpdateFunc ufunc,
-            //     vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
+            //     vec4 color = VulpineColorUI::LightBackgroundColor1
             //     );
             
             // EntityRef Toggable(
@@ -76,7 +76,7 @@ namespace Blueprint
             //     WidgetButton::UpdateFunc ufunc,
             //     std::function<void(std::u32string &)> fromText, 
             //     std::function<std::u32string()> toText,
-            //     vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
+            //     vec4 color = VulpineColorUI::LightBackgroundColor1
             //     );
             
             // EntityRef ValueInputSlider(
@@ -84,7 +84,7 @@ namespace Blueprint
             //     float min, float max, int padding, 
             //     std::function<void(float f)> setValue, 
             //     std::function<float()> getValue,
-            //     vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
+            //     vec4 color = VulpineColorUI::LightBackgroundColor1
             //     );
 
             // EntityRef ColorSelectionScreen(
@@ -98,14 +98,14 @@ namespace Blueprint
             //     EntityRef entry,
             //     float nameRatioSize = 0.5f,
             //     bool vertical = false,
-            //     vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
+            //     vec4 color = VulpineColorUI::LightBackgroundColor1
             // );
 
 
             // EntityRef ColoredConstEntry(
             //     const std::string &name,
             //     std::function<std::u32string()> toText,
-            //     vec4 color = EDITOR::MENUS::COLOR::LightBackgroundColor1
+            //     vec4 color = VulpineColorUI::LightBackgroundColor1
             // );
 
             // EntityRef TimerPlot(

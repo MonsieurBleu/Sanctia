@@ -33,7 +33,7 @@ Apps::SceneMergeApp::SceneMergeApp() : SubApps("Scene Merge Test")
                 globals.getScene()->remove(appRoot->comp<EntityModel>());
                 appRoot->set<EntityModel>(EntityModel{model});
                 
-                MerginSceneBackground.end();
+                MerginSceneBackground.stop();
                 globals.mainThreadTime.start();
 
                 std::cout << MerginSceneBackground << "\n";
@@ -51,7 +51,7 @@ EntityRef Apps::SceneMergeApp::UImenu()
         , UI_BASE_COMP
         , WidgetBox()
         // , WidgetStyle()
-        //     .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+        //     .settextColor1(VulpineColorUI::HightlightColor1)
         // , WidgetBackground()
     );
 }

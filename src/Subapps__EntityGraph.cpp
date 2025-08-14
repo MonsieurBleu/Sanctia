@@ -106,7 +106,7 @@ EntityRef Apps::EventGraphApp::UImenu()
         , UI_BASE_COMP
         , WidgetBox()
         // , WidgetStyle()
-        //     .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+        //     .settextColor1(VulpineColorUI::HightlightColor1)
         // , WidgetText(std::u32string(U"hello :)"))
         // , WidgetBackground()
     );
@@ -174,7 +174,7 @@ void Apps::EventGraphApp::init()
         )
         // , WidgetBackground()
         // , WidgetStyle()
-        //     .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2Opaque)
+        //     .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2Opaque)
     );
 
     graphView = newEntity("Graph View"

@@ -93,7 +93,7 @@ void Apps::MaterialViewerApp::spawnHelper()
     if(id >= 16)
         return;
 
-    color.push_back(EDITOR::MENUS::COLOR::HightlightColor1);
+    color.push_back(VulpineColorUI::HightlightColor1);
     SME.push_back(vec3(0));
     PSBD.push_back(vec4(0));
     BD.push_back(vec2(0));
@@ -226,8 +226,8 @@ void Apps::MaterialViewerApp::spawnHelper()
                         , WidgetBox(vec2(-1, 1), vec2(-1, -0.85))
                         , WidgetBackground()
                         , WidgetStyle()
-                            .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-                            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                            .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
+                            .settextColor1(VulpineColorUI::DarkBackgroundColor1)
                             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                         , WidgetText(U"Material " + UFTconvert.from_bytes(std::to_string(id+1)))
                     ),
@@ -287,8 +287,8 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         , WidgetBackground()
         , WidgetStyle()
             .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
-            // .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor2)
+            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
+            // .setbackgroundColor1(VulpineColorUI::HightlightColor2)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
@@ -300,8 +300,8 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         // , WidgetBackground()
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
-            // .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
+            // .setbackgroundColor1(VulpineColorUI::HightlightColor1)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
         
     );
@@ -311,7 +311,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         , VulpineBlueprintUI::UIcontext
         , WidgetBox()
         , WidgetStyle()
-            .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+            .settextColor1(VulpineColorUI::HightlightColor1)
         // , WidgetText(U"...")
         // , WidgetBackground()
         , EntityGroupInfo({titleTab, menuInfosTab})

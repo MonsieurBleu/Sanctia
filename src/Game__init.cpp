@@ -14,6 +14,7 @@
 #include <Graphics/Shadinclude.hpp>
 
 #include <Settings.hpp>
+#include <Scripting/ScriptInstance.hpp>
 
 Game::Game(GLFWwindow *window) : App(window){}
 
@@ -198,7 +199,7 @@ void Game::init(int paramSample)
         if (!strcmp(ext, ".vulpineEntity"))
             Loader<EntityRef>::addInfos(p);
     }
-
+    
     AnimBlueprint::PrepareAnimationsCallbacks();
 
     initInput();

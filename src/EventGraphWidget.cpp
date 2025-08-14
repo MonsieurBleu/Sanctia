@@ -35,8 +35,8 @@ EntityRef getNodeWidget(EventNodePtr node, vec2 position)
     //     , UI_BASE_COMP
     //     , WidgetBox(rangeX, rangeY)
     //     , WidgetStyle()
-    //         .settextColor1(EDITOR::MENUS::COLOR::HightlightColor2)
-    //         .settextColor1(EDITOR::MENUS::COLOR::HightlightColor1)
+    //         .settextColor1(VulpineColorUI::HightlightColor2)
+    //         .settextColor1(VulpineColorUI::HightlightColor1)
     //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     //     , WidgetText(nameU32)
     //     , WidgetBackground()
@@ -65,13 +65,13 @@ EntityRef getNodeWidget(EventNodePtr node, vec2 position)
     if(node->getType() != NodeType::NODE)
         e->comp<WidgetStyle>()
             .setbackGroundStyle(UiTileType::CIRCLE)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor2)
-            .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            .setbackgroundColor1(VulpineColorUI::HightlightColor2)
+            .setbackgroundColor2(VulpineColorUI::LightBackgroundColor2)
             ;
     else
         e->comp<WidgetStyle>()
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor2)
-            .setbackgroundColor2(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            .setbackgroundColor1(VulpineColorUI::HightlightColor2)
+            .setbackgroundColor2(VulpineColorUI::LightBackgroundColor2)
             ;
 
     return e;

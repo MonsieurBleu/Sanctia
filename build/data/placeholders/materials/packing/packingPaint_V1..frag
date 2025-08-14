@@ -70,8 +70,6 @@ in vec3 modelPosition;
 #include functions/Reflections.glsl
 #include functions/NormalMap.glsl
 
-#include functions/FiltrableNoises.glsl
-
 /* Per object */
 float mPaperness = 0.0;
 float mClearness = 0.0;
@@ -81,123 +79,6 @@ float mDirtyness = 0.0;
 /* Per vertex */
 float mBloodynessFactor = 0.0;
 float mDirtynessFactor = 0.0;
-
-/* ###===== Vulpine's Filtered Spike Noise =====###
-*
-*   This is a filtrable and fast noise function that emulate random spikes on a flat surface.
-*
-*   This noise is highly parametrable, with an alpha value that aims to emulate a non-stationnary
-*   behaviour.
-*
-*/
-float FilteredSpikeNoise3D(
-    vec3 uv,            /* UV of the sample. From -10⁷ to +10⁷ for the vulpine hash tu be define */
-    float res,          /* Resolution / scale of the noise */
-    int iterations,     /* Number of iteration. More iteration = more spikes but slower. From 1 to 17.*/
-    float alpha,        /* The wanted average intensity */
-    float exageration,  /* Exageration of the spikes sharpiness */
-    float seed,          /* Seed of the effect */
-    float displacement  /* Displacement added to the random overlaping grid, usefull to animate this noise*/
-    )
-{
-    vec3[22] gridOff = vec3[22](
-        vec3(+.0, +.0, +0.),
-
-        4.*vec3(+.5, +.0, +0.)*SQR2,
-        4.*vec3(+.0, +.5, +5.)*PHI,
-        4.*vec3(+.0, -.5, +0.)*E,
-        4.*vec3(-.5, -.5, +5.)*PI,
-        4.*vec3(+.5, -.5, +5.)*SQR3,
-        4.*vec3(+.0, +.5, +0.)*SQR2,
-        4.*vec3(+.5, +.5, +5.)*SQR3,
-        4.*vec3(-.5, -.5, -5.)*SQR3,
-        4.*vec3(-.5, -.5, +0.)*PHI,
-        4.*vec3(+.0, -.5, -5.)*PHI,
-        4.*vec3(+.0, +.0, -5.)*E,
-        4.*vec3(+.0, +.0, +5.)*SQR2,
-        4.*vec3(-.5, +.5, +0.)*PHI,
-        4.*vec3(+.0, -.5, +5.)*PHI,
-        4.*vec3(+.5, -.5, +0.)*PHI,
-        4.*vec3(+.0, +.5, -5.)*PHI,
-        4.*vec3(-.5, +.5, +5.)*SQR3,
-        4.*vec3(-.5, +.0, +0.)*E,
-        4.*vec3(+.5, +.5, +0.)*PHI,
-        4.*vec3(+.5, +.5, -5.)*SQR3,
-        4.*vec3(+.5, -.5, -5.)*PI
-    );
-
-    uv /= res;
-
-    /* Filter Level using the Determinant of the Jacobian Matrix*/
-    float dd = 6.75;
-    dd = 5.;
-    // float filterLevel = derivative(uv*16.*dd)/dd;
-    float filterLevel = 0.;
-
-    float fullResNoise = 0.;
-    float filteredNoise = 0.;
-    
-    alpha = 1. - alpha;
-
-    mat2[2] clampedFilterWeight = mat2[2](mat2(0), mat2(0));
-
-    for(int i = 0; i < iterations; i++)
-    {
-        float dn = 0.;
-        float dw = 0.;
-
-        vec3 iuv = uv + gridOff[i] + displacement*(.5 - vulpineHash2to3(i.rr, seed));
-        vec3 icuv = round(iuv) + .25*vulpineHash3to3(round(iuv), seed);
-
-        for(int mi = -1; mi <= 1; mi++)
-        for(int mj = -1; mj <= 1; mj++)
-        for(int mk = -1; mk <= 1; mk++)
-        {
-            vec3 duv = iuv + vec3(mi, mj, mk);
-            vec3 cuv = round(duv) + .25*vulpineHash3to3(round(duv), seed);
-            float intensity = mix(.35, exageration * smoothstep(-1., 1., alpha), vulpineHash3to1(cuv, seed) + alpha);
-
-            /* Full Res Noise Calculation */
-            if(mj == 0 && mi == 0 && mk == 0)
-                fullResNoise += smoothstep(0., intensity, 1. - 4.*distance(duv, cuv));
-            
-            /* Cell's approximate average energy */
-
-            /* Blured transition between cell's average */
-            float w = SQR2 - distance(iuv, round(duv));
-            w = max(0., w);
-            float r2 = 1. - min(intensity, 1.);
-            float dnj = (PI/48.)*(1. - r2*r2)/intensity;
-
-            dw += w;
-            dn += w * dnj;
-        }
-
-        filteredNoise += dn / dw;
-
-        ivec3 idCFW = ivec3(floor(fract(icuv - .5)*2.));
-        clampedFilterWeight[idCFW.x][idCFW.y][idCFW.z] += dn/dw;
-    }
-
-    filteredNoise = 0.;
-    for(int i = 0; i < 2; i++)
-    for(int j = 0; j < 2; j++)
-    for(int k = 0; k < 2; k++)
-    {
-        filteredNoise += min(clampedFilterWeight[i][j][k], 0.05*(0.19 + float(iterations)*0.0019));
-    }
-
-    /* Mix between LOD 1 and LOD 2 */
-    // filteredNoise = mix(filteredNoise, avgNoise, clamp((filterLevel-1.), 0., 1.));
-
-    fullResNoise = clamp(fullResNoise, 0., 1.);
-    filteredNoise = clamp(filteredNoise, 0., 1.);
-
-    /* Final mix between full res noise and filtered version */
-    return mix(fullResNoise, filteredNoise, linearstep(.6, 1., filterLevel));
-}
-
-
 
 vec3 clamp3D(vec3 inp, float val)
 {
@@ -337,8 +218,8 @@ void paintShader(
         float voronoi_scale = 15;
         vec3 vpos = clamp3D(position * _modelScale, clampval)*voronoi_scale;
     #else
-        float voronoi_scale = 15;
-        vec3 vpos = clamp3D(_p * _modelScale, clampval)*voronoi_scale;
+        float voronoi_scale = 30;
+        vec3 vpos = clamp3D(modelPosition * _modelScale, clampval)*voronoi_scale;
     #endif
     vec3 voronoi = voronoi3d(vpos + lodScale, cell_center);
     
@@ -411,7 +292,7 @@ void paintShader(
     #ifdef USING_TERRAIN_RENDERING
         cell_center = projectPointOntoPlane(cell_center, position*is, _n);
     #else
-        cell_center = projectPointOntoPlane(cell_center, _p*is, _n);
+        cell_center = projectPointOntoPlane(cell_center, modelPosition*is, _n);
     #endif
 
     /**** Perturbing light-calculation related data
@@ -579,113 +460,7 @@ void main()
 
     lcalcPosition = position;
     mClearness = 1.0 - mRoughness;
-    // paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
-
-
-    
-
-    float nDotL = max(0., dot(-normalComposed, lights[0].direction.rgb));
-
-    vec3 projPos = modelPosition;
-
-    projPos -= projectPointOntoPlane(vec3(0), modelPosition, normalComposed);
-
-    /* Rotation Matrix from normal direction
-    */
-    {
-        vec3 up = vec3(0, 1, 0);
-        vec3 x = abs(dot(normalComposed, up)) < 0.999 ? normalize(cross(up, normalComposed)) : vec3(1, 0, 0);
-        vec3 y = normalize(cross(normalComposed, x));
-
-        // if(abs(dot(normalComposed, vec3(1, 0, 0))) > 0.9)
-        // {
-        //     fragColor.rgb = vec3(1, 0, 0);
-        //     return;
-        // }
-
-        mat3 rot = mat3(
-            x.x, y.x, normalComposed.x,
-            x.y, y.y, normalComposed.y,
-            x.z, y.z, normalComposed.z
-        );
-
-        rot = inverse(rot);
-
-        // projPos = rot * projPos;
-        projPos = projPos * rot;
-
-    }
-
-    projPos = modelPosition;
-
-    // projPos += _iTime*0.01;
-
-    /* n step toon shading
-    {
-        float steps = 4.;
-        float midrange = round(nDotL*steps)/steps;
-        float stepl = .05;
-        nDotL = midrange + (smoothstep(midrange-stepl, midrange+stepl, nDotL) - 1.)/steps;
-    }
-    */
-
-    // fragColor.rgb = (0.25 + max(0., nDotL)) * color;
-    // projPos = projPos + .5;
-    fragColor.rgb = projPos + .25; 
-    // fragColor.rgb = projPos - mod(projPos, 0.025);
-    
-    float gridScale = 100;
-    // fragColor.rgb *= min(1., smoothstep(0.95, 1.0, cos(projPos.x*gridScale))+smoothstep(0.95, 1.0, cos(projPos.z*gridScale)) + smoothstep(0.95, 1.0, cos(projPos.y*gridScale))).rrr;
-    fragColor.rgb *= min(1., smoothstep(0.95, 1.0, cos(projPos.r*gridScale)) + smoothstep(0.95, 1.0, cos(projPos.y*gridScale))).rrr;
-
-
-    // fragColor.rgb = derivative(normalComposed*2*5000*gl_FragCoord.z).rrr;
-    // nDotV = max(dot(normalComposed, viewDir), .0);
-    // fragColor.rgb = derivative(nDotV*1e3).rrr;
-    // fragColor.rgb = nDotV.rrr;
-
-    // vec3 tmpvor;
-    // fragColor.rgb = voronoi3d(projPos*20.0, tmpvor).bbb;
-    // fragColor.rgb = 5.0*(dFdx(normalComposed) + dFdy(normalComposed));
-
-
-    // fragColor.rgb = 
-    //     // length(max(length(dFdx(normalComposed)), length(dFdy(normalComposed)))).rrr
-    //     derivative(normalComposed*1e2).rrr
-    //     // / length(max(dFdx(modelPosition), dFdy(modelPosition))).rrr
-    //     // / length(_cameraPosition - position)
-    //     // * 0.1
-    //     // * 1e6
-    //     ;
-
-    return;
-
-
-    // vec3 deformDir = cross(normalComposed, vec3(0, 1, 0));
-    // deformDir = cross(deformDir, vec3(0, 1, 0));
-    // // deformDir = normalize(deformDir);
-
-    // // deformDir = sign(deformDir)*max(abs(deformDir), 1.0.rrr);
-
-    // vec3 p = modelPosition;
-    // // p += deformDir;
-
-    // // p = mix(p, p + 0.75*p*deformDir, 1.);
-    // // p = p/deformDir;
-
-    // deformDir = normalComposed;
-    // p.y /= 1. + 2.*(abs(1. - deformDir.y));
-    // p.x /= 1. + 1.*(abs(1. - deformDir.x));
-
-
-    // float spike = .5*FilteredSpikeNoise3D(p, .075, 21, 1., 10.0, 0., SQR2 + 0.*_iTime);
-
-    // fragColor.rgb = spike.rrr;
-    // // fragColor.rgb = p*5.0;
-
-    // return;
-
-
+    paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
 
     // mRoughness = 0.0;
     // mMetallic = 1.0;
@@ -719,7 +494,7 @@ void main()
     // fragColor.rgb = color * ambientLight + mix(material.result, rColor, clamp(material.reflect * reflectFactor, vec3(0), vec3(1)));
 
 
-    fragColor.rgb = color * ambientLight + material.result + rColor * material.reflect * reflectFactor*0.1;
+    fragColor.rgb = color * ambientLight + material.result + rColor * material.reflect * reflectFactor;
     // fragColor.rgb = color * ambientLight + mix(material.result, rColor, clamp(material.reflect * reflectFactor, 0., 1.));
 
 

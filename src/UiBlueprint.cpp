@@ -5,6 +5,8 @@
 #include <Game.hpp>
 #include <Constants.hpp>
 
+#include <Scripting/ScriptInstance.hpp>
+
 EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 {
     std::function<vec2()> getMinmaxMainThread = []()
@@ -27,25 +29,29 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetBackground()
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
             .setbackGroundStyle(UiTileType::SQUARE)
         , EntityGroupInfo({
             newEntity("Main Thread Plotters"
                 , UI_BASE_COMP
                 , WidgetBox()
                 , EntityGroupInfo({
+                    // VulpineBlueprintUI::TimerPlot(
+                    //     globals.mainThreadTime, 
+                    //     VulpineColorUI::HightlightColor1,
+                    //     getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(
-                        globals.mainThreadTime, 
-                        EDITOR::MENUS::COLOR::HightlightColor1,
+                        globals.gpuTime, 
+                        VulpineColorUI::HightlightColor1,
                         getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(
                         globals.cpuTime, 
-                        EDITOR::MENUS::COLOR::HightlightColor2,
+                        VulpineColorUI::HightlightColor2,
                         getMinmaxMainThread),
-                    // TimerPlot(
-                    //     globals.gpuTime, 
-                    //     EDITOR::MENUS::COLOR::HightlightColor3,
-                    //     getMinmaxMainThread)
+                    VulpineBlueprintUI::TimerPlot(
+                        ScriptInstance::globalTimers["Main Thread"], 
+                        VulpineColorUI::HightlightColor3,
+                        getMinmaxMainThread)
                 })
             )
         })
@@ -57,7 +63,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetBackground()
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
             .setbackGroundStyle(UiTileType::SQUARE)
         , EntityGroupInfo({
             newEntity("Physic Thread Plotters"
@@ -66,15 +72,15 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                 , EntityGroupInfo({
                     VulpineBlueprintUI::TimerPlot(
                         Game::physicsTimer, 
-                        EDITOR::MENUS::COLOR::HightlightColor5,
+                        VulpineColorUI::HightlightColor5,
                         getMinmaxPhysicThread),
                     // TimerPlot(
                     //     Game::physicsWorldUpdateTimer, 
-                    //     EDITOR::MENUS::COLOR::HightlightColor4,
+                    //     VulpineColorUI::HightlightColor4,
                     //     getMinmaxPhysicThread),
                     VulpineBlueprintUI::TimerPlot(
                         Game::physicsSystemsTimer, 
-                        EDITOR::MENUS::COLOR::HightlightColor4,
+                        VulpineColorUI::HightlightColor4,
                         getMinmaxPhysicThread)
                 })
             )
@@ -86,7 +92,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
     //     , WidgetBox(vec2(-0.33333, 1), vec2(-1, 1))
     //     , WidgetStyle()
     //         .setautomaticTabbing(2)
-    //         .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+    //         .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
     //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     //     , EntityGroupInfo({
     //         mainThreadPlotters, physicThreadPlotters
@@ -100,7 +106,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetBox(vec2(-1, +1), vec2(-0.6, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
-        //     .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+        //     .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
         //     .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
         // , WidgetBackground()
         , EntityGroupInfo({
@@ -113,17 +119,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "FPS",
                         [](){return ftou32str(1000.0/globals.appTime.getLastAvg().count());},
-                        EDITOR::MENUS::COLOR::LightBackgroundColor1
+                        VulpineColorUI::LightBackgroundColor1
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "CPU",
                         [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
-                        EDITOR::MENUS::COLOR::HightlightColor2
+                        VulpineColorUI::HightlightColor2
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "GPU",
                         [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
-                        EDITOR::MENUS::COLOR::HightlightColor1
+                        VulpineColorUI::HightlightColor1
                     )
                 })
             ),
@@ -136,7 +142,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
         , WidgetBox(vec2(-1, +1), vec2(-0.6, +1))
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            // .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            // .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
             // .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
         // , WidgetBackground()
         , EntityGroupInfo({
@@ -149,17 +155,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "FPS",
                         [](){return ftou32str(Game::physicsTicks.freq);},
-                        EDITOR::MENUS::COLOR::LightBackgroundColor1
+                        VulpineColorUI::LightBackgroundColor1
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "RP3D",
                         [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
-                        EDITOR::MENUS::COLOR::HightlightColor5
+                        VulpineColorUI::HightlightColor5
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "SYSTEMS",
                         [](){return ftou32str(Game::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
-                        EDITOR::MENUS::COLOR::HightlightColor4
+                        VulpineColorUI::HightlightColor4
                     ),
                 })
             ),
@@ -176,22 +182,22 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
     //         ColoredConstEntry(
     //             "FPS",
     //              [](){return ftou32str(1000.0/globals.appTime.getLastAvg().count());},
-    //              EDITOR::MENUS::COLOR::LightBackgroundColor1
+    //              VulpineColorUI::LightBackgroundColor1
     //         ),
     //         // ColoredConstEntry(
     //         //     "Main",
     //         //      [](){return ftou32str(globals.mainThreadTime.getLastAvg().count());},
-    //         //      EDITOR::MENUS::COLOR::HightlightColor1
+    //         //      VulpineColorUI::HightlightColor1
     //         // ),
     //         ColoredConstEntry(
     //             "GPU",
     //              [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
-    //              EDITOR::MENUS::COLOR::HightlightColor3
+    //              VulpineColorUI::HightlightColor3
     //         ),
     //         ColoredConstEntry(
     //             "CPU",
     //              [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
-    //              EDITOR::MENUS::COLOR::HightlightColor2
+    //              VulpineColorUI::HightlightColor2
     //         ),
     //         // newEntity("Global Benchmark values separator"
 
@@ -200,17 +206,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
     //         ColoredConstEntry(
     //             "Physic FPS",
     //              [](){return ftou32str(Game::physicsTicks.freq);},
-    //              EDITOR::MENUS::COLOR::LightBackgroundColor1
+    //              VulpineColorUI::LightBackgroundColor1
     //         ),
     //         ColoredConstEntry(
     //             "Physic Update",
     //              [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
-    //              EDITOR::MENUS::COLOR::HightlightColor5
+    //              VulpineColorUI::HightlightColor5
     //         ),
     //         ColoredConstEntry(
     //             "Physic Systems",
     //              [](){return ftou32str(Game::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
-    //              EDITOR::MENUS::COLOR::HightlightColor4
+    //              VulpineColorUI::HightlightColor4
     //         ),
     //     })
     // );
@@ -232,8 +238,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         , WidgetBackground()
                         , WidgetText(U"Thread 1")
                         , WidgetStyle()
-                            .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-                            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                            .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
+                            .settextColor1(VulpineColorUI::DarkBackgroundColor1)
                             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ), 
                     mainMenuBench
@@ -250,8 +256,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         , WidgetBackground()
                         , WidgetText(U"Thread 2")
                         , WidgetStyle()
-                            .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor1)
-                            .settextColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                            .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
+                            .settextColor1(VulpineColorUI::DarkBackgroundColor1)
                             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ), 
                     physicMenuBench
@@ -277,7 +283,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
             )
         , WidgetStyle()
             .setspriteScale(0.2)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::HightlightColor3)
+            .setbackgroundColor1(VulpineColorUI::HightlightColor3)
             .setbackGroundStyle(UiTileType::ATMOSPHERE_VIEWER)
         , WidgetBackground()
         , WidgetButton(
@@ -321,7 +327,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
         // , WidgetBackground()
         , WidgetBox()
         , WidgetStyle()
-            // .setbackgroundColor1(EDITOR::MENUS::COLOR::LightBackgroundColor2)
+            // .setbackgroundColor1(VulpineColorUI::LightBackgroundColor2)
             // .setbackGroundStyle(UiTileType::CIRCLE)
         , EntityGroupInfo({
             TimeOfDaySelector
@@ -333,7 +339,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
         , WidgetBox()
         , WidgetBackground()
         , WidgetStyle()
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor2)
+            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
             .setautomaticTabbing(8)
         , EntityGroupInfo({
 

@@ -22,17 +22,29 @@
 #include <Graphics/Skeleton.hpp>
 
 #include <PhysicsGlobals.hpp>
-
 #include <Subapps.hpp>
-
 #include <Settings.hpp>
+
+#include <Scripting/ScriptInstance.hpp>
 
 void Game::mainloop()
 {
+    /****** Loading Script Related States ******/
+    threadStateName = "Main Thread";
+    threadState.open_libraries(
+        sol::lib::base, 
+        sol::lib::coroutine, 
+        sol::lib::string, 
+        sol::lib::io,
+        sol::lib::math,
+        sol::lib::jit
+    );
+    VulpineLuaBindings::bindAll(threadState);
+    std::thread physicsThreads(&Game::physicsLoop, this);
 
     /****** Loading Models and setting up the scene ******/
     globals.simulationTime.pause();
-
+    
     GG::skybox = newModel(skyboxMaterial);
     
     GG::skybox->loadFromFolder("ressources/models/skybox/", false, false);
@@ -77,7 +89,7 @@ void Game::mainloop()
 
     GlobalComponentToggler<LevelOfDetailsInfos>::activated = true;
 
-    // renderBuffer.clearColor = EDITOR::MENUS::COLOR::DarkBackgroundColor2;
+    // renderBuffer.clearColor = VulpineColorUI::DarkBackgroundColor2;
 
 
     /****** Setting Up Debug UI *******/
@@ -102,7 +114,7 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(-1.1 + widgetTileSPace, -1 - widgetTileSPace))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ), 
             EDITOR::MENUS::AppControl = 
                 newEntity("Current Application Controls"
@@ -110,7 +122,7 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + widgetTileSPace, 1.f + widgetTileSPace + controLWidgetSize))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ),
             EDITOR::MENUS::GlobalControl = 
                 newEntity("Global Controls"
@@ -118,7 +130,7 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + 2.f*widgetTileSPace + controLWidgetSize, 1.f + 2.f*widgetTileSPace + 2.f*controLWidgetSize))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ),
             EDITOR::MENUS::GlobalInfos =
                 newEntity("Global Informations"
@@ -126,7 +138,7 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + 3.f*widgetTileSPace + 2.f*controLWidgetSize, 1.9-widgetTileSPace))
                     // , WidgetBackground()
-                    // , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                    // , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::AppMenu =
                 newEntity("Current Application Menus"
@@ -134,7 +146,7 @@ void Game::mainloop()
                     , WidgetState()
                     , WidgetBox(vec2(-2 + widgetTileSPace, -1 - widgetTileSPace), vec2(-1.1 + widgetTileSPace, 1.9-widgetTileSPace))
                     , WidgetBackground()
-                    , WidgetStyle().setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+                    , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
                     ),
                 }
             )
@@ -160,19 +172,19 @@ void Game::mainloop()
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(globals.appTime, EDITOR::MENUS::COLOR::HightlightColor1)
+    //     VulpineBlueprintUI::TimerPlot(globals.appTime, VulpineColorUI::HightlightColor1)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(physicsTimer, EDITOR::MENUS::COLOR::HightlightColor2)
+    //     VulpineBlueprintUI::TimerPlot(physicsTimer, VulpineColorUI::HightlightColor2)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(globals.cpuTime, EDITOR::MENUS::COLOR::HightlightColor3)
+    //     VulpineBlueprintUI::TimerPlot(globals.cpuTime, VulpineColorUI::HightlightColor3)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(globals.gpuTime, EDITOR::MENUS::COLOR::HightlightColor4)
+    //     VulpineBlueprintUI::TimerPlot(globals.gpuTime, VulpineColorUI::HightlightColor4)
     // );
 
     float TitleTabSize = 0.775f;
@@ -184,7 +196,7 @@ void Game::mainloop()
         , WidgetBackground()
         , WidgetStyle()
             .setautomaticTabbing(1)
-            .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
@@ -195,7 +207,7 @@ void Game::mainloop()
         // , WidgetBackground()
         , WidgetStyle()
             // .setautomaticTabbing(1)
-            // .setbackgroundColor1(EDITOR::MENUS::COLOR::DarkBackgroundColor1)
+            // .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
             // .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
@@ -481,7 +493,7 @@ void Game::mainloop()
 
     // /****** Last Pre Loop Routines ******/
     state = AppState::run;
-    std::thread physicsThreads(&Game::physicsLoop, this);
+
 
     // Sword->meshes[0]->setMenu(menu, U"sword");
 
@@ -511,9 +523,9 @@ void Game::mainloop()
         SubApps::switchTo(Settings::lastOpenedApp);      
     }
 
-    // PlottingHelperRef plottest(new PlottingHelper(vec4(1), 256));
-    // scene2D.add(plottest);
-    // plottest->state.setPositionZ(0.5);
+
+    // Loader<ScriptInstance>::get("test").run();
+
 
     /******  Main Loop ******/
     while (state != AppState::quit)
@@ -555,7 +567,6 @@ void Game::mainloop()
         }
 
 
-        
         // {
 
             
@@ -925,6 +936,9 @@ void Game::mainloop()
             GlobalComponentToggler<LevelOfDetailsInfos>::updateALL();
         }
 
+        system("clear");
+        std::cout << ScriptInstance::getGlobalTimer() << "\n";
+        // std::cout << Loader<ScriptInstance>::get("test").getTimer();
 
         mainloopPreRenderRoutine();
 
@@ -1042,9 +1056,12 @@ void Game::mainloop()
     Settings::save();
 
     physicsThreads.join();
-
+    
     GG::entities.clear();
     PG::common.destroyPhysicsWorld(PG::world);
+
+    // Prevent crashed from LuaState being destroyed before scripts
+    Loader<ScriptInstance>::loadedAssets.clear(); 
 }
 
 

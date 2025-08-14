@@ -15,11 +15,24 @@
 
 #include <PhysicsEventListener.hpp>
 
+#include <Scripting/ScriptInstance.hpp>
+
 
 void Game::physicsLoop()
 {
     physicsTicks.freq = 100.f;
     physicsTicks.activate();
+
+    threadStateName = "Physics Thread";
+    threadState.open_libraries(
+        sol::lib::base, 
+        sol::lib::coroutine, 
+        sol::lib::string, 
+        sol::lib::io,
+        sol::lib::math,
+        sol::lib::jit
+    );
+    VulpineLuaBindings::bindAll(threadState);
 
     PhysicsEventListener eventListener;
     PG::world->setEventListener((rp3d::EventListener*)&eventListener);
@@ -47,7 +60,7 @@ void Game::physicsLoop()
         
         physicsWorldUpdateTimer.start();
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
-        physicsWorldUpdateTimer.end();
+        physicsWorldUpdateTimer.stop();
 
         physicsSystemsTimer.start();
 
@@ -281,8 +294,8 @@ void Game::physicsLoop()
 
         });
 
-        physicsSystemsTimer.end();
-        physicsTimer.end();
+        physicsSystemsTimer.stop();
+        physicsTimer.stop();
 
         float maxFreq = 200.f;
         float minFreq = 25.f;

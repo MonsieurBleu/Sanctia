@@ -439,7 +439,7 @@ void Game::mainloop()
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         VulpineBlueprintUI::Toggable(
-            "Auto Shader Refresh", 
+            "Shader Hot Reload", 
             "",
             [](Entity *e, float v)
             {
@@ -452,6 +452,20 @@ void Game::mainloop()
         )
     );
 
+        ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        VulpineBlueprintUI::Toggable(
+            "Script Hot Reload", 
+            "",
+            [](Entity *e, float v)
+            {
+                Game::doScriptHotReload = !Game::doScriptHotReload;
+            },
+            [](Entity *e)
+            {
+                return Game::doScriptHotReload ? 0.f : 1.f;
+            }
+        )
+    );
 
     Apps::MainGameApp testsubapps1;
     Apps::MaterialViewerApp materialView;
@@ -544,14 +558,31 @@ void Game::mainloop()
         if (glfwWindowShouldClose(globals.getWindow()))
             state = AppState::quit;
 
+
         static unsigned int itcnt = 0;
         itcnt++;
+
+        float currentTime = globals.appTime.getElapsedTime();
+
+        static float lastShaderRefreshTime = 0; 
+        static float shaderRefreshLatence = 1;
+
+        static float lastScriptRefreshTime = 0.125; // timer is offseted for scripts
+        static float scriptRefreshLatence = 0.25;
+
         if (doAutomaticShaderRefresh)
         {
-            if (itcnt % 144 == 0)
+            if(currentTime-lastShaderRefreshTime > shaderRefreshLatence)
             {
-                system("clear");
-                std::cout << TERMINAL_INFO << "Refreshing ALL shaders...\n" << TERMINAL_RESET;
+                lastShaderRefreshTime = currentTime;
+
+                NAMED_TIMER(shaderRefresh)
+
+                for(auto &i : Shader::fileWatchers)
+                {
+                    i.second.second = i.second.first.hasChanged();
+                }
+
                 finalProcessingStage.reset();
                 Bloom.getShader().reset();
                 SSAO.getShader().reset();
@@ -566,6 +597,16 @@ void Game::mainloop()
             }
         }
 
+        if(doScriptHotReload)
+        {
+            for(auto &i : Loader<ScriptInstance>::loadedAssets)
+            {
+                if(i.second.filewatcher.hasChanged())
+                {
+                    i.second.triggerRecompileOnNextRun();
+                }
+            }
+        }
 
         // {
 
@@ -935,10 +976,6 @@ void Game::mainloop()
         {
             GlobalComponentToggler<LevelOfDetailsInfos>::updateALL();
         }
-
-        system("clear");
-        std::cout << ScriptInstance::getGlobalTimer() << "\n";
-        // std::cout << Loader<ScriptInstance>::get("test").getTimer();
 
         mainloopPreRenderRoutine();
 

@@ -71,7 +71,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                 , WidgetBox()
                 , EntityGroupInfo({
                     VulpineBlueprintUI::TimerPlot(
-                        Game::physicsTimer, 
+                        Game::physicsWorldUpdateTimer, 
                         VulpineColorUI::HightlightColor5,
                         getMinmaxPhysicThread),
                     // TimerPlot(
@@ -81,7 +81,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::TimerPlot(
                         Game::physicsSystemsTimer, 
                         VulpineColorUI::HightlightColor4,
-                        getMinmaxPhysicThread)
+                        getMinmaxPhysicThread),
+                    VulpineBlueprintUI::TimerPlot(
+                        ScriptInstance::globalTimers["Physics Thread"], 
+                        VulpineColorUI::HightlightColor3,
+                        getMinmaxMainThread)
                 })
             )
         })
@@ -117,11 +121,6 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     .setautomaticTabbing(3)
                 , EntityGroupInfo({
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "FPS",
-                        [](){return ftou32str(1000.0/globals.appTime.getLastAvg().count());},
-                        VulpineColorUI::LightBackgroundColor1
-                    ),
-                    VulpineBlueprintUI::ColoredConstEntry(
                         "CPU",
                         [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor2
@@ -130,6 +129,16 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         "GPU",
                         [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor1
+                    ),
+                    VulpineBlueprintUI::ColoredConstEntry(
+                        "LUA",
+                        [](){return ftou32str(ScriptInstance::globalTimers["Main Thread"].getLastAvg().count()) + U" ms";},
+                        VulpineColorUI::HightlightColor3
+                    ),
+                    VulpineBlueprintUI::ColoredConstEntry(
+                        "FPS",
+                        [](){return ftou32str(1000.0/globals.appTime.getLastAvg().count());},
+                        VulpineColorUI::LightBackgroundColor1
                     )
                 })
             ),
@@ -153,11 +162,6 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     .setautomaticTabbing(3)
                 , EntityGroupInfo({
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "FPS",
-                        [](){return ftou32str(Game::physicsTicks.freq);},
-                        VulpineColorUI::LightBackgroundColor1
-                    ),
-                    VulpineBlueprintUI::ColoredConstEntry(
                         "RP3D",
                         [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor5
@@ -167,6 +171,16 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         [](){return ftou32str(Game::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor4
                     ),
+                    VulpineBlueprintUI::ColoredConstEntry(
+                        "LUA",
+                        [](){return ftou32str(ScriptInstance::globalTimers["Physics Thread"].getLastAvg().count()) + U" ms";},
+                        VulpineColorUI::HightlightColor3
+                    ),
+                    VulpineBlueprintUI::ColoredConstEntry(
+                        "FPS",
+                        [](){return ftou32str(Game::physicsTicks.freq);},
+                        VulpineColorUI::LightBackgroundColor1
+                    )
                 })
             ),
             physicThreadPlotters

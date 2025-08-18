@@ -41,6 +41,7 @@ private:
 public:
     
     static inline bool doAutomaticShaderRefresh = false;
+    static inline bool doScriptHotReload = false;
 
     /* Player Controller */
     static inline SpectatorController spectator;

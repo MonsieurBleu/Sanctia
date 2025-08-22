@@ -527,7 +527,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
             [&](Entity *e, float v)
             {
                 this->currentEntity.ref->comp<EntityInfos>().name = this->currentEntity.name;
-                std::string fileName = "data/entities/" + this->currentEntity.name + ".vulpineEntity";
+                std::string fileName = "data/[0] Export/Entity Editor/" + this->currentEntity.name + ".vEntity";
 
                 VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
                 DataLoader<EntityRef>::write(this->currentEntity.ref, out);

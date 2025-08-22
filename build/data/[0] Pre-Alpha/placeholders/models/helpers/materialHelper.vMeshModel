@@ -1,0 +1,7 @@
+materialHelper
+:	mesh      |  materialHelper
+:   material  |  paintPBRnouv
+:   state
+    :   position    "0 2 0"
+    ;
+;

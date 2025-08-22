@@ -1,0 +1,11 @@
+~
+:   packingPaintGeometry
+    :   frag packingPaint
+    :   vert packingPaint
+    :   directive "#define USING_VERTEX_PACKING"
+    ;
+:   packingPaintDepthOnly
+    :   frag depthOnly
+    :   vert basic
+    ;
+;

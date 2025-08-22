@@ -1,0 +1,14 @@
+NpcTest
+    :   meshes 
+        :   NpcTest
+            :   mesh      | Beta_Surface
+            :   material  | animatedPBR
+            :   texture 0 | Plastic_BLACK_CE
+            :   texture 1 | Plastic_BLACK_NRM
+            ;
+        ;
+    :   pointLights
+        :   FF0000  10  3  "0 2 0"
+        ;
+    ;
+;

@@ -1,0 +1,7 @@
+packingPaintHelper
+:	mesh      |  packingPaintHelper
+:   material  |  packingPaint
+:   state
+    :   position    "0 0 -35"
+    ;
+;

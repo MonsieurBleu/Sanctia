@@ -203,4 +203,28 @@ namespace Apps
 
             virtual void clean() override;
     };
+
+    class AssetListViewer : public SubApps
+    {
+        private :
+
+            std::unordered_map<std::string, EntityRef> TypesList;
+            std::string currentType;
+
+            std::unordered_map<std::string, EntityRef> AssetList;
+            std::string currentAsset;
+
+        public : 
+
+            AssetListViewer();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
 }

@@ -1,0 +1,16 @@
+~
+:   terrainGeometry 
+    :   frag packingPaint
+    :   vert lod
+    :   tesc lod
+    :   tese lod
+    :   directive "#define USING_TERRAIN_RENDERING"
+    ;
+:   terrainDepthOnly
+    :   frag basic
+    :   vert lod
+    :   tesc lod
+    :   tese lod
+    :   directive "#define USING_TERRAIN_RENDERING"
+    ;
+;

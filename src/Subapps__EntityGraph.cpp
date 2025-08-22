@@ -146,7 +146,7 @@ void Apps::EventGraphApp::init()
 
     // EventGraph::clear();
 
-    VulpineTextBuffRef in(new VulpineTextBuff("EntityGraph.vulpineGraph"));
+    VulpineTextBuffRef in(new VulpineTextBuff("EntityGraph.vGraph"));
     if (in->data)
         DataLoader<EventGraph>::read(in);
     else

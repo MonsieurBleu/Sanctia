@@ -16,6 +16,8 @@
 #include <Settings.hpp>
 #include <Scripting/ScriptInstance.hpp>
 
+#include <ModManager.hpp>
+
 Game::Game(GLFWwindow *window) : App(window){}
 
 void Game::init(int paramSample)
@@ -47,7 +49,7 @@ void Game::init(int paramSample)
 
     finalProcessingStage = ShaderProgram(
         "game shader/final composing.frag",
-        "shader/post-process/basic.vert",
+        "shader/post-process/PP_basic.vert",
         "",
         globals.standartShaderUniform2D());
 
@@ -178,12 +180,12 @@ void Game::init(int paramSample)
     dialogueControl.dialogueFont = FUIfont;
     // dialogueControl.dialogueMaterial = defaultFontMaterial;
     dialogueControl.dialogueMaterial = Loader<MeshMaterial>::get("mdFont");
-    // Loader<MeshModel3D>::addInfos("data/models/meubles/barrel/barrel01.vulpineModel");
+    // Loader<MeshModel3D>::addInfos("data/models/meubles/barrel/barrel01.vModel");
 
     GG::currentLanguage = LANGUAGE_FRENCH;
 
-    loadAllAssetsInfos("data");
-    loadAllAssetsInfos("shader/vulpineMaterials");
+    // loadAllAssetsInfos("data");
+    // loadAllAssetsInfos("shader/vulpineMaterials");
 
     for (auto f : std::filesystem::recursive_directory_iterator("data"))
     {
@@ -196,7 +198,7 @@ void Game::init(int paramSample)
         strcpy(ext, (char *)f.path().extension().string().c_str());
         strcpy(p, (char *)f.path().string().c_str());
 
-        if (!strcmp(ext, ".vulpineEntity"))
+        if (!strcmp(ext, ".vEntity"))
             Loader<EntityRef>::addInfos(p);
     }
     

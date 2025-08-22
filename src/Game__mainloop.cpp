@@ -474,6 +474,8 @@ void Game::mainloop()
 
     Apps::EntityCreator entityCreator;
 
+    Apps::AssetListViewer assetView;
+
     // SubApps::switchTo(materialView);
 
     // Apps::MainGameApp testsubapps2;

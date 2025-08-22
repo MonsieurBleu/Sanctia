@@ -34,8 +34,6 @@ DATA_READ_FUNC(Settings) {
 
     WHILE_NEW_VALUE
 
-        // std::cout << member << std::endl;
-
         IF_MEMBER_READ_VALUE(fullscreen)
             Settings::fullscreen = FastTextParser::read<bool>(value);
 
@@ -60,19 +58,19 @@ void Settings::save()
 {
     VulpineTextOutputRef out(new VulpineTextOutput(4096));
     DataLoader<Settings>::write(Settings(), out);
-    out->saveAs("data/settings.vulpineSettings");
+    out->saveAs("data/settings.vSettings");
 }
 
 void Settings::load()
 {
-    if (!fileExists("data/settings.vulpineSettings"))
+    if (!fileExists("data/settings.vSettings"))
     {
         VulpineTextOutputRef out(new VulpineTextOutput(4096));
         DataLoader<Settings>::write(Settings(), out);
-        out->saveAs("data/settings.vulpineSettings");
+        out->saveAs("data/settings.vSettings");
     }
 
-    VulpineTextBuffRef in(new VulpineTextBuff("data/settings.vulpineSettings"));
+    VulpineTextBuffRef in(new VulpineTextBuff("data/settings.vSettings"));
     if (in->data)
     {
         DataLoader<Settings>::read(in);

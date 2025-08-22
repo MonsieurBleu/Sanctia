@@ -1,0 +1,30 @@
+PlayerTest
+    :   meshes 
+        :   PlayerTest_Surface
+            :   mesh      | Beta_Surface_headless
+            :   material  | animatedPBR
+            :   texture 0 | Plastic_BLUE_CE
+            :   texture 1 | Plastic_BLUE_NRM
+            ;
+        :   PlayerTest_Joints
+            :   mesh     | Beta_Joints
+            :   material | animatedPBR
+            :   texture 0 | Plastic_BLACK_CE
+            :   texture 1 | Plastic_BLACK_NRM
+            ;
+        :   PlayerTest_Head
+            :   mesh      | Beta_Surface
+            :   material  | animatedPBR
+            :   texture 0 | Plastic_BLUE_CE
+            :   texture 1 | Plastic_BLUE_NRM
+            :   state
+                :   frustum 0
+                ;
+            ;
+        ;
+    :   state 
+        :   position "0 0 -0.075"
+        *:   rotation "0 180 0"*
+        ;
+    ;
+;

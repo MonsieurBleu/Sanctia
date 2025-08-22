@@ -271,8 +271,16 @@ DATA_READ_FUNC_ENTITY(EntityGroupInfo)
             {
                 std::string name(buff->read());
 
+                auto ent = Loader<EntityRef>::loadingInfos.find(name);
+
+                if(ent == Loader<EntityRef>::loadingInfos.end())
+                {
+                    ERROR_MESSAGE("No information loaded for entity '" << name << "' referenced inside the file '" << buff->getSource() << "'");
+                    assert(false);
+                }
+
                 VulpineTextBuffRef source(new VulpineTextBuff(
-                    Loader<EntityRef>::loadingInfos[name]->buff->getSource().c_str()
+                    ent->second->buff->getSource().c_str()
                 ));
 
                 c = DataLoader<EntityRef>::read(source);

@@ -1,0 +1,11 @@
+~
+:   paintPBRnouvGeometry
+    *:   data/placeholders/materials/paintPBR.frag*
+    :   frag packingPaint
+    :   vert paintPBR
+    ;
+:   paintPBRnouvDepthOnly
+    :   frag depthOnly
+    :   vert basic
+    ;
+;

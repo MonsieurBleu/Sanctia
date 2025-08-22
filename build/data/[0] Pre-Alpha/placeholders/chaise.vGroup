@@ -1,0 +1,10 @@
+chaise
+    : meshes
+        : chaise
+            : mesh      |  chaise
+            : material  |  packingPaint
+            ;
+        ;
+    ;
+;
+

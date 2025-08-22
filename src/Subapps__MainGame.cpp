@@ -221,8 +221,16 @@ void Apps::MainGameApp::init()
 
     /***** Creating Player *****/
     {
-        VulpineTextBuffRef in(new VulpineTextBuff("data/entities/playerDemo.vulpineEntity"));
-        GG::playerEntity = DataLoader<EntityRef>::read(in);
+        // VulpineTextBuffRef in(new VulpineTextBuff("data/entities/playerDemo.vulpineEntity"));
+        // GG::playerEntity = DataLoader<EntityRef>::read(in);
+
+        // std::cout << Loader<EntityRef>::loadingInfos["Play"].get() << "\n";
+
+        VulpineTextBuffRef source(new VulpineTextBuff(
+            Loader<EntityRef>::loadingInfos["Player"]->buff->getSource().c_str()
+        ));
+
+        GG::playerEntity = DataLoader<EntityRef>::read(source);
     }
 
     /***** Setting up material helpers *****/

@@ -9,9 +9,10 @@
 DATA_WRITE_FUNC(EntityRef)
 {
     out->Tabulate();
-    out->write("\"", 1);
-    out->write(CONST_STRING_SIZED(data->comp<EntityInfos>().name));
-    out->write("\"", 1);
+    // out->write("\"", 1);
+    // out->write(CONST_STRING_SIZED(data->comp<EntityInfos>().name));
+    // out->write("\"", 1);
+    out->write("~", 1);
 
     for(auto &i : ComponentModularity::WriteFuncs)
         if(data->state[i.ComponentID])
@@ -29,7 +30,14 @@ DATA_READ_FUNC(EntityRef) {
     if(tmpEntityName.size())
         data = newEntity(tmpEntityName);
     else
-        data = newEntity(buff->read());
+    {
+        auto nametmp = buff->read();
+
+        if(*nametmp == '~')
+            data = newEntity(getNameOnlyFromPath(buff->getSource().c_str()));
+        else
+            data = newEntity(nametmp);
+    }
 
     tmpEntityName = "";
 

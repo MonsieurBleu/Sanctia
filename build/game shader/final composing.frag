@@ -1,7 +1,7 @@
 #version 460
 
-#include functions/HSV.glsl
-#include functions/Noise.glsl
+#include HSV
+#include Noise 
 
 layout(location = 0) uniform ivec2 iResolution;
 layout(location = 1) uniform float iTime;
@@ -30,7 +30,7 @@ layout(binding = 7) uniform sampler2D bUI;
 
 
 #define SKYBOX_REFLECTION
-#include functions/Skybox.glsl
+#include Skybox 
 
 in vec2 uvScreen;
 in vec2 ViewRay;

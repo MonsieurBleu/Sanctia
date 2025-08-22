@@ -35,4 +35,4 @@ obj/*.obj
 
 Game
 .gdb_history
-settings.vulpineSettings
+settings.vSettings

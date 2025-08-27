@@ -351,9 +351,9 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
     auto alternativeTimeControls = newEntity("Alternative Time Controls"
         , UI_BASE_COMP
         , WidgetBox()
-        , WidgetBackground()
+        // , WidgetBackground()
         , WidgetStyle()
-            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
+            // .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
             .setautomaticTabbing(8)
         , EntityGroupInfo({
 
@@ -380,6 +380,23 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
             [](Entity *e, float v){GG::skyboxType = v;},
             [](Entity *e){return (float)GG::skyboxType;}
             )),
+
+            VulpineBlueprintUI::Toggable("Custom Sun Position", "", 
+            [](Entity *e, float v){GG::useCustomSunPos = v == 0.f;},
+            [](Entity *e){return GG::GG::useCustomSunPos ? 0.f : 1.f;}
+            ),
+            
+
+            VulpineBlueprintUI::NamedEntry(U"Sun Theta", VulpineBlueprintUI::SmoothSlider("Sun Theta", 0, 1, 64, 
+            [](Entity *e, float v){GG::customSunTheta = v;},
+            [](Entity *e){return GG::customSunTheta;}
+            )),
+
+            VulpineBlueprintUI::NamedEntry(U"Sun Phi", VulpineBlueprintUI::SmoothSlider("Sun Phi", 0, 1, 64, 
+            [](Entity *e, float v){GG::customSunPhi = v;},
+            [](Entity *e){return GG::customSunPhi;}
+            )),
+
         })
     );
 

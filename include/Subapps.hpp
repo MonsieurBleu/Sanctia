@@ -189,6 +189,8 @@ namespace Apps
 
             } currentEntity;
 
+            bool snapToGrid = true;
+
         public : 
 
             EntityCreator();
@@ -213,6 +215,9 @@ namespace Apps
 
             std::unordered_map<std::string, EntityRef> AssetList;
             std::string currentAsset;
+
+            std::unordered_map<std::string, EntityRef> VersionList;
+            std::string currentVersion;
 
         public : 
 

@@ -99,11 +99,19 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
     {
         auto &s = child->comp<EntityState3D>();
 
+        auto cbtype = childBody->getType();
+        
+        childBody->setIsActive(false);
+        childBody->setType(rp3d::BodyType::KINEMATIC);
+        
         childBody->setTransform(
             rp3d::Transform(
                 PG::torp3d(s.position), PG::torp3d(s.usequat ? s.quaternion : directionToQuat(s.lookDirection))
             )
         );
+        
+        childBody->setType(cbtype);
+        childBody->setIsActive(true);
     }
 
     // child->set<RigidBody>(childBody);

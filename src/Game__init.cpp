@@ -57,6 +57,7 @@ void Game::init(int paramSample)
         .addUniform(ShaderUniform(camera.getProjectionViewMatrixAddr(), 2))
         .addUniform(ShaderUniform(camera.getViewMatrixAddr(), 3))
         .addUniform(ShaderUniform(camera.getProjectionMatrixAddr(), 4))
+        .addUniform(ShaderUniform(camera.getPositionAddr(), 5))
 
         .addUniform(ShaderUniform(Bloom.getIsEnableAddr(), 10))
         .addUniform(ShaderUniform(&editorModeEnable, 11))
@@ -64,7 +65,9 @@ void Game::init(int paramSample)
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor2, 33))
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbAngleAmplitude, 34))
         .addUniform(ShaderUniform(&globals.sceneVignette, 35))
-        .addUniform(ShaderUniform(&globals.sceneHsvShift, 36));
+        .addUniform(ShaderUniform(&globals.sceneHsvShift, 36))
+        .addUniform(ShaderUniform(&EDITOR::gridPositionScale, 37))
+        ;
 
     setIcon("ressources/icon.png");
     // setController(&playerControl);
@@ -203,6 +206,9 @@ void Game::init(int paramSample)
     }
     
     AnimBlueprint::PrepareAnimationsCallbacks();
+
+    doAutomaticShaderRefresh = true;
+    doScriptHotReload = true;
 
     initInput();
 }

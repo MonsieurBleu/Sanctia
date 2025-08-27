@@ -14,10 +14,25 @@ Apps::AssetListViewer::AssetListViewer() : SubApps("Asset List")
         i->activated = false;
 };
 
+bool compareUntilBreakPoint(const std::string &s1, const std::string &s2, const char bp)
+{
+    int size = min(s1.size(), s2.size());
+    for(int i = 0; i < size; i++)
+    {
+        if(s1[i] != s2[i])
+            return false;
+        
+        if(s1[i] == bp || s2[i] == bp)
+            return true;
+    }
+
+    return s1.size() == s2.size();
+}
+
 EntityRef Apps::AssetListViewer::UImenu()
 {
     auto typeListView = VulpineBlueprintUI::StringListSelectionMenu(
-        "Asset Type List", TypesList, 
+        "Asset Type", TypesList, 
         [&](Entity *e, float value)
         {
             AssetList.clear();
@@ -36,35 +51,138 @@ EntityRef Apps::AssetListViewer::UImenu()
         {
             return e->comp<EntityInfos>().name == currentType ? 0. : 1.;
         },
-        0.,
+        -1.0,
         VulpineColorUI::HightlightColor1,
-        0.04
+        0.075
     );
 
 
     auto assetListView = VulpineBlueprintUI::StringListSelectionMenu(
-        "Asset Type List", AssetList, 
+        "Asset List", AssetList, 
         [&](Entity *e, float value)
         {
+            VersionList.clear();
+
             currentAsset = e->comp<EntityInfos>().name;
+
+            std::string name = currentAsset;
+            std::string type = currentType;
+            currentVersion = modImportanceList.getCorrectVersionToUse(AssetLoadInfos::assetList[type][name], type, name).version->name;
+
+            for(auto &i : AssetLoadInfos::assetList[currentType][currentAsset])
+            {
+                VersionList[i.version->name] = EntityRef();
+            }
         },
         [&](Entity *e)
         {
+            if(e->comp<WidgetText>().text[0] != U'[')
+            {
+                std::string name = e->comp<EntityInfos>().name;
+                std::string type = currentType;
+
+                e->comp<WidgetText>().text = 
+                    U"[" + 
+                    UFTconvert.from_bytes(
+                        modImportanceList.getCorrectVersionToUse(
+                            AssetLoadInfos::assetList[type][name], type, name).version->name
+                    )
+                    + U"] **" 
+                    + e->comp<WidgetText>().text
+                    + U"** "
+                    ;
+            }
+
+
             return e->comp<EntityInfos>().name == currentAsset ? 0. : 1.;
         },
-        0.,
+        -1.0,
         VulpineColorUI::HightlightColor2,
-        0.04
+        0.075
+    );
+
+    auto assetVersions = VulpineBlueprintUI::StringListSelectionMenu(
+        "Asset Versions", VersionList, 
+        [&](Entity *e, float value)
+        {
+            currentVersion = e->comp<EntityInfos>().name;
+        },
+        [&](Entity *e)
+        {
+            return e->comp<EntityInfos>().name == currentVersion ? 0. : 1.;
+        },
+        -5.0,
+        VulpineColorUI::HightlightColor3,
+        0.175
     );
 
     return newEntity("ASSET LIST APP MENU"
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            .setautomaticTabbing(1)
+            // .setautomaticTabbing(2)
         , EntityGroupInfo({
-            typeListView,
-            assetListView
+            newEntity("ASSET LIST APP MENU - SELECTION"
+                , UI_BASE_COMP
+                , WidgetBox(vec2(-1, 1), vec2(-1, 0.4))
+                , WidgetStyle()
+                    .setautomaticTabbing(2)
+                , EntityGroupInfo({
+                    typeListView,
+                    assetListView
+                })
+            ),
+            newEntity("ASSET LIST APP MENU - ASSET INFO"
+                , UI_BASE_COMP
+                , WidgetBox(vec2(-1, 1), vec2(0.4, 1.0))
+                , WidgetStyle()
+                    .setautomaticTabbing(2)
+                , EntityGroupInfo({
+                    assetVersions,
+                    newEntity("ASSET LIST APP MENU - MOD INFO"
+                        , UI_BASE_COMP
+                        , WidgetBox()
+                        , WidgetStyle()
+                            .setautomaticTabbing(2)
+                        , EntityGroupInfo({
+                            VulpineBlueprintUI::ColoredConstEntry(
+                                "Asset Path", [&](){
+
+                                    if(currentType.size() && currentAsset.size())
+                                    {
+                                        auto l = AssetLoadInfos::assetList[currentType][currentAsset];
+
+                                        for(auto &i : l)
+                                            if(i.version->name == currentVersion)
+                                                return UFTconvert.from_bytes(i.file);
+                                    }
+                                    
+                                    return UFTconvert.from_bytes("...");
+                                }, 
+                                VulpineColorUI::HightlightColor3,
+                                true
+                            ),
+                            VulpineBlueprintUI::ColoredConstEntry(
+                                "Mod Category", [&](){
+
+                                    if(currentType.size() && currentAsset.size())
+                                    {
+                                        auto l = AssetLoadInfos::assetList[currentType][currentAsset];
+
+                                        for(auto &i : l)
+                                            if(i.version->name == currentVersion)
+                                                return UFTconvert.from_bytes(Mod::ImportanceCategoryReverseMap[i.version->category]);
+                                    }
+                                    
+                                    return UFTconvert.from_bytes("...");
+                                }, 
+                                VulpineColorUI::HightlightColor3,
+                                true
+                            )
+                        })
+                    )
+                })
+            )
         })
     );
 }
@@ -94,6 +212,7 @@ void Apps::AssetListViewer::clean()
 
     TypesList.clear();
     AssetList.clear();
+    VersionList.clear();
 
     GG::ManageEntityGarbage();
 

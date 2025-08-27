@@ -37,6 +37,11 @@ class GG
 
         static inline SceneDirectionalLight sun;
         static inline SceneDirectionalLight moon;
+
+        static inline bool useCustomSunPos = false;
+        static inline float customSunTheta = 0.25f;
+        static inline float customSunPhi = 0.25f;
+
         static inline ModelRef skybox;
         static inline int skyboxType = 0;
 
@@ -66,6 +71,8 @@ namespace EDITOR
 {
     // inline WidgetUI_Context UIcontext;
 
+    inline vec4 gridPositionScale = vec4(0);
+
     namespace MENUS
     {
         inline EntityRef GameScreen;
@@ -74,6 +81,8 @@ namespace EDITOR
         inline EntityRef AppMenu;
         inline EntityRef GlobalControl;
         inline EntityRef GlobalInfos;
+
+        
 
         // namespace COLOR
         // {

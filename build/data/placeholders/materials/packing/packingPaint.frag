@@ -658,7 +658,7 @@ void main()
     //     // * 1e6
     //     ;
 
-    return;
+    // return;
 
 
     // vec3 deformDir = cross(normalComposed, vec3(0, 1, 0));

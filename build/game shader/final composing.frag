@@ -5,9 +5,10 @@
 
 layout(location = 0) uniform ivec2 iResolution;
 layout(location = 1) uniform float iTime;
-layout(location = 2) uniform mat4 MVP;
-layout(location = 3) uniform mat4 View;
-layout(location = 4) uniform mat4 _cameraProjectionMatrix;
+layout (location = 2) uniform mat4 MVP;
+layout (location = 3) uniform mat4 _cameraViewMatrix; 
+layout (location = 4) uniform mat4 _cameraProjectionMatrix; 
+layout (location = 5) uniform vec3 _cameraPosition; 
 
 layout(location = 10) uniform int bloomEnable;
 layout(location = 11) uniform int editorModeEnable;
@@ -19,6 +20,8 @@ layout(location = 34) uniform vec2 caAngleAmplitude;
 layout(location = 35) uniform vec4 vignette;
 layout(location = 36) uniform vec3 hsvShift;
 
+layout(location = 37) uniform vec4 gridPositionScale;
+
 layout(binding = 0) uniform sampler2D bColor;
 layout(binding = 1) uniform sampler2D bDepth;
 layout(binding = 2) uniform sampler2D bNormal;
@@ -28,6 +31,7 @@ layout(binding = 5) uniform sampler2D texNoise;
 layout(binding = 6) uniform sampler2D bSunMap;
 layout(binding = 7) uniform sampler2D bUI;
 
+#include FiltrableNoises
 
 #define SKYBOX_REFLECTION
 #include Skybox 
@@ -76,6 +80,7 @@ vec3 adjustColor(vec3 color, float contrast, float saturation, float brightness)
 
     return color;
 }
+
 
 void main()
 {
@@ -154,8 +159,8 @@ void main()
         vec4 ndc = vec4((uv * 2.0) - 1.0, _cameraProjectionMatrix[3][2] / (1.0 -depth), -1.0);
         vec4 viewpos = inverse(_cameraProjectionMatrix) * ndc;
         viewpos /= viewpos.w;
+        vec4 world = inverse(_cameraViewMatrix) * viewpos;
         viewpos.z *= -1;
-        vec4 world = inverse(View) * viewpos;
 
         vec3 dir = normalize(-world.rgb);
         dir.y = clamp(dir.y, 0.0, 1.0);
@@ -231,6 +236,76 @@ void main()
         _fragColor.rgb = vec3(linearDepth);
     }
     #endif
+
+/******* Grid View
+*******/
+    if(gridPositionScale.w > 0.)
+    {
+        float u_far = 1e6;
+        float u_near = 0.1;
+        float dtmp = -0.01;
+
+        vec2 uvtmp = vec2(2.*uv.x - 1.0, 2.*uv.y - 1.0);
+
+        vec4 ndc = vec4(uvtmp, dtmp, 1.0);
+        vec4 viewpos = inverse(_cameraProjectionMatrix) * ndc;
+        viewpos /= viewpos.w;
+        vec4 world = inverse(_cameraViewMatrix) * viewpos;
+        vec3 dir = normalize(_cameraPosition-world.rgb);
+
+
+        float gridAlpha = 0.5;
+        vec3 gridColor = vec3(44, 211, 91)/255.f;
+        gridColor = 0.625*vec3(242, 234,  222)/255.f;
+
+        vec3 planeNormal = vec3(0, 1, 0);
+        float NRd = dot(planeNormal, dir);
+        float NRo = dot(planeNormal, _cameraPosition - gridPositionScale.xyz);
+        float height = 0.;
+        float t0 = (-height - NRo) / NRd;
+
+        vec3 hitPos = _cameraPosition + t0*dir;
+        float scale = gridPositionScale.w;
+
+        hitPos.rb += .25;
+        vec2 uv = abs(hitPos.rb/scale - round(hitPos.rb/scale))*scale;
+        hitPos.rb -= .25;
+
+        float deriv = derivative(hitPos.rgb*64./scale);
+        
+        float sp_derivMult = 0.085*sqrt(deriv);
+        float sp_baseEdge = 0.01;
+        float sp_Edge0 = scale*(sp_baseEdge + deriv*sp_derivMult);
+
+        float sp_Edge1 = sp_Edge0*0.85*(1.-clamp(deriv, 0., 1.));
+
+        gridAlpha = smoothstep(sp_Edge0 , sp_Edge1, uv.x);
+        gridAlpha += smoothstep(sp_Edge0 , sp_Edge1, uv.y);
+
+        gridAlpha = clamp(gridAlpha, 0., 1.);
+
+        gridAlpha *= mix(gridAlpha, 0.25 + 1.-clamp(deriv, 0.0, 1.0), clamp(deriv*.25, 0.0, 1.0));
+        
+        gridAlpha = mix(gridAlpha, 0.25, clamp(deriv*deriv*.125, 0.0, 1.0));
+
+        if(t0 != clamp(t0, 0., 1e6) || abs(hitPos.r) > 1e3 || abs(hitPos.b) > 1e3) gridAlpha = 0.f;
+        
+        vec4 proj = MVP * vec4(hitPos, 1.0);
+
+        // gridColor = mix(gridColor, vec3(44, 211, 91)/255.f, smoothstep(sp_Edge0 , sp_Edge1, abs(hitPos.x)));
+        // gridColor = mix(gridColor, vec3(44, 211, 91)/255.f, smoothstep(sp_Edge0 , sp_Edge1, abs(hitPos.z)));
+        
+        if(1.0/depth > proj.b/proj.a )
+            gridAlpha *= .0;
+
+        gridAlpha *= .5;
+
+        _fragColor.rgb = mix(_fragColor.rgb, gridColor, gridAlpha);
+    }
+
+
+
+
 
 /******* UI *******/
 

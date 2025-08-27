@@ -137,8 +137,8 @@ void Game::mainloop()
                     , WidgetUI_Context{&ui}
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + 3.f*widgetTileSPace + 2.f*controLWidgetSize, 1.9-widgetTileSPace))
-                    // , WidgetBackground()
-                    // , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
+                    , WidgetBackground()
+                    , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::AppMenu =
                 newEntity("Current Application Menus"
@@ -595,7 +595,9 @@ void Game::mainloop()
                 defaultSUIMaterial->reset();
 
                 for (auto &m : Loader<MeshMaterial>::loadedAssets)
+                {
                     m.second->reset();
+                }
             }
         }
 
@@ -721,10 +723,19 @@ void Game::mainloop()
 
             vec3 sunDirLocal = transpose(tangentSpace) * sunDirWorld;
 
+            
             // sunDir = vec3(sunDirLocal.x, sunDirLocal.z, sunDirLocal.y);
             sunDir = sunDirLocal;
             planetPos = orbitPos;
-
+            
+            if(GG::useCustomSunPos)
+            {
+                // sunDir = GG::customSunPos;
+                // sunDir = normalize(vec3(1, 1, 0));
+                
+                sunDir = PhiThetaToDir(PI*vec2(2.*GG::customSunPhi, GG::customSunTheta));
+            }
+            
             // not sure about this theta
             float theta = acos(sunDir.y);
             float sunIntensity = smoothstep(-0.2f, 0.25f, sunDir.y);

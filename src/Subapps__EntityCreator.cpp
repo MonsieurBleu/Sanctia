@@ -40,6 +40,32 @@ std::string formatedCounter(int n)
 
 Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 {
+    inputs.push_back(&
+    InputManager::addEventInput(
+        "top-down view", GLFW_KEY_KP_7, 0, GLFW_PRESS, [&]() {
+
+            orbitController.enable2DView = !orbitController.enable2DView;
+
+            if(orbitController.enable2DView)
+            {
+                orbitController.View2DLock = normalize(vec3(0, 1, 0));
+                globals.currentCamera->wup = vec3(1, 0, 0);
+                globals.currentCamera->getState().FOV = radians(20.f);
+
+                orbitController.distance *= 4.;
+            }
+            else
+            {
+                globals.currentCamera->wup = vec3(0, 1, 0);
+                globals.currentCamera->getState().FOV = radians(90.f);
+                globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
+
+                orbitController.distance /= 4.;
+            }
+
+        },
+        InputManager::Filters::always, false)
+    );
 
     for(auto &i : inputs)
         i->activated = false;
@@ -500,7 +526,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
             }),
 
 
-            VulpineBlueprintUI::Toggable("Toggle Gravity", "", 
+            VulpineBlueprintUI::Toggable("Gravity", "", 
             [&](Entity *e, float v)
             {
                 PG::world->setIsGravityEnabled(v == 0.f);
@@ -510,6 +536,27 @@ EntityRef Apps::EntityCreator::UIcontrols()
             {
                 return PG::world->isGravityEnabled() && globals.enablePhysics ? 0.f : 1.f;
             }),
+
+            VulpineBlueprintUI::Toggable("Show Grid", "", 
+            [&](Entity *e, float v)
+            {
+                EDITOR::gridPositionScale.w = EDITOR::gridPositionScale.w == 0.f ? 0.5 : 0.f;
+            },
+            [&](Entity *e)
+            {
+                return EDITOR::gridPositionScale.w > 0.f ? 0.f : 1.f;
+            }),
+
+            VulpineBlueprintUI::Toggable("Snap to Grid", "", 
+            [&](Entity *e, float v)
+            {
+                snapToGrid = v == 0.f;
+            },
+            [&](Entity *e)
+            {
+                return snapToGrid ? 0.f : 1.f;
+            }),
+
 
             VulpineBlueprintUI::NamedEntry(U"Entity Name", entityNameEntry), 
             
@@ -528,6 +575,12 @@ EntityRef Apps::EntityCreator::UIcontrols()
             {
                 this->currentEntity.ref->comp<EntityInfos>().name = this->currentEntity.name;
                 std::string fileName = "data/[0] Export/Entity Editor/" + this->currentEntity.name + ".vEntity";
+
+                auto it = Loader<EntityRef>::loadingInfos.find(this->currentEntity.name);
+                if(it != Loader<EntityRef>::loadingInfos.end())
+                {
+                    fileName = it->second->buff->getSource();
+                }
 
                 VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
                 DataLoader<EntityRef>::write(this->currentEntity.ref, out);
@@ -587,6 +640,8 @@ void Apps::EntityCreator::init()
         GG::skyboxType = 2;
 
         PG::world->setIsGravityEnabled(false);
+
+        EDITOR::gridPositionScale.w = 0.5f;
 
         glLineWidth(5);
     }
@@ -665,12 +720,14 @@ void Apps::EntityCreator::init()
     }
 
     /****** Creating World Grid Helper ******/
+    if(false)
     {
         EntityModel model = EntityModel{ObjectGroupRef(newObjectGroup())};
 
         float inf = 5000;
 
-        vec3 color = VulpineColorUI::DarkBackgroundColor1;
+        // vec3 color = VulpineColorUI::DarkBackgroundColor1;
+        vec3 color = VulpineColorUI::HightlightColor6;
 
         // model->add(
         //     LineHelperRef(new LineHelper(
@@ -694,25 +751,27 @@ void Apps::EntityCreator::init()
         // );
 
         int size = 50;
+        float scale = 0.25;
         for(int i = -size; i <= size; i+=5)
         {
             // if(i == 0) continue;
 
             model->add(
                 LineHelperRef(new LineHelper(
-                    vec3(+size, 0, i), 
-                    vec3(-size, 0, i), 
+                    vec3(+size*scale, 0, i*scale), 
+                    vec3(-size*scale, 0, i*scale), 
                     i == 0 ? color*2.f : color))
             );
 
             model->add(
                 LineHelperRef(new LineHelper(
-                    vec3(i, 0, +size), 
-                    vec3(i, 0, -size), 
+                    vec3(i*scale, 0, +size*scale), 
+                    vec3(i*scale, 0, -size*scale), 
                     i == 0 ? color*2.f : color))
             );
         }
 
+        // MeshModel3D texturedGrid = meshmo
 
         ComponentModularity::addChild(*appRoot, 
             newEntity("World Grid Helper"
@@ -740,7 +799,6 @@ void Apps::EntityCreator::update()
 
     globals.currentCamera->setMouseFollow(cursorOnGameScreen);
     
-
     // bool doClear = false;
 
     // for(auto &i : *ComponentGlobals::ComponentNamesMap)
@@ -938,7 +996,7 @@ void Apps::EntityCreator::update()
 
             gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::SHOW);
 
-            float scale = orbitController.distance / 3.5;
+            float scale = globals.currentCamera->getState().FOV/radians(90.f) * orbitController.distance / 3.5;
             gizmo->comp<EntityModel>()->getMeshes()[1]->state.scaleScalar(scale);
             gizmo->comp<EntityModel>()->getMeshes()[2]->state.scaleScalar(scale);
             gizmo->comp<EntityModel>()->getMeshes()[3]->state.scaleScalar(scale);
@@ -1066,8 +1124,13 @@ void Apps::EntityCreator::update()
             }
         
         }
+        
+        if(snapToGrid)
+            s.position = round(s.position*4.f)/4.f;
 
         s.initPosition = s.position;
+
+        EDITOR::gridPositionScale = vec4(s.position, EDITOR::gridPositionScale.w);
     }
     else
         gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::HIDE);
@@ -1092,6 +1155,9 @@ void Apps::EntityCreator::clean()
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
     globals.currentCamera->getState().FOV = radians(90.f);
+    globals.currentCamera->wup = vec3(0, 1, 0);
+
+    EDITOR::gridPositionScale.w = 0.f;
 
     appRoot = EntityRef();
     currentEntity.ref = EntityRef();

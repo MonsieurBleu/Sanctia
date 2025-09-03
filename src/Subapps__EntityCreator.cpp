@@ -868,6 +868,8 @@ void Apps::EntityCreator::update()
     bool cursorOnGameScreen = !(cursor.x < 0 || cursor.y < 0 || cursor.x > 1 || cursor.y > 1);
 
     globals.currentCamera->setMouseFollow(cursorOnGameScreen);
+
+    orbitController.subWindowCenter = (box.max + box.min)*.25f + .5f;
     
     // bool doClear = false;
 

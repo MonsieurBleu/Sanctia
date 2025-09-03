@@ -22,7 +22,7 @@ Game::Game(GLFWwindow *window) : App(window){}
 
 void Game::init(int paramSample)
 {
-
+    WidgetBox::tabbingSpacingScale = vec2(.5);
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
    
     // globals._renderScale = 0.5;

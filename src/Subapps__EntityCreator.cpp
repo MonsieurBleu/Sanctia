@@ -103,34 +103,56 @@ std::string Apps::EntityCreator::processNewLoadedChild(Entity *c)
 
 EntityRef Apps::EntityCreator::UImenu()
 {
-    // auto menu = newEntity("ENTITY EDITOR APP CONTROLS"
-    //     , UI_BASE_COMP
-    //     , WidgetBox()
-    //     , WidgetStyle()
-    //         // .setbackgroundColor1(VulpineColorUI::HightlightColor1)
-    //         .setautomaticTabbing(30)
-    //     // , WidgetBackground()
-    // );
+    auto referencedEntitiesTitles = newEntity("Referenced Entitie Titles"
+        , UI_BASE_COMP
+        // , VulpineBlueprintUI::UIcontext
+        , WidgetBox(vec2(-1, 1), vec2(-1, -0.9))
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+    );
 
+    auto referencedEntitiesSubMenu = newEntity("Referenced Entitie Sub Menu"
+        , UI_BASE_COMP
+        // , VulpineBlueprintUI::UIcontext
+        , WidgetBox(vec2(-1, 1), vec2(-0.9, 1))
+        , WidgetStyle()
+    );
 
-    // for(auto &i : Loader<EntityRef>::loadingInfos)
-    // {
-    //     ComponentModularity::addChild(
-    //         *menu,
-    //         newEntity(i.second->buff->getSource()
-    //             , UI_BASE_COMP
-    //             , WidgetBox()
-    //             , WidgetStyle()
-    //                 .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
-    //                 .settextColor1(VulpineColorUI::DarkBackgroundColor1)
-    //             , WidgetBackground()
-    //             , WidgetText(UFTconvert.from_bytes(i.first))
-    //             , WidgetButton()
-    //         )
-    //     );
-    // }
+    auto currentEntityEditorTitles = newEntity("Current Entity Editor Titles"
+        , UI_BASE_COMP
+        // , VulpineBlueprintUI::UIcontext
+        , WidgetBox(vec2(-1, 1), vec2(-1, -0.9))
+        , WidgetStyle()
+            .setautomaticTabbing(1)
+    );
 
-    // return menu;
+    auto currentEntityEditorSubMenu = newEntity("Current Entity Editor Sub Menu"
+        , UI_BASE_COMP
+        // , VulpineBlueprintUI::UIcontext
+        , WidgetBox(vec2(-1, 1), vec2(-0.9, 1))
+        , WidgetStyle()
+    );
+
+    auto currentEntityEditor = newEntity("Current Entity Editor"
+        , UI_BASE_COMP
+        // , VulpineBlueprintUI::UIcontext
+        , WidgetBox()
+        , WidgetStyle()
+        , EntityGroupInfo({
+            currentEntityEditorTitles, currentEntityEditorSubMenu
+        })
+    );
+
+    auto referencedEntitiesMenu = newEntity("Referenced Entities Menu"
+        , UI_BASE_COMP
+        // , VulpineBlueprintUI::UIcontext
+        , WidgetBox()
+        , WidgetStyle()
+        , EntityGroupInfo({
+            referencedEntitiesTitles, 
+            referencedEntitiesSubMenu
+        })
+    );
 
     auto toLoadMenu = VulpineBlueprintUI::StringListSelectionMenu(
         "Entities To Load",
@@ -185,10 +207,37 @@ EntityRef Apps::EntityCreator::UImenu()
         }, 
         [&](Entity *e)
         {
-            return currentEntity.name == e->comp<EntityInfos>().name ? 0.f : 1.f;
+            if(e->hasComp<EntityGroupInfo>())
+            {
+                auto parent = e->comp<EntityGroupInfo>().parent;
 
-            // return 0.;
-        }
+                if(parent && parent->comp<EntityGroupInfo>().children.size() == 1)
+                {
+                    std::string name = Loader<EntityRef>::loadingInfos[e->comp<EntityInfos>().name]->buff->getSource();
+                    name[0] = name[1] = ' ';
+
+                    auto path = newEntity(e->comp<EntityInfos>().name + " - editor path"
+                        , UI_BASE_COMP
+                        , WidgetBox(vec2(-1./3., 1), vec2(-1, 1))
+                        , WidgetStyle()
+                            .settextColor1(VulpineColorUI::HightlightColor1)
+                        , WidgetText(UFTconvert.from_bytes(name), StringAlignement::TO_LEFT)
+                    );
+
+                    parent->comp<WidgetStyle>().setautomaticTabbing(0);
+                    
+                    auto &box = e->comp<WidgetBox>();
+                    box.set(
+                        vec2(-1, -1./3.), vec2(box.initMin.y, box.initMax.y)
+                    );
+                    
+                    ComponentModularity::addChild(*parent, path);
+                }
+            }
+
+            return currentEntity.name == e->comp<EntityInfos>().name ? 0.f : 1.f;
+        },
+        -0.25, VulpineColorUI::HightlightColor1, 0.0
     );
 
 
@@ -205,7 +254,8 @@ EntityRef Apps::EntityCreator::UImenu()
                 return currentEntity.ref->state[ComponentGlobals::ComponentNamesMap->at(e->comp<EntityInfos>().name)] ? 0.f : 1.f;
             else
                 return 1.f;
-        }
+        },
+        -0.25, VulpineColorUI::HightlightColor3, 0.0625
     );
 
 
@@ -269,7 +319,8 @@ EntityRef Apps::EntityCreator::UImenu()
         {
 
             return 0.;
-        }
+        },
+        -0.25, VulpineColorUI::HightlightColor4, 0.0625
     );
 
 
@@ -296,52 +347,42 @@ EntityRef Apps::EntityCreator::UImenu()
                 return controlledEntity->comp<EntityInfos>().name == e->comp<EntityInfos>().name ? 0.f : 1.f;
             else
                 return 1.f;
-        }
+        },
+        -0.25, VulpineColorUI::HightlightColor2, 0.0625
     );
 
-
-    auto LoadEntity = VulpineBlueprintUI::NamedEntry(
-        U"Load Entity", toLoadMenu, 
-        0.05, true
+    VulpineBlueprintUI::AddToSelectionMenu(
+        referencedEntitiesTitles, 
+        referencedEntitiesSubMenu, 
+        newEntity("Load Entity Menu"
+            , UI_BASE_COMP
+            , WidgetBox()
+            , WidgetStyle()
+                .setautomaticTabbing(1)
+            , EntityGroupInfo({
+                toLoadMenu,
+                // newEntity()
+            })
+        ),
+        "Load Entity"
     );
 
-    auto AddChildren = VulpineBlueprintUI::NamedEntry(
-        U"Add Children", childrenToLoadMenu, 
-        0.05, true
+    VulpineBlueprintUI::AddToSelectionMenu(
+        referencedEntitiesTitles, 
+        referencedEntitiesSubMenu, 
+        newEntity("Add Entity As Child Menu"
+            , UI_BASE_COMP
+            , WidgetBox()
+            , WidgetStyle()
+                .setautomaticTabbing(1)
+            , EntityGroupInfo({
+                childrenToLoadMenu,
+                newEntity()
+            })
+        ),
+        "Add Entity As Child"
     );
 
-    auto CurrentComponent = VulpineBlueprintUI::NamedEntry(
-        U"Current Components", componentNameViewer, 
-        0.05, true
-    );
-
-    LoadEntity->set<WidgetBackground>(WidgetBackground());
-    LoadEntity->comp<WidgetStyle>()
-        .setbackgroundColor1(VulpineColorUI::HightlightColor1*vec4(1,1,1,0)+vec4(0,0,0,0.5))
-        .setbackGroundStyle(UiTileType::SQUARE)
-        ;
-
-    AddChildren->set<WidgetBackground>(WidgetBackground());
-    AddChildren->comp<WidgetStyle>()
-        .setbackgroundColor1(VulpineColorUI::HightlightColor2*vec4(1,1,1,0)+vec4(0,0,0,0.5))
-        .setbackGroundStyle(UiTileType::SQUARE)
-        ;
-
-    CurrentComponent->set<WidgetBackground>(WidgetBackground());
-    CurrentComponent->comp<WidgetStyle>()
-        .setbackgroundColor1(VulpineColorUI::HightlightColor3*vec4(1,1,1,0)+vec4(0,0,0,0.5))
-        .setbackGroundStyle(UiTileType::SQUARE)
-        ;
-
-    auto referencedEntityMenu = newEntity("Referenced Entities Menu"
-        , UI_BASE_COMP
-        , WidgetBox()
-        , WidgetStyle()
-            .setautomaticTabbing(1)
-        , EntityGroupInfo({
-            LoadEntity, AddChildren, CurrentComponent
-        })
-    );
 
     auto ChildrenManipMenu = newEntity("Children Manipulation Menu"
         , UI_BASE_COMP
@@ -367,6 +408,8 @@ EntityRef Apps::EntityCreator::UImenu()
                             , EntityGroupInfo({
 
                                 VulpineBlueprintUI::NamedEntry(U"X",
+                                    
+
                                     VulpineBlueprintUI::ValueInput("X Position"
                                         , [&](float f)
                                         {
@@ -483,13 +526,40 @@ EntityRef Apps::EntityCreator::UImenu()
         })
     );
 
+    VulpineBlueprintUI::AddToSelectionMenu(
+        currentEntityEditorTitles, 
+        currentEntityEditorSubMenu, 
+        ChildrenManipMenu,
+        "Chidren Edit"
+    );
+
+    VulpineBlueprintUI::AddToSelectionMenu(
+        currentEntityEditorTitles, 
+        currentEntityEditorSubMenu, 
+        newEntity("Component Editor"
+            , UI_BASE_COMP
+            , WidgetBox()
+            , WidgetStyle()
+                .setautomaticTabbing(1)
+            , EntityGroupInfo({
+                componentNameViewer,
+                newEntity()
+            })
+        ),
+        "Component Edit"
+    );
+
+    referencedEntitiesTitles->comp<EntityGroupInfo>().children[0]->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+    currentEntityEditorTitles->comp<EntityGroupInfo>().children[0]->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
     return newEntity("ENTITY EDITOR APP CONTROLS"
         , UI_BASE_COMP
+        // , VulpineBlueprintUI::UIcontext
         , WidgetBox()
         , WidgetStyle()
             .setautomaticTabbing(2)
         , EntityGroupInfo({
-            referencedEntityMenu, ChildrenManipMenu
+            referencedEntitiesMenu, currentEntityEditor
         })
     );
 }
@@ -986,6 +1056,8 @@ void Apps::EntityCreator::update()
         {
             auto &lodi = controlledEntity->comp<LevelOfDetailsInfos>();
 
+            // std::cout << lodi.aabbmax << "\t" << lodi.aabbmin << "\n";
+
             vec3 extent = lodi.aabbmax - lodi.aabbmin;
             vec3 position = lodi.aabbmin + extent*0.5f;
 
@@ -1015,10 +1087,10 @@ void Apps::EntityCreator::update()
             {
                 aabbCenterToEntityPos = position - s.position;
 
-                globals.currentCamera->setPosition(
-                    globals.currentCamera->getPosition() - (orbitController.position - position)
-                );
-                orbitController.position = position;
+                // globals.currentCamera->setPosition(
+                //     globals.currentCamera->getPosition() - (orbitController.position - position)
+                // );
+                // orbitController.position = position;
 
                 for(int i = 0; i < 3; i++)
                 {
@@ -1128,7 +1200,8 @@ void Apps::EntityCreator::update()
         if(snapToGrid)
             s.position = round(s.position*4.f)/4.f;
 
-        s.initPosition = s.position;
+        auto ps = controlledEntity->comp<EntityGroupInfo>().parent->comp<EntityState3D>();
+        s.initPosition = (s.position - ps.position) * ps.quaternion;
 
         EDITOR::gridPositionScale = vec4(s.position, EDITOR::gridPositionScale.w);
     }
@@ -1161,6 +1234,7 @@ void Apps::EntityCreator::clean()
 
     appRoot = EntityRef();
     currentEntity.ref = EntityRef();
+    controlledEntity = nullptr;
     gizmo = EntityRef();
 
     physicsMutex.lock();

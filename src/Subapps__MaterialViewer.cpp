@@ -306,17 +306,6 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         
     );
 
-    auto root = newEntity("MATERIAL VIEW APP MENU"
-        // , UI_BASE_COMP
-        , VulpineBlueprintUI::UIcontext
-        , WidgetBox()
-        , WidgetStyle()
-            .settextColor1(VulpineColorUI::HightlightColor1)
-        // , WidgetText(U"...")
-        // , WidgetBackground()
-        , EntityGroupInfo({titleTab, menuInfosTab})
-    );
-
     refreshPalettesList();
 
     VulpineBlueprintUI::AddToSelectionMenu(titleTab, menuInfosTab,
@@ -399,6 +388,17 @@ EntityRef Apps::MaterialViewerApp::UImenu()
     // spawnHelper();
 
     titleTab->comp<EntityGroupInfo>().children[0]->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
+    auto root = newEntity("MATERIAL VIEW APP MENU"
+        // , UI_BASE_COMP
+        , VulpineBlueprintUI::UIcontext
+        , WidgetBox()
+        , WidgetStyle()
+            .settextColor1(VulpineColorUI::HightlightColor1)
+        // , WidgetText(U"...")
+        // , WidgetBackground()
+        , EntityGroupInfo({titleTab, menuInfosTab})
+    );
 
     return root;
 }

@@ -130,13 +130,13 @@ COMPONENT_DEFINE_REPARENT(EntityState3D)
 
     auto &ps = newParent.comp<EntityState3D>();
     auto &cs = child->comp<EntityState3D>();
-    cs.position = cs.initPosition + ps.position;
 
     if(ps.usequat)
     {
         if(cs.usequat)
         {
             cs.quaternion = ps.quaternion * cs.initQuat;
+            cs.position = ps.position + (ps.quaternion * cs.initPosition);
         }
         else
         {
@@ -150,7 +150,7 @@ COMPONENT_DEFINE_REPARENT(EntityState3D)
         if(cs.usequat)
         {
             cs.quaternion = directionToQuat(ps.lookDirection)*cs.initQuat;
-            // std::cout << glm::to_string(cs.quaternion) << "\n";
+            cs.position = ps.position + (directionToQuat(ps.lookDirection) * cs.initPosition);
         }
         else
         {
@@ -674,12 +674,12 @@ template<> void Component<RigidBody>::ComponentElem::clean()
 
 void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
 {
-    
     bool isPureUI = 
         e->ids[ComponentCategory::UI]      != NO_ENTITY &&
         e->ids[ComponentCategory::AI]      == NO_ENTITY &&
         e->ids[ComponentCategory::PHYSIC]  == NO_ENTITY &&
-        e->ids[ComponentCategory::GRAPHIC] == NO_ENTITY
+        e->ids[ComponentCategory::GRAPHIC] == NO_ENTITY &&
+        e->ids[ComponentCategory::DATA]    == NO_ENTITY
         ;
     
     if(isPureUI)

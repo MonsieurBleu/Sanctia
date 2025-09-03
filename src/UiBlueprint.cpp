@@ -387,12 +387,12 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
             ),
             
 
-            VulpineBlueprintUI::NamedEntry(U"Sun Theta", VulpineBlueprintUI::SmoothSlider("Sun Theta", 0, 1, 64, 
+            VulpineBlueprintUI::NamedEntry(U"Sun Elevation", VulpineBlueprintUI::SmoothSlider("Sun Theta", 0, 1, 64, 
             [](Entity *e, float v){GG::customSunTheta = v;},
             [](Entity *e){return GG::customSunTheta;}
             )),
 
-            VulpineBlueprintUI::NamedEntry(U"Sun Phi", VulpineBlueprintUI::SmoothSlider("Sun Phi", 0, 1, 64, 
+            VulpineBlueprintUI::NamedEntry(U"Sun Direction", VulpineBlueprintUI::SmoothSlider("Sun Phi", 0, 1, 64, 
             [](Entity *e, float v){GG::customSunPhi = v;},
             [](Entity *e){return GG::customSunPhi;}
             )),

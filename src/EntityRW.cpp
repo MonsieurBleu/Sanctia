@@ -8,11 +8,19 @@
 
 DATA_WRITE_FUNC(EntityRef)
 {
-    out->Tabulate();
-    // out->write("\"", 1);
-    // out->write(CONST_STRING_SIZED(data->comp<EntityInfos>().name));
-    // out->write("\"", 1);
-    out->write("~", 1);
+    if(out->getTabLevel() == 0)
+    {
+        out->Tabulate();
+        out->write("~", 1);
+    }
+    else
+    {
+        out->Tabulate();
+        out->write("\"", 1);
+        out->write(CONST_STRING_SIZED(data->comp<EntityInfos>().name));
+        out->write("\"", 1);
+    }
+
 
     for(auto &i : ComponentModularity::WriteFuncs)
         if(data->state[i.ComponentID])

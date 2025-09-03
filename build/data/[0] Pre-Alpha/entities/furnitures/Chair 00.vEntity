@@ -25,22 +25,11 @@
 					;
 				: ColliderMaterial 
 					: bounciness +0.000000e+00
-					: friction +4.999998e-01
+					: friction +4.999993e-01
 					;
 				: isTrigger f
 				;
 			;
 		: active t
-		;
-	: EntityGroupInfo 
-		: child : ~
-			: EntityState3D 
-				: usequat t
-				: useinit t
-				;
-			: EntityGroupInfo 
-				: child | "ZweiHander"
-				;
-			;
 		;
 	;

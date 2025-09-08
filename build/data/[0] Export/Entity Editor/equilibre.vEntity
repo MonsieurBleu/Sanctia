@@ -1,0 +1,56 @@
+~
+	: EntityState3D 
+		: usequat t
+		: useinit t
+		;
+	: EntityGroupInfo 
+		: child : "Chair 00 [001]"
+			: EntityState3D 
+				: position +0.000000e+00 +0.000000e+00 -1.000000e+00
+				: initPosition +0.000000e+00 +0.000000e+00 -1.000000e+00
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "Chair 00"
+				;
+			;
+		: child : "Player [001]"
+			: EntityState3D 
+				: position +1.750000e+00 +0.000000e+00 +7.500000e-01
+				: initQuat +5.372996e-01 +0.000000e+00 +8.433914e-01 +0.000000e+00
+				: initPosition +1.750000e+00 +0.000000e+00 +7.500000e-01
+				: quaternion +5.372996e-01 +0.000000e+00 +8.433914e-01 +0.000000e+00
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "Player"
+				;
+			;
+		: child : "ZweiHander [001]"
+			: EntityState3D 
+				: position +1.741632e-01 +1.155882e+00 -9.077669e-01
+				: initQuat -8.674384e-02 -5.369976e-01 +8.323212e-01 -1.065384e-01
+				: initPosition +1.741632e-01 +1.155882e+00 -9.077669e-01
+				: quaternion -8.674384e-02 -5.369976e-01 +8.323212e-01 -1.065384e-01
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "ZweiHander"
+				;
+			;
+		: child : "Table 00 [001]"
+			: EntityState3D 
+				: position +0.000000e+00 -7.019271e-01 -8.216168e-01
+				: initPosition +0.000000e+00 -7.019271e-01 -8.216168e-01
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "Table 00"
+				;
+			;
+		;
+	;

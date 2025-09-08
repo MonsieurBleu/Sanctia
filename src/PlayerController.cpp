@@ -16,9 +16,12 @@ void PlayerController::update()
     if(GG::playerEntity->hasComp<RigidBody>())
         body = GG::playerEntity->comp<RigidBody>();
 
+    if(!GG::playerEntity->hasComp<EntityDeplacementState>())
+        return;
+
     if(!body) return;
 
-    if(!GG::playerEntity->comp<EntityStats>().alive) return;
+    if(GG::playerEntity->hasComp<EntityStats>() && !GG::playerEntity->comp<EntityStats>().alive) return;
 
     updateDirectionStateWASD();
 
@@ -213,6 +216,9 @@ void PlayerController::clean()
     // body->v.z = 0;
 
     upFactor = rightFactor = frontFactor = 0;
+
+    glfwSetInputMode(globals.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    globals.currentCamera->setMouseFollow(false);
 }
 
 void PlayerController::init()

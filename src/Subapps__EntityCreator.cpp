@@ -12,6 +12,9 @@
 
 #include <App.hpp>
 
+#include <Game.hpp>
+#include <PlayerController.hpp>
+
 vec3 GimzmoProject(int axis, vec3 gizmoPosition, vec3 rayOrigin, vec3 rayDirection)
 {
     rayOrigin -= gizmoPosition;
@@ -41,30 +44,115 @@ std::string formatedCounter(int n)
 Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 {
     inputs.push_back(&
-    InputManager::addEventInput(
-        "top-down view", GLFW_KEY_KP_7, 0, GLFW_PRESS, [&]() {
+        InputManager::addEventInput(
+            "top-down view", GLFW_KEY_KP_7, 0, GLFW_PRESS, [&]() {
 
-            orbitController.enable2DView = !orbitController.enable2DView;
+                orbitController.enable2DView = !orbitController.enable2DView;
 
-            if(orbitController.enable2DView)
-            {
-                orbitController.View2DLock = normalize(vec3(0, 1, 0));
-                globals.currentCamera->wup = vec3(1, 0, 0);
-                globals.currentCamera->getState().FOV = radians(20.f);
+                if(orbitController.enable2DView)
+                {
+                    globals.currentCamera->setType(CameraType::ORTHOGRAPHIC);
 
-                orbitController.distance *= 4.;
-            }
-            else
-            {
-                globals.currentCamera->wup = vec3(0, 1, 0);
-                globals.currentCamera->getState().FOV = radians(90.f);
-                globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
+                    orbitController.View2DLock = normalize(vec3(0, 1, 0));
+                    globals.currentCamera->wup = vec3(1, 0, 0);
+                    
+                    float a = globals.windowWidth()/globals.windowHeight();
 
-                orbitController.distance /= 4.;
-            }
+                    // globals.currentCamera->dimentionFactor = 1.f/100.f;
 
-        },
-        InputManager::Filters::always, false)
+                    // globals.currentCamera->init(
+                    //     0.f, 10.f/a, 10.f*a, 0.1, 100                        
+                    // );
+
+                    // globals.currentCamera->getState().FOV = radians(20.f);
+                    // orbitController.distance *= 4.;
+                }
+                else
+                {
+                    globals.currentCamera->setType(CameraType::PERSPECTIVE);
+
+                    globals.currentCamera->wup = vec3(0, 1, 0);
+
+                    globals.currentCamera->dimentionFactor = 1.f;
+
+                    // globals.currentCamera->getState().FOV = radians(90.f);
+                    // globals.currentCamera->init(
+                    //     radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f                    
+                    // );
+                    globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
+
+
+                    // orbitController.distance /= 4.;
+                }
+
+            },
+            InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Remove current controlled child", GLFW_KEY_DELETE, 0, GLFW_PRESS, [&]() {    
+                if(controlledEntity)
+                {
+                    RemoveCurrentEntityChild(controlledEntity->comp<EntityInfos>().name);
+                }
+            },
+            InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Play Current Child", GLFW_KEY_P, 0, GLFW_PRESS, [&]() {
+                if(controlledEntity)
+                {
+                    playEntity(controlledEntity->comp<EntityGroupInfo>().children[0]);
+                }
+                else if(globals._currentController != &orbitController)
+                {
+                    resumePlayToEditor();
+                }
+            },
+            InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Copy Current Child", GLFW_KEY_J, GLFW_MOD_CONTROL, GLFW_PRESS, [&]() {
+                if(controlledEntity)
+                {
+                    physicsMutex.lock();
+
+                    std::string str = controlledEntity->comp<EntityInfos>().name;
+                    for(int i = 0; i < 6; i++)
+                        str.pop_back();
+
+                    if(!this->currentEntity.ref.get())
+                    {
+                        this->currentEntity.ref = newEntity(this->currentEntity.name, EntityState3D(true));
+                    }
+                    
+                    VulpineTextBuffRef source(new VulpineTextBuff(
+                        Loader<EntityRef>::loadingInfos[str]->buff->getSource().c_str()
+                    ));
+
+                    auto c = DataLoader<EntityRef>::read(source);
+
+                    EntityState3D transform = controlledEntity->comp<EntityState3D>();
+                    
+                    EntityRef p = newEntity(processNewLoadedChild(str), transform);
+
+                    ComponentModularity::addChild(*p, c);
+
+                    ComponentModularity::addChild(*this->currentEntity.ref,p);
+
+                    physicsMutex.unlock();
+
+                    controlledEntity = p.get();
+                    controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+
+                }
+            },
+            InputManager::Filters::always, false)
     );
 
     for(auto &i : inputs)
@@ -88,10 +176,124 @@ void Apps::EntityCreator::UpdateCurrentEntityTransform()
     // }
 }
 
-std::string Apps::EntityCreator::processNewLoadedChild(Entity *c)
-{
-    std::string str = c->comp<EntityInfos>().name;
 
+bool Apps::EntityCreator::isEntityPlayable(EntityRef e)
+{
+    return 
+        e->hasComp<EntityDeplacementState>() &&
+        e->hasComp<SkeletonAnimationState>() &&
+        e->hasComp<EntityState3D>() &&
+        !e->comp<EntityState3D>().usequat && 
+        e->hasComp<EntityModel>() &&
+        e->hasComp<RigidBody>()
+        ;
+}
+
+void Apps::EntityCreator::playEntity(EntityRef e)
+{
+    if(!isEntityPlayable(e))
+        return;
+
+    if(orbitController.enable2DView)
+    {
+        globals.currentCamera->wup = vec3(0, 1, 0);
+        globals.currentCamera->getState().FOV = radians(90.f);
+    }
+
+    globals.currentCamera->setDirection(
+        e->comp<EntityState3D>().lookDirection
+    );
+
+    Game::playerControl = PlayerController(globals.currentCamera);
+    App::setController(&Game::playerControl);
+    GG::playerEntity = e;
+    globals.currentCamera->setMouseFollow(true);
+
+    PG::world->setIsGravityEnabled(true);
+    globals.enablePhysics = true;
+
+    controlledEntity = nullptr;
+}
+
+void Apps::EntityCreator::resumePlayToEditor()
+{ 
+    if(globals._currentController == &orbitController)
+        return;
+    
+    // orbitController = OrbitController();
+    App::setController(&orbitController);
+    GG::playerEntity = EntityRef();
+
+    PG::world->setIsGravityEnabled(false);
+    globals.enablePhysics = false;
+
+    if(orbitController.enable2DView)
+    {
+        globals.currentCamera->wup = vec3(1, 0, 0);
+        globals.currentCamera->getState().FOV = radians(20.f);
+    }
+}
+
+void Apps::EntityCreator::RemoveCurrentEntityChild(const std::string &str)
+{
+    for(auto c : currentEntity.ref->comp<EntityGroupInfo>().children)
+        if(str == c->comp<EntityInfos>().name)
+        {
+            if(controlledEntity == c.get())
+                controlledEntity = nullptr;
+            
+            ComponentModularity::removeChild(*currentEntity.ref.get(), c.get());
+            UI_currentEntityChildren.erase(str);
+        }
+}
+
+void HideEntityRecursive(EntityRef e)
+{
+    if(e->hasComp<EntityModel>() && e->comp<EntityModel>())
+    {
+        e->comp<EntityModel>()->state.setHideStatus(
+
+            e->comp<EntityModel>()->state.hide == ModelStatus::HIDE ?
+
+             ModelStatus::SHOW :  ModelStatus::HIDE
+        );
+    }
+
+    if(e->hasComp<EntityGroupInfo>())
+    {
+        for(auto c : e->comp<EntityGroupInfo>().children)
+            HideEntityRecursive(c);
+    }
+}
+
+bool isEntityHidden(EntityRef e)
+{
+    if(e->hasComp<EntityModel>() && e->comp<EntityModel>())
+    {
+        return e->comp<EntityModel>()->state.hide == ModelStatus::HIDE;
+    }
+
+    if(e->hasComp<EntityGroupInfo>())
+    {
+        for(auto c : e->comp<EntityGroupInfo>().children)
+            if(isEntityHidden(c))
+                return true;
+    }
+
+    return false;
+}
+
+void Apps::EntityCreator::HideCurrentEntityChild(const std::string &str)
+{
+    for(auto c : currentEntity.ref->comp<EntityGroupInfo>().children)
+        if(str == c->comp<EntityInfos>().name)
+        {
+            HideEntityRecursive(c);
+        }
+}
+
+std::string Apps::EntityCreator::processNewLoadedChild(const std::string &str)
+{
     int nb = 0;
     while(UI_currentEntityChildren.find(str + formatedCounter(++nb)) != UI_currentEntityChildren.end());
 
@@ -160,8 +362,9 @@ EntityRef Apps::EntityCreator::UImenu()
         [&](Entity *e, float v)
         {
             physicsMutex.lock();
-
+            
             controlledEntity = nullptr;
+            resumePlayToEditor();
 
             // UI_currentEntityComponent.clear();
             UI_currentEntityChildren.clear();
@@ -196,7 +399,7 @@ EntityRef Apps::EntityCreator::UImenu()
             {
                 for(auto c2 : c->comp<EntityGroupInfo>().children)
                 {
-                    processNewLoadedChild(c2.get());
+                    processNewLoadedChild(c2->comp<EntityInfos>().name);
                 }
                 
             }
@@ -268,19 +471,9 @@ EntityRef Apps::EntityCreator::UImenu()
 
             std::string str = e->comp<EntityInfos>().name;
 
-            this->currentEntity.name = "new Entity";
-
             if(!this->currentEntity.ref.get())
             {
                 this->currentEntity.ref = newEntity(this->currentEntity.name, EntityState3D(true));
-            
-            //     ComponentModularity::removeChild(
-            //         *this->appRoot,
-            //         this->currentEntity.ref
-            //     );
-
-            //     this->currentEntity.ref = EntityRef();
-            //     GG::ManageEntityGarbage__WithPhysics();
             }
             
             VulpineTextBuffRef source(new VulpineTextBuff(
@@ -291,22 +484,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
             EntityState3D transform = EntityState3D(true);
 
-            // static int cnt = 0;
-            // // transform.useinit = true;
-            // transform.position.x = transform.initPosition.x = cnt++;
-            
-            // int nb = 0;
-            // // for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
-            // //     for(auto c2 : c->comp<EntityGroupInfo>().children)
-            // //         if(c2->comp<EntityInfos>().name == str)
-            // //             nb++;
-                    
-            // while(UI_currentEntityChildren.find(str + formatedCounter(++nb)) != UI_currentEntityChildren.end());
-
-            // std::string finalName = str + formatedCounter(nb);
-            // UI_currentEntityChildren[finalName] = EntityRef();
-
-            auto p = newEntity(processNewLoadedChild(e), transform);
+            auto p = newEntity(processNewLoadedChild(e->comp<EntityInfos>().name), transform);
 
             ComponentModularity::addChild(*p, c);
 
@@ -343,6 +521,92 @@ EntityRef Apps::EntityCreator::UImenu()
         }, 
         [&](Entity *e)
         {
+            if(e->hasComp<EntityGroupInfo>())
+            {
+                auto parent = e->comp<EntityGroupInfo>().parent;
+
+                if(parent && parent->comp<EntityGroupInfo>().children.size() == 1)
+                {
+                    /* Remove Entity Button */
+                    auto remove = newEntity("Remove Entity"
+                        , UI_BASE_COMP
+                        , WidgetBox(vec2(-1, -0.85), vec2(-1, 1))
+                        , WidgetBackground()
+                        , WidgetStyle()
+                            .settextColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
+                            .settextColor2(VulpineColorUI::DarkBackgroundColor1Opaque)
+                            .setbackgroundColor1(VulpineColorUI::HightlightColor1)
+                            .setbackgroundColor2(VulpineColorUI::HightlightColor7)
+                            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                        , WidgetText(U"X")
+                        , WidgetButton(
+                            WidgetButton::Type::CHECKBOX,
+                            [&](Entity *b, float){
+                                Entity *e = (Entity *)b->comp<WidgetButton>().usr;
+                                RemoveCurrentEntityChild(e->comp<EntityInfos>().name);
+                            },  
+                            [&](Entity *e){return e->comp<WidgetBox>().isUnderCursor ? 0.f : 1.f;}
+                        ).setusr((uint64)e)
+                    );
+
+                    parent->comp<WidgetStyle>().setautomaticTabbing(0);
+                    
+                    ComponentModularity::addChild(*parent, remove);
+
+                    /* Hide Entity Button */
+                    auto hide = newEntity("Hide Entity"
+                        , UI_BASE_COMP
+                        , WidgetBox(vec2(0.85, 1), vec2(-1, 1))
+                        , WidgetBackground()
+                        , WidgetStyle()
+                            .settextColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
+                            .settextColor2(VulpineColorUI::DarkBackgroundColor1Opaque)
+                            .setbackgroundColor1(VulpineColorUI::HightlightColor4)
+                            .setbackgroundColor2(VulpineColorUI::HightlightColor6)
+                            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                        , WidgetText(U"0")
+                        , WidgetButton(
+                            WidgetButton::Type::CHECKBOX,
+                            [&](Entity *b, float){
+                                Entity *e = (Entity *)b->comp<WidgetButton>().usr;
+                                HideCurrentEntityChild(e->comp<EntityInfos>().name);
+                            },  
+                            [&](Entity *e){
+
+                                std::string str = ((Entity *)e->comp<WidgetButton>().usr)->comp<EntityInfos>().name;
+
+                                for(auto c : currentEntity.ref->comp<EntityGroupInfo>().children)
+                                    if(str == c->comp<EntityInfos>().name)
+                                    {
+                                        if(isEntityHidden(c))
+                                        {
+                                            e->comp<WidgetStyle>()
+                                                .setbackgroundColor2(VulpineColorUI::HightlightColor1)
+                                                ;
+                                        }
+                                        else
+                                        {
+                                            e->comp<WidgetStyle>()
+                                                .setbackgroundColor2(VulpineColorUI::HightlightColor6)
+                                                ;
+                                        }
+                                    }                                
+
+                                return e->comp<WidgetBox>().isUnderCursor ? 0.f : 1.f;
+                            }
+                        ).setusr((uint64)e)
+                    );
+
+                    ComponentModularity::addChild(*parent, hide);
+                    
+                    auto &box = e->comp<WidgetBox>();
+                    box.set(
+                        vec2(-0.85, 0.85), vec2(box.initMin.y, box.initMax.y)
+                    );
+                    
+                }
+            }
+
             if(controlledEntity)
                 return controlledEntity->comp<EntityInfos>().name == e->comp<EntityInfos>().name ? 0.f : 1.f;
             else
@@ -517,9 +781,49 @@ EntityRef Apps::EntityCreator::UImenu()
                             })
                         ),
                         0.25, true
-                    )
+                    ),
 
+                    VulpineBlueprintUI::NamedEntry(U"Other Controls",
+                        newEntity("Other Controls"
+                            , UI_BASE_COMP
+                            , WidgetBox()
+                            , WidgetStyle().setautomaticTabbing(3)
+                            , EntityGroupInfo({
+                                VulpineBlueprintUI::Toggable(
+                                    "Show All Entities", "",
+                                    [&](Entity *e, float f)
+                                    {
+                                        if(currentEntity.ref)
+                                        for(auto c : currentEntity.ref->comp<EntityGroupInfo>().children)
+                                        {
+                                            if(isEntityHidden(c))
+                                                HideEntityRecursive(c);
+                                        }
+                                    },
+                                    [](Entity *e){return 0.;},
+                                    VulpineColorUI::HightlightColor6
+                                ),
+                                VulpineBlueprintUI::Toggable(
+                                    "Play Entity", "",
+                                    [&](Entity *e, float f)
+                                    {
+                                        if(controlledEntity)
+                                            playEntity(controlledEntity->comp<EntityGroupInfo>().children[0]);
+                                    },
+                                    [&](Entity *e)
+                                    {
+                                        if(!controlledEntity || !controlledEntity->comp<EntityGroupInfo>().children.size())
+                                            return 1.f;
 
+                                        return isEntityPlayable(controlledEntity->comp<EntityGroupInfo>().children[0]) ? 0.f : 1.f;
+                                    },
+                                    VulpineColorUI::HightlightColor5
+                                ),
+                                newEntity()
+                            })
+                        ),
+                        0.25, true
+                    ),
 
                 })
             )
@@ -867,7 +1171,10 @@ void Apps::EntityCreator::update()
 
     bool cursorOnGameScreen = !(cursor.x < 0 || cursor.y < 0 || cursor.x > 1 || cursor.y > 1);
 
-    globals.currentCamera->setMouseFollow(cursorOnGameScreen);
+    if(globals._currentController == &orbitController)
+    {
+        globals.currentCamera->setMouseFollow(cursorOnGameScreen);
+    }
 
     orbitController.subWindowCenter = (box.max + box.min)*.25f + .5f;
     
@@ -968,7 +1275,7 @@ void Apps::EntityCreator::update()
 
 
 
-    if(globals.mouseRightClick() && cursorOnGameScreen)
+    if(globals.mouseRightClick() && cursorOnGameScreen && globals._currentController == &orbitController)
     {
         /**** Computing click intersection with current entity child *****/
         float mindist = 1e6;
@@ -1003,7 +1310,7 @@ void Apps::EntityCreator::update()
         }
     }
 
-    if(controlledEntity && gizmoActivated)
+    if(controlledEntity && gizmoActivated && globals._currentController == &orbitController)
     {
         auto &s = controlledEntity->comp<EntityState3D>();
 
@@ -1203,9 +1510,9 @@ void Apps::EntityCreator::update()
             s.position = round(s.position*4.f)/4.f;
 
         auto ps = controlledEntity->comp<EntityGroupInfo>().parent->comp<EntityState3D>();
-        s.initPosition = (s.position - ps.position) * ps.quaternion;
+        s.initPosition = (s.position - ps.position) * (ps.usequat ? ps.quaternion : directionToQuat(ps.lookDirection));
 
-        EDITOR::gridPositionScale = vec4(s.position, EDITOR::gridPositionScale.w);
+        // EDITOR::gridPositionScale = vec4(s.position, EDITOR::gridPositionScale.w);
     }
     else
         gizmo->comp<EntityModel>()->state.setHideStatus(ModelStatus::HIDE);

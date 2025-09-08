@@ -161,9 +161,15 @@ namespace Apps
     {
         private :
 
-            std::string processNewLoadedChild(Entity *c);
+            std::string processNewLoadedChild(const std::string & str);
 
             void UpdateCurrentEntityTransform();
+            void RemoveCurrentEntityChild(const std::string &str);
+            void HideCurrentEntityChild(const std::string &str);
+
+            void playEntity(EntityRef e);
+            void resumePlayToEditor();
+            bool isEntityPlayable(EntityRef e);
 
             OrbitController orbitController;
 

@@ -119,50 +119,22 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
 
 COMPONENT_DEFINE_REPARENT(EntityState3D)
 {
-    // if(
-    //     child->hasComp<RigidBody>() &&
-    //     child->comp<RigidBody>()->getType() != rp3d::BodyType::KINEMATIC
-    //     )
-    //     return;
-
     if(!newParent.hasComp<EntityState3D>())
         return;
 
     auto &ps = newParent.comp<EntityState3D>();
     auto &cs = child->comp<EntityState3D>();
 
-    if(ps.usequat)
-    {
-        if(cs.usequat)
-        {
-            cs.quaternion = ps.quaternion * cs.initQuat;
-            cs.position = ps.position + (ps.quaternion * cs.initPosition);
-        }
-        else
-        {
-            /*
-                TODO : maybe do this part
-            */  
-        }
-    }
+    quat ps_q = ps.usequat ? ps.quaternion : directionToQuat(ps.lookDirection);
+    cs.position = ps.position + (ps_q * cs.initPosition);
+
+    if(cs.usequat)
+        cs.quaternion = ps_q * cs.initQuat;
     else
-    {
-        if(cs.usequat)
-        {
-            cs.quaternion = directionToQuat(ps.lookDirection)*cs.initQuat;
-            cs.position = ps.position + (directionToQuat(ps.lookDirection) * cs.initPosition);
-        }
-        else
-        {
-            /*
-                TODO : maybe do this part
-            */
-        }
-    }
+        cs.lookDirection = normalize(ps_q*vec3(1, 0, 0)*vec3(1, 0, 1));
 
     cs._PhysicTmpPos = cs.position;
     cs._PhysicTmpQuat = cs.quaternion;
-
 
     if(!newParent.hasComp<RigidBody>() && child->hasComp<RigidBody>())
     {
@@ -170,18 +142,21 @@ COMPONENT_DEFINE_REPARENT(EntityState3D)
 
         if(b->getType() != rp3d::BodyType::STATIC)
         {
+            b->setIsActive(false);
             auto childBodyType = b->getType();
             b->setType(rp3d::BodyType::KINEMATIC);
 
             b->setTransform(
                 rp3d::Transform(
-                    PG::torp3d(cs.position), PG::torp3d(cs.quaternion)
+                    PG::torp3d(cs.position), PG::torp3d(cs.usequat ? cs.quaternion : directionToQuat(cs.lookDirection))
                 )
             );
 
             b->setType(childBodyType);
 
             child->set<RigidBody>(b);
+
+            b->setIsActive(true);
         }
 
     }

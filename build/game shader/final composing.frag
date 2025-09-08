@@ -334,4 +334,6 @@ void main()
     _fragColor.a = 1.0;
 
     // _fragColor = abs(texture(bNormal, uv));
+
+    // _fragColor.rgb =  texture(bColor, uv).rgb;
 }

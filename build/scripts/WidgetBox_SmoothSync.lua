@@ -8,6 +8,12 @@ displayMax = vec2(0);
 displayMin = mix(lastMin, boxmin, smoothstep(0, 1, a));
 displayMax = mix(lastMax, boxmax, smoothstep(0, 1, a));
 
+-- if a < 0.1 then
+--     displayMax = displayMin
+--     -- displayMax = lastMax
+--     -- displayMin = lastMin
+-- end
+
 -- if useClassicInterpolation == 1 then
 --     -- displayMin = mix(lastMin, boxmin, smoothstep(0, 1, a));
 --     -- displayMax = mix(lastMax, boxmax, smoothstep(0, 1, a));

@@ -1,4 +1,5 @@
 NpcTest
+*
     :   meshes 
         :   PlayerTest_Surface
             :   mesh      | Beta_Surface_headless
@@ -24,7 +25,7 @@ NpcTest
         ;
     :   state 
         :   position "0 0 -0.075"
-        *:   rotation "0 180 0"*
+        :   rotation "0 180 0"
         ;
     ;
 ;
@@ -42,4 +43,3 @@ NpcTest
         ;
     ;
 ;
-*

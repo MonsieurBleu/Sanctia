@@ -44,7 +44,7 @@ void Game::init(int paramSample)
     App::init();
     
     // activateMainSceneBindlessTextures();
-    activateMainSceneClusteredLighting(ivec3(16, 9, 24), 1024);
+    activateMainSceneClusteredLighting(ivec3(16, 9, 24), 256);
 
 
     finalProcessingStage = ShaderProgram(

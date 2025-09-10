@@ -7,20 +7,32 @@
 
 #include <Scripting/ScriptInstance.hpp>
 
+
+
 EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 {
-    std::function<vec2()> getMinmaxMainThread = []()
+    std::function<vec2(PlottingHelper*)> getMinmaxMainThread = [](PlottingHelper* p)
     {
-        float max = globals.mainThreadTime.getMax().count();
-        return vec2(0, max);
+        float _max = globals.mainThreadTime.getMax().count();
+
+        // _max = *std::max_element(p->getValues().begin(), p->getValues().end());
+
+        // _max = ceil(_max*100.f)/100.f;
+
+        return vec2(0, max(_max, 1e-3f));
     };
 
-    std::function<vec2()> getMinmaxPhysicThread = []()
+    std::function<vec2(PlottingHelper*)> getMinmaxPhysicThread = [](PlottingHelper* p)
     {
-        float max = 1000.f/Game::physicsTicks.freq;
+        float _max = 1000.f/Game::physicsTicks.freq;
         // float max = Game::physicsTimer.getMax().count();
         // float max = Game::physicsWorldUpdateTimer.getMax().count();
-        return vec2(0, max);
+
+        // _max = *std::max_element(p->getValues().begin(), p->getValues().end());
+
+        // _max = ceil(_max*100.f)/100.f;
+
+        return vec2(0, max(_max, 1e-3f));
     };
 
     auto mainThreadPlotters = newEntity("Main Thread Plotters Background"
@@ -50,7 +62,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(
                         ScriptInstance::globalTimers["Main Thread"], 
-                        VulpineColorUI::HightlightColor3,
+                        VulpineColorUI::HightlightColor5,
                         getMinmaxMainThread)
                 })
             )
@@ -84,8 +96,8 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         getMinmaxPhysicThread),
                     VulpineBlueprintUI::TimerPlot(
                         ScriptInstance::globalTimers["Physics Thread"], 
-                        VulpineColorUI::HightlightColor3,
-                        getMinmaxMainThread)
+                        VulpineColorUI::HightlightColor5,
+                        getMinmaxPhysicThread)
                 })
             )
         })
@@ -133,7 +145,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "LUA",
                         [](){return ftou32str(ScriptInstance::globalTimers["Main Thread"].getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor3
+                        VulpineColorUI::HightlightColor5
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "FPS",
@@ -164,7 +176,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "RP3D",
                         [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor5
+                        VulpineColorUI::HightlightColor6
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "SYSTEMS",
@@ -174,7 +186,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "LUA",
                         [](){return ftou32str(ScriptInstance::globalTimers["Physics Thread"].getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor3
+                        VulpineColorUI::HightlightColor5
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "FPS",

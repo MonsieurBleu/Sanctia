@@ -575,11 +575,12 @@ void main()
     mRoughness = pow(mRoughness, 2.0);
 
 
-    viewDir = normalize(_cameraPosition - position);
 
     lcalcPosition = position;
+    paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
+    lcalcPosition = position;
     mClearness = 1.0 - mRoughness;
-    // paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
+    viewDir = normalize(_cameraPosition - position);
 
 
     
@@ -587,104 +588,6 @@ void main()
     float nDotL = max(0., dot(-normalComposed, lights[0].direction.rgb));
 
     vec3 projPos = modelPosition;
-
-    projPos -= projectPointOntoPlane(vec3(0), modelPosition, normalComposed);
-
-    /* Rotation Matrix from normal direction
-    */
-    {
-        vec3 up = vec3(0, 1, 0);
-        vec3 x = abs(dot(normalComposed, up)) < 0.999 ? normalize(cross(up, normalComposed)) : vec3(1, 0, 0);
-        vec3 y = normalize(cross(normalComposed, x));
-
-        // if(abs(dot(normalComposed, vec3(1, 0, 0))) > 0.9)
-        // {
-        //     fragColor.rgb = vec3(1, 0, 0);
-        //     return;
-        // }
-
-        mat3 rot = mat3(
-            x.x, y.x, normalComposed.x,
-            x.y, y.y, normalComposed.y,
-            x.z, y.z, normalComposed.z
-        );
-
-        rot = inverse(rot);
-
-        // projPos = rot * projPos;
-        projPos = projPos * rot;
-
-    }
-
-    projPos = modelPosition;
-
-    // projPos += _iTime*0.01;
-
-    /* n step toon shading
-    {
-        float steps = 4.;
-        float midrange = round(nDotL*steps)/steps;
-        float stepl = .05;
-        nDotL = midrange + (smoothstep(midrange-stepl, midrange+stepl, nDotL) - 1.)/steps;
-    }
-    */
-
-    // fragColor.rgb = (0.25 + max(0., nDotL)) * color;
-    // projPos = projPos + .5;
-    fragColor.rgb = projPos + .25; 
-    // fragColor.rgb = projPos - mod(projPos, 0.025);
-    
-    float gridScale = 100;
-    // fragColor.rgb *= min(1., smoothstep(0.95, 1.0, cos(projPos.x*gridScale))+smoothstep(0.95, 1.0, cos(projPos.z*gridScale)) + smoothstep(0.95, 1.0, cos(projPos.y*gridScale))).rrr;
-    fragColor.rgb *= min(1., smoothstep(0.95, 1.0, cos(projPos.r*gridScale)) + smoothstep(0.95, 1.0, cos(projPos.y*gridScale))).rrr;
-
-
-    // fragColor.rgb = derivative(normalComposed*2*5000*gl_FragCoord.z).rrr;
-    // nDotV = max(dot(normalComposed, viewDir), .0);
-    // fragColor.rgb = derivative(nDotV*1e3).rrr;
-    // fragColor.rgb = nDotV.rrr;
-
-    // vec3 tmpvor;
-    // fragColor.rgb = voronoi3d(projPos*20.0, tmpvor).bbb;
-    // fragColor.rgb = 5.0*(dFdx(normalComposed) + dFdy(normalComposed));
-
-
-    // fragColor.rgb = 
-    //     // length(max(length(dFdx(normalComposed)), length(dFdy(normalComposed)))).rrr
-    //     derivative(normalComposed*1e2).rrr
-    //     // / length(max(dFdx(modelPosition), dFdy(modelPosition))).rrr
-    //     // / length(_cameraPosition - position)
-    //     // * 0.1
-    //     // * 1e6
-    //     ;
-
-    return;
-
-
-    // vec3 deformDir = cross(normalComposed, vec3(0, 1, 0));
-    // deformDir = cross(deformDir, vec3(0, 1, 0));
-    // // deformDir = normalize(deformDir);
-
-    // // deformDir = sign(deformDir)*max(abs(deformDir), 1.0.rrr);
-
-    // vec3 p = modelPosition;
-    // // p += deformDir;
-
-    // // p = mix(p, p + 0.75*p*deformDir, 1.);
-    // // p = p/deformDir;
-
-    // deformDir = normalComposed;
-    // p.y /= 1. + 2.*(abs(1. - deformDir.y));
-    // p.x /= 1. + 1.*(abs(1. - deformDir.x));
-
-
-    // float spike = .5*FilteredSpikeNoise3D(p, .075, 21, 1., 10.0, 0., SQR2 + 0.*_iTime);
-
-    // fragColor.rgb = spike.rrr;
-    // // fragColor.rgb = p*5.0;
-
-    // return;
-
 
 
     // mRoughness = 0.0;
@@ -696,7 +599,7 @@ void main()
 
     // mEmmisive = pow(mEmmisive, 0.5);
 
-    normalComposed = gl_FrontFacing ? normalComposed : -normalComposed;
+    // normalComposed = gl_FrontFacing ? normalComposed : -normalComposed;
 
 
     Material material = getMultiLight();
@@ -728,12 +631,4 @@ void main()
 
     // fragNormal = normalize((vec4(normalComposed, 0.0) * _cameraInverseViewMatrix).rgb)*0.5 + 0.5;
     fragNormal = normalize((vec4(normalComposed, 0.0) * inverse(_cameraViewMatrix)).rgb) * 0.5 + 0.5;
-
-
-
-    // sunLightMult = max(dot(normalComposed, vec3(0, 1, 0)), 0);
-    // sunLightMult = 1.0 - sunLightMult;
-    // fragColor.rgb = rColor;
-    // fragColor.rgb = vec3(sunLightMult);
-    // fragColor.r
 }

@@ -15,6 +15,87 @@
 #include <Game.hpp>
 #include <PlayerController.hpp>
 
+
+#define ENTITY_FILTER_UPDATE_FONCTION(condition)                                            \
+    float active = e->comp<WidgetButton>().cur;                                             \
+    if(active == 0.f)                                                                       \
+    {                                                                                       \
+        for(auto e : UI_currentEntityChildren)                                              \
+        {                                                                                   \
+            std::string str = e.second->comp<EntityInfos>().name;                           \
+            EntityRef child;                                                                \
+            for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)         \
+            if(str == c->comp<EntityInfos>().name)                                          \
+                child = c;                                                                  \
+            if(!(condition))                                 \
+            {                                                                               \
+                e.second->comp<WidgetState>().status = ModelStatus::HIDE;                   \
+                e.second->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;        \
+            }                                                                               \
+        }                                                                                   \
+    }                                                                                       \
+    return active;
+
+
+
+bool entityFilterAny(EntityRef e, std::function<bool(Entity *e)> filter)
+{
+    if(e->hasComp<EntityGroupInfo>())
+        for(auto c : e->comp<EntityGroupInfo>().children)
+        {
+            if(entityFilterAny(c, filter))
+                return true;
+        }
+
+    return filter(e.get());
+}
+
+bool getLightPresence(ObjectGroupRef &m)
+{
+    for(auto c : m->getChildren())
+    {
+        if(getLightPresence(c))
+            return true;
+    }
+
+    return m->getLights().size();
+};
+
+std::function<bool(Entity *e)> filterLightSources = [](Entity *e)
+{
+    if(!e->hasComp<EntityModel>() || !e->comp<EntityModel>())
+        return false;
+    
+    return getLightPresence(e->comp<EntityModel>());
+};
+
+std::function<bool(Entity *e)> filterStaticEnv = [](Entity *e)
+{
+    return e->hasComp<RigidBody>() && e->comp<RigidBody>()->getType() != rp3d::BodyType::STATIC;
+};
+
+std::function<bool(Entity *e)> filterItems = [](Entity *e)
+{
+    return e->hasComp<ItemInfos>();
+};
+
+std::function<bool(Entity *e)> filterTerrain = [](Entity *e)
+{
+    if(!e->hasComp<RigidBody>() || !e->comp<RigidBody>())
+        return false;
+
+    auto &b = *e->comp<RigidBody>();
+
+    for(int i = 0; i < b.getNbColliders(); i++)
+    {
+        if(b.getCollider(i)->getCollisionShape()->getName() == rp3d::CollisionShapeName::HEIGHTFIELD)
+            return true;
+    }
+
+    return false;
+};
+
+
 vec3 GimzmoProject(int axis, vec3 gizmoPosition, vec3 rayOrigin, vec3 rayDirection)
 {
     rayOrigin -= gizmoPosition;
@@ -41,6 +122,24 @@ std::string formatedCounter(int n)
     return " [" + std::to_string(n) + "]"; 
 }
 
+void Apps::EntityCreator::setTopDownView()
+{
+    globals.currentCamera->setType(CameraType::ORTHOGRAPHIC);
+    orbitController.View2DLock = normalize(vec3(0, 1, 0));
+    globals.currentCamera->wup = vec3(1, 0, 0);
+    float a = globals.windowWidth()/globals.windowHeight();
+    GG::skybox->state.scaleScalar(1e3);
+}
+
+void Apps::EntityCreator::clearTopDownView()
+{
+    globals.currentCamera->setType(CameraType::PERSPECTIVE);
+    globals.currentCamera->wup = vec3(0, 1, 0);
+    globals.currentCamera->dimentionFactor = 1.f;
+    globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
+    GG::skybox->state.scaleScalar(1e6);
+}
+
 Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 {
     inputs.push_back(&
@@ -51,38 +150,11 @@ Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 
                 if(orbitController.enable2DView)
                 {
-                    globals.currentCamera->setType(CameraType::ORTHOGRAPHIC);
-
-                    orbitController.View2DLock = normalize(vec3(0, 1, 0));
-                    globals.currentCamera->wup = vec3(1, 0, 0);
-                    
-                    float a = globals.windowWidth()/globals.windowHeight();
-
-                    // globals.currentCamera->dimentionFactor = 1.f/100.f;
-
-                    // globals.currentCamera->init(
-                    //     0.f, 10.f/a, 10.f*a, 0.1, 100                        
-                    // );
-
-                    // globals.currentCamera->getState().FOV = radians(20.f);
-                    // orbitController.distance *= 4.;
+                    setTopDownView();
                 }
                 else
                 {
-                    globals.currentCamera->setType(CameraType::PERSPECTIVE);
-
-                    globals.currentCamera->wup = vec3(0, 1, 0);
-
-                    globals.currentCamera->dimentionFactor = 1.f;
-
-                    // globals.currentCamera->getState().FOV = radians(90.f);
-                    // globals.currentCamera->init(
-                    //     radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f                    
-                    // );
-                    globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
-
-
-                    // orbitController.distance /= 4.;
+                    clearTopDownView();
                 }
 
             },
@@ -155,6 +227,70 @@ Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
             InputManager::Filters::always, false)
     );
 
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Rotate Top Down View", GLFW_KEY_LEFT, 0, GLFW_PRESS, [&]() {
+                if(globals._currentController == &orbitController && orbitController.enable2DView)
+                {   
+                    vec3 &d = globals.currentCamera->wup;
+
+                    if(d.x != 0.f)
+                    {
+                        d = vec3(d.z, d.y, -d.x);
+                    }
+                    else
+                    if(d.z != 0.f)
+                    {
+                        d = vec3(d.z, d.y, d.x);
+                    }
+                }
+            },
+            InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Rotate Top Down View", GLFW_KEY_RIGHT, 0, GLFW_PRESS, [&]() {
+                if(globals._currentController == &orbitController && orbitController.enable2DView)
+                {   
+                    vec3 &d = globals.currentCamera->wup;
+
+                    if(d.x != 0.f)
+                    {
+                        d = vec3(d.z, d.y, d.x);
+                    }
+                    else
+                    if(d.z != 0.f)
+                    {
+                        d = vec3(-d.z, d.y, d.x);
+                    }
+                }
+            },
+            InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Show Grid", GLFW_KEY_G, 0, GLFW_PRESS, [&]() {
+                EDITOR::gridPositionScale.w = EDITOR::gridPositionScale.w == 0.f ? 0.5 : 0.f;
+            },
+            InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Center Camera On Controlled Child", GLFW_KEY_SPACE, 0, GLFW_PRESS, [&]() {
+                if(controlledEntity)
+                {
+                    vec3 p = controlledEntity->comp<EntityState3D>().position;
+
+                    globals.currentCamera->setPosition(p + globals.currentCamera->getPosition() - orbitController.position);
+                    orbitController.position = p;
+                }
+            },
+            InputManager::Filters::always, false)
+    );
+
     for(auto &i : inputs)
         i->activated = false;
 };
@@ -196,8 +332,7 @@ void Apps::EntityCreator::playEntity(EntityRef e)
 
     if(orbitController.enable2DView)
     {
-        globals.currentCamera->wup = vec3(0, 1, 0);
-        globals.currentCamera->getState().FOV = radians(90.f);
+        clearTopDownView();
     }
 
     globals.currentCamera->setDirection(
@@ -229,8 +364,7 @@ void Apps::EntityCreator::resumePlayToEditor()
 
     if(orbitController.enable2DView)
     {
-        globals.currentCamera->wup = vec3(1, 0, 0);
-        globals.currentCamera->getState().FOV = radians(20.f);
+        setTopDownView();
     }
 }
 
@@ -509,15 +643,16 @@ EntityRef Apps::EntityCreator::UImenu()
         {
             std::string str = e->comp<EntityInfos>().name;
 
-            controlledEntity = nullptr;
-
             for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
-                if(str == c->comp<EntityInfos>().name)
-                {
-                    controlledEntity = c.get();
+            if(str == c->comp<EntityInfos>().name && controlledEntity != c.get())
+            {
+                controlledEntity = c.get();
+                controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+                
+                return;
+            }
 
-                    controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
-                }
+            controlledEntity = nullptr;
         }, 
         [&](Entity *e)
         {
@@ -817,9 +952,62 @@ EntityRef Apps::EntityCreator::UImenu()
 
                                         return isEntityPlayable(controlledEntity->comp<EntityGroupInfo>().children[0]) ? 0.f : 1.f;
                                     },
-                                    VulpineColorUI::HightlightColor5
+                                    VulpineColorUI::HightlightColor6
                                 ),
                                 newEntity()
+                            })
+                        ),
+                        0.25, true
+                    ),
+
+                    VulpineBlueprintUI::NamedEntry(U"Child Selection Filters",
+                        newEntity("Entity Filter"
+                            , UI_BASE_COMP
+                            , WidgetBox()
+                            , WidgetStyle().setautomaticTabbing(3)
+                            , EntityGroupInfo({
+                                VulpineBlueprintUI::Toggable(
+                                    "Light Sources", "",
+                                    [&](Entity *e, float f){},
+                                    [&](Entity *e)
+                                    {ENTITY_FILTER_UPDATE_FONCTION(entityFilterAny(child, filterLightSources))},
+                                    VulpineColorUI::HightlightColor4
+                                ),
+                                VulpineBlueprintUI::Toggable(
+                                    "Static", "",
+                                    [&](Entity *e, float f){},
+                                    [&](Entity *e)
+                                    {ENTITY_FILTER_UPDATE_FONCTION(!entityFilterAny(child, filterStaticEnv))},
+                                    VulpineColorUI::HightlightColor4
+                                ),
+                                VulpineBlueprintUI::Toggable(
+                                    "Items", "",
+                                    [&](Entity *e, float f){},
+                                    [&](Entity *e)
+                                    {ENTITY_FILTER_UPDATE_FONCTION(entityFilterAny(child, filterItems))},
+                                    VulpineColorUI::HightlightColor4
+                                ),
+                                VulpineBlueprintUI::Toggable(
+                                    "Playable", "",
+                                    [&](Entity *e, float f){},
+                                    [&](Entity *e)
+                                    {ENTITY_FILTER_UPDATE_FONCTION(isEntityPlayable(child->comp<EntityGroupInfo>().children[0]))},
+                                    VulpineColorUI::HightlightColor4
+                                ),
+                                VulpineBlueprintUI::Toggable(
+                                    "Terrain", "",
+                                    [&](Entity *e, float f){},
+                                    [&](Entity *e)
+                                    {ENTITY_FILTER_UPDATE_FONCTION(entityFilterAny(child, filterTerrain))},
+                                    VulpineColorUI::HightlightColor4
+                                ),
+                                VulpineBlueprintUI::Toggable(
+                                    "", "",
+                                    [&](Entity *e, float f){},
+                                    [&](Entity *e)
+                                    {return 1.f;},
+                                    VulpineColorUI::HightlightColor4
+                                ),
                             })
                         ),
                         0.25, true
@@ -836,6 +1024,8 @@ EntityRef Apps::EntityCreator::UImenu()
         ChildrenManipMenu,
         "Chidren Edit"
     );
+
+    // ComponentModularity::addChild(*currentEntityEditorTitles, newEntity());
 
     VulpineBlueprintUI::AddToSelectionMenu(
         currentEntityEditorTitles, 
@@ -990,6 +1180,11 @@ vec4 gizmoColors[3] =
 
 void Apps::EntityCreator::init()
 {
+    if(orbitController.enable2DView)
+    {
+        setTopDownView();
+    }
+    
     /***** Preparing App Settings *****/
     {
         appRoot = newEntity("AppRoot");
@@ -1158,10 +1353,42 @@ void Apps::EntityCreator::init()
         UI_currentEntityComponent[i.first] = EntityRef();
 }
 
+
 void Apps::EntityCreator::update()
 {
     // if(!PG::world->isGravityEnabled())
     ComponentModularity::synchronizeChildren(appRoot);
+
+    // activeFilters["test"] = filterLightSources;
+
+    /*
+        Children List Filter
+    */
+    // for(auto e : UI_currentEntityChildren)
+    // {
+    //     std::string str = e.second->comp<EntityInfos>().name;
+    //     EntityRef child;
+
+    //     for(auto c : this->currentEntity.ref->comp<EntityGroupInfo>().children)
+    //     if(str == c->comp<EntityInfos>().name)
+    //     {
+    //         child = c;
+    //     }
+
+    //     if(entityFilterAny(child, filterLightSources))
+    //     {
+    //         e.second->comp<WidgetState>().status = ModelStatus::SHOW;
+    //         e.second->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+    //     }
+    //     else
+    //     {
+    //         e.second->comp<WidgetState>().status = ModelStatus::HIDE;
+    //         e.second->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
+    //     }
+    // }
+
+
+
 
     vec2 screenPos = globals.mousePosition();
     screenPos = (screenPos/vec2(globals.windowSize()))*2.f - 1.f;
@@ -1256,7 +1483,7 @@ void Apps::EntityCreator::update()
     vec2 gameScreenPos = (cursorPos-gsb.min)/(gsb.max - gsb.min);
 
     vec4 ndc = vec4(
-        gameScreenPos*2.f - 1.f,
+        (gameScreenPos*2.f - 1.f) * (orbitController.enable2DView ? -1.f : 1.f),
         globals.currentCamera->getProjectionMatrix()[3][2] / (1e2),
         -1.0
     );
@@ -1268,11 +1495,29 @@ void Apps::EntityCreator::update()
 
     vec3 dir = normalize(vec3(world) - globals.currentCamera->getPosition());
 
+    vec3 origin = orbitController.enable2DView ? world : globals.currentCamera->getPosition();
+    dir = orbitController.enable2DView ? vec3(0, -2.*world.y, 0) : world;
+
     rp3d::Ray ray(
-        PG::torp3d(globals.currentCamera->getPosition()),
-        PG::torp3d(world)
+        PG::torp3d(origin),
+        PG::torp3d(vec3(world))
     );
 
+    if(orbitController.enable2DView)
+    {
+        ray = rp3d::Ray(PG::torp3d(vec3(origin)), PG::torp3d(origin + dir));
+    }
+
+    // if(globals.mouseRightClick())
+    // {
+    //     globals.getScene()->add(
+    //         LineHelperRef(new LineHelper(world, globals.currentCamera->getPosition(), VulpineColorUI::HightlightColor6))
+    //     );
+    // }
+
+    // std::cout << origin << "\n";
+
+    // NOTIF_MESSAGE(globals.currentCamera->getProjectionMatrix())
 
 
     if(globals.mouseRightClick() && cursorOnGameScreen && globals._currentController == &orbitController)
@@ -1305,8 +1550,13 @@ void Apps::EntityCreator::update()
         }
         if(mindistChild)
         {
-            controlledEntity = mindistChild.get();
-            controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+            if(controlledEntity == mindistChild.get())
+                controlledEntity = nullptr;
+            else
+            {
+                controlledEntity = mindistChild.get();
+                controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+            }
         }
     }
 
@@ -1403,6 +1653,11 @@ void Apps::EntityCreator::update()
 
                 for(int i = 0; i < 3; i++)
                 {
+                    vec3 debugNor(0);
+                    debugNor[i] = 1.;
+                    if(abs(dot(normalize(dir), debugNor)) > 0.99)
+                        continue;
+                        
                     vec3 aabbmin(-0.15);
                     vec3 aabbmax(+0.15);
 
@@ -1422,8 +1677,9 @@ void Apps::EntityCreator::update()
                         lastCenter = position;
                         lastClickAxePos = GimzmoProject(
                             i, position,
-                            globals.currentCamera->getPosition(), 
-                            world
+                            // globals.currentCamera->getPosition(), 
+                            origin,
+                            dir
                         );
 
                         break;
@@ -1434,6 +1690,7 @@ void Apps::EntityCreator::update()
                 {
                     for(int i = 0; i < 3; i++)
                     {
+
                         vec3 aabbmin(0.2);
                         vec3 aabbmax(0.6);
 
@@ -1452,7 +1709,9 @@ void Apps::EntityCreator::update()
                             lastClickedGizmo = i+3;
                             lastCenter = position;
                             lastClickAxePos = rayAlignedPlaneIntersect(
-                                globals.currentCamera->getPosition(), world, i, position[i]
+                                // globals.currentCamera->getPosition()
+                                origin
+                                , dir, i, position[i]
                             );
 
                             break;
@@ -1468,8 +1727,9 @@ void Apps::EntityCreator::update()
             {
                 vec3 p = GimzmoProject(
                     lastClickedGizmo, lastCenter,
-                    globals.currentCamera->getPosition(), 
-                    world
+                    // globals.currentCamera->getPosition(),
+                    origin, 
+                    dir
                 );
                 
                 s.position[lastClickedGizmo] = p[lastClickedGizmo] - (lastClickAxePos[lastClickedGizmo] - lastCenter[lastClickedGizmo]);
@@ -1480,7 +1740,9 @@ void Apps::EntityCreator::update()
                 int axis = lastClickedGizmo-3;
 
                 vec3 p = rayAlignedPlaneIntersect(
-                    globals.currentCamera->getPosition(), world, axis, lastCenter[axis]
+                    // globals.currentCamera->getPosition(), 
+                    origin,
+                    dir, axis, lastCenter[axis]
                 );
 
                 s.position = p 
@@ -1529,6 +1791,11 @@ void Apps::EntityCreator::update()
 
 void Apps::EntityCreator::clean()
 {
+    if(orbitController.enable2DView)
+    {
+        clearTopDownView();
+    }
+
     globals.simulationTime.pause();
     globals.simulationTime.speed = 1.f;
     globals.enablePhysics = true;
@@ -1543,6 +1810,7 @@ void Apps::EntityCreator::clean()
 
     appRoot = EntityRef();
     currentEntity.ref = EntityRef();
+    currentEntity.name = "";
     controlledEntity = nullptr;
     gizmo = EntityRef();
 

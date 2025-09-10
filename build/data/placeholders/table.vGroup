@@ -1,8 +1,0 @@
-table
-    : meshes 
-        : table
-        :   mesh      |  table
-        :   material  |  packingPaint
-        ;
-    ;
-;

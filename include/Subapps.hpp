@@ -171,6 +171,9 @@ namespace Apps
             void resumePlayToEditor();
             bool isEntityPlayable(EntityRef e);
 
+            void setTopDownView();
+            void clearTopDownView();
+
             OrbitController orbitController;
 
             std::unordered_map<std::string, EntityRef> UI_loadableEntity;
@@ -178,6 +181,8 @@ namespace Apps
 
             std::unordered_map<std::string, EntityRef> UI_currentEntityComponent;
             std::unordered_map<std::string, EntityRef> UI_currentEntityChildren;
+
+            // std::unordered_map<std::string, std::function<bool(Entity *e)>> activeFilters;
 
             Entity *controlledEntity = nullptr;
             vec3 controlledEntityEuleur = vec3(0);
@@ -224,6 +229,8 @@ namespace Apps
 
             std::unordered_map<std::string, EntityRef> VersionList;
             std::string currentVersion;
+
+            EntityRef gameScreenMenu;
 
         public : 
 

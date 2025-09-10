@@ -81,6 +81,16 @@ vec3 adjustColor(vec3 color, float contrast, float saturation, float brightness)
     return color;
 }
 
+vec3 inverseProject(
+    vec2 uv, float depth, mat4 iview, mat4 iproj
+)
+{
+    vec4 ndc = vec4(uv, depth, 1.0);
+    vec4 viewpos = iproj * ndc;
+    viewpos /= viewpos.w;
+
+    return vec3(iview * viewpos);
+}
 
 void main()
 {
@@ -247,12 +257,18 @@ void main()
 
         vec2 uvtmp = vec2(2.*uv.x - 1.0, 2.*uv.y - 1.0);
 
-        vec4 ndc = vec4(uvtmp, dtmp, 1.0);
-        vec4 viewpos = inverse(_cameraProjectionMatrix) * ndc;
-        viewpos /= viewpos.w;
-        vec4 world = inverse(_cameraViewMatrix) * viewpos;
-        vec3 dir = normalize(_cameraPosition-world.rgb);
+        // vec4 ndc = vec4(uvtmp, dtmp, 1.0);
+        // vec4 viewpos = inverse(_cameraProjectionMatrix) * ndc;
+        // viewpos /= viewpos.w;
+        // vec4 world = inverse(_cameraViewMatrix) * viewpos;
 
+        mat4 iproj = inverse(_cameraProjectionMatrix);
+        mat4 iview = inverse(_cameraViewMatrix);
+        vec3 world = inverseProject(uvtmp, dtmp, iview, iproj);
+        vec3 world2 = inverseProject(uvtmp, -1.0, iview, iproj);
+        vec3 dir = normalize(world2 - world);
+
+        vec3 r_origin = world2;
 
         float gridAlpha = 0.5;
         vec3 gridColor = vec3(44, 211, 91)/255.f;
@@ -260,35 +276,51 @@ void main()
 
         vec3 planeNormal = vec3(0, 1, 0);
         float NRd = dot(planeNormal, dir);
-        float NRo = dot(planeNormal, _cameraPosition - gridPositionScale.xyz);
+        float NRo = dot(planeNormal, r_origin - gridPositionScale.xyz);
         float height = 0.;
         float t0 = (-height - NRo) / NRd;
 
-        vec3 hitPos = _cameraPosition + t0*dir;
+        vec3 hitPos = r_origin + t0*dir;
         float scale = gridPositionScale.w;
 
         hitPos.rb += .25;
         vec2 uv = abs(hitPos.rb/scale - round(hitPos.rb/scale))*scale;
         hitPos.rb -= .25;
 
-        float deriv = derivative(hitPos.rgb*64./scale);
+        float deriv = derivative(hitPos.rgb*64./scale*4.0);
+        // deriv = cos(iTime)*.5 + .5;
         
-        float sp_derivMult = 0.085*sqrt(deriv);
-        float sp_baseEdge = 0.01;
-        float sp_Edge0 = scale*(sp_baseEdge + deriv*sp_derivMult);
+        float sp_derivMult = 0.02*deriv*deriv;
+        float sp_baseEdge = 0.005;
+        float sp_Edge0 = scale*(sp_baseEdge + sp_derivMult);
 
         float sp_Edge1 = sp_Edge0*0.85*(1.-clamp(deriv, 0., 1.));
 
+        // sp_Edge0 += deriv*deriv*0.015;
+
         gridAlpha = smoothstep(sp_Edge0 , sp_Edge1, uv.x);
-        gridAlpha += smoothstep(sp_Edge0 , sp_Edge1, uv.y);
+
+        // gridAlpha += smoothstep(sp_Edge0 , sp_Edge1, uv.y);
+        float gridAlpha2 = smoothstep(sp_Edge0 , sp_Edge1, uv.y);
+        gridAlpha = (gridAlpha+gridAlpha2) - (gridAlpha*gridAlpha2);
 
         gridAlpha = clamp(gridAlpha, 0., 1.);
 
-        gridAlpha *= mix(gridAlpha, 0.25 + 1.-clamp(deriv, 0.0, 1.0), clamp(deriv*.25, 0.0, 1.0));
+        gridAlpha *= mix(1.0, 0.2, clamp(deriv*0.25, 0.0, 1.0));
         
-        gridAlpha = mix(gridAlpha, 0.25, clamp(deriv*deriv*.125, 0.0, 1.0));
+        gridAlpha = mix(gridAlpha, 0.2, clamp(deriv*deriv*.065, 0.0, 1.0));
 
-        if(t0 != clamp(t0, 0., 1e6) || abs(hitPos.r) > 1e3 || abs(hitPos.b) > 1e3) gridAlpha = 0.f;
+        /*
+            Voodoo magic to check if the current camera is ortogonal or perspective
+        */
+        t0 *= -sign(_cameraProjectionMatrix[3][3]-0.1);
+
+        if(
+            t0 != clamp(t0, 0., 1e6) || 
+            abs(hitPos.r) > 1e3 || 
+            abs(hitPos.b) > 1e3
+            )
+            gridAlpha = 0.f;
         
         vec4 proj = MVP * vec4(hitPos, 1.0);
 
@@ -296,11 +328,22 @@ void main()
         // gridColor = mix(gridColor, vec3(44, 211, 91)/255.f, smoothstep(sp_Edge0 , sp_Edge1, abs(hitPos.z)));
         
         if(1.0/depth > proj.b/proj.a )
-            gridAlpha *= .0;
+        {
+            // gridColor = 
+            gridAlpha *= distance(gridAlpha, 0.2);
+            gridAlpha *= .5;
+        }
+        else
+        {
+            gridColor = vec3(44, 211, 91)/255.f;
+        }
 
-        gridAlpha *= .5;
+        // gridAlpha *= .5;
 
         _fragColor.rgb = mix(_fragColor.rgb, gridColor, gridAlpha);
+    
+        // _fragColor.rgb = gridAlpha.rrr*1e3;
+        // _fragColor.rgb = r_origin;
     }
 
 

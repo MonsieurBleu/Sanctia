@@ -561,8 +561,8 @@ void Game::mainloop()
             state = AppState::quit;
 
 
-        static unsigned int itcnt = 0;
-        itcnt++;
+        // static unsigned int itcnt = 0;
+        // itcnt++;
 
         float currentTime = globals.appTime.getElapsedTime();
 

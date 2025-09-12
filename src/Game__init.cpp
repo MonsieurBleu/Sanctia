@@ -41,6 +41,8 @@ void Game::init(int paramSample)
 
     globals._renderScale = Settings::renderScale;
 
+    globals._UI_res_scale = 2.0;
+
     App::init();
     
     // activateMainSceneBindlessTextures();

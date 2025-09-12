@@ -1,3 +1,4 @@
+#include "VEAC/vulpineFormats.hpp"
 #include <Subapps.hpp>
 #include <ModManager.hpp>
 #include <AssetManager.hpp>
@@ -6,6 +7,8 @@
 #include <GameGlobals.hpp>
 
 #include <EntityBlueprint.hpp>
+
+#include <VEAC/AssetConvertor.hpp>
 
 Apps::AssetListViewer::AssetListViewer() : SubApps("Asset List")
 {
@@ -247,14 +250,22 @@ void Apps::AssetListViewer::update()
     if(globals.getDropInput().size())
     {
         for(auto s : globals.getDropInput())
+        {
             NOTIF_MESSAGE(s)
+
+            // VEAC::ConvertSceneFile(
+            //     s,  "data/[0] Export/Asset Convertor/", 
+            //     VEAC_EXPORT_FORMAT::FORMAT_SANCTIA,
+            //     0,
+            //     0
+            // );
+
+        }
 
         std::cout << "=================================================\n";
 
         globals.clearDropInput();
-    }
-
-    
+    }   
 }
 
 

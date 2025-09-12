@@ -316,7 +316,7 @@ void main()
         t0 *= -sign(_cameraProjectionMatrix[3][3]-0.1);
 
         if(
-            t0 != clamp(t0, 0., 1e6) || 
+            t0 != clamp(t0, 0.2, 1e6) || 
             abs(hitPos.r) > 1e3 || 
             abs(hitPos.b) > 1e3
             )
@@ -331,11 +331,12 @@ void main()
         {
             // gridColor = 
             gridAlpha *= distance(gridAlpha, 0.2);
-            gridAlpha *= .5;
+            // gridAlpha *= .5;
         }
         else
         {
-            gridColor = vec3(44, 211, 91)/255.f;
+            // gridColor = vec3(44, 211, 91)/255.f;
+            gridColor = vec3(44, 211, 175)/255.f;
         }
 
         // gridAlpha *= .5;

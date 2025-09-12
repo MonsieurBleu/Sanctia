@@ -169,8 +169,8 @@ EntityRef Apps::MainGameApp::UImenu()
 {
     // std::cout << "====== CREATING UI MENU ======\n";
 
-    static int cnt = 0;
-    cnt ++;
+    // static int cnt = 0;
+    // cnt ++;
 
     return newEntity("MAIN GAME APP MENU"
         , UI_BASE_COMP
@@ -515,8 +515,8 @@ void Apps::MainGameApp::update()
     // if(rand()%128 == 0)
     //     std::cout << "====== UPDATE ======\n";
     
-    static unsigned int itcnt = 0;
-    itcnt++;
+    // static unsigned int itcnt = 0;
+    // itcnt++;
 
     /*** Merging test ***/
     // if(itcnt == 2)

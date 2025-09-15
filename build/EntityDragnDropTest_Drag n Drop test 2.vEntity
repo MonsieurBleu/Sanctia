@@ -1,0 +1,74 @@
+~
+	: EntityState3D 
+		: usequat t
+		: useinit t
+		;
+	: RigidBody 
+		: type STATIC
+		: canSleep t
+		: sleeping t
+		: gravity t
+		: Colliders 
+			: Collider *Shape must always be given first*
+				: SphereShape 
+					: radius +1.250000e+00
+					;
+				: Transform 
+					: position +5.960464e-08 +2.980232e-08 +9.753251e-02
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +4.999999e-01
+					;
+				: isTrigger f
+				;
+			: Collider *Shape must always be given first*
+				: BoxShape 
+					: extent +1.250000e+00 +1.250000e+00 +1.195281e+00
+					;
+				: Transform 
+					: position +5.960464e-08 +2.980232e-08 -5.283256e+00
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +4.999999e-01
+					;
+				: isTrigger f
+				;
+			: Collider *Shape must always be given first*
+				: CapsuleShape 
+					: height +3.147024e+00
+					: radius +1.055063e+00
+					;
+				: Transform 
+					: position -1.788139e-07 +2.980232e-08 +5.088191e+00
+					: quaternion +8.504355e-01 -1.495263e-01 +3.609884e-01 -3.522619e-01
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +4.999999e-01
+					;
+				: isTrigger f
+				;
+			;
+		: active t
+		;
+	;

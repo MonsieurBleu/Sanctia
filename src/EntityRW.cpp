@@ -21,12 +21,13 @@ DATA_WRITE_FUNC(EntityRef)
         out->write("\"", 1);
     }
 
-
     for(auto &i : ComponentModularity::WriteFuncs)
         if(data->state[i.ComponentID])
             i.element(data, out);
     
     out->Break();
+
+    return out;
 }
 
 std::string tmpEntityName;

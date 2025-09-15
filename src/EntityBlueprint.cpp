@@ -137,6 +137,7 @@ void Blueprint::Assembly::AddEntityBodies(
         c->getMaterial().setFrictionCoefficient(0.5);
         c->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
         c->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+        c->setUserData(usrData);
     }
 
     for(auto &i : hitboxes)

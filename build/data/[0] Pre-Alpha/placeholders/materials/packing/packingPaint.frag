@@ -578,7 +578,7 @@ void main()
 
     lcalcPosition = position;
     paintShader(lcalcPosition, viewDir, color, normalComposed, mRoughness, mMetallic);
-    lcalcPosition = position;
+    // lcalcPosition = position;
     mClearness = 1.0 - mRoughness;
     viewDir = normalize(_cameraPosition - position);
 

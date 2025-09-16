@@ -7,6 +7,7 @@
 #include <GameGlobals.hpp>
 
 #include <glm/gtx/string_cast.hpp>
+#include <reactphysics3d/mathematics/Vector3.h>
 
 
 COMPONENT_DEFINE_SYNCH(EntityState3D) /**************** UNUSED TODO: remove*****************/
@@ -328,120 +329,64 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
     auto WtoL = c->getLocalToWorldTransform().getInverse();
     auto LtoW = c->getLocalToWorldTransform();
 
-    vec3 laabbmin_tmp = PG::toglm(WtoL * aabb.getMin()) - 0.1f;
-    vec3 laabbmax_tmp = PG::toglm(WtoL * aabb.getMax()) + 0.1f;
+    vec3 laabbmax = 
+        max(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMin().y, aabb.getMin().z)),
+        max(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMin().y, aabb.getMax().z)),
+        max(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMax().y, aabb.getMin().z)),
+        max(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMax().y, aabb.getMax().z)),
+        max(PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMin().y, aabb.getMin().z)),
+        max(PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMin().y, aabb.getMax().z)),
+        max(PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMax().y, aabb.getMin().z)),
+            PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMax().y, aabb.getMax().z))
+        )))))))
+    ;
 
-    vec3 laabbmax = max(laabbmax_tmp, laabbmin_tmp);
-    vec3 laabbmin = min(laabbmax_tmp, laabbmin_tmp);
+    vec3 laabbmin = 
+        min(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMin().y, aabb.getMin().z)),
+        min(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMin().y, aabb.getMax().z)),
+        min(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMax().y, aabb.getMin().z)),
+        min(PG::toglm(WtoL * rp3d::Vector3(aabb.getMin().x, aabb.getMax().y, aabb.getMax().z)),
+        min(PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMin().y, aabb.getMin().z)),
+        min(PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMin().y, aabb.getMax().z)),
+        min(PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMax().y, aabb.getMin().z)),
+            PG::toglm(WtoL * rp3d::Vector3(aabb.getMax().x, aabb.getMax().y, aabb.getMax().z))
+        )))))))
+    ;
+
 
     std::vector<vec3> points;
     
 
     vec3 jump = (laabbmax - laabbmin)/25.f;
 
-    int cnt = 0;
-
-    std::cout << to_string(laabbmin) << "\t" << to_string(laabbmax) << "\t" << to_string(jump) << "\n";
+    // std::cout << to_string(laabbmin) << "\t" << to_string(laabbmax) << "\t" << to_string(jump) << "\n";
 
     assert(jump.x > 0 && jump.y > 0 && jump.z > 0);
 
+    #define AABB_FACE_RAYCAST(cur, dim1, dim2) \
+        for(float dim1 = laabbmin. dim1; dim1 <= laabbmax. dim1; dim1 += jump. dim1) \
+        for(float dim2 = laabbmin. dim2; dim2 <= laabbmax. dim2; dim2 += jump. dim2) \
+        { \
+            rp3d::RaycastInfo infos = rp3d::RaycastInfo(); \
+            rp3d::RaycastInfo infos2 = rp3d::RaycastInfo(); \
+            vec3 tmpa; tmpa. dim1 = dim1; tmpa. dim2 = dim2; tmpa. cur = laabbmin. cur; \
+            vec3 tmpb; tmpb. dim1 = dim1; tmpb. dim2 = dim2; tmpb. cur = laabbmax. cur; \
+            auto a = LtoW * rp3d::Vector3(PG::torp3d(tmpa)); \
+            auto b = LtoW * rp3d::Vector3(PG::torp3d(tmpb)); \
+            c->raycast(rp3d::Ray(a, b), infos); \
+            if(infos.collider == c) points.push_back(PG::toglm(WtoL * infos.worldPoint)); \
+            c->raycast(rp3d::Ray(b, a), infos2); \
+            if(infos2.collider == c) points.push_back(PG::toglm(WtoL * infos2.worldPoint)); \
+        }
+
     if(!isFeild)
     {
-        for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)
-        for(float y = laabbmin.y; y <= laabbmax.y; y += jump.y)
-        {
-            rp3d::RaycastInfo infos = rp3d::RaycastInfo();
+        AABB_FACE_RAYCAST(z, x, y)
 
-            auto a = LtoW * rp3d::Vector3(x, y, laabbmin.z);
-            auto b = LtoW * rp3d::Vector3(x, y, laabbmax.z);
+        AABB_FACE_RAYCAST(y, x, z)
 
-            c->raycast(rp3d::Ray(a, b), infos);
+        AABB_FACE_RAYCAST(x, y, z)
 
-            if(infos.collider == c)
-                points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-            cnt ++;
-        }
-
-        for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)
-        for(float y = laabbmin.y; y <= laabbmax.y; y += jump.y)
-        {
-            rp3d::RaycastInfo infos = rp3d::RaycastInfo();
-
-            auto a = LtoW * rp3d::Vector3(x, y, laabbmin.z);
-            auto b = LtoW * rp3d::Vector3(x, y, laabbmax.z);
-
-            c->raycast(rp3d::Ray(b, a), infos);
-
-            if(infos.collider == c)
-                points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-            cnt ++;
-        }
-
-        for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)
-        for(float z = aabbmin.z; z <= aabbmax.z; z += jump.z)
-        {
-            rp3d::RaycastInfo infos = rp3d::RaycastInfo();
-
-            auto a = LtoW * rp3d::Vector3(x, laabbmin.y, z);
-            auto b = LtoW * rp3d::Vector3(x, laabbmax.y, z);
-
-            c->raycast(rp3d::Ray(a, b), infos);
-
-            if(infos.collider == c)
-                points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-            cnt ++;
-        }
-
-        for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)
-        for(float z = laabbmin.z; z <= laabbmax.z; z += jump.z)
-        {
-            rp3d::RaycastInfo infos = rp3d::RaycastInfo();
-
-            auto a = LtoW * rp3d::Vector3(x, laabbmin.y, z);
-            auto b = LtoW * rp3d::Vector3(x, laabbmax.y, z);
-
-            c->raycast(rp3d::Ray(b, a), infos);
-
-            if(infos.collider == c)
-                points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-            cnt ++;
-        }
-
-        for(float z = laabbmin.z; z <= laabbmax.z; z += jump.z)
-        for(float y = laabbmin.y; y <= laabbmax.y; y += jump.y)
-        {
-            rp3d::RaycastInfo infos = rp3d::RaycastInfo();
-
-            auto a = LtoW * rp3d::Vector3(laabbmin.x, y, z);
-            auto b = LtoW * rp3d::Vector3(laabbmax.x, y, z);
-
-            c->raycast(rp3d::Ray(a, b), infos);
-
-            if(infos.collider == c)
-                points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-            cnt ++;
-        }
-
-        for(float z = laabbmin.z; z <= laabbmax.z; z += jump.z)
-        for(float y = laabbmin.y; y <= laabbmax.y; y += jump.y)
-        {
-            rp3d::RaycastInfo infos = rp3d::RaycastInfo();
-
-            auto a = LtoW * rp3d::Vector3(laabbmin.x, y, z);
-            auto b = LtoW * rp3d::Vector3(laabbmax.x, y, z);
-
-            c->raycast(rp3d::Ray(b, a), infos);
-
-            if(infos.collider == c)
-                points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-            cnt ++;
-        }
     }
     else
     {
@@ -459,12 +404,10 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
             if(infos.collider == c)
                 points.push_back(PG::toglm(WtoL * infos.worldPoint));
-
-            cnt ++;
         }
     }
 
-    std::cout << "Creating Physics helper of size " << points.size() << "\n";
+    // std::cout << "Creating Physics helper of size " << points.size() << "\n";
 
     return PointsHelperRef(new PointsHelper(points, color));
 }
@@ -488,7 +431,7 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
 
     if(entity->hasComp<RigidBody>())
     {
-        std::cout << TERMINAL_NOTIF << entity->comp<EntityInfos>().name << "\n" << TERMINAL_RESET;
+        // std::cout << TERMINAL_NOTIF << entity->comp<EntityInfos>().name << "\n" << TERMINAL_RESET;
 
         RigidBody b = entity->comp<RigidBody>();
 

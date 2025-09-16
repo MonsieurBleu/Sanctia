@@ -1,7 +1,13 @@
 #include <Subapps.hpp>
+#include "AssetManagerUtils.hpp"
+#include "ComponentTypeGraphic.hpp"
 #include "ComponentTypeLogic.hpp"
 #include "ECS/Entity.hpp"
+#include "ECS/ModularEntityGroupping.hpp"
+#include "Graphics/Mesh.hpp"
+#include "Graphics/ObjectGroup.hpp"
 #include "Inputs.hpp"
+#include "Matrix.hpp"
 #include "PhysicsGlobals.hpp"
 #include "Utils.hpp"
 #include <ModManager.hpp>
@@ -20,10 +26,14 @@
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <filesystem>
 #include <functional>
+#include <glm/ext/vector_float3.hpp>
+#include <glm/geometric.hpp>
 #include <reactphysics3d/collision/shapes/CapsuleShape.h>
 #include <reactphysics3d/components/RigidBodyComponents.h>
 #include <reactphysics3d/mathematics/Transform.h>
+#include <string>
 
 bool doFileProcessingTmpDebug = false;
 
@@ -52,6 +62,30 @@ EntityState3D toVulpine(aiMatrix4x4 ai)
     EntityState3D s(true);
     s.initQuat = quat(m);
     s.initPosition = vec3(m*vec4(0, 0, 0, 1));
+
+    return s;
+}
+
+ModelState3D toModelState(aiMatrix4x4 ai)
+{
+    mat4 m = toGLM(ai);
+    ModelState3D s;
+    
+    s.setPosition(vec3(vec4(m*vec4(0, 0, 0, 1))));
+    
+    vec3 scale(
+        length(vec3(m[0][0], m[1][0], m[2][0])),
+        length(vec3(m[0][1], m[1][1], m[2][1])),
+        length(vec3(m[0][2], m[1][2], m[2][2]))
+    );
+
+    s.setScale(scale);
+
+    s.setQuaternion(quat(
+        mat3(
+            vec3(m[0])/scale, vec3(m[1])/scale, vec3(m[2])/scale
+        )
+    ));
 
     return s;
 }
@@ -106,6 +140,11 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     //     }   
     // }
 
+    std::string dirName = "data/[0] Export/Asset Convertor/[0] " + getNameOnlyFromPath(path.c_str()) + "/";
+    std::filesystem::create_directory(dirName);
+
+    Stencil_BoneMap bonesInfosMap;
+
     /*
         If we want to get full entities from the file, we need to do things differently
 
@@ -119,13 +158,19 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 entity 2
                     ...
     */
+    EntityRef sceneEntity;
+    if(vulpineImportFlags & 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY)
+    {
+        sceneEntity = newEntity("__tmpScene__" + getNameOnlyFromPath(path.c_str()) + ".vEntity", EntityState3D(true));
+    }
+
     if(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY)
     for(int i = 0; i < scene->mRootNode->mNumChildren; i++)
     {
-        aiNode *collection = scene->mRootNode->mChildren[i];
 
-        std::cout << collection->mName.C_Str() << "\n";
-        std::cout << "\t" << collection->mNumChildren << "\n";
+
+
+        aiNode *collection = scene->mRootNode->mChildren[i];
 
         vec3 colPos(0);
         float cnt = 0;
@@ -141,17 +186,103 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         });
         colPos /= cnt;
 
-        std::cout << colPos << "\n";
-
         EntityRef entity = newEntity(collection->mName.C_Str(), EntityState3D(true));
+
+        std::string dirNameEntity = dirName + collection->mName.C_Str();
+        // std::filesystem::create_directory(dirNameEntity);
 
         for(int j = 0; j < collection->mNumChildren; j++)
         {
             aiNode *component = collection->mChildren[j];
 
+            VulpineTextOutputRef outModel(new VulpineTextOutput(1<<16));
+            outModel->write(CONST_CSTRING_SIZED("~"));
+            outModel->Entry();
+            WRITE_NAME(meshes, outModel)
+            outModel->Tabulate();
+
             if(strcasestr(component->mName.C_Str(), "graphic"))
             {
+                entity->set<EntityModel>({newObjectGroup()});
+                entity->comp<EntityModel>()->name = entity->comp<EntityInfos>().name;
 
+                for(int k = 0; k < component->mNumChildren; k++)
+                {
+                    aiNode *mesh = component->mChildren[k];
+                    std::string dirNameMesh = dirNameEntity + "__";
+                    std::string fileName = VEAC::saveAsVulpineMesh(
+                        *scene->mMeshes[mesh->mMeshes[0]], 
+                        bonesInfosMap, 
+                        dirNameMesh, 
+                        VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
+                    );
+                
+                    Loader<MeshVao>::addInfosTextless(fileName.c_str());
+                    std::string vaoRefName = getNameOnlyFromPath(fileName.c_str());
+                    // MeshVao vao = Loader<MeshVao>::get(vaoRefName);
+
+                    outModel->Entry();
+                    outModel->write(("\"" + vaoRefName + "\"").c_str(), vaoRefName.size()+2);
+                    outModel->Tabulate();
+                        outModel->Entry();
+                        WRITE_NAME(mesh |, outModel)
+                        outModel->write(("\"" + vaoRefName + "\"").c_str(), vaoRefName.size()+2);
+
+                        outModel->Entry();
+                        WRITE_NAME(material |, outModel)
+                        /* TODO : add conditions later */
+                        outModel->write(CONST_CSTRING_SIZED("packingPaint"));
+
+                        outModel->Entry();
+                        WRITE_NAME(state, outModel);
+                        outModel->Tabulate();
+                        // WRITE_NAME(posiiton, outMeshModel)
+                            // WRITE_FUNC_RESULT(posiiton, toVulpine(mesh->mTransformation).initPosition)
+                            // WRITE_FUNC_RESULT(quaternion, toVulpine(mesh->mTransformation).initQuat)
+
+                            auto state3D = toModelState(mesh->mTransformation);
+                            state3D.position -= colPos;
+                            /*
+                                TODO : extract scale and fix quaternion
+                            */
+                            outModel->Entry();
+                            WRITE_NAME(position, outModel);
+                            outModel->write("\"", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.position.x)));
+                            outModel->write(" ", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.position.y)));
+                            outModel->write(" ", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.position.z)));
+                            outModel->write("\"", 1);
+
+                            outModel->Entry();
+                            WRITE_NAME(quaternion, outModel);
+                            outModel->write("\"", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.w)));
+                            outModel->write(" ", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.x)));
+                            outModel->write(" ", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.y)));
+                            outModel->write(" ", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.z)));
+                            outModel->write("\"", 1);
+
+                            outModel->Entry();
+                            WRITE_NAME(scalev3, outModel);
+                            outModel->write("\"", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.scale.x)));
+                            outModel->write(" ", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.scale.y)));
+                            outModel->write(" ", 1);
+                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.scale.z)));
+                            outModel->write("\"", 1);
+
+                            outModel->Break();
+                        outModel->Break();
+                    }
+                outModel->Break();
+                outModel->Break();
+                outModel->saveAs((dirNameEntity + ".vGroup").c_str());
             }
             else 
             if(strcasestr(component->mName.C_Str(), "physic"))
@@ -170,6 +301,13 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
                 std::vector<std::pair<rp3d::CollisionShape *, rp3d::Transform>> env_colliders;
                 std::vector<std::pair<rp3d::CollisionShape *, rp3d::Transform>> hit_colliders;
+
+                if(strcasestr(component->mName.C_Str(), "mass:"))
+                {
+                    const char *n = strcasestr(component->mName.C_Str(), "mass:");
+                    float mass = fromStr<float>(n + sizeof("mass:")-1);
+                    entity->comp<RigidBody>()->setMass(mass);
+                }
 
                 for(int k = 0; k < component->mNumChildren; k++)
                 {
@@ -210,6 +348,13 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                             toRP3D(collider->mTransformation, colPos+center)
                         });
                     }
+                    else {
+                        FILE_ERROR_MESSAGE(
+                            (path + ":" + collection->mName.C_Str()), 
+                            "Entity physic body '" << component->mName.C_Str() << "' not recognized. "
+                            << "Either something is wrong with the scene layout, or the VEAC entity export option was used by mistake."
+                        )
+                    }
                 }
 
                 Blueprint::Assembly::AddEntityBodies(entity->comp<RigidBody>(), entity.get(), env_colliders, hit_colliders);
@@ -226,14 +371,27 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
         }
 
+        // std::string fileName(std::string("EntityDragnDropTest_") + collection->mName.C_Str() + ".vEntity");
+        std::string fileName(dirNameEntity + ".vEntity");
+        NOTIF_MESSAGE("Creating entity file : " << fileName)
+        DataLoader<EntityRef>::write(entity, VulpineTextOutputRef(new VulpineTextOutput(1<<16)))->saveAs(fileName.c_str());
         
-        std::string fileName(std::string("EntityDragnDropTest_") + collection->mName.C_Str() + ".vEntity");
-        NOTIF_MESSAGE(fileName)
-        VulpineTextOutputRef outFile(new VulpineTextOutput(1<<16));
-        DataLoader<EntityRef>::write(entity, outFile)
-            ->saveAs(fileName.c_str())
-        ;
+        Loader<EntityRef>::addInfosTextless(fileName.c_str());
+        
+        if(sceneEntity)
+            ComponentModularity::addChild(*sceneEntity, 
+                newEntity(entity->comp<EntityInfos>().name + " [000]"
+                    , EntityState3D(true, colPos)
+                    , EntityGroupInfo({entity})
+                )
+            );
+    }
 
+    if(sceneEntity)
+    {
+        std::string fileName(dirName + sceneEntity->comp<EntityInfos>().name + ".vEntity");
+        NOTIF_MESSAGE("Creating entity file : " << fileName)
+        DataLoader<EntityRef>::write(sceneEntity, VulpineTextOutputRef(new VulpineTextOutput(1<<16)))->saveAs(fileName.c_str());
     }
 
     physicsMutex.unlock();
@@ -503,7 +661,8 @@ void Apps::AssetListViewer::update()
             ConvertSceneFile__SanctiaEntity(
                 s,  "data/[0] Export/Asset Convertor/", 
                 VEAC_EXPORT_FORMAT::FORMAT_SANCTIA,
-                aiProcess_Triangulate 
+                0
+                | aiProcess_Triangulate 
                 | aiProcess_SortByPType 
                 | aiProcess_ImproveCacheLocality 
                 | aiProcess_OptimizeMeshes 
@@ -514,7 +673,9 @@ void Apps::AssetListViewer::update()
                 | aiProcess_LimitBoneWeights 
                 | aiProcess_GenBoundingBoxes
                 ,
-                1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
+                0
+                | 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
+                | 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY
             );
 
         }
@@ -523,6 +684,14 @@ void Apps::AssetListViewer::update()
 
         std::cout << "=================================================\n";
 
+        Loader<MeshVao>::loadedAssets.clear();
+        Loader<MeshModel3D>::loadedAssets.clear();
+        Loader<ObjectGroup>::loadedAssets.clear();
+        Loader<EntityRef>::loadedAssets.clear();
+        /*
+            TODO : add animation/squeleton clearing later
+        */
+        loadAllModdedAssetsInfos("./");
     }   
 }
 

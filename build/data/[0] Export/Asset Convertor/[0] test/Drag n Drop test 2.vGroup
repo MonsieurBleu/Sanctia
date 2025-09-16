@@ -1,0 +1,13 @@
+~
+: meshes 
+	: "Drag n Drop test 2__Suzanne.001"
+		: mesh | "Drag n Drop test 2__Suzanne.001"
+		: material | packingPaint
+		: state 
+			: position "0.000000 0.000000 0.097532"
+			: quaternion "1.000000 0.000000 0.000000 0.000000"
+			: scalev3 "2.000000 2.000000 2.000000"
+			;
+		;
+	;
+;

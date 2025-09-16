@@ -23,6 +23,7 @@ struct EntityState3D
     EntityState3D(){};
     EntityState3D(vec3 pos) : position(pos){};
     EntityState3D(bool usequat) : usequat(usequat){};
+    EntityState3D(bool usequat, vec3 initpos) : usequat(usequat), initPosition(initpos){}; 
 
     vec3 position = vec3(0, 0, 0);
     quat quaternion = quat(1, 0, 0, 0);

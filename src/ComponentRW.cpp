@@ -39,6 +39,7 @@ AUTOGEN_DATA_READ_FUNC(EntityState3D
     , initPosition
     , initQuat
     , initPosition
+    , initLookDirection
     )
 
 DATA_WRITE_FUNC_INIT(EntityState3D)
@@ -305,8 +306,12 @@ DATA_WRITE_FUNC_INIT(EntityModel)
         WARNING_MESSAGE("Can't save " << type_name<EntityModel>() << " component. Name is empty");
         out->write("\"\"", 2);
     }  
-    else 
+    else
+    {
+        out->write("\"", 1);
         out->write(CONST_STRING_SIZED(data->name));
+        out->write("\"", 1);
+    }
 DATA_WRITE_END_FUNC
 
 DATA_READ_FUNC(EntityModel)

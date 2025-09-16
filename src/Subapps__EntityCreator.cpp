@@ -1564,45 +1564,45 @@ void Apps::EntityCreator::update()
     {
         auto &s = controlledEntity->comp<EntityState3D>();
 
-        if(!globals.mouseLeftClickDown())
-        {
-            bool sprintActivated = false;
-            int upFactor = 0;
-            int frontFactor = 0;
-            int rightFactor = 0;
+        // if(!globals.mouseLeftClickDown())
+        // {
+        //     bool sprintActivated = false;
+        //     int upFactor = 0;
+        //     int frontFactor = 0;
+        //     int rightFactor = 0;
 
-            GLFWwindow *window = globals.getWindow();
+        //     GLFWwindow *window = globals.getWindow();
 
-            if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-                frontFactor ++;
+        //     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        //         frontFactor ++;
 
-            if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-                frontFactor --;
+        //     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        //         frontFactor --;
 
-            if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-                rightFactor ++;
+        //     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        //         rightFactor ++;
 
-            if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-                rightFactor --;
+        //     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        //         rightFactor --;
 
-            if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-                upFactor ++;
+        //     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        //         upFactor ++;
 
-            if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-                upFactor --;
+        //     if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        //         upFactor --;
 
-            if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                sprintActivated = true;
+        //     if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        //         sprintActivated = true;
 
-            const float speed = 0.1;
-            const float sprintFactor = 5;
+        //     const float speed = 0.1;
+        //     const float sprintFactor = 5;
 
-            const vec3 cpos = s.position;
-            const float delta = globals.appTime.getDelta();
-            const float dspeed = speed * delta * (sprintActivated ? sprintFactor : 1.f);
+        //     const vec3 cpos = s.position;
+        //     const float delta = globals.appTime.getDelta();
+        //     const float dspeed = speed * delta * (sprintActivated ? sprintFactor : 1.f);
 
-            s.position += dspeed*vec3(frontFactor, upFactor, rightFactor);
-        }
+        //     s.position += dspeed*vec3(frontFactor, upFactor, rightFactor);
+        // }
 
 
         // auto entity = controlledEntity->comp<EntityGroupInfo>().children[0];

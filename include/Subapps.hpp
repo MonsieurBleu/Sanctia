@@ -200,7 +200,7 @@ namespace Apps
 
             } currentEntity;
 
-            bool snapToGrid = true;
+            bool snapToGrid = false;
 
         public : 
 

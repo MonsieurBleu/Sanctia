@@ -3,8 +3,11 @@
 		: usequat t
 		: useinit t
 		;
+	: EntityModel "Drag n Drop test"
+		;
 	: RigidBody 
-		: type STATIC
+		: type DYNAMIC
+		: mass +5.000000e+03
 		: canSleep t
 		: sleeping t
 		: gravity t
@@ -14,7 +17,27 @@
 					: radius +1.250000e+00
 					;
 				: Transform 
-					: position +5.960464e-08 +2.980232e-08 +9.753251e-02
+					: position +0.000000e+00 +9.002894e-03 -9.614998e-01
+					;
+				: CollisionCategory 
+					: ENVIRONEMENT
+					;
+				: CollideWith 
+					: ENVIRONEMENT
+					;
+				: ColliderMaterial 
+					: bounciness +0.000000e+00
+					: friction +4.999999e-01
+					;
+				: isTrigger f
+				;
+			: Collider *Shape must always be given first*
+				: CapsuleShape 
+					: height +8.045028e+00
+					: radius +9.774854e-01
+					;
+				: Transform 
+					: position +0.000000e+00 -3.601166e-02 +4.029159e+00
 					;
 				: CollisionCategory 
 					: ENVIRONEMENT
@@ -33,40 +56,19 @@
 					: extent +1.250000e+00 +1.250000e+00 +1.195281e+00
 					;
 				: Transform 
-					: position +5.960464e-08 +2.980232e-08 -5.283256e+00
+					: position +0.000000e+00 +9.002894e-03 -6.342288e+00
 					;
 				: CollisionCategory 
-					: ENVIRONEMENT
+					: HITZONE
 					;
 				: CollideWith 
-					: ENVIRONEMENT
+					: HITZONE
 					;
 				: ColliderMaterial 
-					: bounciness +0.000000e+00
-					: friction +4.999999e-01
+					: bounciness +5.000000e-01
+					: friction +3.000000e-01
 					;
-				: isTrigger f
-				;
-			: Collider *Shape must always be given first*
-				: CapsuleShape 
-					: height +3.147024e+00
-					: radius +1.055063e+00
-					;
-				: Transform 
-					: position -1.788139e-07 +2.980232e-08 +5.088191e+00
-					: quaternion +8.504355e-01 -1.495263e-01 +3.609884e-01 -3.522619e-01
-					;
-				: CollisionCategory 
-					: ENVIRONEMENT
-					;
-				: CollideWith 
-					: ENVIRONEMENT
-					;
-				: ColliderMaterial 
-					: bounciness +0.000000e+00
-					: friction +4.999999e-01
-					;
-				: isTrigger f
+				: isTrigger t
 				;
 			;
 		: active t

@@ -192,20 +192,20 @@ void Game::init(int paramSample)
     // loadAllAssetsInfos("data");
     // loadAllAssetsInfos("shader/vulpineMaterials");
 
-    for (auto f : std::filesystem::recursive_directory_iterator("data"))
-    {
-        if (f.is_directory())
-            continue;
+    // for (auto f : std::filesystem::recursive_directory_iterator("data"))
+    // {
+    //     if (f.is_directory())
+    //         continue;
 
-        char ext[1024];
-        char p[4096];
+    //     char ext[1024];
+    //     char p[4096];
 
-        strcpy(ext, (char *)f.path().extension().string().c_str());
-        strcpy(p, (char *)f.path().string().c_str());
+    //     strcpy(ext, (char *)f.path().extension().string().c_str());
+    //     strcpy(p, (char *)f.path().string().c_str());
 
-        if (!strcmp(ext, ".vEntity"))
-            Loader<EntityRef>::addInfos(p);
-    }
+    //     if (!strcmp(ext, ".vEntity"))
+    //         Loader<EntityRef>::addInfos(p);
+    // }
     
     AnimBlueprint::PrepareAnimationsCallbacks();
 

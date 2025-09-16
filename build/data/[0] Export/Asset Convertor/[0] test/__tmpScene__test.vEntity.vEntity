@@ -1,0 +1,30 @@
+~
+	: EntityState3D 
+		: usequat t
+		: useinit t
+		;
+	: EntityGroupInfo 
+		: child : "Drag n Drop test [000]"
+			: EntityState3D 
+				: position -1.365454e+01 -9.002894e-03 +9.614998e-01
+				: initPosition -1.365454e+01 -9.002894e-03 +9.614998e-01
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "Drag n Drop test"
+				;
+			;
+		: child : "Drag n Drop test 2 [000]"
+			: EntityState3D 
+				: position +0.000000e+00 -5.960464e-08 -9.753238e-02
+				: initPosition +0.000000e+00 -5.960464e-08 -9.753238e-02
+				: usequat t
+				: useinit t
+				;
+			: EntityGroupInfo 
+				: child | "Drag n Drop test 2"
+				;
+			;
+		;
+	;

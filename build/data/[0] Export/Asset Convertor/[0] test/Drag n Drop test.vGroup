@@ -1,0 +1,22 @@
+~
+: meshes 
+	: "Drag n Drop test__Suzanne"
+		: mesh | "Drag n Drop test__Suzanne"
+		: material | packingPaint
+		: state 
+			: position "0.000000 0.009003 -0.961500"
+			: quaternion "-0.263225 -0.043263 0.577479 0.756189"
+			: scalev3 "2.149756 2.780476 2.127886"
+			;
+		;
+	: "Drag n Drop test__Suzanne.002"
+		: mesh | "Drag n Drop test__Suzanne.002"
+		: material | packingPaint
+		: state 
+			: position "0.000000 0.009003 4.236130"
+			: quaternion "-0.707107 0.707107 0.000000 0.000000"
+			: scalev3 "1.000000 6.480001 1.000000"
+			;
+		;
+	;
+;

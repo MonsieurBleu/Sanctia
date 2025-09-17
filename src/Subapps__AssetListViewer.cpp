@@ -190,6 +190,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
         std::string dirNameEntity = dirName + collection->mName.C_Str();
         // std::filesystem::create_directory(dirNameEntity);
+        char lodcnt = '0';
 
         for(int j = 0; j < collection->mNumChildren; j++)
         {
@@ -203,13 +204,18 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
             if(strcasestr(component->mName.C_Str(), "graphic"))
             {
-                entity->set<EntityModel>({newObjectGroup()});
-                entity->comp<EntityModel>()->name = entity->comp<EntityInfos>().name;
+                std::string dirNameLOD = dirNameEntity + "__LOD" + lodcnt;
+                lodcnt ++;
+
+                if(!entity->hasComp<EntityModel>())
+                    entity->set<EntityModel>({newObjectGroup()});
+
+                entity->comp<EntityModel>()->add(newObjectGroup(getFileNameFromPath(dirNameLOD.c_str())));
 
                 for(int k = 0; k < component->mNumChildren; k++)
                 {
                     aiNode *mesh = component->mChildren[k];
-                    std::string dirNameMesh = dirNameEntity + "__";
+                    std::string dirNameMesh = dirNameLOD + "__";
                     std::string fileName = VEAC::saveAsVulpineMesh(
                         *scene->mMeshes[mesh->mMeshes[0]], 
                         bonesInfosMap, 
@@ -282,7 +288,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                     }
                 outModel->Break();
                 outModel->Break();
-                outModel->saveAs((dirNameEntity + ".vGroup").c_str());
+                outModel->saveAs((dirNameLOD + ".vGroup").c_str());
             }
             else 
             if(strcasestr(component->mName.C_Str(), "physic"))

@@ -1,7 +1,7 @@
 ~
 : meshes 
-	: "Drag n Drop test__Suzanne"
-		: mesh | "Drag n Drop test__Suzanne"
+	: "Drag n Drop test__LOD0__Suzanne"
+		: mesh | "Drag n Drop test__LOD0__Suzanne"
 		: material | packingPaint
 		: state 
 			: position "0.000000 0.009003 -0.961500"
@@ -9,8 +9,8 @@
 			: scalev3 "2.149756 2.780476 2.127886"
 			;
 		;
-	: "Drag n Drop test__Suzanne.002"
-		: mesh | "Drag n Drop test__Suzanne.002"
+	: "Drag n Drop test__LOD0__Suzanne.002"
+		: mesh | "Drag n Drop test__LOD0__Suzanne.002"
 		: material | packingPaint
 		: state 
 			: position "0.000000 0.009003 4.236130"

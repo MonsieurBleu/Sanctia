@@ -1,3 +1,5 @@
+#include "Graphics/ObjectGroup.hpp"
+#include "Matrix.hpp"
 #include <SanctiaEntity.hpp>
 #include <AssetManager.hpp>
 #include <AssetManagerUtils.hpp>
@@ -303,8 +305,20 @@ AUTOGEN_DATA_RW_FUNC(ItemTransform, mat);
 DATA_WRITE_FUNC_INIT(EntityModel)
     if(!data->name.size())
     {
-        WARNING_MESSAGE("Can't save " << type_name<EntityModel>() << " component. Name is empty");
-        out->write("\"\"", 2);
+        for(auto c : data->getChildren())
+        {
+            if(c->name.size())
+            {
+                out->write("\"", 1);
+                out->write(CONST_STRING_SIZED(c->name));
+                out->write("\" ", 2);
+            }
+            else
+            {
+                WARNING_MESSAGE("Can't save " << type_name<EntityModel>() << " component. Name is empty");
+                out->write("\"\"", 2);
+            }
+        }
     }  
     else
     {
@@ -318,12 +332,23 @@ DATA_READ_FUNC(EntityModel)
 { 
     DATA_READ_INIT(EntityModel)
 
-    data = {Loader<ObjectGroup>::get(std::string(buff->read())).copy()};
+    data = {newObjectGroup()};
 
-    buff->read();
+    const char *ptr;
+    int cnt = 0;
+    while(*(ptr = buff->read()) != ';')
+    {
+        ObjectGroupRef lodn = Loader<ObjectGroup>::get(std::string(ptr)).copy();
+        if(cnt)
+        {
+            lodn->state.setHideStatus(ModelStatus::HIDE);
+        }
+        data->add(lodn);
+        cnt ++;
+    }
+
     return data;
 }
-
 DATA_WRITE_FUNC_INIT(SkeletonAnimationState)
     out->Entry();
     WRITE_NAME(name, out)

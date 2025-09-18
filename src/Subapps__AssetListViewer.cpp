@@ -35,6 +35,13 @@
 #include <reactphysics3d/mathematics/Transform.h>
 #include <string>
 
+#ifdef _WIN32
+    #include <shlwapi.h>
+    #define STR_CASE_STR(str1, str2) StrStrIA(str1, str2)
+#else
+    #define STR_CASE_STR(str1, str2) strcasestr(str1, str2)
+#endif
+
 bool doFileProcessingTmpDebug = false;
 
 vec2 gridScale = vec2(2);
@@ -202,7 +209,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             WRITE_NAME(meshes, outModel)
             outModel->Tabulate();
 
-            if(strcasestr(component->mName.C_Str(), "graphic"))
+            if(STR_CASE_STR(component->mName.C_Str(), "graphic"))
             {
                 std::string dirNameLOD = dirNameEntity + "__LOD" + lodcnt;
                 lodcnt ++;
@@ -291,16 +298,16 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 outModel->saveAs((dirNameLOD + ".vGroup").c_str());
             }
             else 
-            if(strcasestr(component->mName.C_Str(), "physic"))
+            if(STR_CASE_STR(component->mName.C_Str(), "physic"))
             {
                 rp3d::Transform transform;
                 entity->set<RigidBody>(PG::world->createRigidBody(transform));
                 entity->comp<RigidBody>()->setIsActive(false);
 
-                if(strcasestr(component->mName.C_Str(), "kinematic"))
+                if(STR_CASE_STR(component->mName.C_Str(), "kinematic"))
                     entity->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
                 else
-                if(strcasestr(component->mName.C_Str(), "dynamic"))
+                if(STR_CASE_STR(component->mName.C_Str(), "dynamic"))
                     entity->comp<RigidBody>()->setType(rp3d::BodyType::DYNAMIC);
                 else
                     entity->comp<RigidBody>()->setType(rp3d::BodyType::STATIC);
@@ -308,9 +315,9 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 std::vector<std::pair<rp3d::CollisionShape *, rp3d::Transform>> env_colliders;
                 std::vector<std::pair<rp3d::CollisionShape *, rp3d::Transform>> hit_colliders;
 
-                if(strcasestr(component->mName.C_Str(), "mass:"))
+                if(STR_CASE_STR(component->mName.C_Str(), "mass:"))
                 {
-                    const char *n = strcasestr(component->mName.C_Str(), "mass:");
+                    const char *n = STR_CASE_STR(component->mName.C_Str(), "mass:");
                     float mass = fromStr<float>(n + sizeof("mass:")-1);
                     entity->comp<RigidBody>()->setMass(mass);
                 }
@@ -326,9 +333,9 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                     vec3 extent = aabbmax - aabbmin;
                     vec3 center = .5f*(aabbmax + aabbmin);
 
-                    auto &colliders = strcasestr(collider->mName.C_Str(), "hit") ? hit_colliders : env_colliders;
+                    auto &colliders = STR_CASE_STR(collider->mName.C_Str(), "hit") ? hit_colliders : env_colliders;
 
-                    if(strcasestr(collider->mName.C_Str(), "capsule"))
+                    if(STR_CASE_STR(collider->mName.C_Str(), "capsule"))
                     {
                         float radius = min(extent.x, min(extent.y, extent.z))*.5f;
                         float height = max(extent.x, max(extent.y, extent.z))-radius*2.f;
@@ -339,7 +346,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         });
                     }
                     else
-                    if(strcasestr(collider->mName.C_Str(), "cube"))
+                    if(STR_CASE_STR(collider->mName.C_Str(), "cube"))
                     {
                         colliders.push_back({
                             PG::common.createBoxShape(PG::torp3d(extent)*.5f), 
@@ -347,7 +354,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         });
                     }
                     else
-                    if(strcasestr(collider->mName.C_Str(), "sphere"))
+                    if(STR_CASE_STR(collider->mName.C_Str(), "sphere"))
                     {
                         colliders.push_back({
                             PG::common.createSphereShape(extent.x*.5f), 
@@ -651,14 +658,14 @@ void Apps::AssetListViewer::update()
     ComponentModularity::synchronizeChildren(appRoot);
     GG::ManageEntityGarbage();
 
-    // if(globals.getDropInput().size())
-    if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
+    if(globals.getDropInput().size())
+    // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
     {
         std::vector<std::string> filesToBeProcessed = globals.getDropInput();
         globals.clearDropInput();
 
         // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.fbx");
-        filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
 
         for(auto s : filesToBeProcessed)
         {
@@ -688,7 +695,7 @@ void Apps::AssetListViewer::update()
 
         // filesToBeProcessed.clear();
 
-        std::cout << "=================================================\n";
+        // std::cout << "=================================================\n";
 
         Loader<MeshVao>::loadedAssets.clear();
         Loader<MeshModel3D>::loadedAssets.clear();

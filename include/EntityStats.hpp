@@ -6,7 +6,7 @@
 GENERATE_ENUM_FAST_REVERSE(DamageType, Pure, Blunt, Slash, Piercing, DamageType_Size);
 
 GENERATE_ENUM_FAST_REVERSE(EffectType
-    , Unknown
+    , UnknownType
     , Damage
     , Heal
 )
@@ -53,7 +53,7 @@ class Effect
         } target = TargetType::ENEMY;
 
 
-        EffectType type = EffectType::Unknown;
+        EffectType type = EffectType::UnknownType;
 
         int maxTriggerPerEntity = 1;
         int maxTrigger = 1e9;

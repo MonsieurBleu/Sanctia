@@ -199,7 +199,7 @@ void Game::mainloop()
             .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
-
+    
     EntityRef GlobalInfosSubTab = newEntity("Global Infos Sub Tab"
         , WidgetUI_Context{&ui}
         // , WidgetState()
@@ -1096,7 +1096,6 @@ void Game::mainloop()
         mainloopEndRoutine();
     }
 
-
     Settings::bloomEnabled = Bloom.isPassEnable();
     Settings::ssaoEnabled = SSAO.isPassEnable();
     Settings::renderScale = globals.renderScale();
@@ -1107,8 +1106,16 @@ void Game::mainloop()
 
     physicsThreads.join();
     
+    cursorHelp = gameScreenWidget = GlobalInfosTitleTab = GlobalInfosSubTab = EntityRef();
+    EDITOR::MENUS::GameScreen =
+    EDITOR::MENUS::AppChoice =
+    EDITOR::MENUS::AppControl=
+    EDITOR::MENUS::AppMenu =
+    EDITOR::MENUS::GlobalControl =
+    EDITOR::MENUS::GlobalInfos = EntityRef();
     GG::entities.clear();
     PG::common.destroyPhysicsWorld(PG::world);
+
 
     // Prevent crashed from LuaState being destroyed before scripts
     Loader<ScriptInstance>::loadedAssets.clear(); 

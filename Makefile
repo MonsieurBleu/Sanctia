@@ -33,7 +33,7 @@ build-debug-linear :
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) OPTFLAGS="-g"
 
 build-debug-fast :
-	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL) OPTFLAGS="-g -O3 -ffast-math -Os"
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL) OPTFLAGS="-g -O3 -ffast-math"
 
 build-debug-fast-light :
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL_LIGHT) OPTFLAGS="-g -O3 -ffast-math"

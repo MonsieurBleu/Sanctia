@@ -192,6 +192,8 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             }
         });
         colPos /= cnt;
+        colPos *= vec3(1, 0, 1);
+        colPos = vec3(0);
 
         EntityRef entity = newEntity(collection->mName.C_Str(), EntityState3D(true));
 
@@ -208,6 +210,8 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             outModel->Entry();
             WRITE_NAME(meshes, outModel)
             outModel->Tabulate();
+
+            std::cout << collection->mName.C_Str() << "\t" << component->mName.C_Str() << "\n";
 
             if(STR_CASE_STR(component->mName.C_Str(), "graphic"))
             {
@@ -342,7 +346,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
                         colliders.push_back({
                             PG::common.createCapsuleShape(radius, height), 
-                            toRP3D(collider->mTransformation, colPos+center)
+                            toRP3D(collider->mTransformation, colPos-center)
                         });
                     }
                     else
@@ -350,7 +354,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                     {
                         colliders.push_back({
                             PG::common.createBoxShape(PG::torp3d(extent)*.5f), 
-                            toRP3D(collider->mTransformation, colPos+center)
+                            toRP3D(collider->mTransformation, colPos-center)
                         });
                     }
                     else
@@ -358,7 +362,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                     {
                         colliders.push_back({
                             PG::common.createSphereShape(extent.x*.5f), 
-                            toRP3D(collider->mTransformation, colPos+center)
+                            toRP3D(collider->mTransformation, colPos-center)
                         });
                     }
                     else {
@@ -371,7 +375,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 }
 
                 Blueprint::Assembly::AddEntityBodies(entity->comp<RigidBody>(), entity.get(), env_colliders, hit_colliders);
-                entity->comp<RigidBody>()->setIsActive(true);
+                // entity->comp<RigidBody>()->setIsActive(true);
             }
             else
             {
@@ -394,7 +398,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         if(sceneEntity)
             ComponentModularity::addChild(*sceneEntity, 
                 newEntity(entity->comp<EntityInfos>().name + " [000]"
-                    , EntityState3D(true, colPos)
+                    , EntityState3D(true, vec3(7.5*(i%5), 0, 7.5*(i/5)))
                     , EntityGroupInfo({entity})
                 )
             );
@@ -658,14 +662,14 @@ void Apps::AssetListViewer::update()
     ComponentModularity::synchronizeChildren(appRoot);
     GG::ManageEntityGarbage();
 
-    // if(globals.getDropInput().size())
-    if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
+    if(globals.getDropInput().size())
+    // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
     {
         std::vector<std::string> filesToBeProcessed = globals.getDropInput();
         globals.clearDropInput();
 
         // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.fbx");
-        filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
 
         for(auto s : filesToBeProcessed)
         {

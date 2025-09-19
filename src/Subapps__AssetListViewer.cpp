@@ -658,14 +658,14 @@ void Apps::AssetListViewer::update()
     ComponentModularity::synchronizeChildren(appRoot);
     GG::ManageEntityGarbage();
 
-    if(globals.getDropInput().size())
-    // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
+    // if(globals.getDropInput().size())
+    if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
     {
         std::vector<std::string> filesToBeProcessed = globals.getDropInput();
         globals.clearDropInput();
 
         // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.fbx");
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
+        filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
 
         for(auto s : filesToBeProcessed)
         {

@@ -1,9 +1,0 @@
-barrel01
-:	mesh      |  barrel01
-:   material  |  *basicPBR* paintPBR
-:	texture 0 |  barrel01CE
-:	texture 1 |  barrel01NRM
-:   state
-    :   position    "-10 0 10"
-    ;
-;

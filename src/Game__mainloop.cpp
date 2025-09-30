@@ -39,6 +39,8 @@ void Game::mainloop()
         sol::lib::math,
         sol::lib::jit
     );
+    // threadState.set_exception_handler(&my_exception_handler);
+
     VulpineLuaBindings::bindAll(threadState);
     std::thread physicsThreads(&Game::physicsLoop, this);
 

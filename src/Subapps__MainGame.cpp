@@ -1,3 +1,7 @@
+#include "ComponentTypeLogic.hpp"
+#include "Controller.hpp"
+#include "EntityStats.hpp"
+#include "Graphics/Textures.hpp"
 #include <Subapps.hpp>
 #include <EntityBlueprint.hpp>
 #include <AssetManager.hpp>
@@ -204,20 +208,24 @@ void Apps::MainGameApp::init()
 
     /***** Creatign Terrain *****/
 
-    int terrainGridDim = 5;
+    // int terrainGridDim = 5;
 
-    for(int i = -terrainGridDim; i <= terrainGridDim; i++)
-    for(int j = -terrainGridDim; j <= terrainGridDim; j++)
-    {
-        ComponentModularity::addChild(*appRoot,
-            Blueprint::Terrain("ressources/maps/testPlayground.hdr",
-                            // "ressources/maps/RuggedTerrain.hdr",
-                            // "ressources/maps/generated_512x512.hdr",
-                            // "ressources/maps/RT512.hdr",
-                            // vec3(512, 64, 512),
-                            vec3(256, 64, 256), 256.f*vec3(i, 0, j), 128)
-        );
-    }
+    // for(int i = -terrainGridDim; i <= terrainGridDim; i++)
+    // for(int j = -terrainGridDim; j <= terrainGridDim; j++)
+    // {
+    //     ComponentModularity::addChild(*appRoot,
+    //         Blueprint::Terrain("ressources/maps/testPlayground.hdr",
+    //                         // "ressources/maps/RuggedTerrain.hdr",
+    //                         // "ressources/maps/generated_512x512.hdr",
+    //                         // "ressources/maps/RT512.hdr",
+    //                         // vec3(512, 64, 512),
+    //                         vec3(256, 64, 256), 256.f*vec3(i, 0, j), 128)
+    //     );
+    // }
+
+    ComponentModularity::addChild(*appRoot,
+        Blueprint::SpawnMainGameTerrain()
+    );
 
     /***** Creating Player *****/
     {
@@ -231,6 +239,17 @@ void Apps::MainGameApp::init()
         ));
 
         GG::playerEntity = DataLoader<EntityRef>::read(source);
+
+        if (GG::playerEntity->hasComp<RigidBody>())
+        {
+            auto body = GG::playerEntity->comp<RigidBody>();
+            if (body)
+            {
+                body->setIsActive(true);
+                body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 256, 0)),
+                                                    rp3d::Quaternion::identity()));
+            }
+        }
     }
 
     /***** Setting up material helpers *****/

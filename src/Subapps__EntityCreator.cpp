@@ -1,3 +1,5 @@
+#include "ECS/Entity.hpp"
+#include "ECS/ModularEntityGroupping.hpp"
 #include <Subapps.hpp>
 #include <EntityBlueprint.hpp>
 #include <AssetManager.hpp>
@@ -140,8 +142,37 @@ void Apps::EntityCreator::clearTopDownView()
     GG::skybox->state.scaleScalar(1e6);
 }
 
+void Apps::EntityCreator::toggleTerrain()
+{
+    physicsMutex.lock();
+
+    if(terrain)
+    {
+        ComponentModularity::removeChild(*appRoot, terrain);
+        terrain = EntityRef();
+    }   
+    else
+    {
+        ComponentModularity::addChild(*appRoot, terrain = Blueprint::SpawnMainGameTerrain());
+    }
+
+    GG::ManageEntityGarbage__WithPhysics();
+
+    physicsMutex.unlock();
+}
+
 Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
 {
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "toggle terrain", GLFW_KEY_T, 0, GLFW_PRESS, [&]() {
+
+                toggleTerrain();
+
+            },
+            InputManager::Filters::always, false)
+    );
+
     inputs.push_back(&
         InputManager::addEventInput(
             "top-down view", GLFW_KEY_KP_7, 0, GLFW_PRESS, [&]() {
@@ -1808,6 +1839,7 @@ void Apps::EntityCreator::clean()
 
     EDITOR::gridPositionScale.w = 0.f;
 
+    terrain = EntityRef();
     appRoot = EntityRef();
     currentEntity.ref = EntityRef();
     currentEntity.name = "";

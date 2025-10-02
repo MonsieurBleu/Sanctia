@@ -174,6 +174,10 @@ namespace Apps
             void setTopDownView();
             void clearTopDownView();
 
+            void toggleTerrain();
+
+            EntityRef terrain;
+
             OrbitController orbitController;
 
             std::unordered_map<std::string, EntityRef> UI_loadableEntity;

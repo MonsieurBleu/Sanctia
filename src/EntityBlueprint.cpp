@@ -1,3 +1,6 @@
+#include "Graphics/Textures.hpp"
+#include "Timer.hpp"
+#include "Utils.hpp"
 #include <EntityBlueprint.hpp>
 #include <AssetManager.hpp>
 #include <Helpers.hpp>
@@ -6,24 +9,76 @@
 #include <AnimationBlueprint.hpp>
 #include <GameConstants.hpp>
 #include <GameGlobals.hpp>
+#include <reactphysics3d/collision/shapes/HeightFieldShape.h>
+
+EntityRef Blueprint::SpawnMainGameTerrain()
+{
+    return Blueprint::Terrain("Hérault_8192", vec3(4096, 512, 4096), vec3(0), 256);
+}
 
 EntityRef Blueprint::Terrain(
-    const char *mapPath, 
+    const char *mapName, 
     vec3 terrainSize,
     vec3 terrainPosition,
     int cellSize
 )
 {
+    NAMED_TIMER(HeightMap_loading)
+    NAMED_TIMER(TerrainEntityCreation)
+
+
     EntityRef terrainRoot = newEntity("Terrain Root");
 
-    Texture2D HeightMap = Texture2D()
-        .loadFromFileHDR(mapPath)
-        .setFormat(GL_RGB)
-        .setInternalFormat(GL_RGB32F)
-        .setPixelType(GL_FLOAT)
-        .setWrapMode(GL_REPEAT) 
-        .setFilter(GL_LINEAR)
-        .generate();
+    // Texture2D HeightMap = Texture2D()
+    //     .loadFromFileHDR(mapPath)
+    //     .setFormat(GL_RGB)
+    //     .setInternalFormat(GL_RGB32F)
+    //     .setPixelType(GL_FLOAT)
+    //     .setWrapMode(GL_REPEAT) 
+    //     .setFilter(GL_LINEAR)
+    //     .generate();
+
+    HeightMap_loading.start();
+
+    /* Make Sure to refresh the heightmap */
+    Loader<Texture2D>::erase(mapName);
+
+    // if(Loader<Texture2D>::loadedAssets.find(mapName) != Loader<Texture2D>::loadedAssets.end())
+    // {
+    //     NOTIF_MESSAGE("DELETING HEIGHTMAP")
+
+    //     Loader<Texture2D>::loadedAssets.erase(mapName);
+    //     auto buff = Loader<Texture2D>::loadingInfos[mapName]->buff; 
+    //     buff->resetData();
+    //     Loader<Texture2D>::addInfos(buff);
+    // }
+
+    Texture2D &HeightMap = Loader<Texture2D>::get(mapName);
+
+    if(
+        HeightMap.getPixelType() != GL_FLOAT
+        &&
+        HeightMap.getFormat() != GL_DEPTH_COMPONENT
+    )
+    {
+        ERROR_MESSAGE("Can't create terrain entity, requested heightmap '" << mapName << "' isn't a single channel floating point texture. The function will return an empty entity, have fun with your level !");
+        return  terrainRoot;
+    }
+    
+    HeightMap.generate();
+
+
+    HeightMap_loading.stop();
+    std::cout << HeightMap_loading;
+
+    for(auto i : PG::heightFeilds)
+    {
+        PG::common.destroyHeightFieldShape(i.second);
+        PG::common.destroyHeightField(i.first);
+    }
+    PG::heightFeilds.clear();
+
+    TerrainEntityCreation.start();
 
     float *src = ((float *)HeightMap.getPixelSource());
     ivec2 textureSize = HeightMap.getResolution();
@@ -32,16 +87,22 @@ EntityRef Blueprint::Terrain(
     
     float cellHscale = cellSize;
 
-    ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"), Loader<MeshVao>::get("terrainPlane"));
+    ModelRef terrain = newModel(Loader<MeshMaterial>::get("terrain_paintPBR"), 
+    // Loader<MeshVao>::get("terrainPlane")
+    Loader<MeshVao>::get("4x4_terrainPlane")
+    );
+
     terrain->state.setScale(vec3(cellHscale, terrainSize.y, cellHscale));
+    terrain->noBackFaceCulling = false;
     terrain->defaultMode = GL_PATCHES;
     terrain->setMap(HeightMap, 2);
 
     vec3 aabmin = terrain->getVao()->getAABBMin();
     vec3 aabmax = terrain->getVao()->getAABBMax();
 
-    aabmin.y = -terrainSize.y;
-    aabmax.y = terrainSize.y;
+    
+    aabmin.y = 0.f;
+    aabmax.y = cellSize/terrainSize.y;
 
     terrain->getVao()->setAABB(aabmin, aabmax);
 
@@ -52,7 +113,8 @@ EntityRef Blueprint::Terrain(
         ModelRef t = terrain->copy();
 
         t->defaultMode = GL_PATCHES;
-        t->noBackFaceCulling = true;
+        t->noBackFaceCulling = false;
+        t->state.frustumCulled = true;
         t->tessActivate(vec2(1, 16), vec2(25, 250));
         t->tessHeighFactors(1, terrainSize.y/terrainSize.x);
 
@@ -83,7 +145,9 @@ EntityRef Blueprint::Terrain(
         for(int i = 0; i < dsize; i++)
         for(int j = 0; j < dsize; j++)
         {
-            heightData[i * dsize + j] = src[3*((i + iuvmin.y)*textureSize.x + j + iuvmin.x)];
+            heightData[i * dsize + j] = src[((i + iuvmin.y)*textureSize.x + j + iuvmin.x)];
+
+            // std::cout << heightData[i*dsize + j] << "\n";
         }
 
         std::vector<rp3d::Message> messages;
@@ -93,30 +157,36 @@ EntityRef Blueprint::Terrain(
             messages);
         
         for(auto &i : messages)
-            std::cerr << i.text << "\n";
+            ERROR_MESSAGE(i.text);
+        
 
         float maxv = field->getMaxHeight();
         float minv = field->getMinHeight();
         float halfHeight = (-(maxv - minv)*0.5 - minv) + 0.5;
 
+        rp3d::HeightFieldShape *shape = PG::common.createHeightFieldShape(field, rp3d::Vector3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1)));
+
+        PG::heightFeilds.push_back({field, shape});
+
         /* Creating terrain cell entity */
         EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), EntityState3D(), b, model);
         Blueprint::Assembly::AddEntityBodies(b, e.get(), 
             {
-                {PG::common.createHeightFieldShape(
-                    field
-                    , rp3d::Vector3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1))
-                    )
+                {   shape
                     ,rp3d::Transform(
-                        rp3d::Vector3(0, -halfHeight*terrainSize.y, 0),
+                        rp3d::Vector3(0, (0.5-halfHeight)*terrainSize.y, 0),
                         rp3d::Quaternion::identity()
                     )}
             }, {});
 
-
         // GG::entities.push_back(e);
         ComponentModularity::addChild(*terrainRoot, e);
     }
+
+    HeightMap.freeSource();
+
+    TerrainEntityCreation.stop();
+    std::cout << TerrainEntityCreation;
 
     return terrainRoot;
 }

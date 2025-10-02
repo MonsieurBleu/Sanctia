@@ -865,7 +865,7 @@ void Game::mainloop()
 
         PG::physicInterpolationMutex.lock();
         float physicInterpolationValue =
-            clamp((PG::PG::physicInterpolationTick.timeSinceLastTickMS() * physicsTicks.freq), 0.f, 1.f);
+            clamp((PG::PG::physicInterpolationTick.timeSinceLastTick() * physicsTicks.freq), 0.f, 1.f);
         PG::physicInterpolationMutex.unlock();
 
         System<EntityModel, EntityState3D>([&, this](Entity &entity) {

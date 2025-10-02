@@ -77,7 +77,7 @@ void Game::mainloop()
     scene.add(sunLight);
 
     GG::moon = newDirectionLight(DirectionLight()
-        .setColor(vec3(0.6, 0.9, 1.0)));
+        .setColor(0.25f*vec3(0.6, 0.9, 1.0)));
     scene.add(GG::moon);
 
     GG::moon->cameraResolution = vec2(8192);
@@ -599,6 +599,9 @@ void Game::mainloop()
                 for (auto &m : Loader<MeshMaterial>::loadedAssets)
                 {
                     m.second->reset();
+
+                    if(m.second.depthOnly)
+                        m.second.depthOnly.reset();
                 }
             }
         }
@@ -1089,7 +1092,7 @@ void Game::mainloop()
         /* Final Screen Composition */
         glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
         finalProcessingStage.activate();
-        // GG::sun->shadowMap.bindTexture(0, 6);
+        GG::sun->shadowMap.bindTexture(0, 6);
         // GG::moon->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();

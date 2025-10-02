@@ -16,6 +16,11 @@ using namespace glm;
 
 #include <unordered_set>
 
+#include <vector>
+#include <VulpineBitSet.hpp>
+
+class Entity;
+
 #define UNINITIALIZED_FLOAT 1e12f
 
 struct EntityState3D

@@ -1,6 +1,9 @@
 #pragma once 
 
+#include <reactphysics3d/collision/HeightField.h>
+#include <reactphysics3d/collision/shapes/HeightFieldShape.h>
 #include <reactphysics3d/reactphysics3d.h>
+#include <utility>
 
 #define DEFQUAT rp3d::Quaternion::identity()
 
@@ -36,6 +39,7 @@ class PG
         static inline rp3d::PhysicsCommon common;
         static inline rp3d::PhysicsWorld* world = nullptr;
 
+        static inline std::vector<std::pair<rp3d::HeightField*, rp3d::HeightFieldShape*>> heightFeilds;
 
         static inline vec3 toglm(const rp3d::Vector3 &v){return vec3(v.x, v.y, v.z);};
         static inline rp3d::Vector3 torp3d(const vec3 &v){return rp3d::Vector3(v.x, v.y, v.z);}; 

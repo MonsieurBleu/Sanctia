@@ -137,7 +137,9 @@ void Game::init(int paramSample)
             "shader/foward/Skybox.frag",
             "shader/foward/basic.vert",
             "",
-            globals.standartShaderUniform3D()));
+            globals.standartShaderUniform3D(),
+            "#define IN_SKYBOX_MESH"
+        ));
 
     GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
     GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;

@@ -19,9 +19,10 @@ namespace Blueprint
         rp3d::RigidBody *CapsuleBody(float height, vec3 position, EntityRef entity);
     };
 
+    EntityRef SpawnMainGameTerrain();
 
     EntityRef Terrain(
-        const char *mapPath, 
+        const char *mapName, 
         vec3 terrainSize,
         vec3 terrainPosition,
         int cellSize

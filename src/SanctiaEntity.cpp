@@ -361,8 +361,6 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
     // std::cout << to_string(laabbmin) << "\t" << to_string(laabbmax) << "\t" << to_string(jump) << "\n";
 
-    assert(jump.x > 0 && jump.y > 0 && jump.z > 0);
-
     #define AABB_FACE_RAYCAST(cur, dim1, dim2) \
         for(float dim1 = laabbmin. dim1; dim1 <= laabbmax. dim1; dim1 += jump. dim1) \
         for(float dim2 = laabbmin. dim2; dim2 <= laabbmax. dim2; dim2 += jump. dim2) \
@@ -381,6 +379,8 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 
     if(!isFeild)
     {
+        assert(jump.x > 0 && jump.y > 0 && jump.z > 0);
+
         AABB_FACE_RAYCAST(z, x, y)
 
         AABB_FACE_RAYCAST(y, x, z)
@@ -390,6 +390,8 @@ ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
     }
     else
     {
+        assert(jump.x > 0 && jump.z > 0);
+
         jump /= 4.0;
 
         for(float x = laabbmin.x; x <= laabbmax.x; x += jump.x)

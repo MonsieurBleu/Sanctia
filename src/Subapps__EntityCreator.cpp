@@ -589,7 +589,7 @@ EntityRef Apps::EntityCreator::UImenu()
                         , WidgetBox(vec2(-1./3., 1), vec2(-1, 1))
                         , WidgetStyle()
                             .settextColor1(VulpineColorUI::HightlightColor1)
-                        , WidgetText(UFTconvert.from_bytes(name), StringAlignement::TO_LEFT)
+                        , WidgetText(UFTconvert.from_bytes(name), StringAlignment::TO_LEFT)
                     );
 
                     parent->comp<WidgetStyle>().setautomaticTabbing(0);

@@ -26,6 +26,7 @@
 #include <Settings.hpp>
 
 #include <Scripting/ScriptInstance.hpp>
+#include <SanctiaLuaBindings.hpp>
 
 void Game::mainloop()
 {
@@ -41,7 +42,7 @@ void Game::mainloop()
     );
     // threadState.set_exception_handler(&my_exception_handler);
 
-    VulpineLuaBindings::bindAll(threadState);
+    SanctiaLuaBindings::bindAll(threadState);
     std::thread physicsThreads(&Game::physicsLoop, this);
 
     /****** Loading Models and setting up the scene ******/

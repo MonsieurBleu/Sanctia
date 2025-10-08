@@ -44,6 +44,14 @@ class SubApps
         static void UpdateApps();
 
         static void cleanActiveApp();
+
+        static EntityRef getCurrentRoot()
+        {
+            if(activeApp)
+                return activeApp->appRoot;
+            else
+                return EntityRef();
+        }
 };
 
 
@@ -249,4 +257,21 @@ namespace Apps
             virtual void clean() override;
     };
 
+    class LuaTesting : public SubApps
+    {
+        private:
+            OrbitController orbitController;
+
+        public:
+        
+            LuaTesting();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
 }

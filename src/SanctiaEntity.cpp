@@ -746,3 +746,8 @@ COMPONENT_DEFINE_SYNCH(LevelOfDetailsInfos)
     
 
 }
+
+COMPONENT_DEFINE_COMPATIBILITY_CHECK(Script)
+{
+    return false;
+}

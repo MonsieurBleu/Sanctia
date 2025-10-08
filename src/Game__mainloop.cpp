@@ -1,3 +1,4 @@
+#include "ECS/ComponentTypeScripting.hpp"
 #include <fstream>
 #include <thread>
 
@@ -479,6 +480,8 @@ void Game::mainloop()
 
     Apps::AssetListViewer assetView;
 
+    Apps::LuaTesting luaTest;
+
     // SubApps::switchTo(materialView);
 
     // Apps::MainGameApp testsubapps2;
@@ -806,6 +809,15 @@ void Game::mainloop()
 
         if (GG::playerEntity && GG::playerEntity->comp<EntityStats>().alive)
             GG::playerEntity->comp<EntityState3D>().lookDirection = camera.getDirection();
+
+        /*****
+            Executing scripts on update
+        */
+        System<Script>([&](Entity &entity) {
+            if (!entity.comp<Script>().isInitialized())
+                entity.comp<Script>().run_OnInit();
+            entity.comp<Script>().run_OnUpdate(); 
+        });
 
         /***** Updating animations
         *****/

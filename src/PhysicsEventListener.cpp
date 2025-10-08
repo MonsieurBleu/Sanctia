@@ -117,9 +117,6 @@ void applyEffect(Entity *weapon, Entity *target)
 
 void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& callbackData)
 {
-    /* TODO : remove when the crash are fixed*/
-    // return;
-
     uint32 nb = callbackData.getNbOverlappingPairs();
 
     for(uint32 i = 0; i < nb; i++)

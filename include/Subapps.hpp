@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Controller.hpp"
 #include <SanctiaEntity.hpp>
 #include <EventGraph.hpp>
 
@@ -260,7 +261,7 @@ namespace Apps
     class LuaTesting : public SubApps
     {
         private:
-            OrbitController orbitController;
+            OrbitController controller;
 
         public:
         

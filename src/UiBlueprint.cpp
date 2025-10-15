@@ -395,7 +395,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
 
             VulpineBlueprintUI::Toggable("Custom Sun Position", "", 
             [](Entity *e, float v){GG::useCustomSunPos = v == 0.f;},
-            [](Entity *e){return GG::GG::useCustomSunPos ? 0.f : 1.f;}
+            [](Entity *e){return GG::useCustomSunPos ? 0.f : 1.f;}
             ),
             
 

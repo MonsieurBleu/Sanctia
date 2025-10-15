@@ -3,6 +3,7 @@
 #include "Blueprint/EngineBlueprintUI.hpp"
 #include "ECS/Entity.hpp"
 #include "ECS/ModularEntityGroupping.hpp"
+#include "Game.hpp"
 #include "GameGlobals.hpp"
 #include "SanctiaLuaBindings.hpp"
 #include <Scripting/ScriptInstance.hpp>
@@ -12,15 +13,8 @@ Apps::LuaTesting::LuaTesting() : SubApps("Lua Testing")
 {
     inputs.push_back(&
         InputManager::addEventInput(
-            "clear root", GLFW_KEY_SPACE, 0, GLFW_PRESS, [&]() {    
-                appRoot = newEntity("AppRoot");
-            },
-            InputManager::Filters::always, false)
-    );
-    inputs.push_back(&
-        InputManager::addEventInput(
             "execute script", GLFW_KEY_R, 0, GLFW_PRESS, [&]() {    
-                appRoot->set<Script>(Script("test", ScriptHook::ON_INIT));
+                appRoot->comp<Script>().setInitialized(false);
             },
             InputManager::Filters::always, false)
     );
@@ -42,7 +36,7 @@ void Apps::LuaTesting::init()
     /***** Preparing App Settings *****/
     {
         appRoot = newEntity("AppRoot");
-        App::setController(&orbitController);
+        App::setController(&controller);
     }
 
     if (Loader<ScriptInstance>::loadingInfos.find("test_ent") != Loader<ScriptInstance>::loadingInfos.end())
@@ -51,7 +45,15 @@ void Apps::LuaTesting::init()
     }
 
 
-    appRoot->set<Script>(Script("test", ScriptHook::ON_INIT));
+    appRoot->set<Script>(Script(
+        "test", ScriptHook::ON_INIT, 
+        "test_step", ScriptHook::ON_UPDATE
+    ));
+
+    VulpineTextOutputRef out(new VulpineTextOutput());
+    EntityRef e = appRoot;
+    DataLoader<EntityRef>::write(e, out);
+    out->saveAs("data/test_ent.vEntity");
 }
 
 void Apps::LuaTesting::update()
@@ -83,6 +85,8 @@ void Apps::LuaTesting::clean()
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
 
     appRoot = EntityRef();
+    GameGlobals::playerEntity = EntityRef();
+    
     App::setController(nullptr);
 
     GG::sun->shadowCameraSize = vec2(0, 0);

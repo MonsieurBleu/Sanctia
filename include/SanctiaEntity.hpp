@@ -4,8 +4,12 @@
 // #define MAX_ENTITY  0x8000
 #define MAX_ENTITY  (1<<15)
 
+
 #include <GlobalOptions.hpp>
+
+#define ENTITY_HEADER_SAFE_INCLUDE
 #include <ECS/ModularEntityGroupping.hpp>
+#undef ENTITY_HEADER_SAFE_INCLUDE
 
 #include <ECS/EngineComponents.hpp>
 
@@ -19,12 +23,16 @@
 #include <ComponentTypeGraphic.hpp>
 #include <ComponentTypePhysic.hpp>
 #include <ComponentTypeAI.hpp>
+#include <ECS/ComponentTypeScripting.hpp>
 
 #undef CURRENT_MAX_COMP_USAGE
 #define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
 
 EntityRef spawnEntity(const std::string &name);
+
+/***************** SCRIPTING COMPONENTS *****************/
+    Coherent_Component(Script)
 
 /***************** GAMEPLAY ATTRIBUTS *****************/
 

@@ -262,7 +262,16 @@ namespace Apps
             std::unordered_map<std::string, EntityRef> VersionList;
             std::string currentVersion;
 
+
+            std::unordered_map<std::string, EntityRef>  filesToBeProcessed;
+
+
             EntityRef gameScreenMenu;
+
+            std::string skeletonTarget = "Human";
+            uint vulpineImportFlag = 0;
+            float scale = 1.0;
+
 
         public : 
 

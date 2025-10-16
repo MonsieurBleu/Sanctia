@@ -149,7 +149,7 @@ void Apps::AnimationApp::init()
     );
 
     skeleton2 = Loader<SkeletonRef>::get(
-        "__tmp__"
+        "Human"
     );
 
     // skeleton = Loader<SkeletonRef>::get("Xbot");
@@ -181,7 +181,7 @@ void Apps::AnimationApp::init()
     animation2 = Loader<AnimationRef>::get(
         // "_mixamo.com"
 
-        "(__tmp__) dance-graceful-378939"
+        "(Human) dance-graceful-378939"
 
         // "catwalk-loop-378982.vAnimation__Retargeted__"
 

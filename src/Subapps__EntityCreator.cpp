@@ -1258,15 +1258,6 @@ void Apps::EntityCreator::init()
     // for(auto &i : Loader<Texture2D>::loadingInfos)
     //     UI_loadableEntity[i.first] = EntityRef();
 
-    /***** Creatign Terrain *****/
-    // ComponentModularity::addChild(*appRoot,
-    //     Blueprint::Terrain("ressources/maps/testPlayground.hdr",
-    //                     // "ressources/maps/RuggedTerrain.hdr",
-    //                     // "ressources/maps/generated_512x512.hdr",
-    //                     // "ressources/maps/RT512.hdr",
-    //                     // vec3(512, 64, 512),
-    //                     vec3(256, 64, 256), vec3(0), 128)
-    // );
 
     // globals.simulationTime.resume();
 

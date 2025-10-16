@@ -262,7 +262,7 @@ EntityRef Blueprint::TestManequin()
             , EntityState3D(position)
             , EntityDeplacementState()
             , stats
-            , CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
+            , CharacterDialogues("data/commons/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             , DeplacementBehaviour{DEMO}
             , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
             , NpcPcRelation()

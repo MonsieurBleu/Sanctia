@@ -51,7 +51,7 @@ void Game::mainloop()
     
     GG::skybox = newModel(skyboxMaterial);
     
-    GG::skybox->loadFromFolder("ressources/models/skybox/", false, false);
+    GG::skybox->loadFromFolder("data/commons/models/skybox/", false, false);
 
     // GG::skybox->invertFaces = true;
     // GG::skybox->depthWrite = true;
@@ -60,7 +60,7 @@ void Game::mainloop()
     GG::skybox->uniforms.add(ShaderUniform(&GG::skyboxType, 32));
     scene.add(GG::skybox);
 
-    // Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
+    // Texture2D EnvironementMap = Texture2D().loadFromFile("data/commons/HDRIs/quarry_cloudy_2k.jpg").generate();
     // Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI004_4K-TONEMAPPED");
     Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
     

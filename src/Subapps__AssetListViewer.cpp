@@ -69,6 +69,7 @@ void applyRecursive(aiNode *n, std::function<void(aiNode *n)> f)
 VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     const std::string &path,
     const std::string &folder,
+    const std::string &skeletonTarget,
     VEAC_EXPORT_FORMAT format,
     unsigned int aiImportFlags,
     unsigned int vulpineImportFlags,
@@ -129,7 +130,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         for (unsigned int i = 0; i < scene->mNumAnimations; i++)
         {
             aiAnimation &anim = *scene->mAnimations[i];
-            VEAC::retargetVulpineAnimation(anim, bonesInfosMap, anim.mName.C_Str(), dirName, "Human", "ActorCore");
+            VEAC::retargetVulpineAnimation(anim, bonesInfosMap, anim.mName.C_Str(), dirName, skeletonTarget, "ActorCore");
 
             VEAC::saveAsVulpineAnimation(anim, bonesInfosMap, dirName + anim.mName.C_Str() + ".vAnimation");
 
@@ -436,13 +437,84 @@ bool compareUntilBreakPoint(const std::string &s1, const std::string &s2, const 
 
 EntityRef Apps::AssetListViewer::UImenu()
 {
-    return newEntity("empty menu space");
+    auto veacflags = newEntity("VEAC Flags"
+                , UI_BASE_COMP
+                , WidgetStyle().setautomaticTabbing(8)
+    );
+        
+
+    for(auto &o : VEAC::SceneConvertOptionMap)
+    {
+        ComponentModularity::addChild(*veacflags, 
+            VulpineBlueprintUI::Toggable(o.first, "", 
+                            [&, o](Entity *e, float f)
+                            {
+                                vulpineImportFlag = vulpineImportFlag ^ (1 << o.second);
+                            },
+                            [&, o](Entity *e)
+                            {
+                                return vulpineImportFlag & 1<<o.second ? 0. : 1.;
+                            }
+                        )
+        );
+    }
+
+    auto filesList = VulpineBlueprintUI::StringListSelectionMenu("Files to be processed", 
+        filesToBeProcessed, 
+        [&](Entity *e, float f)
+        {
+            filesToBeProcessed.erase(
+                e->comp<EntityInfos>().name
+            );
+        },
+        [&](Entity *e)
+        {
+            if(e->comp<WidgetText>().text[0] != U' ')
+                e->comp<WidgetText>().text = U' ' + e->comp<WidgetText>().text;
+            
+            e->comp<WidgetText>().align = StringAlignment::TO_LEFT;
+            return 0.f;
+        },
+        0.f,
+        VulpineColorUI::HightlightColor1,
+        1.f/16.f
+    );
+
+
+
+    return newEntity("Asset Import Menu"
+        , UI_BASE_COMP
+        , WidgetStyle().setautomaticTabbing(2)
+        , EntityGroupInfo({
+            filesList,
+            newEntity("Asset Import Options"
+                , UI_BASE_COMP 
+                , WidgetStyle().setautomaticTabbing(1)
+                , EntityGroupInfo({
+                    newEntity("Empty menu space"),
+
+                    newEntity("Asset Import Options 1"
+                        , UI_BASE_COMP
+                        , WidgetStyle().setautomaticTabbing(2)
+                        , EntityGroupInfo({
+
+                            VulpineBlueprintUI::NamedEntry(U"Vulpine Import Options", veacflags, 1./8., true),
+
+                            newEntity("Empty menu space")
+                        })
+                    )
+                })
+            )
+        })
+    );
 }
 
 void Apps::AssetListViewer::init()
 {
     appRoot = newEntity("AppRoot");
     GG::skyboxType = 2;
+
+    globals.clearDropInput();
     
     for(auto &i : AssetLoadInfos::assetList)
     {
@@ -650,13 +722,29 @@ void Apps::AssetListViewer::update()
     GG::ManageEntityGarbage();
 
     if(globals.getDropInput().size())
+    {
+        std::vector<std::string> filesToBeProcessed_tmp = globals.getDropInput();
+        globals.clearDropInput();
+
+        for(auto &f : filesToBeProcessed_tmp)
+            filesToBeProcessed[f] = EntityRef();
+    }
+    
     // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
 
-    // static bool tmpbool = true;
-    // if(tmpbool)
-    {
-        // tmpbool = false;
+    static bool tmpbool = true;
 
+    if(tmpbool)
+    {
+        filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx"] = EntityRef();
+        filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx"] = EntityRef();
+        filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx"] = EntityRef();
+
+        tmpbool = false;
+    }
+
+    if(false)
+    {
         std::vector<std::string> filesToBeProcessed = globals.getDropInput();
         globals.clearDropInput();
 
@@ -681,10 +769,11 @@ void Apps::AssetListViewer::update()
         
         for(auto s : filesToBeProcessed)
         {
-            NOTIF_MESSAGE(s)
+            NOTIF_MESSAGE("Importing " << s)
 
             ConvertSceneFile__SanctiaEntity(
                 s,  "data/[0] Export/Asset Convertor/", 
+                skeletonTarget,
                 VEAC_EXPORT_FORMAT::FORMAT_SANCTIA,
                 0
                 | aiProcess_Triangulate 
@@ -703,6 +792,7 @@ void Apps::AssetListViewer::update()
                 // | 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
                 // | 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY
                 // , 1.f/100.f
+                , scale
             );
 
         }
@@ -717,9 +807,7 @@ void Apps::AssetListViewer::update()
         Loader<EntityRef>::loadedAssets.clear();
         Loader<SkeletonRef>::loadedAssets.clear();
         Loader<AnimationRef>::loadedAssets.clear();
-        /*
-            TODO : add animation/squeleton clearing later
-        */
+
         loadAllModdedAssetsInfos("./");
     }   
 }
@@ -732,6 +820,7 @@ void Apps::AssetListViewer::clean()
     TypesList.clear();
     AssetList.clear();
     VersionList.clear();
+    filesToBeProcessed.clear();
 
     ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, gameScreenMenu);
     gameScreenMenu = EntityRef();

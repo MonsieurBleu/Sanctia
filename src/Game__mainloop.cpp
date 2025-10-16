@@ -1,3 +1,4 @@
+#include "ECS/ComponentTypeScripting.hpp"
 #include <fstream>
 #include <thread>
 
@@ -26,6 +27,7 @@
 #include <Settings.hpp>
 
 #include <Scripting/ScriptInstance.hpp>
+#include <SanctiaLuaBindings.hpp>
 
 void Game::mainloop()
 {
@@ -41,7 +43,7 @@ void Game::mainloop()
     );
     // threadState.set_exception_handler(&my_exception_handler);
 
-    VulpineLuaBindings::bindAll(threadState);
+    SanctiaLuaBindings::bindAll(threadState);
     std::thread physicsThreads(&Game::physicsLoop, this);
 
     /****** Loading Models and setting up the scene ******/
@@ -477,6 +479,8 @@ void Game::mainloop()
     Apps::SceneMergeApp sceneMerge;
     Apps::AnimationApp animationViewer;
 
+    Apps::LuaTesting luaTest;
+
     // SubApps::switchTo(materialView);
 
     // Apps::MainGameApp testsubapps2;
@@ -805,6 +809,15 @@ void Game::mainloop()
         if (GG::playerEntity && GG::playerEntity->comp<EntityStats>().alive)
             GG::playerEntity->comp<EntityState3D>().lookDirection = camera.getDirection();
 
+        /*****
+            Executing scripts on update
+        */
+        System<Script>([&](Entity &entity) {
+            if (!entity.comp<Script>().isInitialized())
+                entity.comp<Script>().run_OnInit();
+            entity.comp<Script>().run_OnUpdate(); 
+        });
+
         /***** Updating animations
         *****/
         // if (!globals.simulationTime.isPaused())
@@ -868,7 +881,7 @@ void Game::mainloop()
 
         PG::physicInterpolationMutex.lock();
         float physicInterpolationValue =
-            clamp((PG::PG::physicInterpolationTick.timeSinceLastTickMS() * physicsTicks.freq), 0.f, 1.f);
+            clamp((PG::PG::physicInterpolationTick.timeSinceLastTick() * physicsTicks.freq), 0.f, 1.f);
         PG::physicInterpolationMutex.unlock();
 
         System<EntityModel, EntityState3D>([&, this](Entity &entity) {

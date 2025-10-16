@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Controller.hpp"
 #include <SanctiaEntity.hpp>
 #include <EventGraph.hpp>
 
@@ -41,6 +42,10 @@ class SubApps
         static void switchTo(const std::string &name);
         static std::string getActiveAppName() {return activeApp->name;}
 
+        static void UpdateApps();
+
+        static void cleanActiveApp();
+
         static EntityRef getCurrentRoot()
         {
             if(activeApp)
@@ -48,10 +53,6 @@ class SubApps
             else
                 return EntityRef();
         }
-
-        static void UpdateApps();
-
-        static void cleanActiveApp();
 };
 
 
@@ -301,7 +302,7 @@ namespace Apps
         public : 
 
             AnimationApp();
-
+            
             virtual EntityRef UImenu() override;
 
             virtual void init() override;
@@ -311,4 +312,21 @@ namespace Apps
             virtual void clean() override;
     };
 
+    class LuaTesting : public SubApps
+    {
+        private:
+            OrbitController controller;
+
+        public:
+        
+            LuaTesting();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
 }

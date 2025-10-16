@@ -1,3 +1,4 @@
+#include "ECS/ComponentTypeScripting.hpp"
 #include "Graphics/ObjectGroup.hpp"
 #include "Matrix.hpp"
 #include <SanctiaEntity.hpp>
@@ -778,3 +779,49 @@ DATA_READ_FUNC_INIT(AgentState)
     else IF_MEMBER_FTXTP_LOAD(data, timeSinceLastState)
     else IF_MEMBER_FTXTP_LOAD(data, randomTime)
 DATA_READ_END_FUNC
+
+DATA_WRITE_FUNC_INIT(Script)
+{
+    for (int i = 0; i < ScriptHook::HOOK_END; i++)
+    {
+        std::string hookName = ScriptHookReverseMap[i];
+        if (data.scripts[i].size())
+        {
+            out->Entry();
+            out->write(CONST_STRING_SIZED(hookName));
+            out->Tabulate();
+            for (const std::string &script : data.scripts[i])
+            {
+                out->Entry();
+                out->write("\"", 1);
+                out->write(CONST_STRING_SIZED(script));
+                out->write("\"", 1);
+            }
+            out->Break();
+        }
+    }
+}
+DATA_WRITE_END_FUNC
+
+template <> 
+Script DataLoader<Script>::read(VulpineTextBuffRef buff) 
+{
+    Script data;
+
+    while (NEW_VALUE) 
+    {                                                          
+        const char* hookNameStr = buff->read();
+        ScriptHook hook = ScriptHook::HOOK_END;
+        MAP_SAFE_READ(ScriptHookMap, buff, hook, hookNameStr);
+        if (hook == ScriptHook::HOOK_END)
+            continue;
+
+        while (NEW_VALUE)
+        {
+            const char *scriptName = buff->read();
+            data.scripts[hook].push_back(std::string(scriptName));
+        }
+    }
+
+    return data;
+}

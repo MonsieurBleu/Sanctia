@@ -137,7 +137,7 @@ EntityRef& Loader<EntityRef>::loadFromInfos()
     EXIT_ROUTINE_AND_RETURN
 }
 
-
+AUTOGEN_COMPONENT_RWFUNC(Script)
 AUTOGEN_COMPONENT_RWFUNC(EntityState3D)
 AUTOGEN_COMPONENT_RWFUNC(EntityDeplacementState)
 AUTOGEN_COMPONENT_RWFUNC(EntityStats)

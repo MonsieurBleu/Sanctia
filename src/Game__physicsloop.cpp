@@ -16,7 +16,7 @@
 #include <PhysicsEventListener.hpp>
 
 #include <Scripting/ScriptInstance.hpp>
-
+#include <SanctiaLuaBindings.hpp>
 
 void Game::physicsLoop()
 {
@@ -32,7 +32,7 @@ void Game::physicsLoop()
         sol::lib::math,
         sol::lib::jit
     );
-    VulpineLuaBindings::bindAll(threadState);
+    SanctiaLuaBindings::bindAll(threadState);
 
     PhysicsEventListener eventListener;
     PG::world->setEventListener((rp3d::EventListener*)&eventListener);

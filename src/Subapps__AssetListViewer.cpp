@@ -1,15 +1,4 @@
 #include <Subapps.hpp>
-#include "AssetManagerUtils.hpp"
-#include "ComponentTypeGraphic.hpp"
-#include "ComponentTypeLogic.hpp"
-#include "ECS/Entity.hpp"
-#include "ECS/ModularEntityGroupping.hpp"
-#include "Graphics/Mesh.hpp"
-#include "Graphics/ObjectGroup.hpp"
-#include "Inputs.hpp"
-#include "Matrix.hpp"
-#include "PhysicsGlobals.hpp"
-#include "Utils.hpp"
 #include <ModManager.hpp>
 #include <AssetManager.hpp>
 
@@ -23,6 +12,7 @@
 #include "VulpineParser.hpp"
 #include <VEAC/AssetConvertor.hpp>
 #include <assimp/aabb.h>
+#include <assimp/config.h>
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -34,13 +24,6 @@
 #include <reactphysics3d/components/RigidBodyComponents.h>
 #include <reactphysics3d/mathematics/Transform.h>
 #include <string>
-
-#ifdef _WIN32
-    #include <shlwapi.h>
-    #define STR_CASE_STR(str1, str2) StrStrIA(str1, str2)
-#else
-    #define STR_CASE_STR(str1, str2) strcasestr(str1, str2)
-#endif
 
 bool doFileProcessingTmpDebug = false;
 
@@ -73,30 +56,6 @@ EntityState3D toVulpine(aiMatrix4x4 ai)
     return s;
 }
 
-ModelState3D toModelState(aiMatrix4x4 ai)
-{
-    mat4 m = toGLM(ai);
-    ModelState3D s;
-    
-    s.setPosition(vec3(vec4(m*vec4(0, 0, 0, 1))));
-    
-    vec3 scale(
-        length(vec3(m[0][0], m[1][0], m[2][0])),
-        length(vec3(m[0][1], m[1][1], m[2][1])),
-        length(vec3(m[0][2], m[1][2], m[2][2]))
-    );
-
-    s.setScale(scale);
-
-    s.setQuaternion(quat(
-        mat3(
-            vec3(m[0])/scale, vec3(m[1])/scale, vec3(m[2])/scale
-        )
-    ));
-
-    return s;
-}
-
 void applyRecursive(aiNode *n, std::function<void(aiNode *n)> f)
 {
     for(int i = 0; i < n->mNumChildren; i++)
@@ -117,6 +76,14 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 )
 {
     Assimp::Importer importer;
+
+    // importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+    // importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_OPTIMIZE_EMPTY_ANIMATION_CURVES, false);
+    // importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
+    // importer.SetPropertyBool(AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER, true);
+
+    // importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_IGNORE_UP_DIRECTION, false);
 
     importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
     importer.SetPropertyBool(AI_CONFIG_PP_PTV_KEEP_HIERARCHY, true);
@@ -151,6 +118,26 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     std::filesystem::create_directory(dirName);
 
     Stencil_BoneMap bonesInfosMap;
+
+    if(vulpineImportFlags & 1<<VEAC::SceneConvertOption::EXPORT_ANIMATIONS)
+    {
+        VEAC::optimizeSceneBones(*scene, bonesInfosMap);
+    
+        if (bonesInfosMap.size() > 1)
+            VEAC::saveAsVulpineSkeleton(bonesInfosMap, dirName +  getNameOnlyFromPath(path.c_str()) + ".vSkeleton");
+    
+        for (unsigned int i = 0; i < scene->mNumAnimations; i++)
+        {
+            aiAnimation &anim = *scene->mAnimations[i];
+            VEAC::retargetVulpineAnimation(anim, bonesInfosMap, anim.mName.C_Str(), dirName, "Human", "ActorCore");
+
+            VEAC::saveAsVulpineAnimation(anim, bonesInfosMap, dirName + anim.mName.C_Str() + ".vAnimation");
+
+        }
+    }
+
+
+
 
     /*
         If we want to get full entities from the file, we need to do things differently
@@ -257,7 +244,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                             // WRITE_FUNC_RESULT(posiiton, toVulpine(mesh->mTransformation).initPosition)
                             // WRITE_FUNC_RESULT(quaternion, toVulpine(mesh->mTransformation).initQuat)
 
-                            auto state3D = toModelState(mesh->mTransformation);
+                            auto state3D = VEAC::toModelState(mesh->mTransformation);
                             state3D.position -= colPos;
                             /*
                                 TODO : extract scale and fix quaternion
@@ -449,7 +436,7 @@ bool compareUntilBreakPoint(const std::string &s1, const std::string &s2, const 
 
 EntityRef Apps::AssetListViewer::UImenu()
 {
-    return newEntity();
+    return newEntity("empty menu space");
 }
 
 void Apps::AssetListViewer::init()
@@ -664,13 +651,34 @@ void Apps::AssetListViewer::update()
 
     if(globals.getDropInput().size())
     // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
+
+    // static bool tmpbool = true;
+    // if(tmpbool)
     {
+        // tmpbool = false;
+
         std::vector<std::string> filesToBeProcessed = globals.getDropInput();
         globals.clearDropInput();
 
         // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.fbx");
         // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Jazz Dancing(1).fbx");
 
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/f_h_magespellcast_05.fbx");
+        
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/dance-graceful.fbx");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unreal/dance-graceful.fbx");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Blender/dance-graceful.fbx");
+
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/dance-graceful.fbx");
+        
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx");
+
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx");
+
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx");
+        
+        
         for(auto s : filesToBeProcessed)
         {
             NOTIF_MESSAGE(s)
@@ -691,8 +699,10 @@ void Apps::AssetListViewer::update()
                 | aiProcess_GenBoundingBoxes
                 ,
                 0
-                | 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
-                | 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY
+                | 1<<VEAC::EXPORT_ANIMATIONS
+                // | 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
+                // | 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY
+                // , 1.f/100.f
             );
 
         }
@@ -705,6 +715,8 @@ void Apps::AssetListViewer::update()
         Loader<MeshModel3D>::loadedAssets.clear();
         Loader<ObjectGroup>::loadedAssets.clear();
         Loader<EntityRef>::loadedAssets.clear();
+        Loader<SkeletonRef>::loadedAssets.clear();
+        Loader<AnimationRef>::loadedAssets.clear();
         /*
             TODO : add animation/squeleton clearing later
         */

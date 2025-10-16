@@ -475,7 +475,7 @@ void Apps::MaterialViewerApp::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity();
+        appRoot = newEntity("empty menu space");
         GG::currentConditions.readTxt("saves/gameConditions.txt");
 
         App::setController(&orbitController);

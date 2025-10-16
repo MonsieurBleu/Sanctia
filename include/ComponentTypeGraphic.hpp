@@ -1,10 +1,15 @@
 #pragma once
 
-struct EntityModel : public ObjectGroupRef{};
+#include "Graphics/ObjectGroup.hpp"
+struct EntityModel : public ObjectGroupRef
+{
+    EntityModel(){};
+    EntityModel(ObjectGroupRef obj) : ObjectGroupRef(obj){};
+};
 
 struct AnimationControllerInfos : std::string
 {
-    GENERATE_ENUM_FAST_REVERSE(Type, Biped)
+    GENERATE_ENUM_FAST_REVERSE(Type, Biped);
 
     Type type;
 };

@@ -41,6 +41,14 @@ class SubApps
         static void switchTo(const std::string &name);
         static std::string getActiveAppName() {return activeApp->name;}
 
+        static EntityRef getCurrentRoot()
+        {
+            if(activeApp)
+                return activeApp->appRoot;
+            else
+                return EntityRef();
+        }
+
         static void UpdateApps();
 
         static void cleanActiveApp();
@@ -49,6 +57,25 @@ class SubApps
 
 namespace Apps
 {
+    class __TEMPLATE__App : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+        public : 
+
+            __TEMPLATE__App();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
     class MainGameApp : public SubApps
     {
         private : 
@@ -239,6 +266,41 @@ namespace Apps
         public : 
 
             AssetListViewer();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
+    class AnimationApp : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+            SkeletonRef skeleton;
+            SkeletonAnimationState skeletonState;
+            AnimationRef animation;
+            AnimationController animController;
+
+            SkeletonRef skeleton2;
+            SkeletonAnimationState skeletonState2;
+            AnimationRef animation2;
+            AnimationController animController2;
+
+            void setTopDownView();
+            void clearTopDownView();
+
+            EntityModel helper1;
+            EntityModel helper2;
+
+        public : 
+
+            AnimationApp();
 
             virtual EntityRef UImenu() override;
 

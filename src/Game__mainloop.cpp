@@ -470,13 +470,12 @@ void Game::mainloop()
     );
 
     Apps::MainGameApp testsubapps1;
+    Apps::EntityCreator entityCreator;
+    Apps::AssetListViewer assetView;
     Apps::MaterialViewerApp materialView;
     Apps::EventGraphApp eventGraph;
     Apps::SceneMergeApp sceneMerge;
-
-    Apps::EntityCreator entityCreator;
-
-    Apps::AssetListViewer assetView;
+    Apps::AnimationApp animationViewer;
 
     // SubApps::switchTo(materialView);
 
@@ -808,16 +807,17 @@ void Game::mainloop()
 
         /***** Updating animations
         *****/
-        if (!globals.simulationTime.isPaused())
-            System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity) {
-                auto &s = entity.comp<SkeletonAnimationState>();
-                auto &c = entity.comp<AnimationControllerRef>();
+        // if (!globals.simulationTime.isPaused())
+        float deltaAnim = globals.simulationTime.isPaused() ? 0.f : globals.simulationTime.getDelta();
+        System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity) {
+            auto &s = entity.comp<SkeletonAnimationState>();
+            auto &c = entity.comp<AnimationControllerRef>();
 
-                c->update(globals.simulationTime.getDelta());
-                c->applyKeyframes(s);
-                s.skeleton->applyGraph(s);
-                s.update();
-            });
+            c->update(deltaAnim);
+            c->applyKeyframes(s);
+            s.skeleton->applyGraph(s);
+            s.update();
+        });
 
         // /***** SYNCHRONIZING MEG
         // *****/

@@ -191,7 +191,7 @@ void Apps::MainGameApp::init()
 {
     /***** Preparing App Settings */
     {
-        appRoot = newEntity();
+        appRoot = newEntity("empty menu space");
         globals.simulationTime.resume();
         globals.currentCamera->getState().FOV = radians(100.f);
         GG::currentConditions.readTxt("saves/gameConditions.txt");

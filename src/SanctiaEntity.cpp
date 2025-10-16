@@ -9,6 +9,20 @@
 #include <glm/gtx/string_cast.hpp>
 #include <reactphysics3d/mathematics/Vector3.h>
 
+EntityRef spawnEntity(const std::string &name)
+{
+    auto it = Loader<EntityRef>::loadingInfos.find(name);
+
+    if(it == Loader<EntityRef>::loadingInfos.end())
+    {
+        FILE_ERROR_MESSAGE(name, "Entity not found.");
+        return newEntity();
+    }
+
+    VulpineTextBuffRef file(new VulpineTextBuff(it->second->buff->getSource().c_str()));
+
+    return DataLoader<EntityRef>::read(file);
+}
 
 COMPONENT_DEFINE_SYNCH(EntityState3D) /**************** UNUSED TODO: remove*****************/
 {

@@ -60,11 +60,11 @@ void Game::initInput()
 
     Inputs::reset = InputManager::addEventInput(
         "reset", GLFW_KEY_F5, 0, GLFW_PRESS, [&]() {
-            #ifdef _WIN32
-            system("cls");
-#else
-            system("clear");
-#endif
+//             #ifdef _WIN32
+//             system("cls");
+// #else
+//             system("clear");
+// #endif
 
             finalProcessingStage.reset();
             Bloom.getShader().reset();

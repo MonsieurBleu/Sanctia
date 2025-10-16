@@ -161,7 +161,7 @@ void Apps::EntityCreator::toggleTerrain()
     physicsMutex.unlock();
 }
 
-Apps::EntityCreator::EntityCreator() : SubApps("Entity Editor")
+Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
 {
     inputs.push_back(&
         InputManager::addEventInput(
@@ -589,7 +589,7 @@ EntityRef Apps::EntityCreator::UImenu()
                         , WidgetBox(vec2(-1./3., 1), vec2(-1, 1))
                         , WidgetStyle()
                             .settextColor1(VulpineColorUI::HightlightColor1)
-                        , WidgetText(UFTconvert.from_bytes(name), StringAlignement::TO_LEFT)
+                        , WidgetText(UFTconvert.from_bytes(name), StringAlignment::TO_LEFT)
                     );
 
                     parent->comp<WidgetStyle>().setautomaticTabbing(0);
@@ -791,7 +791,7 @@ EntityRef Apps::EntityCreator::UImenu()
                 .setautomaticTabbing(1)
             , EntityGroupInfo({
                 toLoadMenu,
-                // newEntity()
+                // newEntity("empty menu space")
             })
         ),
         "Load Entity"
@@ -807,7 +807,7 @@ EntityRef Apps::EntityCreator::UImenu()
                 .setautomaticTabbing(1)
             , EntityGroupInfo({
                 childrenToLoadMenu,
-                newEntity()
+                newEntity("empty menu space")
             })
         ),
         "Add Entity As Child"
@@ -1056,7 +1056,7 @@ EntityRef Apps::EntityCreator::UImenu()
         "Chidren Edit"
     );
 
-    // ComponentModularity::addChild(*currentEntityEditorTitles, newEntity());
+    // ComponentModularity::addChild(*currentEntityEditorTitles, newEntity("empty menu space"));
 
     VulpineBlueprintUI::AddToSelectionMenu(
         currentEntityEditorTitles, 
@@ -1068,7 +1068,7 @@ EntityRef Apps::EntityCreator::UImenu()
                 .setautomaticTabbing(1)
             , EntityGroupInfo({
                 componentNameViewer,
-                newEntity()
+                newEntity("empty menu space")
             })
         ),
         "Component Edit"

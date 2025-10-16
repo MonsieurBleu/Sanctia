@@ -24,6 +24,8 @@
 #define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
 
+EntityRef spawnEntity(const std::string &name);
+
 /***************** GAMEPLAY ATTRIBUTS *****************/
 
     #undef CURRENT_CATEGORY

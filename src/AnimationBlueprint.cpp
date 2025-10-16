@@ -452,7 +452,7 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     #define WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, maxspeed, slot) \
         a->onExitAnimation = AnimBlueprint::weaponAttackExit;\
         a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, beg, end, dmgMult, maxTrigger, ActionState::LockedDeplacement::lockDep, maxspeed, EquipementSlots::slot););\
-
+    
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_R");
         WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
     }

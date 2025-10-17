@@ -3,6 +3,7 @@
 #include "Controller.hpp"
 #include <SanctiaEntity.hpp>
 #include <EventGraph.hpp>
+#include <VEAC/vulpineFormats.hpp>
 
 class SubApps
 {
@@ -40,7 +41,7 @@ class SubApps
 
         static void switchTo(SubApps *ptr);
         static void switchTo(const std::string &name);
-        static std::string getActiveAppName() {return activeApp->name;}
+        static std::string getActiveAppName() {return activeApp ? activeApp->name : "";}
 
         static void UpdateApps();
 
@@ -265,12 +266,18 @@ namespace Apps
 
             std::unordered_map<std::string, EntityRef>  filesToBeProcessed;
 
+            std::unordered_map<std::string, EntityRef>  skeletonList;
+
+            std::unordered_map<std::string, EntityRef>  methodeList;
 
             EntityRef gameScreenMenu;
 
             std::string skeletonTarget = "Human";
+            std::string retargetMethode = "";
             uint vulpineImportFlag = 0;
+            VEAC_EXPORT_FORMAT importFormat = VEAC_EXPORT_FORMAT::FORMAT_SANCTIA;
             float scale = 1.0;
+
 
 
         public : 

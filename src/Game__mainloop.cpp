@@ -475,7 +475,7 @@ void Game::mainloop()
     Apps::EntityCreator entityCreator;
     Apps::AssetListViewer assetView;
     Apps::MaterialViewerApp materialView;
-    Apps::EventGraphApp eventGraph;
+    // Apps::EventGraphApp eventGraph;
     Apps::SceneMergeApp sceneMerge;
     Apps::AnimationApp animationViewer;
 
@@ -539,7 +539,19 @@ void Game::mainloop()
 
     std::cout << "Press " << k << " to toggle HUD\n";
 
-    if (Settings::lastOpenedApp != "")
+
+    for(auto &i : InputManager::continuousInputs)
+    {
+        std::cout << "CONTINUOUS\t " << i.inputName << "\n";
+    }
+
+    for(auto &i : InputManager::eventInputs)
+    {
+        std::cout << TERMINAL_TIMER << i.inputName << " : " << TERMINAL_INFO << InputManager::getInputKeyString(i) << TERMINAL_RESET << "\n";
+    }
+
+
+    if (!Settings::lastOpenedApp.empty())
     {
         SubApps::switchTo(Settings::lastOpenedApp);      
     }

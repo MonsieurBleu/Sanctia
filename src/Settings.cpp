@@ -18,11 +18,14 @@ DATA_WRITE_FUNC_INIT(Settings)
     WRITE_NAME(renderScale, out)
     FastTextParser::write<float>(data.renderScale, out->getReadHead());
 
-    out->Entry();
-    WRITE_NAME(lastOpenedApp, out)
-    out->write("\"", 1);
-    out->write(CONST_STRING_SIZED(data.lastOpenedApp));
-    out->write("\"", 1);
+    if(data.lastOpenedApp.size())
+    {
+        out->Entry();
+        WRITE_NAME(lastOpenedApp, out)
+        out->write("\"", 1);
+        out->write(CONST_STRING_SIZED(data.lastOpenedApp));
+        out->write("\"", 1);
+    }
 
 DATA_WRITE_END_FUNC
 

@@ -53,7 +53,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     //     VulpineColorUI::HightlightColor1,
                     //     getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(
-                        globals.gpuTime, 
+                        globals.mainThreadTime, 
                         VulpineColorUI::HightlightColor1,
                         getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(

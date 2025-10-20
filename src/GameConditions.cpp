@@ -25,7 +25,7 @@ GameConditionsHandler& GameConditionsHandler::set(
         auto &i = DialogueController::interlocutor;
 
         if(i->hasComp<NpcPcRelation>())
-            i->comp<NpcPcRelation>().known = value == TRUE;
+            i->comp<NpcPcRelation>().known = value == COND_TRUE;
         else
             WARNING_MESSAGE("Script or dialogue is trying to set COND_NPC_KNOW to the entity '" << i->comp<EntityInfos>().name << "' who has no components relative to player relation.");
         }
@@ -84,24 +84,24 @@ GameConditionState GameConditionsHandler::check(GameConditionTrigger p)
 
     switch (p.condition)
     {
-        case COND_UNKNOWN : return FALSE;
-        case COND_ALL : return TRUE;
+        case COND_UNKNOWN : return COND_FALSE;
+        case COND_ALL : return COND_TRUE;
         case COND_RANDOM : return RANDOM;
 
-        case INTERLOCUTOR_NEMESIS           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -16 ? TRUE : FALSE;
-        case INTERLOCUTOR_HOSTILE           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -8  ? TRUE : FALSE;
-        case INTERLOCUTOR_DESPISED          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -4  ? TRUE : FALSE;
-        case INTERLOCUTOR_BAD_ACQUAINTANCE  : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -1  ? TRUE : FALSE;
-        case INTERLOCUTOR_GOOD_ACQUAINTANCE : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 1  ? TRUE : FALSE;
-        case INTERLOCUTOR_FRIENDLY          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 4  ? TRUE : FALSE;
-        case INTERLOCUTOR_TRUSTED           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 8  ? TRUE : FALSE;
-        case INTERLOCUTOR_MAX_AFFINITY      : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 16 ? TRUE : FALSE;
+        case INTERLOCUTOR_NEMESIS           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -16 ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_HOSTILE           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -8  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_DESPISED          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -4  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_BAD_ACQUAINTANCE  : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -1  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_GOOD_ACQUAINTANCE : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 1  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_FRIENDLY          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 4  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_TRUSTED           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 8  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_MAX_AFFINITY      : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 16 ? COND_TRUE : COND_FALSE;
 
         case INTERLOCUTOR_KNOWN : 
-            return (i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known) == p.value ? TRUE : FALSE;
+            return (i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known) == p.value ? COND_TRUE : COND_FALSE;
 
         default:
-            return p.value == (states[p.condition] == TRUE) ? TRUE : FALSE;
+            return p.value == (states[p.condition] == COND_TRUE) ? COND_TRUE : COND_FALSE;
     }
 }
 

@@ -30,7 +30,7 @@ class DialogueController : public Controller
 
         static inline DialogueSwitch next;
 
-        ObjectGroupRef interface;
+        ObjectGroupRef interface_;
 
     public : 
         static inline EntityRef interlocutor;

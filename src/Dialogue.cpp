@@ -34,13 +34,13 @@ GameConditionState Dialogue::checkPrerequisites()
 {
     static GameConditionsHandler &cur = GG::currentConditions;
 
-    GameConditionState r = TRUE;
+    GameConditionState r = COND_TRUE;
 
     for(auto p : prerequisites)
     {
         switch (cur.check(p))
         {
-            case FALSE : return FALSE;
+            case COND_FALSE : return COND_FALSE;
 
             case RANDOM : r = RANDOM; break;
             
@@ -54,7 +54,7 @@ GameConditionState Dialogue::checkPrerequisites()
 void Dialogue::applyConsequences()
 {
     for(auto &c : consequences)
-        GG::currentConditions.set(c.condition, c.value ? TRUE : FALSE);
+        GG::currentConditions.set(c.condition, c.value ? COND_TRUE : COND_FALSE);
 
     for(auto &e : events)
         GG::currentConditions.applyEvent(e);
@@ -191,7 +191,7 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
     char c = buff[2];
 
     bool write = true;
-    bool useFemaleVersion = GG::currentConditions.get(COND_FEMALE_PC) == GameConditionState::TRUE;
+    bool useFemaleVersion = GG::currentConditions.get(COND_FEMALE_PC) == GameConditionState::COND_TRUE;
     bool femaleVersion = false;
 
     for(int i = 2; i < BUFF_SIZE && c != '\0'; i++)
@@ -237,7 +237,7 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
         {
             case SET_CONDITION_TRUE :
                 b++;
-                consequences.push_back({GameConditionMap[b], GameConditionState::TRUE});
+                consequences.push_back({GameConditionMap[b], GameConditionState::COND_TRUE});
                 
                 #ifdef DO_DEBUG_PRINTS
                 std::cout << "new true condition '" << b << "'\n";
@@ -248,7 +248,7 @@ bool Dialogue::loadFromStream(std::fstream& file, char* buff)
 
             case SET_CONDITION_FALSE :
                 b++;    
-                consequences.push_back({GameConditionMap[b], GameConditionState::FALSE});
+                consequences.push_back({GameConditionMap[b], GameConditionState::COND_FALSE});
 
                 #ifdef DO_DEBUG_PRINTS
                 std::cout << "new false condition '" << b << "'\n";

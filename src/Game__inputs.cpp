@@ -26,15 +26,6 @@ void Game::initInput()
         "toggle wireframe", GLFW_KEY_F1, 0, GLFW_PRESS, [&]() { wireframe = !wireframe; },
         InputManager::Filters::always, false);
 
-    Inputs::interact = InputManager::addEventInput(
-        "interact", GLFW_KEY_E, 0, GLFW_PRESS, [&]() {
-            if (globals.getController() == &playerControl)
-                setController(&dialogueControl);
-            else if (globals.getController() == &dialogueControl)
-                setController(&playerControl);
-        },
-        InputManager::Filters::always, false);
-
     Inputs::toggleFreeMouse = InputManager::addEventInput(
         "toggle free mouse", GLFW_KEY_F2, 0, GLFW_PRESS, [&]() { globals.currentCamera->toggleMouseFollow(); },
         InputManager::Filters::always, false);
@@ -59,7 +50,7 @@ void Game::initInput()
         InputManager::Filters::always, false);
 
     Inputs::reset = InputManager::addEventInput(
-        "reset", GLFW_KEY_F5, 0, GLFW_PRESS, [&]() {
+        "reset shaders", GLFW_KEY_F5, 0, GLFW_PRESS, [&]() {
 //             #ifdef _WIN32
 //             system("cls");
 // #else
@@ -78,13 +69,13 @@ void Game::initInput()
         },
         InputManager::Filters::always, false);
 
-    Inputs::saveCamState = InputManager::addEventInput(
-        "save cam state", GLFW_KEY_F8, 0, GLFW_PRESS, [&]() {
-            auto myfile = std::fstream("saves/cameraState.bin", std::ios::out | std::ios::binary);
-            myfile.write((char *)&camera.getState(), sizeof(CameraState));
-            myfile.close();
-        },
-        InputManager::Filters::always, false);
+    // Inputs::saveCamState = InputManager::addEventInput(
+    //     "save cam state", GLFW_KEY_F8, 0, GLFW_PRESS, [&]() {
+    //         auto myfile = std::fstream("saves/cameraState.bin", std::ios::out | std::ios::binary);
+    //         myfile.write((char *)&camera.getState(), sizeof(CameraState));
+    //         myfile.close();
+    //     },
+    //     InputManager::Filters::always, false);
 
     Inputs::toggleInfoStatHelper = InputManager::addEventInput(
         "toggle info stat helper", GLFW_KEY_9, 0, GLFW_PRESS, [&]() {
@@ -99,34 +90,34 @@ void Game::initInput()
         },
         InputManager::Filters::always, false);
 
-    Inputs::spawnDebugPhysicsTest = InputManager::addEventInput(
-        "spawn debug physics test", GLFW_KEY_N, 0, GLFW_PRESS, [&]() {
-            physicsMutex.lock();
-            for (int i = 0; i < 20; i++)
-            {
-                float cubeSize = 1;
+    // Inputs::spawnDebugPhysicsTest = InputManager::addEventInput(
+    //     "spawn debug physics test", GLFW_KEY_N, 0, GLFW_PRESS, [&]() {
+    //         physicsMutex.lock();
+    //         for (int i = 0; i < 20; i++)
+    //         {
+    //             float cubeSize = 1;
 
-                RigidBody body = PG::world->createRigidBody(
-                    rp3d::Transform(rp3d::Vector3(0 + (i % 10) * 0.75 * cubeSize, 15 + i * 2.1 * cubeSize, 0),
-                                    rp3d::Quaternion::identity()));
+    //             RigidBody body = PG::world->createRigidBody(
+    //                 rp3d::Transform(rp3d::Vector3(0 + (i % 10) * 0.75 * cubeSize, 15 + i * 2.1 * cubeSize, 0),
+    //                                 rp3d::Quaternion::identity()));
 
-                auto e = newEntity("physictest", body, EntityState3D());
-                GG::entities.push_back(e);
+    //             auto e = newEntity("physictest", body, EntityState3D());
+    //             GG::entities.push_back(e);
 
-                Blueprint::Assembly::AddEntityBodies(body, e.get(),
-                                                     {{
-                                                         PG::common.createCapsuleShape(cubeSize * 0.5, cubeSize * 0.75),
-                                                         rp3d::Transform::identity(),
-                                                     }},
-                                                     {});
+    //             Blueprint::Assembly::AddEntityBodies(body, e.get(),
+    //                                                  {{
+    //                                                      PG::common.createCapsuleShape(cubeSize * 0.5, cubeSize * 0.75),
+    //                                                      rp3d::Transform::identity(),
+    //                                                  }},
+    //                                                  {});
 
-                e->comp<EntityState3D>().usequat = true;
+    //             e->comp<EntityState3D>().usequat = true;
 
-                e->set<PhysicsHelpers>(PhysicsHelpers());
-            }
-            physicsMutex.unlock();
-        },
-        InputManager::Filters::always, false);
+    //             e->set<PhysicsHelpers>(PhysicsHelpers());
+    //         }
+    //         physicsMutex.unlock();
+    //     },
+    //     InputManager::Filters::always, false);
 
     Inputs::togglePhysicsInterpolation = InputManager::addEventInput(
         "toggle physics interpolation", GLFW_KEY_KP_1, 0, GLFW_PRESS, [&]() {

@@ -241,6 +241,79 @@ void Game::mainloop()
         "2D Scene Infos", ""
     );
 
+    std::unordered_map<std::string, EntityRef> activeInputsList;
+
+    VulpineBlueprintUI::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab,
+        VulpineBlueprintUI::StringListSelectionMenu(
+            "Active Inputs List",
+            activeInputsList,
+            [](Entity *e, float f){},
+            [](Entity *e){
+                
+                if(e->hasComp<EntityGroupInfo>())
+                {
+                    auto parent = e->comp<EntityGroupInfo>().parent;
+
+                    if(parent && parent->comp<EntityGroupInfo>().children.size() == 1)
+                    {
+                        std::string &fullstr = e->comp<EntityInfos>().name;
+                        std::string category, name, inputstr;
+
+                        int endlinecnt = 0;
+                        for(auto c : fullstr)
+                        {
+                            if(c == '\n')
+                                endlinecnt ++;
+                            else
+                            if(endlinecnt == 0)
+                                category += c;
+                            else
+                            if(endlinecnt == 1)
+                                name += c;
+                            else
+                                inputstr += c;
+                        }
+                        
+                        parent->comp<WidgetStyle>().setautomaticTabbing(0);
+
+                        ComponentModularity::addChild(*parent, newEntity("Category Str"
+                            , UI_BASE_COMP
+                            , WidgetBox(vec2(-1, -0.5), vec2(-1, 1))
+                            , WidgetText(UFTconvert.from_bytes(category))
+                            , WidgetStyle()
+                                .settextColor1(VulpineColorUI::HightlightColor1)
+                        ));
+                        
+                        auto &box = e->comp<WidgetBox>();
+                        box.set(vec2(-0.5, 0.5), vec2(box.initMin.y, box.initMax.y));
+                        e->comp<WidgetText>().text = UFTconvert.from_bytes(name);
+
+                        ComponentModularity::addChild(*parent, newEntity("Control Str"
+                            , UI_BASE_COMP
+                            , WidgetBox(vec2(0.5, 1), vec2(-1, 1))
+                            , WidgetText(UFTconvert.from_bytes(inputstr))
+                            , WidgetStyle()
+                                .settextColor1(VulpineColorUI::HightlightColor2)
+                        ));
+                    }
+                }
+                
+                if(e->comp<EntityGroupInfo>().children.empty())
+                {
+
+                    
+                }
+
+                // e->comp<WidgetText>().mesh->align = StringAlignment::CENTERED;
+
+                return 0.f;
+            },
+            -2.f
+        ),
+        "Controls Helper", ""
+    );
+
 
     /* TODO : finish*/
     // VulpineBlueprintUI::AddToSelectionMenu(
@@ -456,7 +529,7 @@ void Game::mainloop()
         )
     );
 
-        ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         VulpineBlueprintUI::Toggable(
             "Script Hot Reload", 
             "",
@@ -467,6 +540,21 @@ void Game::mainloop()
             [](Entity *e)
             {
                 return Game::doScriptHotReload ? 0.f : 1.f;
+            }
+        )
+    );
+
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        VulpineBlueprintUI::Toggable(
+            "Pré-Alpha World Regions", 
+            "",
+            [&](Entity *e, float v)
+            {
+                worldRegionHelperEnlable = worldRegionHelperEnlable ? 0 : 1;
+            },
+            [&](Entity *e)
+            {
+                return worldRegionHelperEnlable ? 0.f : 1.f;
             }
         )
     );
@@ -534,22 +622,6 @@ void Game::mainloop()
     // scene.add(dummy);
 
     
-
-    std::string k = InputManager::getInputKeyString("toggle hud");
-
-    std::cout << "Press " << k << " to toggle HUD\n";
-
-
-    for(auto &i : InputManager::continuousInputs)
-    {
-        std::cout << "CONTINUOUS\t " << i.inputName << "\n";
-    }
-
-    for(auto &i : InputManager::eventInputs)
-    {
-        std::cout << TERMINAL_TIMER << i.inputName << " : " << TERMINAL_INFO << InputManager::getInputKeyString(i) << TERMINAL_RESET << "\n";
-    }
-
 
     if (!Settings::lastOpenedApp.empty())
     {
@@ -631,6 +703,56 @@ void Game::mainloop()
                 }
             }
         }
+
+        /****** Refreshing Controls List helper
+        ******/        
+        std::vector<std::string> currentInputsListsTmp;
+        for(auto &i : InputManager::eventInputs)
+        {
+            if(!i.activated) continue;
+
+            std::string input = i.inputName + "\n**" + InputManager::getInputKeyString(i) + "**";
+
+            bool isGlobal = true;
+            for(auto &j : SubApps::getActiveAppInputs())
+            {
+                if(j == &i)
+                {
+                    input = SubApps::getActiveAppName() + "\n" + input;
+                    isGlobal = false;
+                    break;
+                }
+            }
+            if(isGlobal)
+                input = "~Global\n " + input;
+
+            currentInputsListsTmp.push_back(input);
+
+            auto elem = activeInputsList.find(input);
+            
+            if(elem == activeInputsList.end())
+                activeInputsList[input] = EntityRef();
+        }
+
+        std::vector<std::string> inputsToBeRemovedTmp;
+        for(auto &i : activeInputsList)
+        {
+            bool remove = true;
+            for(auto &j : currentInputsListsTmp)
+            if(i.first == j)
+            {
+                remove = false;
+                break;
+            }
+
+            if(remove)
+            {
+                inputsToBeRemovedTmp.push_back(i.first);
+            }
+        }
+
+        for(auto &i : inputsToBeRemovedTmp)
+            activeInputsList.erase(i);
 
         // {
 

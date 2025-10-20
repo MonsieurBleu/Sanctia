@@ -24,6 +24,8 @@ class SubApps
         std::string name;
 
         std::vector<EventInput*> inputs;
+
+        static inline std::vector<EventInput*> emptyInputs;
         
     public : 
 
@@ -42,6 +44,7 @@ class SubApps
         static void switchTo(SubApps *ptr);
         static void switchTo(const std::string &name);
         static std::string getActiveAppName() {return activeApp ? activeApp->name : "";}
+        static const std::vector<EventInput*> & getActiveAppInputs(){return activeApp ? activeApp->inputs : emptyInputs;}
 
         static void UpdateApps();
 

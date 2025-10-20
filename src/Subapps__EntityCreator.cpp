@@ -468,6 +468,13 @@ std::string Apps::EntityCreator::processNewLoadedChild(const std::string &str)
 
 EntityRef Apps::EntityCreator::UImenu()
 {
+    auto entityNameEntry = VulpineBlueprintUI::TextInput(
+        "Entity Name",
+        [&](std::u32string &t){this->currentEntity.name = UFTconvert.to_bytes(t);},
+        [&](){return UFTconvert.from_bytes(this->currentEntity.name);}
+    );
+    auto entityNameInput = VulpineBlueprintUI::NamedEntry(U"Parent Entity Name", entityNameEntry, 0.25, true);
+
     auto referencedEntitiesTitles = newEntity("Referenced Entitie Titles"
         , UI_BASE_COMP
         // , VulpineBlueprintUI::UIcontext
@@ -666,7 +673,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
 
     auto currentChildren = VulpineBlueprintUI::StringListSelectionMenu(
-        "Current Entity Children List",
+        "Child Selection Menu",
         UI_currentEntityChildren, 
         [&](Entity *e, float v)
         {
@@ -776,7 +783,7 @@ EntityRef Apps::EntityCreator::UImenu()
             else
                 return 1.f;
         },
-        -0.25, VulpineColorUI::HightlightColor2, 0.0625
+        -0.125, VulpineColorUI::HightlightColor2, 0.054
     );
 
     VulpineBlueprintUI::AddToSelectionMenu(
@@ -792,7 +799,7 @@ EntityRef Apps::EntityCreator::UImenu()
                 // newEntity("empty menu space")
             })
         ),
-        "Load Entity"
+        "Load Parent"
     );
 
     VulpineBlueprintUI::AddToSelectionMenu(
@@ -808,7 +815,7 @@ EntityRef Apps::EntityCreator::UImenu()
                 newEntity("empty menu space")
             })
         ),
-        "Add Entity As Child"
+        "Add Child"
     );
 
 
@@ -824,11 +831,12 @@ EntityRef Apps::EntityCreator::UImenu()
             newEntity("Current Entity Control"
                 , UI_BASE_COMP
                 , WidgetBox()
-                , WidgetStyle().setautomaticTabbing(4)
+                , WidgetStyle().setautomaticTabbing(5)
                 , EntityGroupInfo({
 
+                    entityNameInput,
 
-                    VulpineBlueprintUI::NamedEntry(U"Position", 
+                    VulpineBlueprintUI::NamedEntry(U"Child Position", 
                         newEntity("Position controls"
                             , UI_BASE_COMP
                             , WidgetBox()
@@ -891,7 +899,7 @@ EntityRef Apps::EntityCreator::UImenu()
                     ),
 
 
-                    VulpineBlueprintUI::NamedEntry(U"Rotation", 
+                    VulpineBlueprintUI::NamedEntry(U"Child Rotation", 
                         newEntity("Rotation controls"
                             , UI_BASE_COMP
                             , WidgetBox()
@@ -1051,7 +1059,7 @@ EntityRef Apps::EntityCreator::UImenu()
         currentEntityEditorTitles, 
         currentEntityEditorSubMenu, 
         ChildrenManipMenu,
-        "Chidren Edit"
+        "Editor"
     );
 
     // ComponentModularity::addChild(*currentEntityEditorTitles, newEntity("empty menu space"));
@@ -1090,12 +1098,11 @@ EntityRef Apps::EntityCreator::UImenu()
 
 EntityRef Apps::EntityCreator::UIcontrols()
 {
-    auto entityNameEntry = VulpineBlueprintUI::TextInput(
-        "Entity Name",
-        [&](std::u32string &t){this->currentEntity.name = UFTconvert.to_bytes(t);},
-        [&](){return UFTconvert.from_bytes(this->currentEntity.name);}
-    );
-
+    // auto entityNameEntry = VulpineBlueprintUI::TextInput(
+    //     "Entity Name",
+    //     [&](std::u32string &t){this->currentEntity.name = UFTconvert.to_bytes(t);},
+    //     [&](){return UFTconvert.from_bytes(this->currentEntity.name);}
+    // );
 
     return newEntity("ENTITY EDITOR APP MENU"
         , UI_BASE_COMP
@@ -1151,7 +1158,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
             }),
 
 
-            VulpineBlueprintUI::NamedEntry(U"Entity Name", entityNameEntry), 
+            // VulpineBlueprintUI::NamedEntry(U"Entity Name", entityNameEntry), 
             
             VulpineBlueprintUI::Toggable("Entity Auto Refresh", "", 
             [&](Entity *e, float v)

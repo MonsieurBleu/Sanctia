@@ -35,6 +35,7 @@ private:
     bool hideHUD = false;
     bool wireframe = false;
     int editorModeEnable = true;
+    int worldRegionHelperEnlable = false;
     EntityRef gameScreenWidget;
 
 

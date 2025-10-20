@@ -102,7 +102,7 @@ EntityRef Blueprint::Terrain(
 
     
     aabmin.y = 0.f;
-    aabmax.y = cellSize/terrainSize.y;
+    aabmax.y = 1.0;
 
     terrain->getVao()->setAABB(aabmin, aabmax);
 

@@ -27,6 +27,8 @@
 
 #include <Scripting/ScriptInstance.hpp>
 
+#include <filesystem>
+
 bool doFileProcessingTmpDebug = false;
 
 vec2 gridScale = vec2(2);
@@ -878,7 +880,25 @@ void Apps::AssetListViewer::update()
         for(auto &f : filesToBeProcessed_tmp)
             filesToBeProcessed[f] = EntityRef();
     }
+
     
+    const std::string importFolder = "Import/";
+    if(std::filesystem::exists(importFolder))
+    {
+        for (auto f : std::filesystem::recursive_directory_iterator(importFolder))
+        {
+            if (f.is_directory())
+                continue;
+            
+            std::string file = f.path().string().c_str();
+
+            if(filesToBeProcessed.find(file) == filesToBeProcessed.end())
+                filesToBeProcessed[file] = EntityRef();
+        }
+    }
+
+
+
     // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
 
     static bool tmpbool = true;

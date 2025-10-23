@@ -122,8 +122,8 @@ void DialogueController::clean()
 {
     globals.getScene2D()->remove(NPC);
 
-    interface->state.hide = ModelStatus::HIDE;
-    interface->update(true);
+    interface_->state.hide = ModelStatus::HIDE;
+    interface_->update(true);
 
     clearChoices();
 
@@ -141,7 +141,7 @@ void DialogueController::addChoice(const Dialogue &d)
     //         choices.end(),
     //         [](std::pair<Dialogue, SingleStringBatchRef> &d)
     //         {
-    //             return d.first.checkPrerequisites() != TRUE;
+    //             return d.first.checkPrerequisites() != COND_TRUE;
     //         }
     //     ),
     //     choices.end()
@@ -185,7 +185,7 @@ void DialogueController::init()
 
     // interlocutor = GG::entities.front();
 
-    if(!interface.get()) interface = newObjectGroup();
+    if(!interface_.get()) interface_ = newObjectGroup();
 
     /****** CREATING A FUI BACKGROUND FOR THE DIALOGUES ******/
     static bool tmpFUIAdded = false;
@@ -209,12 +209,12 @@ void DialogueController::init()
         ui.scene.updateAllObjects();
         fuiBatch->batch();
 
-        interface->add(fuiBatch);
+        interface_->add(fuiBatch);
         tmpFUIAdded = true;
     }
 
-    interface->state.hide = ModelStatus::SHOW;
-    interface->update(true);
+    interface_->state.hide = ModelStatus::SHOW;
+    interface_->update(true);
 
     auto &cd = interlocutor->comp<CharacterDialogues>();
     std::fstream file(cd.filename, std::ios::in);
@@ -265,7 +265,7 @@ void DialogueController::pushNewDialogue(const std::string &id, bool changeNPCli
         {
             switch (i.checkPrerequisites())
             {
-                case TRUE : selected = &i; break;
+                case COND_TRUE : selected = &i; break;
 
                 case RANDOM : randomDialogue.push_back(&i); break;
                 
@@ -288,7 +288,7 @@ void DialogueController::pushNewDialogue(const std::string &id, bool changeNPCli
     }
 
     for(auto &i : d.choices)
-        if(i.checkPrerequisites() != FALSE)
+        if(i.checkPrerequisites() != COND_FALSE)
         {
             addChoice(i);
         }

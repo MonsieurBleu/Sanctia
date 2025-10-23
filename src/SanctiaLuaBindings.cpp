@@ -9,8 +9,10 @@
 
 #include "Subapps.hpp"
 #include <glm/common.hpp>
-#include <sol/property.hpp>
-#include <sol/types.hpp>
+// #include <sol/property.hpp>
+// #include <sol/types.hpp>
+#include <sol/sol.hpp>
+
 
 void VulpineLuaBindings::Entities(sol::state &lua)
 {

@@ -34,8 +34,8 @@ GENERATE_ENUM(GameCondition,
 );
 
 GENERATE_ENUM(GameConditionState,
-    FALSE,
-    TRUE,
+    COND_FALSE,
+    COND_TRUE,
     RANDOM
 );
 

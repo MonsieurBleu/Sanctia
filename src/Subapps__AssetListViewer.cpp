@@ -905,11 +905,10 @@ void Apps::AssetListViewer::update()
 
     if(tmpbool)
     {
-        filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx"] = EntityRef();
-        filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx"] = EntityRef();
-        filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx"] = EntityRef();
-
-        filesToBeProcessed["/home/monsieurbleu/Downloads/test.glb"] = EntityRef();
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx"] = EntityRef();
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx"] = EntityRef();
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx"] = EntityRef();
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/test.glb"] = EntityRef();
 
         tmpbool = false;
     }

@@ -51,7 +51,7 @@ void Game::mainloop()
     
     GG::skybox = newModel(skyboxMaterial);
     
-    GG::skybox->loadFromFolder("ressources/models/skybox/", false, false);
+    GG::skybox->loadFromFolder("data/commons/models/skybox/", false, false);
 
     // GG::skybox->invertFaces = true;
     // GG::skybox->depthWrite = true;
@@ -60,7 +60,7 @@ void Game::mainloop()
     GG::skybox->uniforms.add(ShaderUniform(&GG::skyboxType, 32));
     scene.add(GG::skybox);
 
-    // Texture2D EnvironementMap = Texture2D().loadFromFile("ressources/HDRIs/quarry_cloudy_2k.jpg").generate();
+    // Texture2D EnvironementMap = Texture2D().loadFromFile("data/commons/HDRIs/quarry_cloudy_2k.jpg").generate();
     // Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI004_4K-TONEMAPPED");
     Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
     
@@ -239,6 +239,79 @@ void Game::mainloop()
         GlobalInfosTitleTab, GlobalInfosSubTab,
         VulpineBlueprintUI::SceneInfos(scene2D),
         "2D Scene Infos", ""
+    );
+
+    std::unordered_map<std::string, EntityRef> activeInputsList;
+
+    VulpineBlueprintUI::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab,
+        VulpineBlueprintUI::StringListSelectionMenu(
+            "Active Inputs List",
+            activeInputsList,
+            [](Entity *e, float f){},
+            [](Entity *e){
+                
+                if(e->hasComp<EntityGroupInfo>())
+                {
+                    auto parent = e->comp<EntityGroupInfo>().parent;
+
+                    if(parent && parent->comp<EntityGroupInfo>().children.size() == 1)
+                    {
+                        std::string &fullstr = e->comp<EntityInfos>().name;
+                        std::string category, name, inputstr;
+
+                        int endlinecnt = 0;
+                        for(auto c : fullstr)
+                        {
+                            if(c == '\n')
+                                endlinecnt ++;
+                            else
+                            if(endlinecnt == 0)
+                                category += c;
+                            else
+                            if(endlinecnt == 1)
+                                name += c;
+                            else
+                                inputstr += c;
+                        }
+                        
+                        parent->comp<WidgetStyle>().setautomaticTabbing(0);
+
+                        ComponentModularity::addChild(*parent, newEntity("Category Str"
+                            , UI_BASE_COMP
+                            , WidgetBox(vec2(-1, -0.5), vec2(-1, 1))
+                            , WidgetText(UFTconvert.from_bytes(category))
+                            , WidgetStyle()
+                                .settextColor1(VulpineColorUI::HightlightColor1)
+                        ));
+                        
+                        auto &box = e->comp<WidgetBox>();
+                        box.set(vec2(-0.5, 0.5), vec2(box.initMin.y, box.initMax.y));
+                        e->comp<WidgetText>().text = UFTconvert.from_bytes(name);
+
+                        ComponentModularity::addChild(*parent, newEntity("Control Str"
+                            , UI_BASE_COMP
+                            , WidgetBox(vec2(0.5, 1), vec2(-1, 1))
+                            , WidgetText(UFTconvert.from_bytes(inputstr))
+                            , WidgetStyle()
+                                .settextColor1(VulpineColorUI::HightlightColor2)
+                        ));
+                    }
+                }
+                
+                if(e->comp<EntityGroupInfo>().children.empty())
+                {
+
+                    
+                }
+
+                // e->comp<WidgetText>().mesh->align = StringAlignment::CENTERED;
+
+                return 0.f;
+            },
+            -2.f
+        ),
+        "Controls Helper", ""
     );
 
 
@@ -456,7 +529,7 @@ void Game::mainloop()
         )
     );
 
-        ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         VulpineBlueprintUI::Toggable(
             "Script Hot Reload", 
             "",
@@ -471,14 +544,28 @@ void Game::mainloop()
         )
     );
 
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        VulpineBlueprintUI::Toggable(
+            "Pré-Alpha World Regions", 
+            "",
+            [&](Entity *e, float v)
+            {
+                worldRegionHelperEnlable = worldRegionHelperEnlable ? 0 : 1;
+            },
+            [&](Entity *e)
+            {
+                return worldRegionHelperEnlable ? 0.f : 1.f;
+            }
+        )
+    );
+
     Apps::MainGameApp testsubapps1;
-    Apps::MaterialViewerApp materialView;
-    Apps::EventGraphApp eventGraph;
-    Apps::SceneMergeApp sceneMerge;
-
     Apps::EntityCreator entityCreator;
-
     Apps::AssetListViewer assetView;
+    Apps::MaterialViewerApp materialView;
+    // Apps::EventGraphApp eventGraph;
+    Apps::SceneMergeApp sceneMerge;
+    Apps::AnimationApp animationViewer;
 
     Apps::LuaTesting luaTest;
 
@@ -536,11 +623,7 @@ void Game::mainloop()
 
     
 
-    std::string k = InputManager::getInputKeyString("toggle hud");
-
-    std::cout << "Press " << k << " to toggle HUD\n";
-
-    if (Settings::lastOpenedApp != "")
+    if (!Settings::lastOpenedApp.empty())
     {
         SubApps::switchTo(Settings::lastOpenedApp);      
     }
@@ -620,6 +703,56 @@ void Game::mainloop()
                 }
             }
         }
+
+        /****** Refreshing Controls List helper
+        ******/        
+        std::vector<std::string> currentInputsListsTmp;
+        for(auto &i : InputManager::eventInputs)
+        {
+            if(!i.activated) continue;
+
+            std::string input = i.inputName + "\n**" + InputManager::getInputKeyString(i) + "**";
+
+            bool isGlobal = true;
+            for(auto &j : SubApps::getActiveAppInputs())
+            {
+                if(j == &i)
+                {
+                    input = SubApps::getActiveAppName() + "\n" + input;
+                    isGlobal = false;
+                    break;
+                }
+            }
+            if(isGlobal)
+                input = "~Global\n " + input;
+
+            currentInputsListsTmp.push_back(input);
+
+            auto elem = activeInputsList.find(input);
+            
+            if(elem == activeInputsList.end())
+                activeInputsList[input] = EntityRef();
+        }
+
+        std::vector<std::string> inputsToBeRemovedTmp;
+        for(auto &i : activeInputsList)
+        {
+            bool remove = true;
+            for(auto &j : currentInputsListsTmp)
+            if(i.first == j)
+            {
+                remove = false;
+                break;
+            }
+
+            if(remove)
+            {
+                inputsToBeRemovedTmp.push_back(i.first);
+            }
+        }
+
+        for(auto &i : inputsToBeRemovedTmp)
+            activeInputsList.erase(i);
 
         // {
 
@@ -821,16 +954,17 @@ void Game::mainloop()
 
         /***** Updating animations
         *****/
-        if (!globals.simulationTime.isPaused())
-            System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity) {
-                auto &s = entity.comp<SkeletonAnimationState>();
-                auto &c = entity.comp<AnimationControllerRef>();
+        // if (!globals.simulationTime.isPaused())
+        float deltaAnim = globals.simulationTime.isPaused() ? 0.f : globals.simulationTime.getDelta();
+        System<SkeletonAnimationState, AnimationControllerRef>([&](Entity &entity) {
+            auto &s = entity.comp<SkeletonAnimationState>();
+            auto &c = entity.comp<AnimationControllerRef>();
 
-                c->update(globals.simulationTime.getDelta());
-                c->applyKeyframes(s);
-                s.skeleton->applyGraph(s);
-                s.update();
-            });
+            c->update(deltaAnim);
+            c->applyKeyframes(s);
+            s.skeleton->applyGraph(s);
+            s.update();
+        });
 
         // /***** SYNCHRONIZING MEG
         // *****/

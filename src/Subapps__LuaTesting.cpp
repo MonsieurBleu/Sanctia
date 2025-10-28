@@ -1,14 +1,15 @@
 #include <Subapps.hpp>
 #include "App.hpp"
-#include "Blueprint/EngineBlueprintUI.hpp"
-#include "ECS/Entity.hpp"
-#include "ECS/ModularEntityGroupping.hpp"
 #include "Flags.hpp"
+#include <SanctiaEntity.hpp>
 #include "Game.hpp"
 #include "GameGlobals.hpp"
 #include "SanctiaLuaBindings.hpp"
 #include "Scripting/ScriptInstance.hpp"
 #include <AssetManager.hpp>
+
+
+#include <Blueprint/EngineBlueprintUI.hpp>
 
 Apps::LuaTesting::LuaTesting() : SubApps("Lua Testing")
 {

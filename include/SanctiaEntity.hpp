@@ -4,8 +4,12 @@
 // #define MAX_ENTITY  0x8000
 #define MAX_ENTITY  (1<<15)
 
+
 #include <GlobalOptions.hpp>
+
+#define ENTITY_HEADER_SAFE_INCLUDE
 #include <ECS/ModularEntityGroupping.hpp>
+#undef ENTITY_HEADER_SAFE_INCLUDE
 
 #include <ECS/EngineComponents.hpp>
 
@@ -19,41 +23,47 @@
 #include <ComponentTypeGraphic.hpp>
 #include <ComponentTypePhysic.hpp>
 #include <ComponentTypeAI.hpp>
+#include <ECS/ComponentTypeScripting.hpp>
 
 #undef CURRENT_MAX_COMP_USAGE
 #define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
+
+EntityRef spawnEntity(const std::string &name);
+
+/***************** SCRIPTING COMPONENTS *****************/
+    Component_Compatible(Script)
 
 /***************** GAMEPLAY ATTRIBUTS *****************/
 
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY DATA
 
-    Contextual_Component(EntityState3D)
+    Component_Init_Compatible(EntityState3D)
 
-    Ephemeral_Component(EntityDeplacementState)
+    Component(EntityDeplacementState)
 
-    Ephemeral_Component(EntityStats)
+    Component(EntityStats)
 
-    Ephemeral_Component(CharacterDialogues)
+    Component(CharacterDialogues)
 
-    Ephemeral_Component(NpcPcRelation)
+    Component(NpcPcRelation)
 
-    Ephemeral_Component(ActionState)
+    Component(ActionState)
 
-    Ephemeral_Component(Faction)
+    Component(Faction)
 
-    Aligned_Resonant_Component(LevelOfDetailsInfos)
+    Component_Init_Synch_Merge(LevelOfDetailsInfos)
     template<> void Component<LevelOfDetailsInfos>::ComponentElem::init();
 
 /***************** ITEMS *****************/
 
-    Ephemeral_Component(ItemInfos)
+    Component(ItemInfos)
 
-    Ephemeral_Component(Items)
+    Component(Items)
     template<> void Component<Items>::ComponentElem::clean();
 
-    Ephemeral_Component(ItemTransform)
+    Component(ItemTransform)
 
 
 /***************** GRAPHICS *****************/
@@ -61,25 +71,25 @@
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY GRAPHIC
 
-    Intrinsic_Component(EntityModel)
+    Component_Merge(EntityModel)
     template<> void Component<EntityModel>::ComponentElem::init();
     template<> void Component<EntityModel>::ComponentElem::clean();
 
-    Ephemeral_Component(SkeletonAnimationState)
+    Component(SkeletonAnimationState)
     template<> void Component<SkeletonAnimationState>::ComponentElem::init();
 
-    Ephemeral_Component(AnimationControllerRef)
+    Component(AnimationControllerRef)
 
-    Ephemeral_Component(AnimationControllerInfos)
+    Component(AnimationControllerInfos)
 
 
 /***************** HELPERS *****************/
 
-    Ephemeral_Component(PhysicsHelpers);
+    Component(PhysicsHelpers);
     template<> void Component<PhysicsHelpers>::ComponentElem::init();
     template<> void Component<PhysicsHelpers>::ComponentElem::clean();
 
-    Ephemeral_Component(InfosStatsHelpers);
+    Component(InfosStatsHelpers);
     template<> void Component<InfosStatsHelpers>::ComponentElem::init();
     template<> void Component<InfosStatsHelpers>::ComponentElem::clean();
 
@@ -88,24 +98,24 @@
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY PHYSIC
 
-    Ephemeral_Component(Effect)
+    Component(Effect)
 
-    Aligned_Intricate_Component(RigidBody)
+    Component_Init_Merge_Compatible(RigidBody)
     template<> void Component<RigidBody>::ComponentElem::init();
     template<> void Component<RigidBody>::ComponentElem::clean();
 
-    Ephemeral_Component(staticEntityFlag)
+    Component(staticEntityFlag)
 
 /***************** IA *****************/
 
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY AI
 
-    Ephemeral_Component(DeplacementBehaviour)
+    Component(DeplacementBehaviour)
 
-    Ephemeral_Component(AgentState)
+    Component(AgentState)
 
-    Ephemeral_Component(Target)
+    Component(Target)
 
 
 

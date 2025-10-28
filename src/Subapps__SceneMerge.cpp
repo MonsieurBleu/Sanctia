@@ -74,19 +74,10 @@ void Apps::SceneMergeApp::init()
         GG::sun->shadowCameraSize = vec2(2048, 2048);
     }
 
-    /***** Creatign Terrain *****/
-    // ComponentModularity::addChild(*appRoot,
-    //     Blueprint::Terrain("ressources/maps/testPlayground.hdr",
-    //                     // "ressources/maps/RuggedTerrain.hdr",
-    //                     // "ressources/maps/generated_512x512.hdr",
-    //                     // "ressources/maps/RT512.hdr",
-    //                     // vec3(512, 64, 512),
-    //                     vec3(256, 64, 256), vec3(0), 128)
-    // );
-
     /***** Creating Scene To Stress Test *****/
     // int size = 100;
     int size = 25;
+    size = 6;
 
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)

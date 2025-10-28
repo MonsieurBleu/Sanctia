@@ -191,7 +191,7 @@ void Apps::MainGameApp::init()
 {
     /***** Preparing App Settings */
     {
-        appRoot = newEntity();
+        appRoot = newEntity("empty menu space");
         globals.simulationTime.resume();
         globals.currentCamera->getState().FOV = radians(100.f);
         GG::currentConditions.readTxt("saves/gameConditions.txt");
@@ -205,23 +205,6 @@ void Apps::MainGameApp::init()
 
         GG::sun->shadowCameraSize = vec2(256, 256);
     }
-
-    /***** Creatign Terrain *****/
-
-    // int terrainGridDim = 5;
-
-    // for(int i = -terrainGridDim; i <= terrainGridDim; i++)
-    // for(int j = -terrainGridDim; j <= terrainGridDim; j++)
-    // {
-    //     ComponentModularity::addChild(*appRoot,
-    //         Blueprint::Terrain("ressources/maps/testPlayground.hdr",
-    //                         // "ressources/maps/RuggedTerrain.hdr",
-    //                         // "ressources/maps/generated_512x512.hdr",
-    //                         // "ressources/maps/RT512.hdr",
-    //                         // vec3(512, 64, 512),
-    //                         vec3(256, 64, 256), 256.f*vec3(i, 0, j), 128)
-    //     );
-    // }
 
     ComponentModularity::addChild(*appRoot,
         Blueprint::SpawnMainGameTerrain()

@@ -102,7 +102,7 @@ EntityRef Blueprint::Terrain(
 
     
     aabmin.y = 0.f;
-    aabmax.y = cellSize/terrainSize.y;
+    aabmax.y = 1.0;
 
     terrain->getVao()->setAABB(aabmin, aabmax);
 
@@ -262,7 +262,7 @@ EntityRef Blueprint::TestManequin()
             , EntityState3D(position)
             , EntityDeplacementState()
             , stats
-            , CharacterDialogues("ressources/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
+            , CharacterDialogues("data/commons/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             , DeplacementBehaviour{DEMO}
             , SkeletonAnimationState(Loader<SkeletonRef>::get("Xbot"))
             , NpcPcRelation()

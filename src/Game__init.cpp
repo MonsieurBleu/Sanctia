@@ -63,6 +63,7 @@ void Game::init(int paramSample)
 
         .addUniform(ShaderUniform(Bloom.getIsEnableAddr(), 10))
         .addUniform(ShaderUniform(&editorModeEnable, 11))
+        .addUniform(ShaderUniform(&worldRegionHelperEnlable, 13))
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor1, 32))
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbColor2, 33))
         .addUniform(ShaderUniform(&globals.sceneChromaticAbbAngleAmplitude, 34))
@@ -71,8 +72,16 @@ void Game::init(int paramSample)
         .addUniform(ShaderUniform(&EDITOR::gridPositionScale, 37))
         ;
 
-    setIcon("ressources/icon.png");
+    // setIcon(Loader<Texture2D>::loadingInfos["icon"]->buff->getSource());
     // setController(&playerControl);
+    
+    GLFWimage image;
+    auto &icon = Loader<Texture2D>::get("icon");
+    image.pixels = (unsigned char *)(icon.getPixelSource());
+    image.width = icon.getResolution().x;
+    image.height = icon.getResolution().y;
+    glfwSetWindowIcon(window, 1, &image);
+
     App::setController(nullptr);
 
     ambientLight = vec3(0.1);
@@ -150,8 +159,8 @@ void Game::init(int paramSample)
 
     /* UI */
     FUIfont = FontRef(new FontUFT8);
-    FUIfont->readCSV("ressources/fonts/Roboto/out.csv");
-    FUIfont->setAtlas(Texture2D().loadFromFileKTX("ressources/fonts/Roboto/out.ktx"));
+    FUIfont->readCSV("data/commons/fonts/Roboto/out.csv");
+    FUIfont->setAtlas(Texture2D().loadFromFileKTX("data/commons/fonts/Roboto/out.ktx"));
 
     globals.baseFont = FUIfont;
 

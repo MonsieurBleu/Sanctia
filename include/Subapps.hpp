@@ -3,6 +3,7 @@
 #include "Controller.hpp"
 #include <SanctiaEntity.hpp>
 #include <EventGraph.hpp>
+#include <VEAC/vulpineFormats.hpp>
 
 class SubApps
 {
@@ -23,6 +24,8 @@ class SubApps
         std::string name;
 
         std::vector<EventInput*> inputs;
+
+        static inline std::vector<EventInput*> emptyInputs;
         
     public : 
 
@@ -40,7 +43,8 @@ class SubApps
 
         static void switchTo(SubApps *ptr);
         static void switchTo(const std::string &name);
-        static std::string getActiveAppName() {return activeApp->name;}
+        static std::string getActiveAppName() {return activeApp ? activeApp->name : "";}
+        static const std::vector<EventInput*> & getActiveAppInputs(){return activeApp ? activeApp->inputs : emptyInputs;}
 
         static void UpdateApps();
 
@@ -58,6 +62,25 @@ class SubApps
 
 namespace Apps
 {
+    class __TEMPLATE__App : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+        public : 
+
+            __TEMPLATE__App();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
     class MainGameApp : public SubApps
     {
         private : 
@@ -243,12 +266,62 @@ namespace Apps
             std::unordered_map<std::string, EntityRef> VersionList;
             std::string currentVersion;
 
+
+            std::unordered_map<std::string, EntityRef>  filesToBeProcessed;
+
+            std::unordered_map<std::string, EntityRef>  skeletonList;
+
+            std::unordered_map<std::string, EntityRef>  methodeList;
+
             EntityRef gameScreenMenu;
+
+            std::string skeletonTarget = "Human";
+            std::string retargetMethode = "";
+            uint vulpineImportFlag = 0;
+            VEAC_EXPORT_FORMAT importFormat = VEAC_EXPORT_FORMAT::FORMAT_SANCTIA;
+            float scale = 1.0;
+
+
 
         public : 
 
             AssetListViewer();
 
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
+    class AnimationApp : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+            SkeletonRef skeleton;
+            SkeletonAnimationState skeletonState;
+            AnimationRef animation;
+            AnimationController animController;
+
+            SkeletonRef skeleton2;
+            SkeletonAnimationState skeletonState2;
+            AnimationRef animation2;
+            AnimationController animController2;
+
+            void setTopDownView();
+            void clearTopDownView();
+
+            EntityModel helper1;
+            EntityModel helper2;
+
+        public : 
+
+            AnimationApp();
+            
             virtual EntityRef UImenu() override;
 
             virtual void init() override;

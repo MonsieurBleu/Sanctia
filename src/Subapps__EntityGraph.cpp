@@ -114,7 +114,7 @@ EntityRef Apps::EventGraphApp::UImenu()
 
 void Apps::EventGraphApp::init()
 {
-    appRoot = newEntity();
+    appRoot = newEntity("empty menu space");
 
     GG::skyboxType = 2;
 

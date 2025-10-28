@@ -1,15 +1,4 @@
 #include <Subapps.hpp>
-#include "AssetManagerUtils.hpp"
-#include "ComponentTypeGraphic.hpp"
-#include "ComponentTypeLogic.hpp"
-#include "ECS/Entity.hpp"
-#include "ECS/ModularEntityGroupping.hpp"
-#include "Graphics/Mesh.hpp"
-#include "Graphics/ObjectGroup.hpp"
-#include "Inputs.hpp"
-#include "Matrix.hpp"
-#include "PhysicsGlobals.hpp"
-#include "Utils.hpp"
 #include <ModManager.hpp>
 #include <AssetManager.hpp>
 
@@ -23,6 +12,7 @@
 #include "VulpineParser.hpp"
 #include <VEAC/AssetConvertor.hpp>
 #include <assimp/aabb.h>
+#include <assimp/config.h>
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -35,12 +25,7 @@
 #include <reactphysics3d/mathematics/Transform.h>
 #include <string>
 
-#ifdef _WIN32
-    #include <shlwapi.h>
-    #define STR_CASE_STR(str1, str2) StrStrIA(str1, str2)
-#else
-    #define STR_CASE_STR(str1, str2) strcasestr(str1, str2)
-#endif
+#include <Scripting/ScriptInstance.hpp>
 
 bool doFileProcessingTmpDebug = false;
 
@@ -73,30 +58,6 @@ EntityState3D toVulpine(aiMatrix4x4 ai)
     return s;
 }
 
-ModelState3D toModelState(aiMatrix4x4 ai)
-{
-    mat4 m = toGLM(ai);
-    ModelState3D s;
-    
-    s.setPosition(vec3(vec4(m*vec4(0, 0, 0, 1))));
-    
-    vec3 scale(
-        length(vec3(m[0][0], m[1][0], m[2][0])),
-        length(vec3(m[0][1], m[1][1], m[2][1])),
-        length(vec3(m[0][2], m[1][2], m[2][2]))
-    );
-
-    s.setScale(scale);
-
-    s.setQuaternion(quat(
-        mat3(
-            vec3(m[0])/scale, vec3(m[1])/scale, vec3(m[2])/scale
-        )
-    ));
-
-    return s;
-}
-
 void applyRecursive(aiNode *n, std::function<void(aiNode *n)> f)
 {
     for(int i = 0; i < n->mNumChildren; i++)
@@ -110,6 +71,8 @@ void applyRecursive(aiNode *n, std::function<void(aiNode *n)> f)
 VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     const std::string &path,
     const std::string &folder,
+    const std::string &skeletonTarget,
+    const std::string &retargetMethode,
     VEAC_EXPORT_FORMAT format,
     unsigned int aiImportFlags,
     unsigned int vulpineImportFlags,
@@ -117,6 +80,14 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 )
 {
     Assimp::Importer importer;
+
+    // importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+    // importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_OPTIMIZE_EMPTY_ANIMATION_CURVES, false);
+    // importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
+    // importer.SetPropertyBool(AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER, true);
+
+    // importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_IGNORE_UP_DIRECTION, false);
 
     importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
     importer.SetPropertyBool(AI_CONFIG_PP_PTV_KEEP_HIERARCHY, true);
@@ -152,6 +123,33 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
     Stencil_BoneMap bonesInfosMap;
 
+    if(vulpineImportFlags & 1<<VEAC::SceneConvertOption::EXPORT_ANIMATIONS)
+    {
+        VEAC::optimizeSceneBones(*scene, bonesInfosMap);
+    
+        if (bonesInfosMap.size() > 1 && !(vulpineImportFlags & 1<<VEAC::RETARGET_ANIMATIONS))
+            VEAC::saveAsVulpineSkeleton(bonesInfosMap, dirName +  getNameOnlyFromPath(path.c_str()) + ".vSkeleton");
+    
+        for (unsigned int i = 0; i < scene->mNumAnimations; i++)
+        {
+            aiAnimation &anim = *scene->mAnimations[i];
+
+            if(vulpineImportFlags & 1<<VEAC::RETARGET_ANIMATIONS)
+            {
+                if(skeletonTarget.size() && retargetMethode.size() && vulpineImportFlags)
+                    VEAC::retargetVulpineAnimation(anim, bonesInfosMap, anim.mName.C_Str(), dirName, skeletonTarget, retargetMethode);
+                else
+                    WARNING_MESSAGE("Can't retarget animations without skeleton target or methode.");
+            }
+            else
+                VEAC::saveAsVulpineAnimation(anim, bonesInfosMap, dirName + anim.mName.C_Str() + ".vAnimation");
+
+        }
+    }
+
+
+
+
     /*
         If we want to get full entities from the file, we need to do things differently
 
@@ -168,15 +166,28 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     EntityRef sceneEntity;
     if(vulpineImportFlags & 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY)
     {
-        sceneEntity = newEntity("__tmpScene__" + getNameOnlyFromPath(path.c_str()) + ".vEntity", EntityState3D(true));
+        if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY))
+            WARNING_MESSAGE("Exporting SCENE_AS_ENTITY without OBJECT_AS_ENTITY isn't supported. The scene entity will not be created.")
+        else 
+            sceneEntity = newEntity("__tmpScene__" + getNameOnlyFromPath(path.c_str()) + ".vEntity", EntityState3D(true));
+    }
+
+    if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY))
+    {
+        for(int i = 0; i < scene->mNumMeshes; i++)
+        {
+            std::string fileName = VEAC::saveAsVulpineMesh(
+                *scene->mMeshes[i], 
+                bonesInfosMap, 
+                dirName, 
+                VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
+            );
+        }
     }
 
     if(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY)
     for(int i = 0; i < scene->mRootNode->mNumChildren; i++)
     {
-
-
-
         aiNode *collection = scene->mRootNode->mChildren[i];
 
         vec3 colPos(0);
@@ -257,11 +268,9 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                             // WRITE_FUNC_RESULT(posiiton, toVulpine(mesh->mTransformation).initPosition)
                             // WRITE_FUNC_RESULT(quaternion, toVulpine(mesh->mTransformation).initQuat)
 
-                            auto state3D = toModelState(mesh->mTransformation);
+                            auto state3D = VEAC::toModelState(mesh->mTransformation);
                             state3D.position -= colPos;
-                            /*
-                                TODO : extract scale and fix quaternion
-                            */
+
                             outModel->Entry();
                             WRITE_NAME(position, outModel);
                             outModel->write("\"", 1);
@@ -417,17 +426,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 }
 
 Apps::AssetListViewer::AssetListViewer() : SubApps("Asset List")
-{
-    inputs.push_back(&
-        InputManager::addEventInput(
-            "top-down view", GLFW_KEY_SPACE, 0, GLFW_PRESS, [&]() {
-
-                doFileProcessingTmpDebug = true;
-
-            },
-            InputManager::Filters::always, false)
-    );
-    
+{    
     for(auto &i : inputs)
         i->activated = false;
 };
@@ -449,18 +448,227 @@ bool compareUntilBreakPoint(const std::string &s1, const std::string &s2, const 
 
 EntityRef Apps::AssetListViewer::UImenu()
 {
-    return newEntity();
+    auto veacflags = newEntity("VEAC Flags"
+                , UI_BASE_COMP
+                , WidgetStyle().setautomaticTabbing(8)
+    );
+        
+
+    for(auto &o : VEAC::SceneConvertOptionMap)
+    {
+        ComponentModularity::addChild(*veacflags, 
+            VulpineBlueprintUI::Toggable(o.first, "", 
+                            [&, o](Entity *e, float f)
+                            {
+                                vulpineImportFlag = vulpineImportFlag ^ (1 << o.second);
+                            },
+                            [&, o](Entity *e)
+                            {
+                                return vulpineImportFlag & 1<<o.second ? 0. : 1.;
+                            }
+                        )
+        );
+    }
+
+    auto filesList = VulpineBlueprintUI::StringListSelectionMenu("Files to be processed", 
+        filesToBeProcessed, 
+        [&](Entity *e, float f)
+        {
+            filesToBeProcessed.erase(
+                e->comp<EntityInfos>().name
+            );
+        },
+        [&](Entity *e)
+        {
+            if(e->comp<WidgetText>().text[0] != U' ')
+            {
+                e->comp<WidgetText>().text = U' ' + e->comp<WidgetText>().text;
+            }
+            
+            e->comp<WidgetText>().align = StringAlignment::TO_LEFT;
+            return 0.f;
+        },
+        0.f,
+        VulpineColorUI::HightlightColor6,
+        1.f/16.f
+    );
+
+    auto skeList = VulpineBlueprintUI::StringListSelectionMenu("Retarget to Skeleton", 
+        skeletonList, 
+        [&](Entity *e, float f)
+        {
+            skeletonTarget = e->comp<EntityInfos>().name;
+        },
+        [&](Entity *e)
+        {
+            return e->comp<EntityInfos>().name == skeletonTarget ? 0. : 1.;
+        },
+        -1,
+        VulpineColorUI::HightlightColor5,
+        1.f/8.f
+    );
+
+    auto metList = VulpineBlueprintUI::StringListSelectionMenu("Retarget Methode", 
+        methodeList, 
+        [&](Entity *e, float f)
+        {
+            retargetMethode = e->comp<EntityInfos>().name;
+        },
+        [&](Entity *e)
+        {
+            return e->comp<EntityInfos>().name == retargetMethode ? 0. : 1.;
+        },
+        -1,
+        VulpineColorUI::HightlightColor4,
+        1.f/8.f
+    );
+
+    auto exportButton = VulpineBlueprintUI::Toggable(
+        "Export All Files", "", 
+        [&](Entity *e, float f)
+        {
+            for(auto &f : filesToBeProcessed)
+            {
+                NOTIF_MESSAGE("Exporting " << f.first);
+
+                ConvertSceneFile__SanctiaEntity(
+                    f.first, 
+                    "data/[0] Export/Asset Convertor/", 
+                    skeletonTarget, 
+                    retargetMethode, 
+                    importFormat,
+                    0
+                        | aiProcess_Triangulate 
+                        | aiProcess_SortByPType 
+                        | aiProcess_ImproveCacheLocality 
+                        | aiProcess_OptimizeMeshes 
+                        // | aiProcess_PreTransformVertices
+                        | aiProcess_RemoveRedundantMaterials 
+                        | aiProcess_PopulateArmatureData 
+                        | aiProcess_GlobalScale 
+                        | aiProcess_LimitBoneWeights 
+                        | aiProcess_GenBoundingBoxes
+                    ,
+                    vulpineImportFlag,
+                    scale
+                );
+            }
+
+            Loader<MeshVao>::loadedAssets.clear();
+            Loader<MeshModel3D>::loadedAssets.clear();
+            Loader<ObjectGroup>::loadedAssets.clear();
+            Loader<EntityRef>::loadedAssets.clear();
+            Loader<SkeletonRef>::loadedAssets.clear();
+            Loader<AnimationRef>::loadedAssets.clear();
+
+            loadAllModdedAssetsInfos("./");
+
+        },
+        [&](Entity *e){
+
+            auto &t = e->comp<WidgetText>().text;
+
+            t = U"Export All [" + ftou32str(filesToBeProcessed.size()) + U"] Files";
+
+            return 0.f;
+        },
+        VulpineColorUI::HightlightColor6
+    );
+
+    float exportButtonSize = 2.f/17.f;
+    filesList->comp<WidgetBox>().set(vec2(-1, 1), vec2(-1, 1.-exportButtonSize));
+    exportButton->comp<WidgetBox>().set(vec2(-.5, .5), vec2(1.-exportButtonSize, 1.));
+
+    return newEntity("Asset Export Menu"
+        , UI_BASE_COMP
+        , WidgetStyle().setautomaticTabbing(2)
+        , EntityGroupInfo({
+
+            newEntity("Export Files List"
+                , UI_BASE_COMP
+                , EntityGroupInfo({
+                    filesList,
+                    exportButton
+                })
+            ),
+
+            VulpineBlueprintUI::NamedEntry(U"Export Options",
+                newEntity("Asset Export Options"
+                    , UI_BASE_COMP 
+                    , WidgetStyle().setautomaticTabbing(1)
+                    , EntityGroupInfo({
+                        
+                        newEntity("Skeleton Retargeting Options"
+                            , UI_BASE_COMP
+                            , WidgetStyle().setautomaticTabbing(2)
+                            , EntityGroupInfo({skeList, metList})
+                        ),
+                        
+                        newEntity("Asset Export Options"
+                            , UI_BASE_COMP
+                            , WidgetStyle().setautomaticTabbing(2)
+                            , EntityGroupInfo({
+    
+                                VulpineBlueprintUI::NamedEntry(U"Vulpine Export Options", veacflags, 1./8., true),
+                                
+                                VulpineBlueprintUI::NamedEntry(U"Misc Options",
+                                    newEntity("Misc Options"
+                                        , UI_BASE_COMP
+                                        , WidgetStyle().setautomaticTabbing(8)
+                                        , EntityGroupInfo({
+                                            VulpineBlueprintUI::NamedEntry(U"Scale",
+                                                VulpineBlueprintUI::ValueInput(
+                                                    "Scale",[&](float s){scale = s;}, [&](){return scale;},0.f,1e6f
+                                                )
+                                            ),
+                                        })
+                                    ),
+                                    1./8., true
+                                )
+
+                            })
+                        )
+
+                    })
+                ), 1/16.f, true
+            )
+
+        })
+    );
 }
 
 void Apps::AssetListViewer::init()
 {
     appRoot = newEntity("AppRoot");
     GG::skyboxType = 2;
+
+    globals.clearDropInput();
     
     for(auto &i : AssetLoadInfos::assetList)
     {
         TypesList[i.first] = EntityRef();
     }
+
+    for(auto &i : Loader<SkeletonRef>::loadingInfos)
+    {
+        skeletonList[i.first] = EntityRef();
+    }
+
+    for(auto &i : Loader<ScriptInstance>::loadingInfos)
+    {
+        if(STR_CASE_STR(i.first.c_str(), "(Retarget)"))
+        {
+            std::string preproc = i.first;
+            replace(preproc, "(Retarget)", "(Retarget PreProcess)");
+
+            if(Loader<ScriptInstance>::loadingInfos.find(preproc) != Loader<ScriptInstance>::loadingInfos.end())
+            {
+                replace(preproc, "(Retarget PreProcess) ", "");
+                methodeList[preproc] = EntityRef();
+            }
+        }
+    }
+
 
     auto typeListView = VulpineBlueprintUI::StringListSelectionMenu(
         "Asset Type", TypesList, 
@@ -663,20 +871,60 @@ void Apps::AssetListViewer::update()
     GG::ManageEntityGarbage();
 
     if(globals.getDropInput().size())
+    {
+        std::vector<std::string> filesToBeProcessed_tmp = globals.getDropInput();
+        globals.clearDropInput();
+
+        for(auto &f : filesToBeProcessed_tmp)
+            filesToBeProcessed[f] = EntityRef();
+    }
+    
     // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
+
+    static bool tmpbool = true;
+
+    if(tmpbool)
+    {
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx"] = EntityRef();
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx"] = EntityRef();
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx"] = EntityRef();
+        // filesToBeProcessed["/home/monsieurbleu/Downloads/test.glb"] = EntityRef();
+
+        tmpbool = false;
+    }
+
+    if(false)
     {
         std::vector<std::string> filesToBeProcessed = globals.getDropInput();
         globals.clearDropInput();
 
         // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.fbx");
         // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Jazz Dancing(1).fbx");
 
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/f_h_magespellcast_05.fbx");
+        
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/dance-graceful.fbx");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unreal/dance-graceful.fbx");
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Blender/dance-graceful.fbx");
+
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/dance-graceful.fbx");
+        
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx");
+
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx");
+
+        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx");
+        
+        
         for(auto s : filesToBeProcessed)
         {
-            NOTIF_MESSAGE(s)
+            NOTIF_MESSAGE("Importing " << s)
 
             ConvertSceneFile__SanctiaEntity(
                 s,  "data/[0] Export/Asset Convertor/", 
+                skeletonTarget,
+                retargetMethode,
                 VEAC_EXPORT_FORMAT::FORMAT_SANCTIA,
                 0
                 | aiProcess_Triangulate 
@@ -691,8 +939,11 @@ void Apps::AssetListViewer::update()
                 | aiProcess_GenBoundingBoxes
                 ,
                 0
-                | 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
-                | 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY
+                | 1<<VEAC::EXPORT_ANIMATIONS
+                // | 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
+                // | 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY
+                // , 1.f/100.f
+                , scale
             );
 
         }
@@ -705,9 +956,9 @@ void Apps::AssetListViewer::update()
         Loader<MeshModel3D>::loadedAssets.clear();
         Loader<ObjectGroup>::loadedAssets.clear();
         Loader<EntityRef>::loadedAssets.clear();
-        /*
-            TODO : add animation/squeleton clearing later
-        */
+        Loader<SkeletonRef>::loadedAssets.clear();
+        Loader<AnimationRef>::loadedAssets.clear();
+
         loadAllModdedAssetsInfos("./");
     }   
 }
@@ -720,6 +971,10 @@ void Apps::AssetListViewer::clean()
     TypesList.clear();
     AssetList.clear();
     VersionList.clear();
+    // filesToBeProcessed.clear();
+    for(auto &i : filesToBeProcessed) i.second = EntityRef();
+    skeletonList.clear();
+    methodeList.clear();
 
     ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, gameScreenMenu);
     gameScreenMenu = EntityRef();

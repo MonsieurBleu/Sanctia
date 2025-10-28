@@ -66,7 +66,7 @@ void Apps::MaterialViewerApp::refreshPalettesList()
 {
     // palettesList.clear();
 
-    for (auto f : std::filesystem::recursive_directory_iterator("data/editor/palettes"))
+    for (auto f : std::filesystem::recursive_directory_iterator("data/[0] Editor/palettes"))
     {
         if (f.is_directory())
             continue;
@@ -323,7 +323,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
                 MaterialPalette palette;
 
                 VulpineTextBuffRef in(new VulpineTextBuff(
-                    ("data/editor/palettes/" + e->comp<EntityInfos>().name + ".MaterialPalette").c_str()
+                    ("data/[0] Editor/palettes/" + e->comp<EntityInfos>().name + ".MaterialPalette").c_str()
                     )
                 );
                 palette = DataLoader<MaterialPalette>::read(in);
@@ -438,7 +438,7 @@ EntityRef Apps::MaterialViewerApp::UIcontrols()
 
             VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
             DataLoader<MaterialPalette>::write(palette, out);
-            out->saveAs(("data/editor/palettes/" + currentPalette + ".MaterialPalette").c_str());
+            out->saveAs(("data/[0] Editor/palettes/" + currentPalette + ".MaterialPalette").c_str());
             refreshPalettesList();
         },
         [&](Entity *e)
@@ -475,7 +475,7 @@ void Apps::MaterialViewerApp::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity();
+        appRoot = newEntity("empty menu space");
         GG::currentConditions.readTxt("saves/gameConditions.txt");
 
         App::setController(&orbitController);
@@ -489,7 +489,7 @@ void Apps::MaterialViewerApp::init()
 
     // MaterialPalette palette;
 
-    // VulpineTextBuffRef in(new VulpineTextBuff("data/editor/palettes/test.MaterialPalette"));
+    // VulpineTextBuffRef in(new VulpineTextBuff("data/[0] Editor/palettes/test.MaterialPalette"));
     // palette = DataLoader<MaterialPalette>::read(in);
 
     // // palette.push_back({vec3(0, 0, 0), 0, 0, 0, 0, 0, 0, 0});
@@ -498,7 +498,7 @@ void Apps::MaterialViewerApp::init()
 
     // VulpineTextOutputRef test(new VulpineTextOutput());
     // DataLoader<MaterialPalette>::write(palette, test);
-    // test->saveAs("data/editor/palettes/test2.MaterialPalette");
+    // test->saveAs("data/[0] Editor/palettes/test2.MaterialPalette");
 }
 
 void Apps::MaterialViewerApp::update()

@@ -2,9 +2,7 @@
 #include "App.hpp"
 #include "Flags.hpp"
 #include <SanctiaEntity.hpp>
-#include "Game.hpp"
 #include "GameGlobals.hpp"
-#include "SanctiaLuaBindings.hpp"
 #include "Scripting/ScriptInstance.hpp"
 #include <AssetManager.hpp>
 

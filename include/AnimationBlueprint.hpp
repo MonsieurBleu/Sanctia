@@ -5,7 +5,9 @@ class Entity;
 
 namespace AnimBlueprint
 {
-    AnimationControllerRef bipedMoveset(const std::string & prefix, Entity *e);
+    AnimationControllerRef bipedMoveset_POC2024(const std::string & prefix, Entity *e);
+
+    AnimationControllerRef bipedMoveset_PREALPHA_2025(const std::string & prefix, Entity *e);
 
     float weaponAttackCallback(
         float prct, 
@@ -20,6 +22,7 @@ namespace AnimBlueprint
         );
 
     extern std::function<void (void *)> weaponAttackExit;
+    extern std::function<void (void *)> weaponKickExit;
     extern std::function<void (void *)> weaponStunExit;
     extern std::function<void (void *)> weaponGuardExit;
     extern std::function<void (void *)> weaponGuardEnter;

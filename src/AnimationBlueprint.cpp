@@ -90,6 +90,16 @@ ANIMATION_SWITCH_ENTITY(switchAttackSpecial,
     return s.isTryingToAttack && s.stance() == ActionState::Stance::SPECIAL;
 )
 
+ANIMATION_SWITCH_ENTITY(switchAttack, 
+    auto &s = e->comp<ActionState>();
+    return s.isTryingToAttack && s.stance() != ActionState::Stance::SPECIAL;
+)
+
+ANIMATION_SWITCH_ENTITY(switchKick, 
+    auto &s = e->comp<ActionState>();
+    return s.isTryingToAttack && s.stance() == ActionState::Stance::SPECIAL;
+)
+
 ANIMATION_SWITCH_ENTITY(switchWalk, 
     return e->comp<EntityDeplacementState>().speed >= 0.1;
 )
@@ -173,6 +183,10 @@ ANIMATION_SWITCH(switchRandom2,
     maccro(animA, animB##F, time, cond##_AND_switchRandom2), \
     maccro(animA, animB##B, time, cond##_AND_inv_switchRandom2) 
 
+#define ACT_TO_RANDOM2(maccro, animA, animB, time, cond) \
+    maccro(animA, animB##1, time, cond##_AND_switchRandom2), \
+    maccro(animA, animB##2, time, cond##_AND_inv_switchRandom2) 
+
 ANIMATION_SWITCH_AND(switchWalk, switchDepFront)
 ANIMATION_SWITCH_AND(switchWalk, switchDepBack)
 ANIMATION_SWITCH_AND(switchWalk, switchDepLeft)
@@ -216,7 +230,6 @@ float AnimBlueprint::weaponAttackCallback(
     EquipementSlots slot
     )
 {
-    
     auto &w = e->comp<Items>().equipped[slot].item;
 
     if(!w.get())
@@ -281,6 +294,8 @@ float AnimBlueprint::weaponAttackCallback(
 
         actionState.lockType = lockDep;
         actionState.lockedMaxSpeed = maxSpeed;
+
+        // NOTIF_MESSAGE(actionState.lockedMaxSpeed)
     }
 
     return 1.f;
@@ -305,6 +320,24 @@ std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
         slots[LEFT_FOOT_SLOT].item->comp<Effect>().clear();
         // slots[LEFT_FOOT_SLOT].item->removeComp<Effect>();
 };
+
+// std::function<void (void *)> AnimBlueprint::weaponKickExit = [](void * usr){
+//     Entity *e = (Entity*)usr;
+//     e->comp<ActionState>().isTryingToBlock = false;
+//     e->comp<ActionState>().kicking = false;
+//     e->comp<ActionState>().lockType = ActionState::LockedDeplacement::NONE;
+
+//     auto &slots = e->comp<Items>().equipped;
+
+//     if(slots[WEAPON_SLOT].item)
+//         slots[WEAPON_SLOT].item->comp<Effect>().clear();
+//         // slots[WEAPON_SLOT].item->removeComp<Effect>();
+    
+//     if(slots[LEFT_FOOT_SLOT].item)
+//         slots[LEFT_FOOT_SLOT].item->comp<Effect>().clear();
+//         // slots[LEFT_FOOT_SLOT].item->removeComp<Effect>();
+// };
+
 
 std::function<void (void *)> AnimBlueprint::weaponStunExit = [](void * usr){
     Entity *e = (Entity*)usr;
@@ -333,7 +366,7 @@ std::function<void (void *)> AnimBlueprint::weaponBlockExit = [](void * usr){
 };
 
 
-AnimationControllerRef AnimBlueprint::bipedMoveset(const std::string & prefix, Entity *e)
+AnimationControllerRef AnimBlueprint::bipedMoveset_POC2024(const std::string & prefix, Entity *e)
 {
     e->set<AnimationControllerInfos>({prefix});
 
@@ -504,4 +537,109 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_IMPACT_R");
         a->onExitAnimation = AnimBlueprint::weaponBlockExit;
     }
+
+    // WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, maxspeed, slot)
+    
+    /* DEMO 2025 */
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Attack");
+        WEAPON_CALLBACK(33.0, 66, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
+        // const float l = a->getLength();
+        // a->speedCallback = [l](float f, void *e){return (1./0.75) / l;};
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Kick");
+        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 0.01, LEFT_FOOT_SLOT);
+        // const float l = a->getLength();
+        // a->speedCallback = [l](float f, void *e){return (1./0.5) / l;};
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Death_1");
+        a->repeat = false;
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Death_2");
+        a->repeat = false;
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Blocking");
+        a->onExitAnimation = AnimBlueprint::weaponGuardExit;
+        a->onEnterAnimation = AnimBlueprint::weaponGuardEnter;
+    }
+}
+
+#define LOAD_ANIM_FROM_PREFIX(name) AnimationRef name = Loader<AnimationRef>::get(prefix + #name);
+
+AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::string & prefix, Entity *e)
+{
+    LOAD_ANIM_FROM_PREFIX(Idle)
+
+    LOAD_ANIM_FROM_PREFIX(Death_1)
+    LOAD_ANIM_FROM_PREFIX(Death_2)
+
+    LOAD_ANIM_FROM_PREFIX(Kick)
+    LOAD_ANIM_FROM_PREFIX(Attack)
+    LOAD_ANIM_FROM_PREFIX(Impact)
+    LOAD_ANIM_FROM_PREFIX(Blocking)
+    LOAD_ANIM_FROM_PREFIX(Blocking_Impact)
+
+    LOAD_ANIM_FROM_PREFIX(Walk_F)
+    LOAD_ANIM_FROM_PREFIX(Walk_B)
+    LOAD_ANIM_FROM_PREFIX(Walk_L)
+    LOAD_ANIM_FROM_PREFIX(Walk_R)
+
+    LOAD_ANIM_FROM_PREFIX(Run_F)
+    LOAD_ANIM_FROM_PREFIX(Run_B)
+    LOAD_ANIM_FROM_PREFIX(Run_L)
+    LOAD_ANIM_FROM_PREFIX(Run_R)
+
+    const float D_walkDep = 0.25;
+    const float D_runDep = 0.15;
+    const float D_idleWalk = 0.25; 
+    const float D_WalkRun = 0.25; 
+    const float D_toAttack = 0.10;
+    const float D_toDeath = 0.15;
+    const float D_toStun = 0.15;
+    const float D_toGuard = 0.075;
+    const float D_toBlock = 0.15;
+
+    AnimationControllerRef ac( new AnimationController(
+        {
+            /* DEATH */
+            ACT_TO_RANDOM2(ACT, Idle, Death_, D_toDeath, switchDeath),
+            ACT_TO_RANDOM2(ACT, Kick, Death_, D_toDeath, switchDeath),
+            ACT_TO_RANDOM2(ACT, Attack, Death_, D_toDeath, switchDeath),
+            ACT_TO_RANDOM2(ACT, Impact, Death_, D_toDeath, switchDeath),
+            ACT_TO_RANDOM2(ACT, Blocking, Death_, D_toDeath, switchDeath),
+            ACT_TO_RANDOM2(ACT, Blocking_Impact, Death_, D_toDeath, switchDeath),
+            ACT_TO_RANDOM2(ACT_FROM_FBLR, Walk_, Death_, D_toDeath, switchDeath),
+            ACT_TO_RANDOM2(ACT_FROM_FBLR, Run_, Death_, D_toDeath, switchDeath),
+
+            /* IDLE */
+            ACT_TO_FBLR(Idle, Walk_, D_idleWalk, switchWalk),
+            ACT(Idle, Attack, D_toAttack, switchAttack),
+            ACT(Idle, Kick, D_toAttack, switchKick),
+            ACT(Idle, Blocking, D_toGuard, switchGuard),
+            ACT(Idle, Impact, D_toStun, switchStun),
+
+            /* WALK */
+            ACT_DEP_FBLR(Walk_, D_walkDep, switchWalk),
+            ACT_FROM_FBLR(Walk_, Idle, D_idleWalk, inv_switchWalk),
+            ACT_TO_FROM_FBLR(Walk_, Run_, D_WalkRun, switchRun),
+            ACT_FROM_FBLR(Walk_, Attack, D_toAttack, switchAttack),
+            ACT_FROM_FBLR(Walk_, Kick, D_toAttack, switchKick),
+            ACT_FROM_FBLR(Walk_, Blocking, D_toGuard, switchGuard),
+            ACT_FROM_FBLR(Walk_, Impact, D_toStun, switchStun),
+
+            /* RUN */
+            ACT_DEP_FBLR(Run_, D_runDep, switchRun),
+            ACT_TO_FROM_FBLR(Run_, Walk_, D_WalkRun, inv_switchRun),
+            ACT_FROM_FBLR(Run_, Kick, D_toAttack, switchKick),
+
+            /* ATACK */
+            AnimationControllerTransition(Attack, Idle, COND_ANIMATION_FINISHED, D_toAttack, TRANSITION_SMOOTH),
+            AnimationControllerTransition(Kick, Idle, COND_ANIMATION_FINISHED, D_toAttack, TRANSITION_SMOOTH),
+
+            /* BLOCKING */
+            ACT(Blocking, Idle, D_toBlock, inv_switchGuard),
+
+        }, Idle, e
+    ));
+
+    return ac;
 }

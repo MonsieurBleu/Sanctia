@@ -33,6 +33,13 @@ void PlayerController::update()
     vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
     const vec3 hUp = vec3(0, 1, 0);
     const vec3 hRight = cross(hUp, hFront);
+
+    // const vec3 curVel = PG::toglm(body->getLinearVelocity());
+    // float rightCorrection = dot(hRight, normalize(curVel));
+    // rightCorrection *= 1.0 - abs(rightFactor);
+    // // std::cout << rightCorrection << "\n";
+    // rightFactor -= rightCorrection * length(curVel);
+
     const vec3 hFrontDep = hFront*(float)frontFactor;
     const vec3 hRightDep = hRight*(float)rightFactor;
 

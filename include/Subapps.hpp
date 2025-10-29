@@ -348,4 +348,21 @@ namespace Apps
 
             virtual void clean() override;
     };
+
+    class CombatsApp : public SubApps
+    {
+        private :
+
+        public : 
+
+            CombatsApp();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
 }

@@ -9,7 +9,7 @@ struct EntityModel : public ObjectGroupRef
 
 struct AnimationControllerInfos : std::string
 {
-    GENERATE_ENUM_FAST_REVERSE(Type, Biped);
+    GENERATE_ENUM_FAST_REVERSE(Type, Biped, DEMO2025);
 
     Type type;
 };

@@ -12,6 +12,8 @@
 
 #include <Graphics/Skeleton.hpp>
 
+#include <algorithm>
+
 Entity *entityHelper1 = nullptr;
 
 void Apps::AnimationApp::setTopDownView()
@@ -181,23 +183,57 @@ void Apps::AnimationApp::init()
     animation2 = Loader<AnimationRef>::get(
         // "_mixamo.com"
 
-        "(Human) dance-graceful-378939"
+        // "(Human) dance-graceful-378939"
+
 
         // "catwalk-loop-378982.vAnimation__Retargeted__"
 
         // "walk-2loop-379004.vAnimation__Retargeted__"
 
         // "0_T-Pose"
+
+        "(Human) 2H Sword Walk L"
     );
 
     animController = AnimationController({
         // AnimationControllerTransition(animation, animation, COND_ANIMATION_FINISHED, 0.2, TransitionType::TRANSITION_SMOOTH)
     },animation,nullptr);
 
-    animController2 = AnimationController({
-        // AnimationControllerTransition(animation2, animation2, COND_ANIMATION_FINISHED, 0.2, TransitionType::TRANSITION_SMOOTH)
-    },animation2,nullptr);
+    // animController2 = AnimationController({
+    //     // AnimationControllerTransition(animation2, animation2, COND_ANIMATION_FINISHED, 0.2, TransitionType::TRANSITION_SMOOTH)
+    // },animation2,nullptr);
 
+
+
+    std::vector<AnimationControllerTransition> cond;
+
+    std::vector<AnimationRef> animList;
+
+    for(auto &i : Loader<AnimationRef>::loadingInfos)
+    {
+        if(STR_CASE_STR(i.first.c_str(), "(Human) 2H Sword"))
+            animList.push_back(Loader<AnimationRef>::get(i.first));
+    }
+
+    std::sort(animList.begin(), animList.end(),
+        [](const AnimationRef & a, const AnimationRef & b)
+        {
+            return strcmp(a->getName().c_str(), b->getName().c_str()) > 0;
+        }
+    );
+
+    for(int i = 0; i < animList.size(); i++)
+    {
+        std::cout << animList[i]->getName() << "\n\t";
+        std::cout << animList[i]->getLength() << "\n";
+
+        cond.push_back(AnimationControllerTransition(
+            animList[i], animList[(i+1)%animList.size()], COND_ANIMATION_FINISHED, 0.01, TransitionType::TRANSITION_SMOOTH
+            )
+        );
+    }
+
+    animController2 = AnimationController(cond, animList.front());
 
 
     // animation.skeleton->applyGraph(animation);
@@ -243,7 +279,8 @@ void Apps::AnimationApp::init()
 
     PG::world->setIsGravityEnabled(false);
 
-    EntityRef player = spawnEntity("Player");
+    // EntityRef player = spawnEntity("Player");
+    EntityRef player = spawnEntity("(Human) Mannequin Blue");
 
     player->set<AnimationControllerRef>(AnimationControllerRef(new AnimationController(animController2)));
 

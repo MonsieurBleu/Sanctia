@@ -272,7 +272,7 @@ EntityRef Blueprint::TestManequin()
             );
 
     e->set<RigidBody>(Blueprint::Assembly::CapsuleBody(1.75f, position, e));
-    e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset("65_2HSword", e.get()));
+    e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset_POC2024("65_2HSword", e.get()));
 
     Items::equip(e, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
     Items::equip(e, Blueprint::Foot(), LEFT_FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);

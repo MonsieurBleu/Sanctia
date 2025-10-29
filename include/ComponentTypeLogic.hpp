@@ -91,12 +91,14 @@ class ActionState
 
         bool isTryingToAttack = false;
         bool isTryingToBlock = false;
+        // bool isTryingToKick = false;
         bool hasBlockedAttack = false;
 
         bool stun = false;
         bool blocking = false;
 
         bool attacking = false;
+        bool kicking = false;
 
         enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockType;
         float lockedMaxSpeed = 0;

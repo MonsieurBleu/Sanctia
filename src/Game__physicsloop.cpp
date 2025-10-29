@@ -114,9 +114,10 @@ void Game::physicsLoop()
                     ds.deplacementDirection = normalize(PG::toglm(b->getLinearVelocity()));
 
                     float maxspeed = ds.grounded ? ds.wantedSpeed : ds.airSpeed; 
-                    auto vel = b->getLinearVelocity();
+                    vec3 vel = PG::toglm(b->getLinearVelocity());
                     vec3 dir = ds.wantedDepDirection;
-                    ds.speed = length(vec2(vel.x, vel.z));
+                    // ds.speed = length(vec2(vel.x, vel.z));
+                    ds.speed = length(vel);
 
                     if(entity.hasComp<ActionState>())
                     {
@@ -132,8 +133,25 @@ void Game::physicsLoop()
                             }
                     }
 
+                    // if(ds.speed > 0.001)
+                    // {
+                    //     ds.speed *= abs(dot(dir, normalize(vel)));
+                    //     std::cout << abs(dot(dir, normalize(vel))) << "\n";
+                    // }
+
+                    if(ds.speed > 0.001)
+                    {
+                        b->applyWorldForceAtCenterOfMass(PG::torp3d(-vec3(vel.x, 0, vel.z) * pow(maxspeed, 0.5f) * 5.f * b->getMass()));
+                    }
+
+                    // b->getCollider(0)->getMaterial().
+                    
+
                     if(ds.speed < maxspeed)
-                        b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.4f) * 15.f * b->getMass()));            
+                        b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 50.f * b->getMass())); 
+                    
+                    // b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 15.f * b->getMass())); 
+
                 }
                 break;
             

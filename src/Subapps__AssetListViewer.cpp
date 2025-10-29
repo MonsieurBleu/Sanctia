@@ -129,14 +129,14 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     {
         VEAC::optimizeSceneBones(*scene, bonesInfosMap);
     
-        if (bonesInfosMap.size() > 1 && !(vulpineImportFlags & 1<<VEAC::RETARGET_ANIMATIONS))
+        if (bonesInfosMap.size() > 1 && !(vulpineImportFlags & 1<<VEAC::RETARGET_SKELETON))
             VEAC::saveAsVulpineSkeleton(bonesInfosMap, dirName +  getNameOnlyFromPath(path.c_str()) + ".vSkeleton");
     
         for (unsigned int i = 0; i < scene->mNumAnimations; i++)
         {
             aiAnimation &anim = *scene->mAnimations[i];
 
-            if(vulpineImportFlags & 1<<VEAC::RETARGET_ANIMATIONS)
+            if(vulpineImportFlags & 1<<VEAC::RETARGET_SKELETON)
             {
                 if(skeletonTarget.size() && retargetMethode.size() && vulpineImportFlags)
                     VEAC::retargetVulpineAnimation(anim, bonesInfosMap, anim.mName.C_Str(), dirName, skeletonTarget, retargetMethode);
@@ -171,10 +171,10 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY))
             WARNING_MESSAGE("Exporting SCENE_AS_ENTITY without OBJECT_AS_ENTITY isn't supported. The scene entity will not be created.")
         else 
-            sceneEntity = newEntity("__tmpScene__" + getNameOnlyFromPath(path.c_str()) + ".vEntity", EntityState3D(true));
+            sceneEntity = newEntity("[TMP SCENE] " + getNameOnlyFromPath(path.c_str()) + ".vEntity", EntityState3D(true));
     }
 
-    if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY))
+    if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY) && !(vulpineImportFlags & 1<<VEAC::SceneConvertOption::IGNORE_MESH))
     {
         for(int i = 0; i < scene->mNumMeshes; i++)
         {
@@ -226,9 +226,9 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
             std::cout << collection->mName.C_Str() << "\t" << component->mName.C_Str() << "\n";
 
-            if(STR_CASE_STR(component->mName.C_Str(), "graphic"))
+            if(STR_CASE_STR(component->mName.C_Str(), "graphic") && !(vulpineImportFlags & 1<<VEAC::SceneConvertOption::IGNORE_MESH))
             {
-                std::string dirNameLOD = dirNameEntity + "__LOD" + lodcnt;
+                std::string dirNameLOD = dirNameEntity + " LOD" + lodcnt;
                 lodcnt ++;
 
                 if(!entity->hasComp<EntityModel>())
@@ -239,13 +239,25 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 for(int k = 0; k < component->mNumChildren; k++)
                 {
                     aiNode *mesh = component->mChildren[k];
-                    std::string dirNameMesh = dirNameLOD + "__";
-                    std::string fileName = VEAC::saveAsVulpineMesh(
-                        *scene->mMeshes[mesh->mMeshes[0]], 
-                        bonesInfosMap, 
-                        dirNameMesh, 
-                        VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
-                    );
+
+                    std::cout << mesh->mName.C_Str() << "\t" << mesh->mNumMeshes << "\t" << mesh->mNumChildren << "\n";
+
+                    std::string dirNameMesh = dirNameLOD + "  ";
+                    std::string fileName = vulpineImportFlags & 1<<VEAC::SceneConvertOption::RETARGET_SKELETON && skeletonTarget.size() ?
+                        VEAC::saveAsVulpineMesh(
+                            *scene->mMeshes[mesh->mMeshes[0]], 
+                            Loader<SkeletonRef>::get(skeletonTarget), 
+                            dirNameMesh, 
+                            VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
+                        )
+                        :
+                        VEAC::saveAsVulpineMesh(
+                            *scene->mMeshes[mesh->mMeshes[0]], 
+                            bonesInfosMap, 
+                            dirNameMesh, 
+                            VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
+                        )
+                    ;
                 
                     Loader<MeshVao>::addInfosTextless(fileName.c_str());
                     std::string vaoRefName = getNameOnlyFromPath(fileName.c_str());
@@ -261,7 +273,17 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         outModel->Entry();
                         WRITE_NAME(material |, outModel)
                         /* TODO : add conditions later */
-                        outModel->write(CONST_CSTRING_SIZED("packingPaint"));
+
+                        if(scene->mMeshes[mesh->mMeshes[0]]->HasBones())
+                        {
+                            outModel->write(CONST_CSTRING_SIZED("\"Animated Packing Paint\""));
+                            entity->comp<EntityState3D>().usequat = false;
+                            entity->set<SkeletonAnimationState>(SkeletonAnimationState(Loader<SkeletonRef>::get(skeletonTarget)));
+                        }
+                        else
+                        {
+                            outModel->write(CONST_CSTRING_SIZED("packingPaint"));
+                        }
 
                         outModel->Entry();
                         WRITE_NAME(state, outModel);
@@ -865,6 +887,21 @@ void Apps::AssetListViewer::init()
         gameScreenMenu
     );
 
+    
+    const std::string importFolder = "Import/";
+    if(std::filesystem::exists(importFolder))
+    {
+        for (auto f : std::filesystem::recursive_directory_iterator(importFolder))
+        {
+            if (f.is_directory())
+                continue;
+            
+            std::string file = f.path().string().c_str();
+
+            if(filesToBeProcessed.find(file) == filesToBeProcessed.end())
+                filesToBeProcessed[file] = EntityRef();
+        }
+    }
 }
 
 void Apps::AssetListViewer::update()
@@ -881,106 +918,6 @@ void Apps::AssetListViewer::update()
             filesToBeProcessed[f] = EntityRef();
     }
 
-    
-    const std::string importFolder = "Import/";
-    if(std::filesystem::exists(importFolder))
-    {
-        for (auto f : std::filesystem::recursive_directory_iterator(importFolder))
-        {
-            if (f.is_directory())
-                continue;
-            
-            std::string file = f.path().string().c_str();
-
-            if(filesToBeProcessed.find(file) == filesToBeProcessed.end())
-                filesToBeProcessed[file] = EntityRef();
-        }
-    }
-
-
-
-    // if(doFileProcessingTmpDebug && !(doFileProcessingTmpDebug = false))
-
-    static bool tmpbool = true;
-
-    if(tmpbool)
-    {
-        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx"] = EntityRef();
-        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx"] = EntityRef();
-        // filesToBeProcessed["/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx"] = EntityRef();
-        // filesToBeProcessed["/home/monsieurbleu/Downloads/test.glb"] = EntityRef();
-
-        tmpbool = false;
-    }
-
-    if(false)
-    {
-        std::vector<std::string> filesToBeProcessed = globals.getDropInput();
-        globals.clearDropInput();
-
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.fbx");
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/test.glb");
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Jazz Dancing(1).fbx");
-
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/f_h_magespellcast_05.fbx");
-        
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/dance-graceful.fbx");
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unreal/dance-graceful.fbx");
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Blender/dance-graceful.fbx");
-
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/dance-graceful.fbx");
-        
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/notinplace/dance-graceful.fbx");
-
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/catwalk-loop.fbx");
-
-        // filesToBeProcessed.push_back("/home/monsieurbleu/Downloads/Motion/Unity/walk-2.fbx");
-        
-        
-        for(auto s : filesToBeProcessed)
-        {
-            NOTIF_MESSAGE("Importing " << s)
-
-            ConvertSceneFile__SanctiaEntity(
-                s,  "data/[0] Export/Asset Convertor/", 
-                skeletonTarget,
-                retargetMethode,
-                VEAC_EXPORT_FORMAT::FORMAT_SANCTIA,
-                0
-                | aiProcess_Triangulate 
-                | aiProcess_SortByPType 
-                | aiProcess_ImproveCacheLocality 
-                | aiProcess_OptimizeMeshes 
-                // | aiProcess_PreTransformVertices
-                | aiProcess_RemoveRedundantMaterials 
-                | aiProcess_PopulateArmatureData 
-                | aiProcess_GlobalScale 
-                | aiProcess_LimitBoneWeights 
-                | aiProcess_GenBoundingBoxes
-                ,
-                0
-                | 1<<VEAC::EXPORT_ANIMATIONS
-                // | 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY
-                // | 1<<VEAC::SceneConvertOption::SCENE_AS_ENTITY
-                // , 1.f/100.f
-                , scale
-            );
-
-        }
-
-        // filesToBeProcessed.clear();
-
-        // std::cout << "=================================================\n";
-
-        Loader<MeshVao>::loadedAssets.clear();
-        Loader<MeshModel3D>::loadedAssets.clear();
-        Loader<ObjectGroup>::loadedAssets.clear();
-        Loader<EntityRef>::loadedAssets.clear();
-        Loader<SkeletonRef>::loadedAssets.clear();
-        Loader<AnimationRef>::loadedAssets.clear();
-
-        loadAllModdedAssetsInfos("./");
-    }   
 }
 
 

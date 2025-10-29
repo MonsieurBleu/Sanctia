@@ -74,6 +74,11 @@ void Apps::SceneMergeApp::init()
         GG::sun->shadowCameraSize = vec2(2048, 2048);
     }
 
+    // physicsMutex.lock();
+    // ComponentModularity::addChild(*appRoot, spawnEntity("Ground_Demo_32xh"));
+    // ComponentModularity::ReparentChildren(*appRoot);
+    // physicsMutex.unlock();
+
     /***** Creating Scene To Stress Test *****/
     // int size = 100;
     int size = 25;

@@ -102,7 +102,11 @@ DATA_READ_FUNC(EntityRef) {
         switch(a.type)
         {
             case AnimationControllerInfos::Biped :
-                data->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset(a, data.get()));
+                data->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset_POC2024(a, data.get()));
+            break;
+
+            case AnimationControllerInfos::DEMO2025 :
+                data->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset_PREALPHA_2025(a, data.get()));
             break;
 
             default : break;

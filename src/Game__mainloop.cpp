@@ -559,15 +559,19 @@ void Game::mainloop()
         )
     );
 
+    
     Apps::MainGameApp testsubapps1;
     Apps::EntityCreator entityCreator;
     Apps::AssetListViewer assetView;
     Apps::MaterialViewerApp materialView;
+    
+    Apps::CombatsApp combatsApps;
+    Apps::AnimationApp animationViewer;
+    
     // Apps::EventGraphApp eventGraph;
     Apps::SceneMergeApp sceneMerge;
-    Apps::AnimationApp animationViewer;
-
     Apps::LuaTesting luaTest;
+
 
     // SubApps::switchTo(materialView);
 
@@ -1064,6 +1068,8 @@ void Game::mainloop()
 
                 const int headBone = 18;
                 vec4 animPos = s[headBone] * inverse(s.skeleton->at(headBone).t) * vec4(0, 0, 0, 1);
+
+                // animPos += vec4(0, 0, -1, 0);
 
                 this->camera.setPosition(vec3(model->state.modelMatrix * animPos) + vec3(0, 0.2, 0));
             }

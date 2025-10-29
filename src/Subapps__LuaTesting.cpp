@@ -4,6 +4,7 @@
 #include <SanctiaEntity.hpp>
 #include "GameGlobals.hpp"
 #include "Scripting/ScriptInstance.hpp"
+#include "Timer.hpp"
 #include <AssetManager.hpp>
 
 
@@ -87,8 +88,8 @@ void Apps::LuaTesting::init()
     DataLoader<Flags>::write(flags, out2);
     out2->saveAs("data/flags.vFlags");
 
-    LogicBlockParser::registerFunction(
-        LogicBlockParser::Function(
+    LogicBlock::registerFunction(
+        LogicBlock::Function(
             "print_something",
             Flag::STRING,
             {Flag::STRING, Flag::STRING},
@@ -99,8 +100,8 @@ void Apps::LuaTesting::init()
         )
     );
 
-    LogicBlockParser::registerFunction(
-        LogicBlockParser::Function(
+    LogicBlock::registerFunction(
+        LogicBlock::Function(
             "pow",
             Flag::FLOAT,
             {Flag::FLOAT, Flag::FLOAT},
@@ -108,6 +109,17 @@ void Apps::LuaTesting::init()
                 float base = args[0]->as_float();
                 float exponent = args[1]->as_float();
                 return Flag::MakeFlag(std::pow(base, exponent));
+            }
+        )
+    );
+
+    LogicBlock::registerFunction(
+        LogicBlock::Function(
+            "getCompute",
+            Flag::INT,
+            {},
+            [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
+                return Flag::MakeFlag(flags["test2"]->as_int() * 2);
             }
         )
     );
@@ -120,10 +132,27 @@ void Apps::LuaTesting::init()
     // std::string testStr = "If then else Test Result: $(if (!${test4}) then (1) else (0)) $(if (false) then ('you shouldn't be seeing this'))";
     // std::string testStr = "Inline if Test Result: $(${test4} && if (${test2} > 5) then (true) else (false))";
     // std::string testStr = "Function Call Test Result: $(print_something('Hello from ', if (true) then ('function call!') else ('second option!)))";
-    std::string testStr = "Power Function Test Result: $(pow(2, 2 * 4))";
+    // std::string testStr = "Power Function Test Result: $(pow(2, 2 * 4))";
     // std::string testStr = "Operator Precedence Test Result: $(1 + 2 * 3)";
-    LogicBlockParser::parse_string(testStr, flags);
-    std::cout << testStr << std::endl;
+    
+
+    constexpr int N = 167;
+    BenchTimer timer("Logic Block Parsing Benchmark");
+    timer.start();
+    int acctmp = 0;
+    for (int i = 0; i < N; i++)
+    {
+        // std::string testStr = "If then else Test Result: $(if (!${test4}) then (1) else (0)) $(if (pow(2, 8) > 8 && (${test2} > ${test3})) then (\"yay it works!\"))";
+        // std::string testStr = "$(${test2} * 2)";
+        std::string testStr = "$(getCompute())";
+        LogicBlock::parse_string(testStr, flags);
+        acctmp += testStr.length();
+    }
+    timer.stop();
+
+    std::cout << timer << std::endl;
+    std::cout << "omg" << acctmp << std::endl;    
+    // std::cout << testStr << std::endl;
 }
 
 void Apps::LuaTesting::update()

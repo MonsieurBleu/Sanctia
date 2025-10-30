@@ -68,91 +68,153 @@ void Apps::LuaTesting::init()
     // flags["test4"] = true;
     // flags["test5"] = Flag::MakeFlagFromScript<int>("return_int");
 
-    VulpineTextBuffRef in(new VulpineTextBuff("data/flags.vFlags"));
-    flags = DataLoader<Flags>::read(in);
+    for(auto &i : Loader<FlagWrapper>::loadingInfos)
+        std::cout << i.first << "\n";
+
+    std::cout << Loader<FlagWrapper>::get("test4")->as_string() << "\n";
+
+
+    // auto flags = Loader<Flags>::get("ModTest");
+    // flags["CPP_FLAG"] = 1e6f;
+
+
+    /*
+        Exemple de code pour faire une sauvegarde.
+
+        A la place de Flags, il faudra utiliser une struct qui ne charge qu'un certain type de flag
+    */
+    // std::string saveFolder = "data/saves/";
+    // for(auto &i : Loader<Flags>::loadedAssets)
+    // {
+    //     VulpineTextOutputRef out2(new VulpineTextOutput(4096));
+    //     i.second.writeAsSaveFileMode = true;
+    //     DataLoader<Flags>::write(i.second, out2);
+    //     i.second.writeAsSaveFileMode = false;
+
+    //     std::string filename = saveFolder + i.first + ".vSavedFlags";
+    //     out2->saveAs(filename.c_str());
+
+    //     // NOTIF_MESSAGE(filename)
+    // }
+
+    // VulpineTextBuffRef in(new VulpineTextBuff("data/flags.vFlags"));
+    // flags = DataLoader<Flags>::read(in);
 
     
-    std::cout << "Value of flag test5: " << flags["test5"]->as_string() << std::endl << std::endl;
-    if (flags["test"])
-    {
-        std::cout << "Flag test is true!" << std::endl;
-    }
-    else {
-        std::cout << "Flag test is false!" << std::endl;
-    }
+    // std::cout << "Value of flag test5: " << flags["test5"]->as_string() << std::endl << std::endl;
+    // if (flags["test"])
+    // {
+    //     std::cout << "Flag test is true!" << std::endl;
+    // }
+    // else {
+    //     std::cout << "Flag test is false!" << std::endl;
+    // }
 
-    std::cout << "Value of flag test2: " << flags["test2"]->as_int() << std::endl;
+    // std::cout << "Value of flag test2: " << flags["test2"]->as_int() << std::endl;
 
-    VulpineTextOutputRef out2(new VulpineTextOutput(4096));
+    // VulpineTextOutputRef out2(new VulpineTextOutput(4096));
     
-    DataLoader<Flags>::write(flags, out2);
-    out2->saveAs("data/flags.vFlags");
+    // DataLoader<Flags>::write(flags, out2);
+    // out2->saveAs(Loader<Flags>::loadingInfos["ModTest"]->buff->getSource().c_str());
 
-    LogicBlock::registerFunction(
-        LogicBlock::Function(
-            "print_something",
-            Flag::STRING,
-            {Flag::STRING, Flag::STRING},
-            [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
-                std::cout << args[0]->as_string() << args[1]->as_string() << std::endl;
-                return Flag::MakeFlag("done");
-            }
-        )
-    );
+    // LogicBlock::registerFunction(
+    //     LogicBlock::Function(
+    //         "print_something",
+    //         Flag::STRING,
+    //         {Flag::STRING, Flag::STRING},
+    //         [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
+    //             std::cout << args[0]->as_string() << args[1]->as_string() << std::endl;
+    //             return Flag::MakeFlag("done");
+    //         }
+    //     )
+    // );
 
-    LogicBlock::registerFunction(
-        LogicBlock::Function(
-            "pow",
-            Flag::FLOAT,
-            {Flag::FLOAT, Flag::FLOAT},
-            [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
-                float base = args[0]->as_float();
-                float exponent = args[1]->as_float();
-                return Flag::MakeFlag(std::pow(base, exponent));
-            }
-        )
-    );
+    // LogicBlock::registerFunction(
+    //     LogicBlock::Function(
+    //         "pow",
+    //         Flag::FLOAT,
+    //         {Flag::FLOAT, Flag::FLOAT},
+    //         [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
+    //             float base = args[0]->as_float();
+    //             float exponent = args[1]->as_float();
+    //             return Flag::MakeFlag(std::pow(base, exponent));
+    //         }
+    //     )
+    // );
 
-    LogicBlock::registerFunction(
-        LogicBlock::Function(
-            "getCompute",
-            Flag::INT,
-            {},
-            [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
-                return Flag::MakeFlag(flags["test2"]->as_int() * 2);
-            }
-        )
-    );
+    // LogicBlock::registerFunction(
+    //     LogicBlock::Function(
+    //         "getCompute",
+    //         Flag::INT,
+    //         {},
+    //         [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
+    //             return Flag::MakeFlag(flags["test2"]->as_int() * 2);
+    //         }
+    //     )
+    // );
 
-    // std::string testStr = "Logic Test 1 Result: $(${test2} > ${test3} && (${test} == \"Hello World!\"))";
-    // std::string testStr = "Logic Test 2 Result: $(${test2} > 10)";
-    // std::string testStr = " 1 + 1 is: $(1 + 1)\n 5 - 3 is: $(5 - 3)\n 4 * 2 is: $(4 * 2)\n 8 / 4 is: $(8 / 4)";
-    // std::string testStr = "Logic Test 3 Result: $(!${test4} || !(${test2} > ${test3}))";
-    // std::string testStr = "String Concat Test Result: $(${test} + ' ' + ${test2})";
+    // // std::string testStr = "Logic Test 1 Result: $(${test2} > ${test3} && (${test} == \"Hello World!\"))";
+    // // std::string testStr = "Logic Test 2 Result: $(${test2} > 10)";
+    // // std::string testStr = " 1 + 1 is: $(1 + 1)\n 5 - 3 is: $(5 - 3)\n 4 * 2 is: $(4 * 2)\n 8 / 4 is: $(8 / 4)";
+    // // std::string testStr = "Logic Test 3 Result: $(!${test4} || !(${test2} > ${test3}))";
+    // // std::string testStr = "String Concat Test Result: $(${test} + ' ' + ${test2})";
     // std::string testStr = "If then else Test Result: $(if (!${test4}) then (1) else (0)) $(if (false) then ('you shouldn't be seeing this'))";
-    // std::string testStr = "Inline if Test Result: $(${test4} && if (${test2} > 5) then (true) else (false))";
-    // std::string testStr = "Function Call Test Result: $(print_something('Hello from ', if (true) then ('function call!') else ('second option!)))";
-    // std::string testStr = "Power Function Test Result: $(pow(2, 2 * 4))";
-    // std::string testStr = "Operator Precedence Test Result: $(1 + 2 * 3)";
+    // // std::string testStr = "Inline if Test Result: $(${test4} && if (${test2} > 5) then (true) else (false))";
+    // // std::string testStr = "Function Call Test Result: $(print_something('Hello from ', if (true) then ('function call!') else ('second option!)))";
+    // // std::string testStr = "Power Function Test Result: $(pow(2, 2 * 4))";
+    // // std::string testStr = "Operator Precedence Test Result: $(1 + 2 * 3)";
     
+    // std::string testStr = "Operator Precedence Test Result: $(1 + 2 * 3) abcdefg";
+    // std::string testStr = "if else: $(if (1 > 2) then (\"Hello\") else (\"Hi\")) abcdefg";
+    std::string testStr = "if else: $(if (1 > 2) then (\"Hello\") else (if (3 > 1) then (\"Heyyyyyyy\") else (\"Hiiiii\"))) abcdefg";
 
-    constexpr int N = 167;
-    BenchTimer timer("Logic Block Parsing Benchmark");
-    timer.start();
-    int acctmp = 0;
-    for (int i = 0; i < N; i++)
-    {
-        // std::string testStr = "If then else Test Result: $(if (!${test4}) then (1) else (0)) $(if (pow(2, 8) > 8 && (${test2} > ${test3})) then (\"yay it works!\"))";
-        // std::string testStr = "$(${test2} * 2)";
-        std::string testStr = "$(getCompute())";
-        LogicBlock::parse_string(testStr, flags);
-        acctmp += testStr.length();
-    }
-    timer.stop();
+    size_t len = testStr.length();
+    char *input = new char[len+1];
+    strcpy(input, testStr.c_str());
 
-    std::cout << timer << std::endl;
-    std::cout << "omg" << acctmp << std::endl;    
-    // std::cout << testStr << std::endl;
+    std::cout << len << "\t" << input << "\n";
+    auto error = LogicBlock::parse_string_cstr(&input, len, len+1);
+    if(!error.success)
+        ERROR_MESSAGE(error.message);
+    std::cout << len << "\t" << input << "\n";
+
+    // constexpr int N = 1e6;
+    // BenchTimer timer("Logic Block Parsing Benchmark");
+    // int acctmp = 0;
+    // for (int i = 0; i < N; i++)
+    // {
+    //     std::string testStr2 = testStr;
+
+    //     timer.start();
+    //     LogicBlock::parse_string(testStr2);
+    //     timer.stop();
+
+    //     acctmp += testStr2.length();
+    // }
+
+    // std::cout << timer << acctmp << "\n";
+
+    // timer.reset();
+
+    // acctmp = 0;
+    // for (int i = 0; i < N; i++)
+    // {
+    //     size_t len = testStr.length();
+    //     char *input = new char[len+1];
+    //     strcpy(input, testStr.c_str());
+        
+    //     timer.start();
+    //     LogicBlock::parse_string_cstr(&input, len, len+1);
+    //     timer.stop();
+
+    //     acctmp += len;
+    // }
+
+    // std::cout << timer << acctmp << "\n";
+
+    // std::cout << timer << std::endl;
+    // std::cout << "omg" << acctmp << std::endl;    
+    // // std::cout << testStr << std::endl;
 }
 
 void Apps::LuaTesting::update()

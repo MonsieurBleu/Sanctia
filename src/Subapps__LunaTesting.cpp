@@ -10,7 +10,7 @@
 
 #include <Blueprint/EngineBlueprintUI.hpp>
 
-Apps::LuaTesting::LuaTesting() : SubApps("Lua Testing")
+Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 {
     inputs.push_back(&
         InputManager::addEventInput(
@@ -30,7 +30,7 @@ Apps::LuaTesting::LuaTesting() : SubApps("Lua Testing")
         i->activated = false;
 };
 
-EntityRef Apps::LuaTesting::UImenu()
+EntityRef Apps::LunaTesting::UImenu()
 {
     return newEntity("Lua Testing APP MENU"
         , UI_BASE_COMP
@@ -38,7 +38,7 @@ EntityRef Apps::LuaTesting::UImenu()
     );
 }
 
-void Apps::LuaTesting::init()
+void Apps::LunaTesting::init()
 {
     /***** Preparing App Settings *****/
     {
@@ -217,7 +217,7 @@ void Apps::LuaTesting::init()
     // // std::cout << testStr << std::endl;
 }
 
-void Apps::LuaTesting::update()
+void Apps::LunaTesting::update()
 {
     ComponentModularity::synchronizeChildren(appRoot);
 
@@ -237,7 +237,7 @@ void Apps::LuaTesting::update()
 }
 
 
-void Apps::LuaTesting::clean()
+void Apps::LunaTesting::clean()
 {
     globals.simulationTime.pause();
 

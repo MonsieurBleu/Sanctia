@@ -570,7 +570,7 @@ void Game::mainloop()
     
     // Apps::EventGraphApp eventGraph;
     Apps::SceneMergeApp sceneMerge;
-    Apps::LuaTesting luaTest;
+    Apps::LunaTesting luaTest;
 
 
     // SubApps::switchTo(materialView);

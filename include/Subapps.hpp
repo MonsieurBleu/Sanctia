@@ -349,6 +349,22 @@ namespace Apps
             virtual void clean() override;
     };
 
+    class MovementDemo : public SubApps
+    {
+        private:
+
+        public:
+            MovementDemo();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
     class CombatsApp : public SubApps
     {
         private :

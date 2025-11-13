@@ -46,21 +46,23 @@ void Apps::LunaTesting::init()
         App::setController(&controller);
     }
 
-    if (Loader<ScriptInstance>::loadingInfos.find("test_ent") != Loader<ScriptInstance>::loadingInfos.end())
-    {
-        Loader<ScriptInstance>::get("test_ent").run();
-    }
+    // if (Loader<ScriptInstance>::loadingInfos.find("test_ent") != Loader<ScriptInstance>::loadingInfos.end())
+    // {
+    //     Loader<ScriptInstance>::get("test_ent").run();
+    // }
+
+    static auto e = Loader<EntityRef>::get("test_ent");
 
 
-    appRoot->set<Script>(Script(
-        "test", ScriptHook::ON_INIT, 
-        "test_step", ScriptHook::ON_UPDATE
-    ));
+    // appRoot->set<Script>(Script(
+    //     "test", ScriptHook::ON_INIT, 
+    //     "test_step", ScriptHook::ON_UPDATE
+    // ));
 
-    VulpineTextOutputRef out(new VulpineTextOutput());
-    EntityRef e = appRoot;
-    DataLoader<EntityRef>::write(e, out);
-    out->saveAs("data/test_ent.vEntity");
+    // VulpineTextOutputRef out(new VulpineTextOutput());
+    // EntityRef e = appRoot;
+    // DataLoader<EntityRef>::write(e, out);
+    // out->saveAs("data/test_ent.vEntity");
 
     // flags["test"] = "Hello World!";
     // flags["test2"] = 1354;
@@ -68,10 +70,10 @@ void Apps::LunaTesting::init()
     // flags["test4"] = true;
     // flags["test5"] = Flag::MakeFlagFromScript<int>("return_int");
 
-    for(auto &i : Loader<FlagWrapper>::loadingInfos)
+    for(auto &i : Loader<Flag>::loadingInfos)
         std::cout << i.first << "\n";
 
-    std::cout << Loader<FlagWrapper>::get("test4")->as_string() << "\n";
+    std::cout << Loader<Flag>::get("test4")->as_string() << "\n";
 
 
     // auto flags = Loader<Flags>::get("ModTest");
@@ -122,32 +124,31 @@ void Apps::LunaTesting::init()
     //         "print_something",
     //         Flag::STRING,
     //         {Flag::STRING, Flag::STRING},
-    //         [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
+    //         [](const std::vector<FlagDataPtr>& args, Flags& flags) -> FlagDataPtr {
     //             std::cout << args[0]->as_string() << args[1]->as_string() << std::endl;
     //             return Flag::MakeFlag("done");
     //         }
     //     )
     // );
-
-    // LogicBlock::registerFunction(
-    //     LogicBlock::Function(
-    //         "pow",
-    //         Flag::FLOAT,
-    //         {Flag::FLOAT, Flag::FLOAT},
-    //         [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
-    //             float base = args[0]->as_float();
-    //             float exponent = args[1]->as_float();
-    //             return Flag::MakeFlag(std::pow(base, exponent));
-    //         }
-    //     )
-    // );
+    LogicBlock::registerFunction(
+        LogicBlock::Function(
+            "pow",
+            FlagData::FLOAT,
+            {FlagData::FLOAT, FlagData::FLOAT},
+            [](const std::vector<FlagDataPtr>& args) -> FlagDataPtr {
+                float base = args[0]->as_float();
+                float exponent = args[1]->as_float();
+                return FlagData::MakeFlag(std::pow(base, exponent));
+            }
+        )
+    );
 
     // LogicBlock::registerFunction(
     //     LogicBlock::Function(
     //         "getCompute",
     //         Flag::INT,
     //         {},
-    //         [](const std::vector<FlagPtr>& args, Flags& flags) -> FlagPtr {
+    //         [](const std::vector<FlagDataPtr>& args, Flags& flags) -> FlagDataPtr {
     //             return Flag::MakeFlag(flags["test2"]->as_int() * 2);
     //         }
     //     )
@@ -166,16 +167,17 @@ void Apps::LunaTesting::init()
     
     // std::string testStr = "Operator Precedence Test Result: $(1 + 2 * 3) abcdefg";
     // std::string testStr = "if else: $(if (1 > 2) then (\"Hello\") else (\"Hi\")) abcdefg";
-    std::string testStr = "if else: $(if (1 > 2) then (\"Hello\") else (if (3 > 1) then (\"Heyyyyyyy\") else (\"Hiiiii\"))) abcdefg";
+    // std::string testStr = "if else: $(if (1 > 2) then (\"Hello\") else (if (3 > 1) then (\"Heyyyyyyy\") else (\"Hiiiii\"))) abcdefg";
+    std::string testStr = "$(if (1 > 2) then (\"Hello\") else (\"World\")) $(1 + 1 1) $(1 1) $(if (1 + 1 + 1) then (1 + 1) else (false) 1)";
+    // std::string testStr = "okay wait does this break??: $(1 + 1 1) $(1 + 1 1)";
+    // std::string testStr = "nothing: $( () )";
 
     size_t len = testStr.length();
     char *input = new char[len+1];
     strcpy(input, testStr.c_str());
 
     std::cout << len << "\t" << input << "\n";
-    auto error = LogicBlock::parse_string_cstr(&input, len, len+1);
-    if(!error.success)
-        ERROR_MESSAGE(error.message);
+    LogicBlock::parse_string_cstr(&input, len, len+1);
     std::cout << len << "\t" << input << "\n";
 
     // constexpr int N = 1e6;

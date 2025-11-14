@@ -51,6 +51,8 @@ void Game::physicsLoop()
         physicsTimer.start();
         physicsMutex.lock();
 
+        ManageGarbage<RigidBody>();
+
         if(GG::playerEntity && globals._currentController == &spectator && GG::playerEntity->hasComp<RigidBody>())
         {
             auto body = GG::playerEntity->comp<RigidBody>();
@@ -58,6 +60,26 @@ void Game::physicsLoop()
                 body->setIsActive(false);
         }
         
+        /*
+            In some very specific conditions, invalid transforms can occurs. Those generally last for the time of a frame or even less.
+            These conditions includes : 
+                - Randommly the equiped items when respawning the player, even if the componment garbage is cleaned and the physic mutex locked
+                - ...
+            This simple system just check for a specific kind of bad transforms to prevent crashes.
+            In the worst case scenerio, an object that get a bad transform will just be teleported in the center
+            of the world, underneath the terrain. But normally those transforms are fixed the frame after that.
+
+            Note ; isnan isn't working, the glm one AND the rp3d version. But the same check can be make by checking low infinity bound.
+            This is probablly caused by the fastmath compiler argument.
+        */
+        System<RigidBody, EntityState3D, staticEntityFlag>([](Entity &entity){
+            auto &b = entity.comp<RigidBody>();
+            vec3 p = PG::toglm(b->getTransform().getPosition());
+            const float lowinf = 1e6;
+            if(p.x > lowinf || p.y > lowinf || p.z > lowinf || p.x < -lowinf || p.y < -lowinf || p.z < -lowinf)
+                b->setTransform(rp3d::Transform::identity());
+        });
+
         physicsWorldUpdateTimer.start();
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
         physicsWorldUpdateTimer.stop();
@@ -177,140 +199,154 @@ void Game::physicsLoop()
     //         ComponentModularity::synchronizeChildren(entity);
     //     });
 
-        System<AgentState>([&, this](Entity &entity){
-            entity.comp<AgentState>().timeSinceLastState += globals.simulationTime.getDelta();
+        System<AgentState__old>([&, this](Entity &entity){
+            entity.comp<AgentState__old>().timeSinceLastState += globals.simulationTime.getDelta();
         });
 
     /***** COMBAT DEMO AGENTS *****/
-        static int i = 0;
-        if((i++)%10 == 0)
-        System<EntityState3D, EntityDeplacementState, AgentState, ActionState, Target>([&, this](Entity &entity){
-
-            auto &s = entity.comp<EntityState3D>();
-            auto &ds = entity.comp<EntityDeplacementState>();
-            auto target = entity.comp<Target>();
+        System<AgentState, Script>([&, this](Entity &entity)
+        {
             auto &as = entity.comp<AgentState>();
-            auto &action = entity.comp<ActionState>();
+            float time = globals.simulationTime.getElapsedTime();
 
-            if(action.stun)
-                return;
+            time -= 0.05 * (entity.ids[ComponentCategory::AI]%128);
             
-            if(entity.hasComp<EntityStats>() && !entity.comp<EntityStats>().alive)
-                return;
-
-            switch (as.state)
+            if(time - as.lastUpdateTime > as.nextUpdateDelay)
             {
-                case AgentState::COMBAT_POSITIONING : if(!target.get()) return;
-                    {
-                        auto &st = target->comp<EntityState3D>();   
-                        float d = distance(s.position, st.position);
-
-                        if(!target->comp<EntityStats>().alive)
-                        {
-                            ds.wantedSpeed = 0;
-                            return;
-                        }
-
-                        float rangeMin = 1.5f;
-                        float rangeMax = 2.f;
-
-                        auto &taction = target->comp<ActionState>();   
-
-                        s.lookDirection = normalize(st.position-s.position);
-
-                        if(action.attacking || action.blocking)
-                        {
-                            ds.wantedSpeed = 0; return;
-                        }
-
-                        if(d > rangeMax || d < rangeMin)  
-                        {
-                            ds.wantedDepDirection = normalize((st.position-s.position)*vec3(1, 0, 1)) * (d < rangeMin ? -1.f : 1.f);
-                            ds.wantedSpeed = 1.5;
-                        }
-                        else
-                        {
-                            // s.wantedDepDirection = vec3(0);
-                            // s.speed = 0;
-
-                            float time = globals.simulationTime.getElapsedTime();
-                            float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 1.f) + 25.6984f*entity.ids[ENTITY_LIST]));
-                            vec3 randDir(cos(angle), 0, sin(angle));
-
-                            // s.wantedDepDirection = normalize(cross(st.position-s.position, vec3(0, 1, 0) + randDir));
-                            ds.wantedDepDirection = randDir;
-                            ds.wantedSpeed = dot(ds.wantedDepDirection, normalize((st.position-s.position)*vec3(1, 0, 1))) < 0.75 ? 0.5f : 0.f;
-                        }
-
-                        if(d <= rangeMax)
-                        {
-                            if(taction.attacking)
-                                as.TransitionTo(AgentState::COMBAT_BLOCKING, 0.5, 1.0);
-                            else 
-                            if(as.timeSinceLastState > as.randomTime)
-                                as.TransitionTo(AgentState::COMBAT_ATTACKING);
-                        }
-                    }
-                    break;
-                
-                case AgentState::COMBAT_ATTACKING : if(!target.get()) return;
-                    {
-                        action.isTryingToAttack = true;
-                        action.isTryingToBlock = false;
-
-                        if(action.attacking) return;
-
-                        auto &taction = target->comp<ActionState>();   
-
-                        if(rand()%4 == 0)
-                            action.setStance(ActionState::SPECIAL);
-                        else if(taction.blocking)
-                            action.setStance(taction.stance());
-                        else
-                            action.setStance(rand()%2 ? ActionState::LEFT : ActionState::RIGHT);
-
-                        as.TransitionTo(AgentState::COMBAT_POSITIONING, 1.5, 3.0);
-                    }
-                    break;
-
-                case AgentState::COMBAT_BLOCKING : if(!target.get()) return;
-                    {
-                        auto &st = target->comp<EntityState3D>();  
-                        auto &taction = target->comp<ActionState>();   
-                        s.lookDirection = normalize(st.position-s.position);
-
-                        if(taction.stun)
-                        {
-                            as.TransitionTo(AgentState::COMBAT_ATTACKING);
-                            return;
-                        }
-
-                        action.isTryingToAttack = false;
-                        action.isTryingToBlock = true;
-
-                        if(as.timeSinceLastState > as.randomTime)
-                        {
-                            as.TransitionTo(AgentState::COMBAT_POSITIONING, 1.5, 3.0);
-                            action.isTryingToBlock = false;
-                            return;
-                        }   
-
-                        if(taction.attacking)
-                            switch (taction.stance())
-                            {
-                                case ActionState::LEFT    : action.setStance(ActionState::RIGHT); break;
-                                case ActionState::RIGHT   : action.setStance(ActionState::LEFT); break;
-                                case ActionState::SPECIAL : action.setStance(ActionState::SPECIAL); break;
-                                default: break;
-                            }
-                    }
-                    break;
-
-                default:
-                    break;
+                entity.comp<Script>().run_OnAgentUpdate(entity);
             }
-
         });
+
+
+        // static int i = 0;
+        // if((i++)%10 == 0)
+        // System<EntityState3D, EntityDeplacementState, AgentState__old, ActionState, Target>([&, this](Entity &entity){
+
+        //     auto &s = entity.comp<EntityState3D>();
+        //     auto &ds = entity.comp<EntityDeplacementState>();
+        //     auto target = entity.comp<Target>();
+        //     auto &as = entity.comp<AgentState__old>();
+        //     auto &action = entity.comp<ActionState>();
+
+        //     if(action.stun)
+        //         return;
+            
+        //     if(entity.hasComp<EntityStats>() && !entity.comp<EntityStats>().alive)
+        //         return;
+
+        //     switch (as.state)
+        //     {
+        //         case AgentState__old::COMBAT_POSITIONING : if(!target.get()) return;
+        //             {
+        //                 auto &st = target->comp<EntityState3D>();   
+        //                 float d = distance(s.position, st.position);
+
+        //                 if(!target->comp<EntityStats>().alive)
+        //                 {
+        //                     ds.wantedSpeed = 0;
+        //                     return;
+        //                 }
+
+        //                 float rangeMin = 1.5f;
+        //                 float rangeMax = 2.f;
+
+        //                 auto &taction = target->comp<ActionState>();   
+
+        //                 s.lookDirection = normalize(st.position-s.position);
+
+        //                 if(action.attacking || action.blocking)
+        //                 {
+        //                     ds.wantedSpeed = 0; return;
+        //                 }
+
+        //                 if(d > rangeMax || d < rangeMin)  
+        //                 {
+        //                     ds.wantedDepDirection = normalize((st.position-s.position)*vec3(1, 0, 1)) * (d < rangeMin ? -1.f : 1.f);
+        //                     ds.wantedSpeed = 1.5;
+        //                 }
+        //                 else
+        //                 {
+        //                     // s.wantedDepDirection = vec3(0);
+        //                     // s.speed = 0;
+
+        //                     float time = globals.simulationTime.getElapsedTime();
+        //                     float angle = PI*2.f*random01Vec2(vec2(time - mod(time, 1.f) + 25.6984f*entity.ids[ENTITY_LIST]));
+        //                     vec3 randDir(cos(angle), 0, sin(angle));
+
+        //                     // s.wantedDepDirection = normalize(cross(st.position-s.position, vec3(0, 1, 0) + randDir));
+        //                     ds.wantedDepDirection = randDir;
+        //                     ds.wantedSpeed = dot(ds.wantedDepDirection, normalize((st.position-s.position)*vec3(1, 0, 1))) < 0.75 ? 0.5f : 0.f;
+        //                 }
+
+        //                 if(d <= rangeMax)
+        //                 {
+        //                     if(taction.attacking)
+        //                         as.TransitionTo(AgentState__old::COMBAT_BLOCKING, 0.5, 1.0);
+        //                     else 
+        //                     if(as.timeSinceLastState > as.randomTime)
+        //                         as.TransitionTo(AgentState__old::COMBAT_ATTACKING);
+        //                 }
+        //             }
+        //             break;
+                
+        //         case AgentState__old::COMBAT_ATTACKING : if(!target.get()) return;
+        //             {
+        //                 action.isTryingToAttack = true;
+        //                 action.isTryingToBlock = false;
+
+        //                 if(action.attacking) return;
+
+        //                 auto &taction = target->comp<ActionState>();   
+
+        //                 if(rand()%4 == 0)
+        //                     action.setStance(ActionState::SPECIAL);
+        //                 else if(taction.blocking)
+        //                     action.setStance(taction.stance());
+        //                 else
+        //                     action.setStance(rand()%2 ? ActionState::LEFT : ActionState::RIGHT);
+
+        //                 as.TransitionTo(AgentState__old::COMBAT_POSITIONING, 1.5, 3.0);
+        //             }
+        //             break;
+
+        //         case AgentState__old::COMBAT_BLOCKING : if(!target.get()) return;
+        //             {
+        //                 auto &st = target->comp<EntityState3D>();  
+        //                 auto &taction = target->comp<ActionState>();   
+        //                 s.lookDirection = normalize(st.position-s.position);
+
+        //                 if(taction.stun)
+        //                 {
+        //                     as.TransitionTo(AgentState__old::COMBAT_ATTACKING);
+        //                     return;
+        //                 }
+
+        //                 action.isTryingToAttack = false;
+        //                 action.isTryingToBlock = true;
+
+        //                 if(as.timeSinceLastState > as.randomTime)
+        //                 {
+        //                     as.TransitionTo(AgentState__old::COMBAT_POSITIONING, 1.5, 3.0);
+        //                     action.isTryingToBlock = false;
+        //                     return;
+        //                 }   
+
+        //                 if(taction.attacking)
+        //                     switch (taction.stance())
+        //                     {
+        //                         case ActionState::LEFT    : action.setStance(ActionState::RIGHT); break;
+        //                         case ActionState::RIGHT   : action.setStance(ActionState::LEFT); break;
+        //                         case ActionState::SPECIAL : action.setStance(ActionState::SPECIAL); break;
+        //                         default: break;
+        //                     }
+        //             }
+        //             break;
+
+        //         default:
+        //             break;
+        //     }
+
+        // });
 
         physicsSystemsTimer.stop();
         physicsTimer.stop();
@@ -326,10 +362,14 @@ void Game::physicsLoop()
             physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
         }
 
-        ManageGarbage<RigidBody>();
+        
 
         physicsMutex.unlock();
 
         physicsTicks.waitForEnd();
     }
+
+    for(auto &i : Loader<ScriptInstance>::loadedAssets)
+        if(i.second.lua_state() == threadState)
+            i.second = ScriptInstance();
 }

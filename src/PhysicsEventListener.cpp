@@ -138,20 +138,54 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
             continue;
         }
 
-        if(pair.getEventType() == _OverlapPair_::EventType::OverlapStart)
+        bool isExit = pair.getEventType() == _OverlapPair_::EventType::OverlapExit;
+
+        if(pair.getEventType() != _OverlapPair_::EventType::OverlapStart)
         {
-            bool e1IsValidWeapon = e1->hasComp<Effect>();
-            bool e1IsValidTarget = e1->hasComp<EntityStats>();
+            // bool isWearer = false; // True if e2 is equipped with e1 as an Item
+            // if(e2->hasComp<Items>())
+            //     for(auto &i : e2->comp<Items>().equipped)
+            //         if(i.item.get() == e1)
+            //         {
+            //             isWearer = true;
+            //             continue;
+            //         }
+            // bool hasWearer = isWearer;
 
-            bool e2IsValidWeapon = e2->hasComp<Effect>();
-            bool e2IsValidTarget = e2->hasComp<EntityStats>();
-            
-            if(e1IsValidWeapon && e2IsValidTarget)
-                applyEffect(e1, e2);
+            Entity *wearer = e1;
+            Entity *parent = e1->comp<EntityGroupInfo>().parent;
 
-            if(e2IsValidWeapon && e1IsValidTarget)
-                applyEffect(e2, e1);        
+            if(parent && parent->hasComp<Items>())
+                for(auto &i : parent->comp<Items>().equipped)
+                    if(i.item.get() == e1)
+                    {
+                        wearer = parent;
+                        break;
+                    }
+
+            if(e1->hasComp<Script>())
+            {
+                if(isExit)
+                    e1->comp<Script>().run_OnCollisionEnter(*e1, *e2, *wearer);
+                else
+                    e1->comp<Script>().run_OnCollisionExit(*e1, *e2, *wearer);
+            }
         }
+
+        // if(pair.getEventType() == _OverlapPair_::EventType::OverlapStart)
+        // {
+        //     bool e1IsValidWeapon = e1->hasComp<Effect>();
+        //     bool e1IsValidTarget = e1->hasComp<EntityStats>();
+
+        //     bool e2IsValidWeapon = e2->hasComp<Effect>();
+        //     bool e2IsValidTarget = e2->hasComp<EntityStats>();
+            
+        //     if(e1IsValidWeapon && e2IsValidTarget)
+        //         applyEffect(e1, e2);
+
+        //     if(e2IsValidWeapon && e1IsValidTarget)
+        //         applyEffect(e2, e1);        
+        // }
         
     }
 }

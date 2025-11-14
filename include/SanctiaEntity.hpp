@@ -113,6 +113,8 @@ EntityRef spawnEntity(const std::string &name);
 
     Component(DeplacementBehaviour)
 
+    Component(AgentState__old)
+
     Component(AgentState)
 
     Component(Target)

@@ -22,6 +22,7 @@ namespace AnimBlueprint
         );
 
     extern std::function<void (void *)> weaponAttackExit;
+    extern std::function<void (void *)> weaponAttackEnter;
     extern std::function<void (void *)> weaponKickExit;
     extern std::function<void (void *)> weaponStunExit;
     extern std::function<void (void *)> weaponGuardExit;

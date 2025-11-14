@@ -16,7 +16,7 @@ struct ItemInfos
 
 GENERATE_ENUM_FAST_REVERSE(EquipementSlots
     , WEAPON_SLOT
-    , LEFT_FOOT_SLOT
+    , FOOT_SLOT
     , UNNAMED_SLOT_3
     , UNNAMED_SLOT_4
     , UNNAMED_SLOT_5
@@ -46,7 +46,7 @@ struct Items
     // ~Items(){for(auto i : equipped) i.item = EntityRef();};
 
     static void equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id);
-    static void unequip(EntityRef usr, EquipementSlots slot);
+    static void unequip(Entity &usr, EquipementSlots slot);
 };
 
 struct ItemTransform{mat4 mat;};

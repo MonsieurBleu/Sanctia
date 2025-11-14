@@ -10,6 +10,7 @@ GENERATE_ENUM_FAST_REVERSE(
     ON_UPDATE,
     ON_COLLISION_ENTER,
     ON_COLLISION_EXIT,
+    ON_AGENT_UPDATE,
     HOOK_END
 );
 
@@ -31,10 +32,11 @@ public:
         addScript(args...);
     }
 
-    void run_OnInit();
-    void run_OnUpdate();
-    void run_OnCollisionEnter(EntityRef other);
-    void run_OnCollisionExit(EntityRef other);
+    void run_OnInit(Entity& self);
+    void run_OnUpdate(Entity& self);
+    void run_OnCollisionEnter(Entity& self, Entity& other, Entity& wearer);
+    void run_OnCollisionExit(Entity& self, Entity& other, Entity& wearer);
+    void run_OnAgentUpdate(Entity& self);
 
     void addScript(std::string scriptAssetName, ScriptHook hook);
 

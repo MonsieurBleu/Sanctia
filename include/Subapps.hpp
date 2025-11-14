@@ -331,14 +331,30 @@ namespace Apps
             virtual void clean() override;
     };
 
-    class LuaTesting : public SubApps
+    class LunaTesting : public SubApps
     {
         private:
             OrbitController controller;
 
         public:
         
-            LuaTesting();
+            LunaTesting();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
+    class MovementDemo : public SubApps
+    {
+        private:
+
+        public:
+            MovementDemo();
 
             virtual EntityRef UImenu() override;
 

@@ -66,7 +66,7 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
             auto e = Blueprint::TestManequin();
 
             e->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-            e->set<AgentState>({AgentState::COMBAT_POSITIONING});
+            e->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
             e->set<Target>(Target{GG::playerEntity});
 
             ComponentModularity::addChild(**appRootPTR, e);
@@ -359,7 +359,7 @@ void Apps::MainGameApp::init()
     //     EntityRW.start();
 
     //     EntityRef writeTest = Blueprint::TestManequin();
-    //     writeTest->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    //     writeTest->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
     //     writeTest->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
     //     // writeTest->set<Target>({GG::playerEntity});
     //     // EntityRef writeTest = Blueprint::Zweihander();
@@ -405,13 +405,13 @@ void Apps::MainGameApp::init()
     //         auto e2 = Blueprint::TestManequin();
 
     //         e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //         e1->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    //         e1->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
     //         e1->set<Target>(Target{e2});
     //         // e1->set<Target>(Target{GG::playerEntity});
     //         e1->set<Faction>({Faction::Type::PLAYER});
 
     //         e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //         e2->set<AgentState>({AgentState::COMBAT_POSITIONING});
+    //         e2->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
     //         e2->set<Target>(Target{e1});
     //         // e2->set<Target>(Target{GG::playerEntity});
     //         e2->set<Faction>({Faction::Type::PLAYER_ENEMY});

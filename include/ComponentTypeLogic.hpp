@@ -19,6 +19,8 @@ using namespace glm;
 #include <vector>
 #include <VulpineBitSet.hpp>
 
+#include <Globals.hpp>
+
 class Entity;
 
 #define UNINITIALIZED_FLOAT 1e12f
@@ -55,13 +57,12 @@ struct EntityState3D
 struct EntityDeplacementState
 {
     float speed = 0.f;
+    float wantedSpeed = 0.f;
 
     vec3 deplacementDirection = vec3(1, 0, 0);
     vec3 wantedDepDirection = vec3(0, 0, 0);
 
     bool grounded = false;
-
-    float wantedSpeed = 0.f;
 
     float walkSpeed = 2.f;
     float sprintSpeed = 7.f;
@@ -82,23 +83,23 @@ class ActionState
         enum Stance : uint8 {LEFT, RIGHT, SPECIAL};
 
     private :
-        Stance _stance = Stance::LEFT;
-
+    
     public :
-
-        void setStance(Stance s){if(!attacking && !stun && !(blocking && _stance == SPECIAL)) _stance = s;};
-        const Stance& stance() const {return _stance;};
+    
+        Stance _stance = Stance::LEFT;
+        Stance _wantedStance = Stance::LEFT;
+        // void setStance(Stance s){if(!attacking && !stun && !(blocking && _stance == SPECIAL)) _stance = s;};
+        void setStance(Stance s){_wantedStance = s;};
+        const Stance& stance() const {return _wantedStance;};
 
         bool isTryingToAttack = false;
         bool isTryingToBlock = false;
-        // bool isTryingToKick = false;
+
         bool hasBlockedAttack = false;
 
         bool stun = false;
         bool blocking = false;
-
         bool attacking = false;
-        bool kicking = false;
 
         enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockType;
         float lockedMaxSpeed = 0;
@@ -159,7 +160,7 @@ GENERATE_ENUM_FAST_REVERSE(DeplacementBehaviour
     , FOLLOW_WANTED_DIR
 )
 
-struct AgentState
+struct AgentState__old
 {
     GENERATE_ENUM_FAST_REVERSE(State
         , COMBAT_POSITIONING
@@ -181,6 +182,22 @@ struct AgentState
     }
 };
 
+struct AgentState 
+{
+    uint state = 0;
+    std::string stateName;
+
+    float lastUpdateTime = 0.f;
+    float nextUpdateDelay = 0.1f;
+
+    void Transition(int newState, const std::string& newStateName, float delay)
+    {
+        lastUpdateTime = globals.simulationTime.getElapsedTime();
+        state = newState;
+        stateName = newStateName;
+        nextUpdateDelay = delay;
+    }
+};
 
 struct LevelOfDetailsInfos
 {

@@ -29,6 +29,8 @@
 #include <Scripting/ScriptInstance.hpp>
 #include <SanctiaLuaBindings.hpp>
 
+#include <Scripting/ScriptInstance.hpp>
+
 void Game::mainloop()
 {
     /****** Loading Script Related States ******/
@@ -738,6 +740,33 @@ void Game::mainloop()
                 activeInputsList[input] = EntityRef();
         }
 
+        for(auto &i : InputManager::continuousInputs)
+        {
+            if(!i.activated) continue;
+
+            std::string input = i.inputName + "\n**HOLD " + InputManager::getInputKeyString(i) + "**";
+
+            bool isGlobal = true;
+            for(auto &j : SubApps::getActiveAppInputs())
+            {
+                if(j == &i)
+                {
+                    input = SubApps::getActiveAppName() + "\n" + input;
+                    isGlobal = false;
+                    break;
+                }
+            }
+            if(isGlobal)
+                input = "~Global\n " + input;
+
+            currentInputsListsTmp.push_back(input);
+
+            auto elem = activeInputsList.find(input);
+            
+            if(elem == activeInputsList.end())
+                activeInputsList[input] = EntityRef();
+        }
+
         std::vector<std::string> inputsToBeRemovedTmp;
         for(auto &i : activeInputsList)
         {
@@ -952,8 +981,11 @@ void Game::mainloop()
         */
         System<Script>([&](Entity &entity) {
             if (!entity.comp<Script>().isInitialized())
-                entity.comp<Script>().run_OnInit();
-            entity.comp<Script>().run_OnUpdate(); 
+                entity.comp<Script>().run_OnInit(entity);
+
+            // std::cout << entity.toStr() << "\n";
+
+            entity.comp<Script>().run_OnUpdate(entity); 
         });
 
         /***** Updating animations
@@ -1122,14 +1154,42 @@ void Game::mainloop()
             //         [ptr](EntityRef &e){return e.get() == ptr;}
             //     ), GG::entities.end());
             // }
+
+            auto &stats = entity.comp<EntityStats>();
+            stats.adrenaline.cur = clamp(
+                stats.adrenaline.cur - sign(stats.adrenaline.cur)*75*globals.simulationTime.getDelta(),
+                stats.adrenaline.min,
+                stats.adrenaline.max
+            );
+            if(abs(stats.adrenaline.cur) < 1)
+                stats.adrenaline.cur = 0;
+
             if (!entity.comp<EntityStats>().alive)
             {
+                if(entity.hasComp<Items>())
+                {
+                    entity.comp<Items>().unequip(
+                        entity,
+                        WEAPON_SLOT
+                    );
+                }
+
+                if(
+                    entity.hasComp<RigidBody>() && entity.comp<RigidBody>()->getLinearVelocity().y == 0.f && 
+                    (!entity.hasComp<EntityDeplacementState>() || entity.comp<EntityDeplacementState>().grounded)
+                )
+                {
+                    entity.removeComp<RigidBody>();
+                }
+
                 entity.removeComp<DeplacementBehaviour>();
                 entity.comp<ActionState>().lockType = ActionState::LockedDeplacement::SPEED_ONLY;
                 entity.comp<ActionState>().lockedMaxSpeed = 0;
                 entity.comp<EntityDeplacementState>().speed = 0;
                 entity.removeComp<AgentState>();
             }
+
+
         });
 
         GG::ManageEntityGarbage();
@@ -1206,6 +1266,72 @@ void Game::mainloop()
                     is.position = vec3(t[3]);
                     is.usequat = true;
                 }
+            
+            if(entity.hasComp<AnimationControllerInfos>())
+            {
+                auto n = entity.comp<AnimationControllerInfos>().c_str();
+                auto &i = it.equipped[WEAPON_SLOT];
+                
+                /*
+                    Special rule for 2H weapon that need to be attached depending on both hands
+                */
+                if(i.item && !strcmp(n, "(Human) 2H Sword "))
+                {
+                    
+                    std::vector<std::string> affectedBones = {
+                        "Hand",
+                        "HandThumb2",
+                        "HandIndex2",
+                        "HandMiddle2",
+                        "HandRing2",
+                        "HandPinky2"
+                    };
+
+                    vec3 pl(0);
+                    vec3 pr(0);
+                    float cnt = 0;
+                    for(auto &i : affectedBones)
+                    {
+                        int idl = sa.skeleton->boneNamesMap["Left" + i];
+                        int idr = sa.skeleton->boneNamesMap["Right" + i];
+
+                        mat4 tl = m * sa[idl] * inverse(sa.skeleton->at(idl).t);
+                        mat4 tr = m * sa[idr] * inverse(sa.skeleton->at(idr).t);
+
+                        pl += vec3(tl * vec4(0, 0, 0, 1));
+                        pr += vec3(tr * vec4(0, 0, 0, 1));
+                        cnt ++;
+                    }
+                    pl /= cnt;
+                    pr /= cnt;
+
+                    auto &is = i.item->comp<EntityState3D>();
+
+                    int iHand = sa.skeleton->boneNamesMap["RightHand"];
+                    mat4 tHand = m * sa[iHand] * inverse(sa.skeleton->at(iHand).t);
+
+                    
+                    quat frontFix = angleAxis(radians(180.f), normalize(vec3(1, 0, 0))) * angleAxis(radians(45.f), normalize(vec3(0, 0, 1)));
+                    vec3 u = normalize(vec3(0, 1, 0));
+                    vec3 dir = normalize(pr-pl);
+                    float a = abs(dot(u, dir));
+                    u = normalize(mix(u, normalize(vec3(1, 0, 0)), max(0.f, (a-0.9f)*10.f)));
+                    vec3 s = normalize(cross(u, dir));
+                    vec3 r = cross(dir, s);
+                    is.quaternion = quat(mat3(s, r, dir)) * frontFix;
+                    is.position = pr + dir*0.2f;
+                    is.usequat = true;
+
+
+                    if (i.item->hasComp<EntityModel>())
+                    {
+                        auto &model = i.item->comp<EntityModel>();
+                        model->state.setQuaternion(is.quaternion);
+                        model->state.setPosition(is.position);
+                        model->update(true);
+                    }
+                }
+            }
         });
 
         scene.generateShadowMaps();
@@ -1264,7 +1390,10 @@ void Game::mainloop()
 
     physicsThreads.join();
     
-    cursorHelp = gameScreenWidget = GlobalInfosTitleTab = GlobalInfosSubTab = EntityRef();
+    cursorHelp = 
+    gameScreenWidget = 
+    GlobalInfosTitleTab = 
+    GlobalInfosSubTab =
     EDITOR::MENUS::GameScreen =
     EDITOR::MENUS::AppChoice =
     EDITOR::MENUS::AppControl=

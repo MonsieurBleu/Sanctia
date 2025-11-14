@@ -2,6 +2,7 @@
 
 #include <MappedEnum.hpp>
 #include <Graphics/ObjectGroup.hpp>
+#include <array>
 
 GENERATE_ENUM_FAST_REVERSE(DamageType, Pure, Blunt, Slash, Piercing, DamageType_Size);
 
@@ -17,6 +18,9 @@ struct statBar
     float min = 0.f;
     float max = 100.f;
     float cur = 100.f;
+
+    statBar(){};
+    statBar(float min, float max, float cur) : min(min), max(max), cur(cur){};
 };
 
 struct EntityStats
@@ -24,8 +28,9 @@ struct EntityStats
     bool alive = true;
     statBar health;
     statBar stamina;
+    statBar adrenaline = statBar(-50, 50.f, 0.f);
 
-    float resistances[DamageType_Size] = {0.f};
+    std::array<float, DamageType_Size> resistances = {0.f};
 
     void damage(float val, DamageType type);
 };

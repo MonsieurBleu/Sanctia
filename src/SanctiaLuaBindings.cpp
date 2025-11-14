@@ -20,7 +20,7 @@ void VulpineLuaBindings::Entities(sol::state &lua)
     {
         #undef CURRENT_CLASS_BINDING
         #define CURRENT_CLASS_BINDING Entity
-        CREATE_CLASS_USERTYPE(Entity, (), ())
+        CREATE_CLASS_USERTYPE(Entity, ())
 
         // METHOD_BINDING_TEMPLATED_SINGLE(comp, EntityInfos)
         // METHOD_BINDING_TEMPLATED_SINGLE(comp, WidgetBox)
@@ -78,6 +78,7 @@ void VulpineLuaBindings::Entities(sol::state &lua)
 
         ADD_MEMBER_BINDINGS(
             toStr,
+            is
         );
     }
     // MARK: Components
@@ -393,22 +394,38 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
         METHOD_BINDING_TEMPLATED(
             comp, 
                 EntityState3D,
-                EntityDeplacementState
+                EntityDeplacementState,
+                ActionState,
+                EntityStats,
+                AgentState,
+                Target
         );
         METHOD_BINDING_TEMPLATED(
             hasComp, 
                 EntityState3D,
-                EntityDeplacementState
+                EntityDeplacementState,
+                ActionState,
+                EntityStats,
+                AgentState,
+                Target
         );
         METHOD_BINDING_TEMPLATED(
             removeComp, 
                 EntityState3D,
-                EntityDeplacementState
+                EntityDeplacementState,
+                ActionState,
+                EntityStats,
+                AgentState,
+                Target
         );
         METHOD_BINDING_TEMPLATED(
             set, 
                 EntityState3D,
-                EntityDeplacementState
+                EntityDeplacementState,
+                ActionState,
+                EntityStats,
+                AgentState,
+                Target
         );
     }
     {
@@ -433,6 +450,69 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
             // #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
             // physicActivated
             // #endif
+        );
+    }
+    {
+        #undef CURRENT_CLASS_BINDING
+        #define CURRENT_CLASS_BINDING ActionState
+        CREATE_CLASS_USERTYPE(ActionState, ());
+
+        ADD_MEMBER_BINDINGS(
+            isTryingToAttack,
+            isTryingToBlock,
+            hasBlockedAttack,
+            stun,
+            blocking,
+            attacking,
+            _stance,
+            _wantedStance
+        );
+
+        // METHOD_BINDING(setStance)
+        // METHOD_BINDING(stance)
+    }
+    {
+        #undef CURRENT_CLASS_BINDING
+        #define CURRENT_CLASS_BINDING statBar
+        CREATE_CLASS_USERTYPE(statBar, ());
+
+        ADD_MEMBER_BINDINGS(
+            min, max, cur
+        );
+    }
+    {
+        #undef CURRENT_CLASS_BINDING
+        #define CURRENT_CLASS_BINDING EntityStats
+        CREATE_CLASS_USERTYPE(EntityStats, ());
+
+        ADD_MEMBER_BINDINGS(
+            alive,
+            health, 
+            stamina,
+            adrenaline,
+            resistances
+        );
+    }
+    {
+        #undef CURRENT_CLASS_BINDING
+        #define CURRENT_CLASS_BINDING AgentState
+        CREATE_CLASS_USERTYPE(AgentState, ());
+
+        ADD_MEMBER_BINDINGS(
+            state,
+            stateName,
+            lastUpdateTime,
+            nextUpdateDelay,
+            Transition
+        );
+    }
+    {
+        #undef CURRENT_CLASS_BINDING
+        #define CURRENT_CLASS_BINDING Target
+        CREATE_CLASS_USERTYPE(Target, ());
+        ADD_MEMBER_BINDINGS(
+            hasTarget,
+            getTarget
         );
     }
 }
@@ -523,7 +603,12 @@ void SanctiaLuaBindings::Globals(sol::state &lua)
         "mouse5Click", &Globals::mouse5Click,
         "mouse5ClickDown", &Globals::mouse5ClickDown,
         "mouseScrollOffset", sol::property(&Globals::mouseScrollOffset),
-        "clearMouseScroll", &Globals::clearMouseScroll
+        "clearMouseScroll", &Globals::clearMouseScroll,
+        "chromaticAberationColor1", &Globals::sceneChromaticAbbColor1,
+        "chromaticAberationColor2", &Globals::sceneChromaticAbbColor2,
+        "chromaticAberationAngleAmplitude", &Globals::sceneChromaticAbbAngleAmplitude,
+        "screenHSVshift", &Globals::sceneHsvShift,
+        "screenVignette", &Globals::sceneVignette
     );
     lua["globals"] = &globals;
 }

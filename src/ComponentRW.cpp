@@ -220,8 +220,23 @@ DATA_READ_FUNC_INIT(Items)
         buff->read(); buff->read();
         value = buff->read();
         data.equipped[i->second].id = FastTextParser::read<uint>(value);
-        buff->read();
-        data.equipped[i->second].item = DataLoader<EntityRef>::read(buff);
+        buff->read(); buff->read(); 
+        value = buff->read();
+        if(*value == '|')
+            data.equipped[i->second].item = spawnEntity(buff->read());
+        else
+            data.equipped[i->second].item = DataLoader<EntityRef>::read(buff);
+
+        // if(data.equipped[i->second].item->hasComp<EntityState3D>())
+        // {
+        //     WARNING_MESSAGE(data.equipped[i->second].item->toStr())
+        //     data.equipped[i->second].item->comp<EntityState3D>().position = vec3(0);
+        //     data.equipped[i->second].item->comp<EntityState3D>().initPosition = vec3(0);
+            
+        //     data.equipped[i->second].item->comp<EntityState3D>().quaternion = quat(1, 0, 0, 0);
+        //     data.equipped[i->second].item->comp<EntityState3D>().initQuat = quat(1, 0, 0, 0);
+        // }
+
         buff->read();
     }
 DATA_READ_END_FUNC
@@ -311,7 +326,7 @@ DATA_WRITE_FUNC_INIT(EntityModel)
             if(c->name.size())
             {
                 out->write("\"", 1);
-                out->write(CONST_STRING_SIZED(c->name));
+                out->write(CONST_STRING_SIZED(c->name)-1);
                 out->write("\" ", 2);
             }
             else
@@ -479,6 +494,7 @@ uint16 readCollisionCategory(VulpineTextBuffRef buff)
 typedef rp3d::CapsuleShape* CapsuleShape;
 typedef rp3d::BoxShape* BoxShape;
 typedef rp3d::SphereShape* SphereShape;
+typedef rp3d::ConvexMeshShape* ConvexMeshShape;
 typedef rp3d::Material* ColliderMaterial;
 
 DATA_WRITE_FUNC_INIT(CapsuleShape);
@@ -511,6 +527,38 @@ DATA_READ_FUNC_INITI(SphereShape, data = nullptr)
     IF_MEMBER_READ_VALUE(radius)
         data = PG::common.createSphereShape(FastTextParser::read<float>(value));
 DATA_READ_END_FUNC
+
+DATA_WRITE_FUNC_INIT(ConvexMeshShape);
+    uint size = data->getNbVertices();
+    WRITE_FUNC_RESULT(size, size);
+    for(int i = 0; i < size; i++)
+    {
+        WRITE_FUNC_RESULT(vertex, PG::toglm(data->getVertexPosition(i)));
+    }
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC(ConvexMeshShape)
+{ 
+    DATA_READ_INIT(ConvexMeshShape) 
+    std::vector<vec3> vertexBuffer; 
+    WHILE_NEW_VALUE
+        IF_MEMBER_READ_VALUE(size)
+            vertexBuffer.reserve(FastTextParser::read<uint>(value));
+        else
+        IF_MEMBER_READ_VALUE(vertex)
+            vertexBuffer.push_back(FastTextParser::read<vec3>(value));
+    WHILE_NEW_VALUE_END 
+    
+    std::vector<rp3d::Message> error;
+    data = PG::common.createConvexMeshShape(
+        PG::common.createConvexMesh(
+            rp3d::VertexArray(vertexBuffer.data(), sizeof(vec3), vertexBuffer.size(), rp3d::VertexArray::DataType::VERTEX_FLOAT_TYPE),
+            error
+        )
+    );
+
+    DATA_READ_END
+}
 
 DATA_WRITE_FUNC_INIT(ColliderMaterial);
     WRITE_FUNC_RESULT(bounciness, data->getBounciness());
@@ -549,6 +597,10 @@ DATA_WRITE_FUNC_INIT(Collider)
 
         case rp3d::CollisionShapeName::SPHERE :
                 DataLoader<SphereShape>::write((SphereShape)cs, out);
+            break;
+        
+        case rp3d::CollisionShapeName::CONVEX_MESH : 
+                DataLoader<ConvexMeshShape>::write((ConvexMeshShape)cs, out);
             break;
 
         default: out->write(CONST_CSTRING_SIZED("*!! Unsuported Collision Shape !!*"));
@@ -734,6 +786,9 @@ DATA_READ_FUNC_ENTITY(RigidBody)
                     else
                     IF_MEMBER(SphereShape)
                         newColliderTMP = data->addCollider(DataLoader<SphereShape>::read(buff), Transform::identity());
+                    else
+                    IF_MEMBER(ConvexMeshShape)
+                        newColliderTMP = data->addCollider(DataLoader<ConvexMeshShape>::read(buff), Transform::identity());
                     
                     newColliderTMP->setCollideWithMaskBits(0);
                     newColliderTMP->setCollisionCategoryBits(0);
@@ -743,7 +798,9 @@ DATA_READ_FUNC_ENTITY(RigidBody)
             }
 
             data->updateLocalCenterOfMassFromColliders();
-            // data->updateLocalInertiaTensorFromColliders();
+            data->updateLocalInertiaTensorFromColliders();
+            data->updateMassFromColliders();
+            data->updateMassPropertiesFromColliders();
         }
     WHILE_NEW_VALUE_END 
 
@@ -765,17 +822,17 @@ DATA_READ_FUNC(DeplacementBehaviour)
     DATA_READ_END
 }
 
-DATA_WRITE_FUNC_INIT(AgentState)
+DATA_WRITE_FUNC_INIT(AgentState__old)
     out->Entry();
     WRITE_NAME(state, out)
-    out->write(CONST_STRING_SIZED(AgentState::StateReverseMap[data.state]));
+    out->write(CONST_STRING_SIZED(AgentState__old::StateReverseMap[data.state]));
     FTXTP_WRITE_ELEMENT(data, timeSinceLastState)
     FTXTP_WRITE_ELEMENT(data, randomTime)
 DATA_WRITE_END_FUNC
 
-DATA_READ_FUNC_INIT(AgentState)
+DATA_READ_FUNC_INIT(AgentState__old)
     IF_MEMBER_READ_VALUE(state)
-        MAP_SAFE_READ(AgentState::StateMap, buff, data.state, value)
+        MAP_SAFE_READ(AgentState__old::StateMap, buff, data.state, value)
     else IF_MEMBER_FTXTP_LOAD(data, timeSinceLastState)
     else IF_MEMBER_FTXTP_LOAD(data, randomTime)
 DATA_READ_END_FUNC

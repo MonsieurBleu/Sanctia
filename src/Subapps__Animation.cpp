@@ -192,7 +192,7 @@ void Apps::AnimationApp::init()
 
         // "0_T-Pose"
 
-        "(Human) 2H Sword Walk L"
+        "(Human) 2H Sword Walk_L"
     );
 
     animController = AnimationController({
@@ -280,7 +280,8 @@ void Apps::AnimationApp::init()
     PG::world->setIsGravityEnabled(false);
 
     // EntityRef player = spawnEntity("Player");
-    EntityRef player = spawnEntity("(Human) Mannequin Blue");
+    // EntityRef player = spawnEntity("(Human) Mannequin Blue");
+    EntityRef player = spawnEntity("(Combats) Player");
 
     player->set<AnimationControllerRef>(AnimationControllerRef(new AnimationController(animController2)));
 

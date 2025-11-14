@@ -398,6 +398,51 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                             toRP3D(collider->mTransformation, colPos-center)
                         });
                     }
+                    else 
+                    if(STR_CASE_STR(collider->mName.C_Str(), "mesh"))
+                    {
+                        
+                        if(collider->mNumMeshes != 1)
+                        {
+                            FILE_ERROR_MESSAGE(
+                                (path + ":" + collection->mName.C_Str()), 
+                                "The import system for mesh colliders only support 1 mesh per collider, this one has " << collider->mNumMeshes
+                            )
+                        }
+
+                        std::vector<rp3d::Message> error;
+                        
+                        auto &mesh = scene->mMeshes[collider->mMeshes[0]];
+                        
+                        auto shape = PG::common.createConvexMeshShape(
+                            PG::common.createConvexMesh(
+                                rp3d::VertexArray(mesh->mVertices, sizeof(vec3), mesh->mNumVertices, rp3d::VertexArray::DataType::VERTEX_FLOAT_TYPE), 
+                                error)
+                        );
+
+                        colliders.push_back({
+                            shape,       
+                            toRP3D(collider->mTransformation, colPos-center)
+                        });
+
+
+                        if(error.size())
+                        {
+                            FILE_ERROR_MESSAGE((path + ":" + collection->mName.C_Str()), 
+                                "RP3D error while creating convex hull from mesh. Returned messages : " << [&]()
+                                {
+                                    std::string fullstring;
+                                    std::vector<std::string> types({"Error", "Warning", "Information"});
+
+                                    for(auto &i : error)
+                                        fullstring += "\n\t\t - " + types[(int)i.type] + " : " + i.text;
+                                    
+                                    return fullstring;
+                                }()
+                            )
+
+                        }
+                    }
                     else {
                         FILE_ERROR_MESSAGE(
                             (path + ":" + collection->mName.C_Str()), 

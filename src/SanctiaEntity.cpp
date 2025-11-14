@@ -134,11 +134,16 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
 
 COMPONENT_DEFINE_REPARENT(EntityState3D)
 {
+    auto &cs = child->comp<EntityState3D>();
+
+    if(!cs.usequat && child->hasComp<EntityModel>() && child->comp<EntityModel>())
+        child->comp<EntityModel>()->state.setRotation(directionToEuler(cs.lookDirection));
+
     if(!newParent.hasComp<EntityState3D>())
         return;
 
     auto &ps = newParent.comp<EntityState3D>();
-    auto &cs = child->comp<EntityState3D>();
+    
 
     quat ps_q = ps.usequat ? ps.quaternion : directionToQuat(ps.lookDirection);
     cs.position = ps.position + (ps_q * cs.initPosition);
@@ -175,6 +180,8 @@ COMPONENT_DEFINE_REPARENT(EntityState3D)
         }
 
     }
+
+
 }
 
 COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)

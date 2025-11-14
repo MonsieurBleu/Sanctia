@@ -1,4 +1,5 @@
 #include <SanctiaEntity.hpp>
+#include <MathsUtils.hpp>
 
 void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
 {
@@ -15,6 +16,7 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
         auto &b = item->comp<RigidBody>();
 
         b->setIsActive(false);
+        b->setType(rp3d::BodyType::KINEMATIC);
 
         int size = b->getNbColliders();
 
@@ -28,13 +30,14 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
     }
 }
 
-void Items::unequip(EntityRef usr, EquipementSlots slot)
+void Items::unequip(Entity &usr, EquipementSlots slot)
 {
-    EntityRef item = usr->comp<Items>().equipped[slot].item;
+    EntityRef item = usr.comp<Items>().equipped[slot].item;
 
-    ComponentModularity::addChild(*usr, item);
+    if(!item) return;
 
-    usr->comp<Items>().equipped[slot] = { };
+    auto is = item->comp<EntityState3D>();
+    ComponentModularity::addChild(usr, item);
 
     if(item->hasComp<Effect>())
     {
@@ -42,7 +45,18 @@ void Items::unequip(EntityRef usr, EquipementSlots slot)
     }
     if(item->hasComp<RigidBody>())
     {
+        physicsMutex.lock();
+
         auto &b = item->comp<RigidBody>();
+        
+        b->setTransform(rp3d::Transform(PG::torp3d(is.position), PG::torp3d(is.usequat ? is.quaternion : directionToQuat(is.lookDirection))));
+ 
+        auto tmp = b->getTransform();
+        std::cout << item->toStr() << "\n";
+        NOTIF_MESSAGE(is.position << "\t" << is.quaternion)
+        NOTIF_MESSAGE(PG::toglm(tmp.getPosition()) << "\t" << PG::toglm(tmp.getOrientation()))
+
+        b->setType(rp3d::BodyType::DYNAMIC);
 
         b->setIsActive(true);
 
@@ -55,5 +69,9 @@ void Items::unequip(EntityRef usr, EquipementSlots slot)
             if(c->getCollisionCategoryBits() == 1<<CollideCategory::ENVIRONEMENT)
                 c->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
         }
+
+        physicsMutex.unlock();
     }
+
+    usr.comp<Items>().equipped[slot] = { };
 }

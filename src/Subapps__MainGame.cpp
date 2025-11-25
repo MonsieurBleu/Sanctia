@@ -67,7 +67,7 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
 
             e->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
             e->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
-            e->set<Target>(Target{GG::playerEntity});
+            e->set<Target>(Target{GG::playerEntity.get()});
 
             ComponentModularity::addChild(**appRootPTR, e);
             physicsMutex.unlock();

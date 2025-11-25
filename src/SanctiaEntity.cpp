@@ -9,21 +9,6 @@
 #include <glm/gtx/string_cast.hpp>
 #include <reactphysics3d/mathematics/Vector3.h>
 
-EntityRef spawnEntity(const std::string &name)
-{
-    auto it = Loader<EntityRef>::loadingInfos.find(name);
-
-    if(it == Loader<EntityRef>::loadingInfos.end())
-    {
-        FILE_ERROR_MESSAGE(name, "Entity not found.");
-        return newEntity();
-    }
-
-    VulpineTextBuffRef file(new VulpineTextBuff(it->second->buff->getSource().c_str()));
-
-    return DataLoader<EntityRef>::read(file);
-}
-
 COMPONENT_DEFINE_SYNCH(EntityState3D) /**************** UNUSED TODO: remove*****************/
 {
     if(
@@ -285,6 +270,23 @@ template<> void Component<Items>::ComponentElem::clean()
     for(auto i : data.equipped)
         i = {0, EntityRef()};
 };
+
+template<> void Component<EntityState3D>::ComponentElem::clean()
+{
+    System<Target>([&](Entity &e)
+    {
+        if(e.comp<Target>().target == entity)
+        {
+            e.comp<Target>().target = nullptr;
+        }
+    });
+};
+
+template<> void Component<Target>::ComponentElem::clean()
+{
+    data.target = nullptr;
+};
+
 
 ModelRef getModelFromCollider(rp3d::Collider* c, vec3 color)
 {
@@ -771,4 +773,83 @@ COMPONENT_DEFINE_SYNCH(LevelOfDetailsInfos)
 COMPONENT_DEFINE_COMPATIBILITY_CHECK(Script)
 {
     return false;
+}
+
+EntityRef spawnEntity(const std::string &name)
+{
+    auto it = Loader<EntityRef>::loadingInfos.find(name);
+
+    if(it == Loader<EntityRef>::loadingInfos.end())
+    {
+        FILE_ERROR_MESSAGE(name, "Entity not found.");
+        return newEntity();
+    }
+
+    VulpineTextBuffRef file(new VulpineTextBuff(it->second->buff->getSource().c_str()));
+
+    return DataLoader<EntityRef>::read(file);
+}
+
+bool isVisible(Entity &a, Entity &b)
+{
+    if(a.hasComp<EntityState3D>() && b.hasComp<EntityState3D>())
+    {
+        return distance(a.comp<EntityState3D>().position, b.comp<EntityState3D>().position) < 100.f;
+    }
+
+    return true;
+}
+
+Entity* getClosestVisibleEnemy(Entity &e)
+{
+    auto &state3D1 = e.comp<EntityState3D>();
+    auto &faction1 = e.comp<Faction>();
+    Entity *bestMatch = &e;
+    float minDistance = 1e6f;
+
+    System<EntityState3D, Faction>([&](Entity &f){
+        
+        auto &state3D2 = f.comp<EntityState3D>();
+        auto &faction2 = f.comp<Faction>();
+
+        if(Faction::areEnemy(faction1, faction2) and isVisible(e, f))
+        {
+            float d = distance(state3D1.position, state3D2.position);
+    
+            if(d < minDistance)
+            {
+                minDistance = d;
+                bestMatch = &e;
+            }
+        }
+    });
+
+    return &e;
+}
+
+Entity* getClosestVisibleAlly(Entity &e)
+{
+    auto &state3D1 = e.comp<EntityState3D>();
+    auto &faction1 = e.comp<Faction>();
+    Entity *bestMatch = &e;
+    float minDistance = 1e6f;
+
+    System<EntityState3D, Faction>([&](Entity &f){
+        
+        auto &state3D2 = f.comp<EntityState3D>();
+        auto &faction2 = f.comp<Faction>();
+
+        if(!Faction::areEnemy(faction1, faction2) and isVisible(e, f))
+        {
+            float d = distance(state3D1.position, state3D2.position);
+    
+            if(d < minDistance)
+            {
+                minDistance = d;
+                bestMatch = &e;
+            }
+        }
+    });
+
+    return &e;
 }

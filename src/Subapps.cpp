@@ -31,10 +31,10 @@ void SubApps::cleanActiveApp()
 
     globals.mainThreadTime.reset();
 
-    GG::ManageEntityGarbage();
     
     physicsMutex.lock();
-    ManageGarbage<RigidBody>();
+    GG::ManageEntityGarbage__WithPhysics();
+    // ManageGarbage<RigidBody>();
     physicsMutex.unlock();
 
     for(auto &i : activeApp->inputs)

@@ -345,7 +345,7 @@ void Apps::EntityCreator::UpdateCurrentEntityTransform()
 bool Apps::EntityCreator::isEntityPlayable(EntityRef e)
 {
     return 
-        e->hasComp<EntityDeplacementState>() &&
+        e->hasComp<DeplacementState>() &&
         e->hasComp<SkeletonAnimationState>() &&
         e->hasComp<EntityState3D>() &&
         !e->comp<EntityState3D>().usequat && 

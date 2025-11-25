@@ -16,7 +16,7 @@ void PlayerController::update()
     if(GG::playerEntity->hasComp<RigidBody>())
         body = GG::playerEntity->comp<RigidBody>();
 
-    if(!GG::playerEntity->hasComp<EntityDeplacementState>())
+    if(!GG::playerEntity->hasComp<DeplacementState>())
         return;
 
     if(!body) return;
@@ -25,7 +25,7 @@ void PlayerController::update()
 
     updateDirectionStateWASD();
 
-    auto &ds = GG::playerEntity->comp<EntityDeplacementState>();
+    auto &ds = GG::playerEntity->comp<DeplacementState>();
     grounded = ds.grounded;
 
     float accel = !grounded ? ds.airSpeed : (sprintActivated ? ds.sprintSpeed : ds.walkSpeed);

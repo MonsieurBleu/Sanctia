@@ -113,38 +113,56 @@ ANIMATION_SWITCH_ENTITY(switchKick,
 )
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
-    return e->comp<EntityDeplacementState>().speed >= 0.1;
+
+    if(!e || !e->hasComp<DeplacementState>() || !e->hasComp<ActionState>())
+        return false;
+
+    auto &depstate = e->comp<DeplacementState>();
+    auto &astate = e->comp<ActionState>();
+
+    return depstate.speed >= 0.1 && !astate.isTryingToBlock && !astate.isTryingToAttack && !astate.attacking && !astate.blocking;
+)
+
+ANIMATION_SWITCH_ENTITY(switchIdle, 
+
+    if(!e || !e->hasComp<DeplacementState>() || !e->hasComp<ActionState>())
+        return false;
+
+    auto &depstate = e->comp<DeplacementState>();
+    auto &astate = e->comp<ActionState>();
+
+    return depstate.speed < 0.1f && !astate.isTryingToBlock && !astate.isTryingToAttack && !astate.attacking && !astate.blocking;
 )
 
 ANIMATION_SWITCH_ENTITY(switchRun, 
-    auto &s = e->comp<EntityDeplacementState>();
+    auto &s = e->comp<DeplacementState>();
     return s.speed >= s.walkSpeed + (s.sprintSpeed + s.walkSpeed)*0.25;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepLeft, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a > PI/4.f && a < 3.f*PI/4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepRight, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/-4.f && a > 3.f*PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepFront, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/4.f && a > PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepBack, 
     vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<EntityDeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < -3.f*PI/4.f || a > 3.f*PI/4.f;
 )
@@ -160,6 +178,18 @@ ANIMATION_SWITCH_ENTITY(switchStun,
 ANIMATION_SWITCH_ENTITY(switchGuard, 
     auto &s = e->comp<ActionState>();
     return s.isTryingToBlock && !s.stun;
+)
+
+ANIMATION_SWITCH_ENTITY(switchEndGuard, 
+    auto &s = e->comp<ActionState>();
+    float time = globals.simulationTime.getElapsedTime();
+    return !s.isTryingToBlock && (time-s.blockingTime) > 0.25 && !s.stun;
+)
+
+
+ANIMATION_SWITCH_ENTITY(switchGuard_to_Idle, 
+    auto &s = e->comp<ActionState>();
+    return s.isTryingToBlock && !s.stun && !s.hasBlockedAttack;
 )
 
 ANIMATION_SWITCH_ENTITY(switchGuardLeft, 
@@ -178,6 +208,7 @@ ANIMATION_SWITCH_ENTITY(switchBlock,
     auto &s = e->comp<ActionState>();
     return s.hasBlockedAttack && !s.stun;
 )
+
 
 ANIMATION_SWITCH_ENTITY(switchBlockLeft, 
     return switchBlock(e) && e->comp<ActionState>().stance() == ActionState::Stance::LEFT;
@@ -231,6 +262,33 @@ ANIMATION_SWITCH_AND(switchStun, switchRandom2)
 ANIMATION_SWITCH_AND(switchStun, inv_switchRandom2)
 
 ANIMATION_SWITCH_AND(switchAttack, switchCombo)
+
+/*
+*   Create a fast-in fast-out effect on an animation by returning a speed.
+*   This version ensure that the animation will have an exact length.
+*   The middle section of the animation will be slowed down as a result.
+*/
+float fifoFixedLength(const float prct, const float currentLenght, const float newLenght, const float fifoScale)
+{
+    // return 1.f;
+    float fifo = (1.f - fifoScale) + 2.f*fifoScale*smoothstep(50.f, 100.f*floor(prct/50.f), prct);
+    float speed = (1.f/currentLenght)/newLenght;
+    return fifo*speed;
+}
+
+/*
+*   Create a fast-in fast-out effect on an animation by returning a speed.
+*   This version ensure that the middle section of the animation have the same speed as the original.
+*   Only the anticipation and recovery part of the animation will be faster.
+*   The total length of the animation is not preserved as a result, it will be equals to length/(1-f)
+*/
+float fifoFixedSpeed(const float prct, const float fifoScale)
+{
+    // return 1.f;
+    float fifo = (1.f - fifoScale) + 2.f*fifoScale*smoothstep(50.f, 100.f*floor(prct/50.f), prct);
+    return fifo/(1.f-fifoScale);
+}
+
 
 float AnimBlueprint::weaponAttackCallback(
     float prct, 
@@ -317,15 +375,28 @@ float AnimBlueprint::weaponAttackCallback(
         // NOTIF_MESSAGE(actionState.lockedMaxSpeed)
     }
 
-    if(e->hasComp<EntityStats>())
-        return 1.f + e->comp<EntityStats>().adrenaline.cur/e->comp<EntityStats>().adrenaline.max;
-    else
-        return 1.f;
+    // float fifoScale = 0.5;
+    // float fifo = prct > 50.f ? 
+    //         (1.f - fifoScale/2.f) + fifoScale*smoothstep(50.f, 100.f, prct)
+    //     :
+    //         (1.f - fifoScale/2.f) + fifoScale*smoothstep(50.f, 0.f, prct)
+    //     ;
+
+    // fifo = 1.f;
+
+    float fifo = fifoFixedSpeed(prct, 0.25f);
+
+    float speed = e->hasComp<EntityStats>() ? 
+        fifo + 0.5*(e->comp<EntityStats>().adrenaline.cur/e->comp<EntityStats>().adrenaline.max)
+        :
+        fifo;
+
+    return max(speed, 0.01f);
 }
 
 std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e) return;
+    if(!e || !e->hasComp<ActionState>()) return;
     e->comp<ActionState>().isTryingToAttack = false;
     e->comp<ActionState>().attacking = false;
     e->comp<ActionState>().lockType = ActionState::LockedDeplacement::NONE;
@@ -335,20 +406,21 @@ std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
 
     auto &slots = e->comp<Items>().equipped;
 
-    if(slots[WEAPON_SLOT].item)
+    if(slots[WEAPON_SLOT].item && slots[WEAPON_SLOT].item->hasComp<Effect>())
         slots[WEAPON_SLOT].item->comp<Effect>().clear();
         // slots[WEAPON_SLOT].item->removeComp<Effect>();
     
-    if(slots[FOOT_SLOT].item)
+    if(slots[FOOT_SLOT].item && slots[FOOT_SLOT].item->hasComp<Effect>())
         slots[FOOT_SLOT].item->comp<Effect>().clear();
         // slots[FOOT_SLOT].item->removeComp<Effect>();
 };
 
 std::function<void (void *)> AnimBlueprint::weaponAttackEnter = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e) return;
+    if(!e || !e->hasComp<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s._stance = s._wantedStance;
+    s.isTryingToAttack = false;
 };
 
 // std::function<void (void *)> AnimBlueprint::weaponKickExit = [](void * usr){
@@ -371,32 +443,48 @@ std::function<void (void *)> AnimBlueprint::weaponAttackEnter = [](void * usr){
 
 std::function<void (void *)> AnimBlueprint::weaponStunExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e) return;
+    if(!e || !e->hasComp<ActionState>()) return;
     e->comp<ActionState>().stun = false;
 };
 
 std::function<void (void *)> AnimBlueprint::weaponGuardEnter = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e) return;
+    if(!e || !e->hasComp<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s.blocking = true;
+    s.blockingTime = globals.simulationTime.getElapsedTime();
+    s.isTryingToBlock = false;
     s.lockType = ActionState::LockedDeplacement::SPEED_ONLY;
-    s.lockedMaxSpeed = 0.1;
+    s.lockedMaxSpeed = 0.5;
+
+    // inputLag.stop();
+    // NOTIF_MESSAGE("Input Latency : " << inputLag.getDeltaMS())
 };
 
 std::function<void (void *)> AnimBlueprint::weaponGuardExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e) return;
+    if(!e || !e->hasComp<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s.blocking = s.hasBlockedAttack;
+    // s.blocking = false;
+    // s.hasBlockedAttack = false;
     s.lockType = ActionState::LockedDeplacement::NONE;
 };
 
 std::function<void (void *)> AnimBlueprint::weaponBlockExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e) return;
+    if(!e || !e->hasComp<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s.hasBlockedAttack = false;
+};
+
+std::function<void (void *)> AnimBlueprint::idleEnter = [](void * usr){
+    Entity *e = (Entity*)usr;
+    if(!e || !e->hasComp<ActionState>()) return;
+    auto &s = e->comp<ActionState>();
+    s.hasBlockedAttack = false;
+    s.blocking = false;
+    s.attacking = false;
 };
 
 AnimationControllerRef AnimBlueprint::bipedMoveset_POC2024(const std::string & prefix, Entity *e)
@@ -576,12 +664,12 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     
     /* DEMO 2025 */
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Attack");
-        WEAPON_CALLBACK(33.0, 66, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
+        WEAPON_CALLBACK(33.0, 66, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
         // const float l = a->getLength();
         // a->speedCallback = [l](float f, void *e){return (1./0.75) / l;};
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Kick");
-        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 0.01, FOOT_SLOT);
+        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 1.5, FOOT_SLOT);
         // const float l = a->getLength();
         // a->speedCallback = [l](float f, void *e){return (1./0.5) / l;};
     }
@@ -597,11 +685,21 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Blocking_Impact");
         a->onExitAnimation = AnimBlueprint::weaponBlockExit;
+        a->repeat = false;
+        const float duration = 0.5;
+        const float l = a->getLength();
+        // a->speedCallback = [l, duration](float f, void *e){return 2*1-(f/100.f);};
+        a->speedCallback = [l, duration](float f, void *e){return fifoFixedLength(f, l, duration, 0.25);};
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Impact");
         a->onExitAnimation = AnimBlueprint::weaponStunExit;
-        // const float l = a->getLength();
-        // a->speedCallback = [l](float f, void *e){return (1./0.75) / l;};
+        const float duration = 0.5;
+        const float l = a->getLength();
+        // a->speedCallback = [l, duration](float f, void *e){return (1./duration)/l;};
+        a->speedCallback = [l, duration](float f, void *e){return fifoFixedLength(f, l, duration, 0.25);};
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Idle");
+        a->onEnterAnimation = AnimBlueprint::idleEnter;
     }
 }
 
@@ -630,17 +728,17 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
     LOAD_ANIM_FROM_PREFIX(Run_L)
     LOAD_ANIM_FROM_PREFIX(Run_R)
 
-    const float D_walkDep = 0.25;
-    const float D_runDep = 0.15;
-    const float D_idleWalk = 0.25; 
-    const float D_WalkRun = 0.25; 
-    const float D_toAttack = 0.10;
-    const float D_toDeath = 0.15;
-    const float D_toStun = 0.15;
-    const float D_toGuard = 0.075;
-    const float D_toBlock = 0.15;
-
-    const float D_toCombo = 1.0;
+    const float D_walkDep       = 1.0*0.25;
+    const float D_runDep        = 1.0*0.25;
+    const float D_idleWalk      = 1.0*0.25; 
+    const float D_WalkRun       = 1.0*0.25;
+    const float D_toAttack      = 1.0*0.10;
+    const float D_toDeath       = 1.0*0.15;
+    const float D_toStun        = 1.0*0.15;
+    const float D_toGuard       = 1.0*0.15;
+    const float D_toBlock       = 1.0*0.15;
+    const float D_toBlockImpact = 1.0*0.05;
+    const float D_toCombo       = 1.0*1.0;
 
     AnimationControllerRef ac( new AnimationController(
         {
@@ -663,7 +761,7 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
             
             /* WALK */
             ACT_DEP_FBLR(Walk_, D_walkDep, switchWalk),
-            ACT_FROM_FBLR(Walk_, Idle, D_idleWalk, inv_switchWalk),
+            ACT_FROM_FBLR(Walk_, Idle, D_idleWalk, switchIdle),
             ACT_TO_FROM_FBLR(Walk_, Run_, D_WalkRun, switchRun),
             ACT_FROM_FBLR(Walk_, Attack, D_toAttack, switchAttack),
             ACT_FROM_FBLR(Walk_, Kick, D_toAttack, switchKick),
@@ -673,7 +771,10 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
             /* RUN */
             ACT_DEP_FBLR(Run_, D_runDep, switchRun),
             ACT_TO_FROM_FBLR(Run_, Walk_, D_WalkRun, inv_switchRun),
+            ACT_FROM_FBLR(Run_, Idle, D_WalkRun, switchIdle),
             ACT_FROM_FBLR(Run_, Kick, D_toAttack, switchKick),
+            ACT_FROM_FBLR(Run_, Attack, D_toAttack, switchAttack),
+            ACT_FROM_FBLR(Run_, Blocking, D_toGuard, switchGuard),
             ACT_FROM_FBLR(Run_, Impact, D_toStun, switchStun),
             
             /* ATACK */
@@ -685,13 +786,14 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
 
             /* BLOCKING */
             ACT(Blocking, Impact, D_toStun, switchStun),
-            ACT(Blocking, Idle, D_toBlock, inv_switchGuard),
-            ACT(Blocking, Blocking_Impact, D_toBlock, switchBlock),
+            ACT(Blocking, Idle, D_toBlock, switchEndGuard),
+            ACT(Blocking, Blocking_Impact, D_toBlockImpact, switchBlock),
 
             AnimationControllerTransition(Blocking_Impact, Blocking, COND_ANIMATION_FINISHED, D_toGuard, TRANSITION_SMOOTH),
             // ACT(Blocking_Impact, Blocking, D_toGuard, switchGuard),
             ACT(Blocking_Impact, Attack, D_toAttack, switchAttack),
             ACT(Blocking_Impact, Kick, D_toAttack, switchKick),
+            ACT(Blocking_Impact, Impact, D_toStun, switchStun),
             // ACT(Blocking_Impact, Idle, D_toAttack, inv_switchGuard),
 
             /* STUN */

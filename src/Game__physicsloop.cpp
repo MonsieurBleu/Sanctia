@@ -39,6 +39,7 @@ void Game::physicsLoop()
 
     while (state != quit)
     {   
+        
         if(globals.simulationTime.isPaused() && globals.enablePhysics)
         {
             PG::currentPhysicFreq = 0.f;
@@ -46,12 +47,13 @@ void Game::physicsLoop()
         }
         else
             PG::currentPhysicFreq = physicsTicks.freq;
-
+    
         physicsTicks.start();
         physicsTimer.start();
         physicsMutex.lock();
-
+        
         ManageGarbage<RigidBody>();
+        ManageGarbage<Target>();
 
         if(GG::playerEntity && globals._currentController == &spectator && GG::playerEntity->hasComp<RigidBody>())
         {
@@ -94,7 +96,7 @@ void Game::physicsLoop()
         System<RigidBody, EntityState3D, staticEntityFlag>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
             auto &s = entity.comp<EntityState3D>();
-            auto &ds = entity.comp<EntityDeplacementState>();
+            auto &ds = entity.comp<DeplacementState>();
 
             #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
             s.physicActivated = b->isActive();
@@ -121,7 +123,7 @@ void Game::physicsLoop()
                     s.position = PG::toglm(t.getPosition());
                     s.quaternion = PG::toglm(t.getOrientation());
                     
-                    if(!entity.hasComp<EntityDeplacementState>()) break;
+                    if(!entity.hasComp<DeplacementState>()) break;
 
                     /*
                         Fastest way possible to see if the player is grounded.
@@ -209,7 +211,7 @@ void Game::physicsLoop()
             auto &as = entity.comp<AgentState>();
             float time = globals.simulationTime.getElapsedTime();
 
-            time -= 0.05 * (entity.ids[ComponentCategory::AI]%128);
+            time -= 0.05 * (entity.ids[ComponentCategory::AI]%16);
             
             if(time - as.lastUpdateTime > as.nextUpdateDelay)
             {
@@ -220,10 +222,10 @@ void Game::physicsLoop()
 
         // static int i = 0;
         // if((i++)%10 == 0)
-        // System<EntityState3D, EntityDeplacementState, AgentState__old, ActionState, Target>([&, this](Entity &entity){
+        // System<EntityState3D, DeplacementState, AgentState__old, ActionState, Target>([&, this](Entity &entity){
 
         //     auto &s = entity.comp<EntityState3D>();
-        //     auto &ds = entity.comp<EntityDeplacementState>();
+        //     auto &ds = entity.comp<DeplacementState>();
         //     auto target = entity.comp<Target>();
         //     auto &as = entity.comp<AgentState__old>();
         //     auto &action = entity.comp<ActionState>();

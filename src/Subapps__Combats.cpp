@@ -22,6 +22,53 @@ void spawnPlayer(EntityRef appRoot)
     physicsMutex.unlock();
 }
 
+void PlayerAttack()
+{
+    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->hasComp<ActionState>())
+    {
+        auto &sa = GG::playerEntity->comp<ActionState>();
+
+        if(!sa.isTryingToAttack && !(sa.attacking && sa._stance == ActionState::Stance::RIGHT) && (!sa.blocking || sa.hasBlockedAttack))
+        {
+            sa.setStance(ActionState::Stance::RIGHT);
+            sa.isTryingToAttack = true;
+            sa.isTryingToAttackTime = globals.simulationTime.getElapsedTime();
+        }
+    }
+}
+
+void PlayerBlock()
+{
+    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->hasComp<ActionState>())
+    {
+        auto &sa = GG::playerEntity->comp<ActionState>();
+
+        if(!sa.isTryingToBlock)
+        {
+            sa.setStance(ActionState::Stance::RIGHT);
+            sa.isTryingToBlock = true;
+            sa.isTryingToBlockTime= globals.simulationTime.getElapsedTime();
+        }
+    }
+}
+
+void PlayerStun()
+{
+    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->hasComp<ActionState>())
+    {
+        auto &sa = GG::playerEntity->comp<ActionState>();
+
+        if(!sa.isTryingToAttack && !(sa.attacking && sa._stance == ActionState::Stance::SPECIAL))
+        {
+            sa.isTryingToAttackTime = globals.simulationTime.getElapsedTime();
+
+            sa.setStance(ActionState::Stance::SPECIAL);
+            sa.isTryingToAttack = true;
+            
+        }
+    }
+}
+
 Apps::CombatsApp::CombatsApp() : SubApps("Combats")
 {
     inputs.push_back(&
@@ -44,37 +91,13 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
 
     inputs.push_back(&
         InputManager::addEventInput(
-        "attack", GLFW_MOUSE_BUTTON_LEFT, 0, GLFW_PRESS, [&]() {
-            if (globals.currentCamera->getMouseFollow() && GG::playerEntity)
-            {
-                GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::RIGHT);
-                GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
-            }
-        },
+        "attack", GLFW_MOUSE_BUTTON_LEFT, 0, GLFW_PRESS, PlayerAttack,
         InputManager::Filters::always, false)
     );
 
     inputs.push_back(&
         InputManager::addEventInput(
-        "kick", GLFW_MOUSE_BUTTON_MIDDLE, 0, GLFW_PRESS, [&]() {
-            if (globals.currentCamera->getMouseFollow() && GG::playerEntity)
-            {
-                GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::SPECIAL);
-                GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
-            }
-        },
-        InputManager::Filters::always, false)
-    );
-
-    inputs.push_back(&
-        InputManager::addEventInput(
-        "sprint kick", GLFW_MOUSE_BUTTON_MIDDLE, GLFW_MOD_SHIFT, GLFW_PRESS, [&]() {
-            if (globals.currentCamera->getMouseFollow() && GG::playerEntity)
-            {
-                GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::SPECIAL);
-                GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
-            }
-        },
+        "kick", GLFW_MOUSE_BUTTON_MIDDLE, 0, GLFW_PRESS, PlayerStun,
         InputManager::Filters::always, false)
     );
 
@@ -82,9 +105,7 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
         InputManager::addContinuousInput(
             "block", 
             GLFW_MOUSE_BUTTON_RIGHT, 
-            [&]() {
-                GG::playerEntity->comp<ActionState>().isTryingToBlock = true;
-            },
+            PlayerBlock,
             InputManager::Filters::always,
             [&]() {
                 GG::playerEntity->comp<ActionState>().isTryingToBlock = false;
@@ -92,6 +113,26 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
         )
     );
     
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Double Speed", GLFW_KEY_KP_ADD, 0, GLFW_PRESS, [&]() {
+                
+                globals.simulationTime.speed *= 2.;
+
+            },
+            InputManager::Filters::always, false)
+    );    
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Halfen Speed", GLFW_KEY_KP_SUBTRACT, 0, GLFW_PRESS, [&]() {
+                
+                globals.simulationTime.speed /= 2.;
+
+            },
+            InputManager::Filters::always, false)
+    );    
+
     for(auto &i : inputs)
         i->activated = false;
 };
@@ -130,11 +171,12 @@ void Apps::CombatsApp::init()
     appRoot->set<Script>(Script());
     appRoot->comp<Script>().addScript("World Update", ScriptHook::ON_UPDATE);
 
+    // if(false)
     for(float i = -1.f; i <= 1.f; i += 1.f)
     {
         EntityRef e= spawnEntity("(Combats) Enemy");
         e->comp<EntityState3D>().useinit = true;
-        e->comp<EntityState3D>().initPosition = vec3(-4.f, 0, i*4.f);
+        e->comp<EntityState3D>().initPosition = vec3(-8.f, 0, i*4.f);
         e->comp<Script>().addScript("Action-Dummy Update", ScriptHook::ON_UPDATE);
         ComponentModularity::addChild(*appRoot, e);
     }
@@ -145,17 +187,38 @@ void Apps::CombatsApp::init()
     physicsMutex.unlock();
 
     /* Agent Test */
-    // for(int i = 0; i < 50; i++)
+    for(int i = 0; i < 1; i++)
     {
         EntityRef e= spawnEntity("(Combats) Ally");
         e->comp<EntityState3D>().useinit = true;
-        e->comp<EntityState3D>().initPosition = vec3(4.f, 0, 0);
+        e->comp<EntityState3D>().initPosition = vec3(8.f, 0, 0);
         e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
         e->set<AgentState>(AgentState());
-        e->set<Target>((Target){GG::playerEntity});
+        e->set<Target>((Target){GG::playerEntity.get()});
         ComponentModularity::addChild(*appRoot, e);
     }
 
+    /* Agent to Agent Combat*/
+    for(int i = 0; i < 0; i ++)
+    {
+        EntityRef e = spawnEntity("(Combats) Ally");
+        e->comp<EntityState3D>().useinit = true;
+        e->comp<EntityState3D>().initPosition = vec3(rand()%16-8, 0, rand()%24-12);
+        e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+        e->set<AgentState>(AgentState());
+        ComponentModularity::addChild(*appRoot, e);
+
+        EntityRef e2 = spawnEntity("(Combats) Enemy");
+        e2->comp<EntityState3D>().useinit = true;
+        e2->comp<EntityState3D>().initPosition = vec3(rand()%16-8, 0, rand()%24-12);
+        e2->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+        e2->set<AgentState>(AgentState());
+        ComponentModularity::addChild(*appRoot, e2);
+
+
+        e->set<Target>((Target){e2.get()});
+        e2->set<Target>((Target){e.get()});
+    }
 
     // AnimationControllerRef test = AnimBlueprint::bipedMoveset_PREALPHA_2025("(Human) 2H Sword ", GG::playerEntity.get());
 }
@@ -182,6 +245,10 @@ void Apps::CombatsApp::clean()
     appRoot = EntityRef();
     GG::playerEntity = EntityRef();
     App::setController(nullptr);
+
+    physicsMutex.lock();
+    GG::ManageEntityGarbage__WithPhysics();
+    physicsMutex.unlock();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
 }

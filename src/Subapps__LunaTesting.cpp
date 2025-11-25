@@ -51,7 +51,7 @@ void Apps::LunaTesting::init()
     //     Loader<ScriptInstance>::get("test_ent").run();
     // }
 
-    static auto e = Loader<EntityRef>::get("test_ent");
+    static auto e = spawnEntity("test_ent");
 
 
     // appRoot->set<Script>(Script(
@@ -168,9 +168,10 @@ void Apps::LunaTesting::init()
     // std::string testStr = "Operator Precedence Test Result: $(1 + 2 * 3) abcdefg";
     // std::string testStr = "if else: $(if (1 > 2) then (\"Hello\") else (\"Hi\")) abcdefg";
     // std::string testStr = "if else: $(if (1 > 2) then (\"Hello\") else (if (3 > 1) then (\"Heyyyyyyy\") else (\"Hiiiii\"))) abcdefg";
-    std::string testStr = "$(if (1 > 2) then (\"Hello\") else (\"World\")) $(1 + 1 1) $(1 1) $(if (1 + 1 + 1) then (1 + 1) else (false) 1)";
+    // std::string testStr = "$(if (1 > 2) then (\"Hello\") else (\"World\")) $(1 + 1 1) $(1 12354656) $(if (1 + 1 + 1) then (1 + 1) else (false) 1)";
     // std::string testStr = "okay wait does this break??: $(1 + 1 1) $(1 + 1 1)";
     // std::string testStr = "nothing: $( () )";
+    std::string testStr = "$(${test7})";
 
     size_t len = testStr.length();
     char *input = new char[len+1];

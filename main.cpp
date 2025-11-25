@@ -1,3 +1,4 @@
+#include "Flags.hpp"
 #include <Launcher.hpp>
 #include <Game.hpp>
 
@@ -25,7 +26,7 @@ int main()
 
     // loadAllModdedAssetsInfos("data");
     // loadAllModdedAssetsInfos("shader");
-
+    LogicBlock::registerAllFunctions();
     loadAllModdedAssetsInfos("./");
 
     int ret = launchGame(&game, winname, 5);

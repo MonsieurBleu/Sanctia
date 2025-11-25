@@ -79,7 +79,7 @@ DATA_WRITE_FUNC_INIT(EntityState3D)
 
 DATA_WRITE_END_FUNC
 
-AUTOGEN_DATA_RW_FUNC(EntityDeplacementState
+AUTOGEN_DATA_RW_FUNC(DeplacementState
     , speed
     , wantedSpeed
     , deplacementDirection

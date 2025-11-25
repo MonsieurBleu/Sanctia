@@ -644,9 +644,7 @@ void Game::mainloop()
     {
         mainloopStartRoutine();
 
-        for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input))
-            ;
-
+        for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
         InputManager::processContinuousInputs();
 
         // plottest->push(globals.appTime.getDeltaMS());
@@ -1012,9 +1010,9 @@ void Game::mainloop()
 
         /***** DEMO DEPLACEMENT SYSTEM
         *****/
-        System<EntityState3D, EntityDeplacementState, DeplacementBehaviour>([&, this](Entity &entity) {
+        System<EntityState3D, DeplacementState, DeplacementBehaviour>([&, this](Entity &entity) {
             auto &s = entity.comp<EntityState3D>();
-            auto &ds = entity.comp<EntityDeplacementState>();
+            auto &ds = entity.comp<DeplacementState>();
 
             if (&entity == this->dialogueControl.interlocutor.get())
             {
@@ -1177,7 +1175,7 @@ void Game::mainloop()
 
                 if(
                     entity.hasComp<RigidBody>() && entity.comp<RigidBody>()->getLinearVelocity().y == 0.f && 
-                    (!entity.hasComp<EntityDeplacementState>() || entity.comp<EntityDeplacementState>().grounded)
+                    (!entity.hasComp<DeplacementState>() || entity.comp<DeplacementState>().grounded)
                 )
                 {
                     entity.removeComp<RigidBody>();
@@ -1186,7 +1184,7 @@ void Game::mainloop()
                 entity.removeComp<DeplacementBehaviour>();
                 entity.comp<ActionState>().lockType = ActionState::LockedDeplacement::SPEED_ONLY;
                 entity.comp<ActionState>().lockedMaxSpeed = 0;
-                entity.comp<EntityDeplacementState>().speed = 0;
+                entity.comp<DeplacementState>().speed = 0;
                 entity.removeComp<AgentState>();
             }
 

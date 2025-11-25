@@ -31,6 +31,12 @@
 
 EntityRef spawnEntity(const std::string &name);
 
+bool isVisible(Entity &a, Entity &b);
+
+Entity* getClosestVisibleEnemy(Entity &e);
+
+Entity* getClosestVisibleAlly(Entity &e);
+
 /***************** SCRIPTING COMPONENTS *****************/
     Component_Compatible(Script)
 
@@ -40,8 +46,9 @@ EntityRef spawnEntity(const std::string &name);
     #define CURRENT_CATEGORY DATA
 
     Component_Init_Compatible(EntityState3D)
+    template<> void Component<EntityState3D>::ComponentElem::clean();
 
-    Component(EntityDeplacementState)
+    Component(DeplacementState)
 
     Component(EntityStats)
 
@@ -118,6 +125,7 @@ EntityRef spawnEntity(const std::string &name);
     Component(AgentState)
 
     Component(Target)
+    template<> void Component<Target>::ComponentElem::clean();
 
 
 

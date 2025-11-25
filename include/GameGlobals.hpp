@@ -49,6 +49,7 @@ namespace GameGlobals
 
     inline void ManageEntityGarbage()
     {
+        ManageGarbage<EntityState3D>();
         ManageGarbage<Items>();
         ManageGarbage<WidgetBackground>();
         ManageGarbage<WidgetSprite>();
@@ -63,6 +64,7 @@ namespace GameGlobals
         ManageEntityGarbage();
 
         ManageGarbage<RigidBody>();
+        ManageGarbage<Target>();
     };
 };
 

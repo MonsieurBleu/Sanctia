@@ -4,12 +4,12 @@
 #include <Graphics/ObjectGroup.hpp>
 #include <array>
 
-GENERATE_ENUM_FAST_REVERSE(DamageType, Pure, Blunt, Slash, Piercing, DamageType_Size);
+GENERATE_ENUM_FAST_REVERSE(DamageType, Pure, Vital, Heal, VitalHeal, Blunt, Slash, Piercing, Frost, Burn, Thunder, DamageType_Size);
 
 GENERATE_ENUM_FAST_REVERSE(EffectType
     , UnknownType
     , Damage
-    , Heal
+    // , Heal
 )
 
 

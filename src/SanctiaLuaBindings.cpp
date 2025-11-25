@@ -13,100 +13,66 @@
 // #include <sol/types.hpp>
 #include <sol/sol.hpp>
 
+#include <Scripting/LuaBindingUtils.hpp>
+
+#undef CURRENT_CLASS_BINDING
+
+#define VBIND_ADD_ENTITY_COMPONENT(type) \
+    VBIND_ADD_METHOD_ALIAS(comp_##type, comp<type>, ()) \
+    VBIND_ADD_METHOD_ALIAS(hasComp_##type, hasComp<type>, ()) \
+    VBIND_ADD_METHOD_ALIAS(set_##type, set<type>, ()) \
+    VBIND_ADD_METHOD_ALIAS(removeComp_##type, removeComp<type>, ())
+
+#define VBIND_ADD_ENTITY_COMPONENTS(...) MAPGEN_FOR_EACH(VBIND_ADD_ENTITY_COMPONENT, __VA_ARGS__)
 
 void VulpineLuaBindings::Entities(sol::state &lua)
 {
-    // MARK: Entity
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING Entity
-        CREATE_CLASS_USERTYPE(Entity, ())
+    VBIND_INIT_HEADER_CATEGORY("ENGINE ENTITY COMPMONENT")
+    VBIND_CLASS_DECLARE_ALIAS(std::shared_ptr<Entity>, Entity)
+    VBIND_CLASS_DECLARE(Entity)
+    VBIND_CLASS_DECLARE(EntityInfos)
+    VBIND_CLASS_DECLARE(EntityGroupInfo)
+    VBIND_CLASS_DECLARE(WidgetBackground)
+    VBIND_CLASS_DECLARE(WidgetBox)
+    VBIND_CLASS_DECLARE(WidgetButton)
+    VBIND_CLASS_DECLARE(WidgetSprite)
+    VBIND_CLASS_DECLARE(WidgetState)
+    VBIND_CLASS_DECLARE(WidgetStyle)
+    VBIND_CLASS_DECLARE(WidgetText)
 
-        // METHOD_BINDING_TEMPLATED_SINGLE(comp, EntityInfos)
-        // METHOD_BINDING_TEMPLATED_SINGLE(comp, WidgetBox)
-        METHOD_BINDING_TEMPLATED(
-            comp, 
-                EntityInfos,
-                EntityGroupInfo,
-                WidgetBackground,
-                WidgetBox,
-                WidgetButton,
-                WidgetSprite,
-                WidgetState,
-                WidgetStyle,
-                WidgetText,
-        )
-
-        METHOD_BINDING_TEMPLATED(
-            hasComp, 
-                EntityInfos,
-                EntityGroupInfo,
-                WidgetBackground,
-                WidgetBox,
-                WidgetButton,
-                WidgetSprite,
-                WidgetState,
-                WidgetStyle,
-                WidgetText,
-        )
-
-        METHOD_BINDING_TEMPLATED(
-            set, 
-                EntityInfos,
-                EntityGroupInfo,
-                WidgetBackground,
-                WidgetBox,
-                WidgetButton,
-                WidgetSprite,
-                WidgetState,
-                WidgetStyle,
-                WidgetText,
-        )
-
-        METHOD_BINDING_TEMPLATED(
-            removeComp, 
-                EntityInfos,
-                EntityGroupInfo,
-                WidgetBackground,
-                WidgetBox,
-                WidgetButton,
-                WidgetSprite,
-                WidgetState,
-                WidgetStyle,
-                WidgetText,
-        )
-
-        ADD_MEMBER_BINDINGS(
-            toStr,
-            is
-        );
-    }
+    #undef CURRENT_CLASS_BINDING
     // MARK: Components
+    #define CURRENT_CLASS_BINDING EntityInfos
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING EntityInfos
-        CREATE_CLASS_USERTYPE(EntityInfos, (), ())
-        lua.new_usertype<EntityInfos>(
-            "EntityInfos",
-            "name", &EntityInfos::name
-        );
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(name)
     }
-        {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING EntityGroupInfo
-        CREATE_CLASS_USERTYPE(EntityGroupInfo, (), (std::vector<EntityRef> &))
-        ADD_MEMBER_BINDINGS(
-            children,
-            // markedForDeletion, // TODO: check if we even want to expose those two
-            // markedForCreation,
-            parent
-        );
-    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+
+    #define CURRENT_CLASS_BINDING EntityGroupInfo
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING WidgetBox
-        CREATE_CLASS_USERTYPE(WidgetBox, (vec2, vec2, WidgetBox::Type), (WidgetBox::FittingFunc))
-        ADD_MEMBER_BINDINGS(
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(parent, markedForCreation, markedForDeletion)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+
+    VBIND_CLASS_DECLARE_ALIAS(WidgetBox::Type, WidgetBoxType)
+    VBIND_ADD_ENUM("WidgetBoxType",
+        ("FOLLOW_PARENT_BOX", WidgetBox::Type::FOLLOW_PARENT_BOX),
+        ("FOLLOW_SIBLINGS_BOX", WidgetBox::Type::FOLLOW_SIBLINGS_BOX)
+    );
+
+    #define CURRENT_CLASS_BINDING WidgetBox
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS(((vec2, vec2, WidgetBox::Type)), ())
+        VBIND_ADD_MEMBERS(
             min,
             max,
             initMin,
@@ -127,138 +93,129 @@ void VulpineLuaBindings::Entities(sol::state &lua)
             areChildrenUnderCurosor,
             scrollOffset,
             type
-        );
+        )
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-        lua.new_enum(
-            "WidgetBoxType",
-            "FOLLOW_PARENT_BOX", WidgetBox::Type::FOLLOW_PARENT_BOX,
-            "FOLLOW_SIBLINGS_BOX", WidgetBox::Type::FOLLOW_SIBLINGS_BOX
-        );
-    }
+    #define CURRENT_CLASS_BINDING WidgetBackground
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING WidgetBackground
-        CREATE_CLASS_USERTYPE(WidgetBackground, (), ())
-        ADD_MEMBER_BINDINGS(
-            tile,
-            batch
-        );
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
     }
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING WidgetButton
-        CREATE_CLASS_USERTYPE(
-            WidgetButton, 
-            (WidgetButton::Type), ()
-        );
-        ADD_MEMBER_BINDINGS(
-            type,
-            cur,
-            setcur,
-            cur2,
-            setcur2,
-            min,
-            setmin,
-            max,
-            setmax,
-            padding,
-            setpadding,
-            usr,
-            setusr
-            // valueChanged,
-            // valueUpdate,
-            // valueChanged2D,
-            // valueUpdate2D,
-            // material
-        );
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-        lua.new_enum(
-            "WidgetButtonType",
-            "HIDE_SHOW_TRIGGER", WidgetButton::HIDE_SHOW_TRIGGER,
-            "HIDE_SHOW_TRIGGER_INDIRECT", WidgetButton::HIDE_SHOW_TRIGGER_INDIRECT,
-            "CHECKBOX", WidgetButton::CHECKBOX,
-            "TEXT_INPUT", WidgetButton::TEXT_INPUT,
-            "SLIDER", WidgetButton::SLIDER,
-            "SLIDER_2D", WidgetButton::SLIDER_2D
-        );
-    }
+    VBIND_CLASS_DECLARE_ALIAS(WidgetButton::Type, WidgetButtonType)
+    VBIND_ADD_ENUM(
+        "WidgetButtonType",
+        ("HIDE_SHOW_TRIGGER", WidgetButton::HIDE_SHOW_TRIGGER),
+        ("HIDE_SHOW_TRIGGER_INDIRECT", WidgetButton::HIDE_SHOW_TRIGGER_INDIRECT),
+        ("CHECKBOX", WidgetButton::CHECKBOX),
+        ("TEXT_INPUT", WidgetButton::TEXT_INPUT),
+        ("SLIDER", WidgetButton::SLIDER),
+        ("SLIDER_2D", WidgetButton::SLIDER_2D)
+    )
+
+    #define CURRENT_CLASS_BINDING WidgetButton
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING WidgetSprite
-        CREATE_CLASS_USERTYPE(WidgetSprite, (), (std::string&), (ModelRef))
-        ADD_MEMBER_BINDINGS(
-            sprite,
-            name,
-            scene
-        );
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS(((WidgetButton::Type)), ())
+        VBIND_ADD_MEMBERS(
+            type, cur, cur2, min, max, padding, usr
+        )
+        VBIND_ADD_METHODS(
+            setcur, setcur2, setmin, setmax, setpadding, setusr
+        )
     }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    #define CURRENT_CLASS_BINDING WidgetSprite
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING WidgetState
-        CREATE_CLASS_USERTYPE(WidgetState, (), ())
-        ADD_MEMBER_BINDINGS(
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS(((std::string)), (("spriteName")))
+        VBIND_ADD_MEMBERS(name)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    #define CURRENT_CLASS_BINDING WidgetState
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
             upToDate,
             status,
             statusToPropagate,
             updateCounter
-        );
+        )
     }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    VBIND_CLASS_DECLARE(UiTileType)
+    VBIND_ADD_ENUM(
+        "UiTileType",
+        ("SQUARE", UiTileType::SQUARE),
+        ("SQUARE_ROUNDED", UiTileType::SQUARE_ROUNDED),
+        ("CIRCLE", UiTileType::CIRCLE),
+        ("SATURATION_VALUE_PICKER", UiTileType::SATURATION_VALUE_PICKER),
+        ("HUE_PICKER", UiTileType::HUE_PICKER),
+        ("ATMOSPHERE_VIEWER", UiTileType::ATMOSPHERE_VIEWER)
+    )
+
+    #define CURRENT_CLASS_BINDING WidgetStyle
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING WidgetStyle
-        CREATE_CLASS_USERTYPE(WidgetStyle, (), ())
-        ADD_MEMBER_BINDINGS(
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
             textColor1,
-            settextColor1,
             textColor2,
-            settextColor2,
             backgroundColor1,
-            setbackgroundColor1,
             backgroundColor2,
-            setbackgroundColor2,
             backGroundStyle,
-            setbackGroundStyle,
             automaticTabbing,
-            setautomaticTabbing,
             spriteScale,
-            setspriteScale,
             useInternalSpacing,
-            setuseInternalSpacing,
             spritePosition,
-            setspritePosition,
             useAltBackgroundColor,
             useAltTextColor
-        );
-
-        lua.new_enum(
-            "UiTileType",
-            "SQUARE", UiTileType::SQUARE,
-            "SQUARE_ROUNDED", UiTileType::SQUARE_ROUNDED,
-            "CIRCLE", UiTileType::CIRCLE,
-            "SATURATION_VALUE_PICKER", UiTileType::SATURATION_VALUE_PICKER,
-            "HUE_PICKER", UiTileType::HUE_PICKER,
-            "ATMOSPHERE_VIEWER", UiTileType::ATMOSPHERE_VIEWER
-        );
+        )
+        VBIND_ADD_METHODS(
+            settextColor1,
+            settextColor2,
+            setbackgroundColor1,
+            setbackgroundColor2,
+            setbackGroundStyle,
+            setautomaticTabbing,
+            setspriteScale,
+            setuseInternalSpacing,
+            setspritePosition
+        )
     }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+ 
+    VBIND_CLASS_DECLARE(StringAlignment)
+    VBIND_ADD_ENUM(
+        "StringAlignment",
+        ("TO_LEFT", StringAlignment::TO_LEFT),
+        ("CENTERED", StringAlignment::CENTERED)
+    )
+
+    #define CURRENT_CLASS_BINDING WidgetText
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING WidgetText
-        CREATE_CLASS_USERTYPE(
-            WidgetText, 
-            (), 
-            (std::u32string, StringAlignment)
-        );
-        ADD_MEMBER_BINDINGS(
-            text,
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
             align
-        );
-
-        lua.new_enum(
-            "StringAlignment",
-            "TO_LEFT", StringAlignment::TO_LEFT,
-            "CENTERED", StringAlignment::CENTERED
-        );
+        )
     }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+
 // MARK: Entity file IO
     {
         lua.set_function(
@@ -273,6 +230,11 @@ void VulpineLuaBindings::Entities(sol::state &lua)
                 out->saveAs(filename);
             }
         );
+
+        luaHeader   << "---@return nil\n" 
+                    <<"---@param entity Entity\n"
+                    <<"---@param path string\n"
+                    <<"function entityWriteToFile(entity, path) end\n";
 
         lua.set_function(
             "entityReadFromFile",
@@ -295,84 +257,93 @@ void VulpineLuaBindings::Entities(sol::state &lua)
                 return *e;
             }
         );
+
+        luaHeader   << "---@return Entity\n" 
+                    << "---@param asset_name string\n"
+                    << "---@param parent Entity\n"
+                    << "function entityReadFromFile(asset_name, parent) end\n";
     }
     // MARK: Modularity
-    {
-        sol::table componentModularityTable = lua.create_table();
-        componentModularityTable.set_function(
-            "addChild",
-            [](Entity &parent, Entity& child)
-            {
-                ComponentModularity::addChild(parent, std::make_shared<Entity>(child));
-            }
-        );
+    
+    /*
+        ATTENTION : Never, EVER, use make_shared like that. It will absolutly broke every thing with the ECS !!!
+    */
+    // {
+    //     sol::table componentModularityTable = lua.create_table();
+    //     componentModularityTable.set_function(
+    //         "addChild",
+    //         [](Entity &parent, Entity& child)
+    //         {
+    //             ComponentModularity::addChild(parent, std::make_shared<Entity>(child));
+    //         }
+    //     );
 
-        componentModularityTable.set_function(
-            "removeChild",
-            [](Entity &parent, Entity& child)
-            {
-                ComponentModularity::removeChild(parent, &child);
-            }
-        );
+    //     componentModularityTable.set_function(
+    //         "removeChild",
+    //         [](Entity &parent, Entity& child)
+    //         {
+    //             ComponentModularity::removeChild(parent, &child);
+    //         }
+    //     );
 
-        componentModularityTable.set_function(
-            "synchronizeChildren",
-            [](Entity& parent)
-            {
-                ComponentModularity::synchronizeChildren(std::make_shared<Entity>(parent));
-            }
-        );
+    //     componentModularityTable.set_function(
+    //         "synchronizeChildren",
+    //         [](Entity& parent)
+    //         {
+    //             ComponentModularity::synchronizeChildren(std::make_shared<Entity>(parent));
+    //         }
+    //     );
 
-        componentModularityTable.set_function(
-            "reparent",
-            [](Entity& oldParent, Entity& child, Entity& newParent)
-            {
-                ComponentModularity::Reparent(oldParent, std::make_shared<Entity>(child), newParent);
-            }
-        );
+    //     componentModularityTable.set_function(
+    //         "reparent",
+    //         [](Entity& oldParent, Entity& child, Entity& newParent)
+    //         {
+    //             ComponentModularity::Reparent(oldParent, std::make_shared<Entity>(child), newParent);
+    //         }
+    //     );
 
-        componentModularityTable.set_function(
-            "reparentChildren",
-            [](Entity& parent)
-            {
-                ComponentModularity::ReparentChildren(parent);
-            }
-        );
+    //     componentModularityTable.set_function(
+    //         "reparentChildren",
+    //         [](Entity& parent)
+    //         {
+    //             ComponentModularity::ReparentChildren(parent);
+    //         }
+    //     );
 
-        componentModularityTable.set_function(
-            "canMerge",
-            [](Entity& parent, Entity& child) -> bool
-            {
-                return ComponentModularity::canMerge(parent, std::make_shared<Entity>(child));
-            }
-        );
+    //     componentModularityTable.set_function(
+    //         "canMerge",
+    //         [](Entity& parent, Entity& child) -> bool
+    //         {
+    //             return ComponentModularity::canMerge(parent, std::make_shared<Entity>(child));
+    //         }
+    //     );
 
-        componentModularityTable.set_function(
-            "mergeChild",
-            [](Entity& parent, Entity& child) -> bool
-            {
-                if(ComponentModularity::canMerge(parent, std::make_shared<Entity>(child)))
-                {
-                    for(auto &i : ComponentModularity::MergeFuncs)
-                        if(parent.state[i.ComponentID] && child.state[i.ComponentID])
-                            i.element(parent, std::make_shared<Entity>(child));
+    //     componentModularityTable.set_function(
+    //         "mergeChild",
+    //         [](Entity& parent, Entity& child) -> bool
+    //         {
+    //             if(ComponentModularity::canMerge(parent, std::make_shared<Entity>(child)))
+    //             {
+    //                 for(auto &i : ComponentModularity::MergeFuncs)
+    //                     if(parent.state[i.ComponentID] && child.state[i.ComponentID])
+    //                         i.element(parent, std::make_shared<Entity>(child));
                     
-                    ComponentModularity::removeChild(parent, &child);
-                    return true;
-                }
-                return false;
-            }
-        );
+    //                 ComponentModularity::removeChild(parent, &child);
+    //                 return true;
+    //             }
+    //             return false;
+    //         }
+    //     );
 
-        componentModularityTable.set_function(
-            "mergeChildren",
-            [](Entity& parent)
-            {
-                ComponentModularity::mergeChildren(parent);
-            }
-        );
-        lua["ComponentModularity"] = componentModularityTable;
-    }
+    //     componentModularityTable.set_function(
+    //         "mergeChildren",
+    //         [](Entity& parent)
+    //         {
+    //             ComponentModularity::mergeChildren(parent);
+    //         }
+    //     );
+    //     lua["ComponentModularity"] = componentModularityTable;
+    // }
 }
 
 
@@ -382,62 +353,31 @@ void SanctiaLuaBindings::bindAll(sol::state &lua)
     Entities(lua);
     Utils(lua);
     Globals(lua);
+
+    std::fstream f("data/header.lua", std::ios::out);
+    f << luaHeader.str();
+    f.close();
 }
 
 void SanctiaLuaBindings::Entities(sol::state& lua)
 {
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING Entity
-        sol::usertype<Entity> class_binding = lua["Entity"];
-        
-        METHOD_BINDING_TEMPLATED(
-            comp, 
-                EntityState3D,
-                EntityDeplacementState,
-                ActionState,
-                EntityStats,
-                AgentState,
-                Target
-        );
-        METHOD_BINDING_TEMPLATED(
-            hasComp, 
-                EntityState3D,
-                EntityDeplacementState,
-                ActionState,
-                EntityStats,
-                AgentState,
-                Target
-        );
-        METHOD_BINDING_TEMPLATED(
-            removeComp, 
-                EntityState3D,
-                EntityDeplacementState,
-                ActionState,
-                EntityStats,
-                AgentState,
-                Target
-        );
-        METHOD_BINDING_TEMPLATED(
-            set, 
-                EntityState3D,
-                EntityDeplacementState,
-                ActionState,
-                EntityStats,
-                AgentState,
-                Target
-        );
-    }
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING EntityState3D
-        CREATE_CLASS_USERTYPE(EntityState3D, (), 
-            (vec3),
-            (bool),
-            (bool, vec3)
-        );
+    VBIND_INIT_HEADER_CATEGORY("GAME ENTITY")
 
-        ADD_MEMBER_BINDINGS(
+    VBIND_CLASS_DECLARE(Entity)
+    VBIND_CLASS_DECLARE(EntityState3D)
+    VBIND_CLASS_DECLARE(DeplacementState)
+    VBIND_CLASS_DECLARE(ActionState)
+    VBIND_CLASS_DECLARE(EntityStats)
+    VBIND_CLASS_DECLARE(AgentState)
+    VBIND_CLASS_DECLARE(Target)
+    VBIND_CLASS_DECLARE(DeplacementState)
+    VBIND_CLASS_DECLARE(statBar)
+
+    #define CURRENT_CLASS_BINDING EntityState3D
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS(((vec3), (bool), (bool, vec3)), (("pos"), ("usequat"), ("usequat", "pos")))
+        VBIND_ADD_MEMBERS(
             position,
             quaternion,
             lookDirection,
@@ -447,92 +387,182 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
             initPosition,
             initQuat,
             initLookDirection,
-            // #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
-            // physicActivated
-            // #endif
-        );
+        )
     }
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING ActionState
-        CREATE_CLASS_USERTYPE(ActionState, ());
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-        ADD_MEMBER_BINDINGS(
+    VBIND_CLASS_DECLARE_ALIAS(ActionState::Stance, integer)
+
+    #define CURRENT_CLASS_BINDING ActionState
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
             isTryingToAttack,
             isTryingToBlock,
             hasBlockedAttack,
             stun,
             blocking,
             attacking,
+            isTryingToAttackTime,
+            isTryingToBlockTime,
+            hasBlockedAttackTime,
+            stunTime,
+            blockingTime,
+            attackingTime,
             _stance,
             _wantedStance
-        );
-
-        // METHOD_BINDING(setStance)
-        // METHOD_BINDING(stance)
+        )
     }
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING statBar
-        CREATE_CLASS_USERTYPE(statBar, ());
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-        ADD_MEMBER_BINDINGS(
+
+
+    #define CURRENT_CLASS_BINDING statBar
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
             min, max, cur
-        );
+        )
     }
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING EntityStats
-        CREATE_CLASS_USERTYPE(EntityStats, ());
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-        ADD_MEMBER_BINDINGS(
+    #define __DAMAGE_TYPE_BIND(t) (DamageTypeReverseMap[DamageType::t], DamageType::t)
+    VBIND_ADD_ENUM(
+        "DamageType", 
+        __DAMAGE_TYPE_BIND(Pure),
+        __DAMAGE_TYPE_BIND(Vital),
+        __DAMAGE_TYPE_BIND(Heal),
+        __DAMAGE_TYPE_BIND(VitalHeal),
+        __DAMAGE_TYPE_BIND(Blunt),
+        __DAMAGE_TYPE_BIND(Slash),
+        __DAMAGE_TYPE_BIND(Piercing),
+        __DAMAGE_TYPE_BIND(Frost),
+        __DAMAGE_TYPE_BIND(Burn),
+        __DAMAGE_TYPE_BIND(Thunder)
+    )
+
+    VBIND_CLASS_DECLARE_ALIAS(decltype(EntityStats::resistances), number[])
+
+    #define CURRENT_CLASS_BINDING EntityStats
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
             alive,
             health, 
             stamina,
             adrenaline,
             resistances
-        );
+        )
     }
-    {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING AgentState
-        CREATE_CLASS_USERTYPE(AgentState, ());
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-        ADD_MEMBER_BINDINGS(
+    #define CURRENT_CLASS_BINDING AgentState
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
             state,
             stateName,
             lastUpdateTime,
             nextUpdateDelay,
-            Transition
-        );
+            lastStateChangeTime,
+        )
+        VBIND_ADD_METHOD(Transition, ("newState", "Name"))
     }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    #define CURRENT_CLASS_BINDING DeplacementState
     {
-        #undef CURRENT_CLASS_BINDING
-        #define CURRENT_CLASS_BINDING Target
-        CREATE_CLASS_USERTYPE(Target, ());
-        ADD_MEMBER_BINDINGS(
-            hasTarget,
-            getTarget
-        );
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(
+            wantedDepDirection,
+            wantedSpeed,
+            speed,
+            deplacementDirection,
+            walkSpeed,
+            sprintSpeed
+        )
     }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+
+    #define CURRENT_CLASS_BINDING Target
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_METHODS(
+            hasTarget,
+            getTarget,
+            setTarget
+        )
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    #define CURRENT_CLASS_BINDING Entity
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_METHODS(toStr, is)
+        VBIND_ADD_ENTITY_COMPONENTS(
+                EntityInfos,
+                EntityGroupInfo,
+                WidgetBackground,
+                WidgetBox,
+                WidgetButton,
+                WidgetSprite,
+                WidgetState,
+                WidgetStyle,
+                WidgetText,
+                EntityState3D,
+                DeplacementState,
+                ActionState,
+                EntityStats,
+                AgentState,
+                Target,
+                DeplacementState
+        )
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+}
+
+bool operator==(const Component<EntityState3D>::ComponentElem &a, const Component<EntityState3D>::ComponentElem &b)
+{
+    return a.entity == b.entity;
+}
+
+Entity& lua__getAppRoot()
+{
+    EntityRef root = SubApps::getCurrentRoot(); 
+    if(root)
+        return *root.get();
+    else
+        throw std::runtime_error("No active app or app root");
 }
 
 // TODO: replace the runtime errors with returning nil when appropriate
 void SanctiaLuaBindings::Utils(sol::state &lua)
 {
-    {
-        lua.set_function(
-            "getAppRoot",
-            []() ->  Entity& 
-            { 
-                EntityRef root = SubApps::getCurrentRoot(); 
-                if(root)
-                    return *root.get();
-                else
-                    throw std::runtime_error("No active app or app root");
-            }
-        );
-    }
+    VBIND_INIT_HEADER_CATEGORY("GAME SPECIFIC UTILS")
+
+    VBIND_ADD_FUNCTION_ALIAS(getAppRoot, lua__getAppRoot, ());
+
+    VBIND_ADD_FUNCTIONS(
+        (spawnEntity, ("name")),
+        (getClosestVisibleAlly, ()),
+        (getClosestVisibleEnemy, ())
+    );
 }
 
 // TODO: make macro to automate this if necessary (might not be cause like how many globals do we even need?)
@@ -562,53 +592,38 @@ struct GG_Wrapper {
 
 void SanctiaLuaBindings::Globals(sol::state &lua)
 {
-    GG::EntityTime.start();
-    lua.new_usertype<GG_Wrapper>(
-        "GameGlobalsType", 
-        "timeOfDay", sol::property(&GG_Wrapper::getTimeOfDay, &GG_Wrapper::setTimeOfDay),
-        "timeOfDayCycleEnable", sol::property(&GG_Wrapper::getTimeOfDayCycleEnable, &GG_Wrapper::setTimeOfDayCycleEnable),
-        "getPlayerEntity", &GG_Wrapper::getPlayerEntity,
-        "setPlayerEntity", &GG_Wrapper::setPlayerEntity,
-        "setEntityTime", &GG_Wrapper::setEntityTime,
-        "getEntityTime", &GG_Wrapper::getEntityTime,
-        "currentLanguage", sol::property(&GG_Wrapper::getCurrentLanguage, &GG_Wrapper::setCurrentLanguage)
-    );
-    lua["GameGlobals"] = GG_Wrapper();
+    // GG::EntityTime.start();
+    // lua.new_usertype<GG_Wrapper>(
+    //     "GameGlobalsType", 
+    //     "timeOfDay", sol::property(&GG_Wrapper::getTimeOfDay, &GG_Wrapper::setTimeOfDay),
+    //     "timeOfDayCycleEnable", sol::property(&GG_Wrapper::getTimeOfDayCycleEnable, &GG_Wrapper::setTimeOfDayCycleEnable),
+    //     "getPlayerEntity", &GG_Wrapper::getPlayerEntity,
+    //     "setPlayerEntity", &GG_Wrapper::setPlayerEntity,
+    //     "setEntityTime", &GG_Wrapper::setEntityTime,
+    //     "getEntityTime", &GG_Wrapper::getEntityTime,
+    //     "currentLanguage", sol::property(&GG_Wrapper::getCurrentLanguage, &GG_Wrapper::setCurrentLanguage)
+    // );
+    // lua["GameGlobals"] = GG_Wrapper();
 
-    lua.new_usertype<::Globals>(
-        "Globals",
-        "screenResolution", sol::property(&Globals::screenResolution),
-        "mousePosition", sol::property(&Globals::mousePosition),
-        "appTime", &Globals::appTime,
-        "mainThreadTime", &Globals::mainThreadTime,
-        "simulationTime", &Globals::simulationTime,
-        "cpuTime", &Globals::cpuTime,
-        "gpuTime", &Globals::gpuTime,
-        "fpsLimiter", &Globals::fpsLimiter,
-        "enablePhysics", &Globals::enablePhysics,
-        "windowWidth", sol::property(&Globals::windowWidth),
-        "windowHeight", sol::property(&Globals::windowHeight),
-        "windowSize", sol::property(&Globals::windowSize),
-        "renderScale", sol::property(&Globals::renderScale),
-        "renderSize", sol::property(&Globals::renderSize),
-        "drawFullscreenQuad", &Globals::drawFullscreenQuad,
-        "mouseLeftClick", &Globals::mouseLeftClick,
-        "mouseLeftClickDown", &Globals::mouseLeftClickDown,
-        "mouseRightClick", &Globals::mouseRightClick,
-        "mouseRightClickDown", &Globals::mouseRightClickDown,
-        "mouseMiddleClick", &Globals::mouseMiddleClick,
-        "mouseMiddleClickDown", &Globals::mouseMiddleClickDown,
-        "mouse4Click", &Globals::mouse4Click,
-        "mouse4ClickDown", &Globals::mouse4ClickDown,
-        "mouse5Click", &Globals::mouse5Click,
-        "mouse5ClickDown", &Globals::mouse5ClickDown,
-        "mouseScrollOffset", sol::property(&Globals::mouseScrollOffset),
-        "clearMouseScroll", &Globals::clearMouseScroll,
-        "chromaticAberationColor1", &Globals::sceneChromaticAbbColor1,
-        "chromaticAberationColor2", &Globals::sceneChromaticAbbColor2,
-        "chromaticAberationAngleAmplitude", &Globals::sceneChromaticAbbAngleAmplitude,
-        "screenHSVshift", &Globals::sceneHsvShift,
-        "screenVignette", &Globals::sceneVignette
-    );
-    lua["globals"] = &globals;
+    #undef CURRENT_CLASS_BINDING
+
+    VBIND_INIT_HEADER_CATEGORY("GAME GLOBALS")
+
+    #define CURRENT_CLASS_BINDING GG_Wrapper
+    VBIND_CLASS_DECLARE_ALIAS(CURRENT_CLASS_BINDING, GameGlobals)
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_METHODS(
+            getTimeOfDay,
+            setTimeOfDay,
+            setTimeOfDayCycleEnable,
+            getTimeOfDayCycleEnable,
+            getPlayerEntity,
+            getCurrentLanguage,
+            setCurrentLanguage
+        )
+    }
+    luaHeader << "GameGlobals = {}\n";
+     lua["GameGlobals"] = GG_Wrapper();
+    #undef CURRENT_CLASS_BINDING
 }

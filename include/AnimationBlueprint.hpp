@@ -31,6 +31,8 @@ namespace AnimBlueprint
     extern std::function<void (void *)> weaponBlockExit;
     // extern std::function<void (void *)> weaponBlockExit;
 
+    extern std::function<void (void *)> idleEnter;
+
     void PrepareAnimationsCallbacks();
 }
 

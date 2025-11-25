@@ -54,7 +54,7 @@ struct EntityState3D
 };
 
 
-struct EntityDeplacementState
+struct DeplacementState
 {
     float speed = 0.f;
     float wantedSpeed = 0.f;
@@ -104,13 +104,22 @@ class ActionState
         const Stance& stance() const {return _wantedStance;};
 
         bool isTryingToAttack = false;
+        float isTryingToAttackTime = 0;
+
         bool isTryingToBlock = false;
+        float isTryingToBlockTime = 0;
 
         bool hasBlockedAttack = false;
+        float hasBlockedAttackTime = 0;
 
         bool stun = false;
+        float stunTime = 0;
+
         bool blocking = false;
+        float blockingTime = 0;
+
         bool attacking = false;
+        float attackingTime = 0;
 
         enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockType;
         float lockedMaxSpeed = 0;
@@ -170,45 +179,6 @@ GENERATE_ENUM_FAST_REVERSE(DeplacementBehaviour
     , DEMO
     , FOLLOW_WANTED_DIR
 )
-
-struct AgentState__old
-{
-    GENERATE_ENUM_FAST_REVERSE(State
-        , COMBAT_POSITIONING
-        , COMBAT_ATTACKING
-        , COMBAT_BLOCKING
-    ) 
-    
-    State state;
-
-    float timeSinceLastState = 0.f;
-    float randomTime = 0.f;
-
-    void TransitionTo(State newState, float minTime = 0.f, float maxTime = 0.f)
-    {
-        state = newState; 
-        timeSinceLastState = 0.f;
-        float r = (float)(std::rand()%1024)/1024.f;
-        randomTime = minTime + r*(maxTime-minTime);
-    }
-};
-
-struct AgentState 
-{
-    uint state = 0;
-    std::string stateName;
-
-    float lastUpdateTime = 0.f;
-    float nextUpdateDelay = 0.1f;
-
-    void Transition(int newState, const std::string& newStateName, float delay)
-    {
-        lastUpdateTime = globals.simulationTime.getElapsedTime();
-        state = newState;
-        stateName = newStateName;
-        nextUpdateDelay = delay;
-    }
-};
 
 struct LevelOfDetailsInfos
 {

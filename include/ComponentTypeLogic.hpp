@@ -63,10 +63,21 @@ struct EntityDeplacementState
     vec3 wantedDepDirection = vec3(0, 0, 0);
 
     bool grounded = false;
+    bool walking = false;
+    bool isJumping = false;
 
     float walkSpeed = 2.f;
     float sprintSpeed = 7.f;
     float airSpeed = 1.f;
+    
+    float friction = 4.0f;
+    float stopspeed = 2.0f;
+    float ground_accelerate = 12.0f;
+    float air_accelerate = 1.0f;
+    float gravity = 40.0f;
+    float jumpVelocity = 10.0f;
+    float landedTime = 0.f;
+    float landedJumpDelay = 0.15f;
 };
 
 

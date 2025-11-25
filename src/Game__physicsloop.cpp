@@ -123,56 +123,193 @@ void Game::physicsLoop()
                     
                     if(!entity.hasComp<EntityDeplacementState>()) break;
 
-                    /*
-                        Fastest way possible to see if the player is grounded.
-                            If the player comes into contact with a surface exerting an opposing force to 
-                            gravity, their vertical velocity will be canceled out.
+                    const float small_threshold = 0.05f;
 
-                            This method can theoricly leads to a rare double jump exploit.
-                            Luna said this methode render bunny hopping impossible.
-                    */
-                    ds.grounded = abs(b->getLinearVelocity().y) < 5e-4;
-                    ds.grounded = true; // TODO : fix grounded
-                    ds.deplacementDirection = normalize(PG::toglm(b->getLinearVelocity()));
+                    vec3 velocity = PG::toglm(b->getLinearVelocity());
 
-                    float maxspeed = ds.grounded ? ds.wantedSpeed : ds.airSpeed; 
-                    vec3 vel = PG::toglm(b->getLinearVelocity());
-                    vec3 dir = ds.wantedDepDirection;
-                    // ds.speed = length(vec2(vel.x, vel.z));
-                    ds.speed = length(vel);
+                    float dt = globals.simulationTime.getDelta();
 
+                    ds.deplacementDirection = normalize(velocity);
+                    ds.speed = length(velocity);
+                    
+
+                    // check grounded
+                    PG::GroundedRayCastCallback callback;
+                    float radius = 0.25f;
+                    // here we try multiple raycasts in a grid to better detect ground when on slopes and stuff but idk if it really is necessary :/
+                    for (int i = -1; i <= 1; i++)
+                    {
+                        for (int j = -1; j <= 1; j++)
+                        {
+                            vec3 offset = vec3(i * radius * 1.5, 0, j * radius * 1.5);
+                            vec3 from_glm = s.position + offset + vec3(0, 1.0f, 0); // cursed magic value offset, should probably do something about that
+                            rp3d::Vector3 from = PG::torp3d(from_glm);
+                            rp3d::Vector3 to = PG::torp3d(s.position + offset + vec3(0, -0.15f, 0));
+                            PG::GroundedRayCastCallback callback_offset(from_glm);
+                            rp3d::Ray ray(from, to);
+                            PG::world->raycast(ray, &callback_offset);
+                            if (callback_offset.hit)
+                            {
+                                callback = callback_offset;
+                                break;
+                            }
+                        }
+                    }
+                    if (!callback.hit)
+                    {
+                        ds.walking = false;
+                        ds.grounded = false;
+                    }
+                    else if (dot(velocity, vec3(0, 1, 0)) > 0 && dot(velocity, callback.hitNormal) > small_threshold)
+                    {
+                        ds.walking = false;
+                        ds.grounded = false;
+                    }
+                    else 
+                    {
+                        if (ds.grounded == false)
+                        {
+                            // we just landed
+                            ds.landedTime = globals.simulationTime.getElapsedTime();
+                        }
+                        ds.grounded = true;
+                        ds.walking = true;
+                    }
+
+                    // apply gravity
+                    vec3 v = velocity + vec3(0, -ds.gravity, 0) * dt;
+
+                    velocity = (velocity + v) * 0.5f; // smoothing the gravity effect, feels nicer imo
+
+
+                    // get input from ActionState if any
                     if(entity.hasComp<ActionState>())
                     {
                         auto &as = entity.comp<ActionState>();
 
-                        if(as.stun)
-                            maxspeed = 0.f;
+                        // if(as.stun)
+                        //     maxspeed = 0.f;
+                        // else switch (as.lockType)
+                        //     {
+                        //         case ActionState::DIRECTION : dir = as.lockedDirection;
+                        //         case ActionState::SPEED_ONLY :maxspeed = as.lockedMaxSpeed; break;                
+                        //         default: break;
+                        //     }
+
+                        if (as.stun)
+                        {
+                            ds.wantedSpeed = 0.f;
+                            ds.isJumping = false;
+                        }
                         else switch (as.lockType)
-                            {
-                                case ActionState::DIRECTION : dir = as.lockedDirection;
-                                case ActionState::SPEED_ONLY :maxspeed = as.lockedMaxSpeed; break;                
-                                default: break;
-                            }
+                        {
+                            case ActionState::DIRECTION :
+                                ds.wantedDepDirection = as.lockedDirection;
+                                ds.isJumping = false;
+                                break;
+                            case ActionState::SPEED_ONLY :
+                                ds.wantedSpeed = as.lockedMaxSpeed; 
+                                ds.isJumping = false;
+                                break;                
+                            default: break;
+                        }
                     }
+
+                    // check jump
+                    if (ds.isJumping)
+                    {
+                        ds.grounded = false;
+                        ds.isJumping = false;
+                        velocity.y = ds.jumpVelocity; // for nicer instantaneous jumps, try to change to += if it feels weird
+                    }
+
+                    // get acceleration depending on state
+                    float accel;
+                    if (ds.walking)
+                    {
+                        accel = ds.ground_accelerate;
+                    }
+                    else
+                    {
+                        accel = ds.air_accelerate;
+                    }
+                    
+                    // apply friction
+                    float speed = length(velocity);
+                    if (speed < small_threshold) // if too slow, stop (to prevent sliding)
+                    {
+                        velocity.x = 0;
+                        velocity.z = 0;
+                    }
+                    else
+                    {
+                        float drop = 0.0f;
+                        if (ds.walking)
+                        {
+                            float control = speed < ds.stopspeed ? ds.stopspeed : speed;
+                            drop = control * ds.friction * dt;
+                        }
+
+                        float new_speed = speed - drop;
+                        new_speed = max(new_speed, 0.0f);
+                        new_speed /= speed;
+                        velocity *= new_speed;
+                    }
+
+                    // do movement
+                    vec3 wishdir = ds.wantedDepDirection;
+                    float wishspeed = ds.wantedSpeed;
+
+                    float current_speed = dot(velocity, wishdir);
+                    float addspeed = wishspeed - current_speed;
+                    if (addspeed > 0)
+                    {
+                        float accelspeed = accel * dt * wishspeed;
+                        accelspeed = min(accelspeed, addspeed);
+                        velocity += wishdir * accelspeed;
+                    }                    
+
+                    
+
+
+                    // float maxspeed = ds.grounded ? ds.wantedSpeed : ds.airSpeed; 
+                    // vec3 vel = PG::toglm(b->getLinearVelocity());
+                    // vec3 dir = ds.wantedDepDirection;
+                    // ds.speed = length(vec2(vel.x, vel.z));
+                    // ds.speed = length(vel);
+
+                    
+
+                    b->setLinearVelocity(PG::torp3d(velocity));
+
+                    // std::cout << 
+                    //     "pos: " << glm::to_string(s.position) << "\n" <<
+                    //     "vel: " << glm::to_string(velocity) << "\n" <<
+                    //     "wishdir: " << glm::to_string(wishdir) << "\n" <<
+                    //     "wishspeed: " << wishspeed << "\n" <<
+                    //     "grounded: " << ds.grounded << "\n" <<
+                    //     "walking: " << ds.walking << "\n" <<
+                    //     "velocity . ground normal: " << dot(velocity, callback.hitNormal) << "\n"
+                    //     ;
+
+                    // // if(ds.speed > 0.001)
+                    // // {
+                    // //     ds.speed *= abs(dot(dir, normalize(vel)));
+                    // //     std::cout << abs(dot(dir, normalize(vel))) << "\n";
+                    // // }
 
                     // if(ds.speed > 0.001)
                     // {
-                    //     ds.speed *= abs(dot(dir, normalize(vel)));
-                    //     std::cout << abs(dot(dir, normalize(vel))) << "\n";
+                    //     b->applyWorldForceAtCenterOfMass(PG::torp3d(-vec3(vel.x, 0, vel.z) * pow(maxspeed, 0.5f) * 5.f * b->getMass()));
                     // }
 
-                    if(ds.speed > 0.001)
-                    {
-                        b->applyWorldForceAtCenterOfMass(PG::torp3d(-vec3(vel.x, 0, vel.z) * pow(maxspeed, 0.5f) * 5.f * b->getMass()));
-                    }
-
-                    // b->getCollider(0)->getMaterial().
+                    // // b->getCollider(0)->getMaterial().
                     
 
-                    if(ds.speed < maxspeed)
-                        b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 50.f * b->getMass())); 
+                    // if(ds.speed < maxspeed)
+                    //     b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 50.f * b->getMass())); 
                     
-                    // b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 15.f * b->getMass())); 
+                    // // b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 15.f * b->getMass())); 
 
                 }
                 break;

@@ -11,7 +11,7 @@ Apps::MovementDemo::MovementDemo() : SubApps("Movement Demo")
         InputManager::addEventInput(
             "input exemple", GLFW_KEY_SPACE, 0, GLFW_PRESS, [&]() {
                 
-                NOTIF_MESSAGE("SPACE BAR PRESSED")
+                // NOTIF_MESSAGE("SPACE BAR PRESSED")
 
             },
             InputManager::Filters::always, false)
@@ -50,7 +50,7 @@ void Apps::MovementDemo::init()
     }
 
     physicsMutex.lock();
-    ComponentModularity::addChild(*appRoot, spawnEntity("Ground_Demo_64xh"));
+    ComponentModularity::addChild(*appRoot, spawnEntity("movement demo terrain"));
     ComponentModularity::ReparentChildren(*appRoot);
     physicsMutex.unlock();
 }

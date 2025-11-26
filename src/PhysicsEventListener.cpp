@@ -139,8 +139,9 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
         }
 
         bool isExit = pair.getEventType() == _OverlapPair_::EventType::OverlapExit;
+        bool isEnter = pair.getEventType() == _OverlapPair_::EventType::OverlapStart;
 
-        if(pair.getEventType() != _OverlapPair_::EventType::OverlapStart)
+        // if(pair.getEventType() != _OverlapPair_::EventType::OverlapStart)
         {
             // bool isWearer = false; // True if e2 is equipped with e1 as an Item
             // if(e2->hasComp<Items>())
@@ -166,9 +167,9 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
             if(e1->hasComp<Script>())
             {
                 if(isExit)
-                    e1->comp<Script>().run_OnCollisionEnter(*e1, *e2, *wearer);
-                else
                     e1->comp<Script>().run_OnCollisionExit(*e1, *e2, *wearer);
+                else if(isEnter)
+                    e1->comp<Script>().run_OnCollisionEnter(*e1, *e2, *wearer);
             }
         }
 

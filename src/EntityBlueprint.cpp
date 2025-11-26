@@ -13,7 +13,7 @@
 
 EntityRef Blueprint::SpawnMainGameTerrain()
 {
-    return Blueprint::Terrain("Hérault_8192", vec3(4096, 512, 4096), vec3(0), 256);
+    return Blueprint::Terrain("Herault_8192", vec3(4096, 512, 4096), vec3(0), 256);
 }
 
 EntityRef Blueprint::Terrain(

@@ -422,7 +422,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
                         colliders.push_back({
                             shape,       
-                            toRP3D(collider->mTransformation, colPos-center)
+                            toRP3D(collider->mTransformation, colPos)
                         });
 
 

@@ -453,7 +453,7 @@ std::function<void (void *)> AnimBlueprint::weaponGuardEnter = [](void * usr){
     auto &s = e->comp<ActionState>();
     s.blocking = true;
     s.blockingTime = globals.simulationTime.getElapsedTime();
-    s.isTryingToBlock = false;
+    // s.isTryingToBlock = false;
     s.lockType = ActionState::LockedDeplacement::SPEED_ONLY;
     s.lockedMaxSpeed = 0.5;
 

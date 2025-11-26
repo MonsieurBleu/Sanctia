@@ -10,8 +10,6 @@ class PlayerController : public SpectatorController
         bool jumpHeld = false;
         vec3 angleVector_forward, angleVector_right, angleVector_up;
 
-        float wishSpeed = 5.f;
-
 
         Camera *playerCam;
         

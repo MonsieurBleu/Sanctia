@@ -56,10 +56,9 @@ void PlayerController::update()
 
     wishVel.y = 0;
 
-
-
     ds.wantedDepDirection = length(wishVel) > 0.0f ? normalize(wishVel) : vec3(0);
-    ds.wantedSpeed = length(wishVel) * wishSpeed * (sprintActivated ? 2.f : 1.f);
+    // ds.wantedSpeed = length(wishVel) * ds.walkSpeed * (sprintActivated ? 2.f : 1.f);
+    ds.wantedSpeed = sprintActivated ? ds.sprintSpeed: ds.walkSpeed;
 
     if (
         upFactor > 0 && // we are pressing the jump key

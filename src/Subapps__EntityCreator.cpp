@@ -1538,7 +1538,7 @@ void Apps::EntityCreator::update()
     // if(globals.mouseRightClick())
     // {
     //     globals.getScene()->add(
-    //         LineHelperRef(new LineHelper(world, globals.currentCamera->getPosition(), VulpineColorUI::HightlightColor6))
+    //         LineHelperRef(new LineHelper(world, origin, VulpineColorUI::HightlightColor6))
     //     );
     // }
 
@@ -1569,7 +1569,7 @@ void Apps::EntityCreator::update()
                     float dist = distance(PG::toglm(hitpoint), globals.currentCamera->getPosition());
                     if(dist < mindist)
                     {
-                        dist = mindist;
+                        mindist = dist;
                         mindistChild = c;
                     }
                 }

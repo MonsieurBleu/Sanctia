@@ -5,21 +5,13 @@
 class PlayerController : public SpectatorController
 {
     private : 
-        // static constexpr float stopSpeed = 20.0f;
-        // static constexpr float jumpForce = 60.0f;
-
-        static constexpr float jumpHeight = 1;
-
-        // bool sprintActivated = false;
-        // int upFactor = 0;
-        // int frontFactor = 0;
-        // int rightFactor = 0;
-
         void jump(float deltaTime);
         
-        bool grounded = false;
-        bool doJump = false;
-        bool lockJump;
+        bool jumpHeld = false;
+        vec3 angleVector_forward, angleVector_right, angleVector_up;
+
+        float wishSpeed = 5.f;
+
 
         Camera *playerCam;
         

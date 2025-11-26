@@ -101,6 +101,25 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
         InputManager::Filters::always, false)
     );
 
+    // duplicating kick input on mouse 4 cause my middle mouse doesn't work :(
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "kick", GLFW_MOUSE_BUTTON_4, 0, GLFW_PRESS, PlayerStun,
+        InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "sprint kick", GLFW_MOUSE_BUTTON_MIDDLE, GLFW_MOD_SHIFT, GLFW_PRESS, [&]() {
+            if (globals.currentCamera->getMouseFollow() && GG::playerEntity)
+            {
+                GG::playerEntity->comp<ActionState>().setStance(ActionState::Stance::SPECIAL);
+                GG::playerEntity->comp<ActionState>().isTryingToAttack = true;
+            }
+        },
+        InputManager::Filters::always, false)
+    );
+
     inputs.push_back(&
         InputManager::addContinuousInput(
             "block", 

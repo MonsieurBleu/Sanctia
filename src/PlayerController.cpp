@@ -26,13 +26,59 @@ void PlayerController::update()
     updateDirectionStateWASD();
 
     auto &ds = GG::playerEntity->comp<DeplacementState>();
-    grounded = ds.grounded;
 
-    float accel = !grounded ? ds.airSpeed : (sprintActivated ? ds.sprintSpeed : ds.walkSpeed);
+    angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);
+    
+    if (upFactor == 0)
+        jumpHeld = false;
 
-    vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
-    const vec3 hUp = vec3(0, 1, 0);
-    const vec3 hRight = cross(hUp, hFront);
+    vec3 input = vec3((float)rightFactor, (float)upFactor, (float)frontFactor);
+    if (length(input) > 1e-6f)
+        input = normalize(input); 
+
+    angleVector_forward.y = 0;
+    angleVector_right.y = 0;
+    
+    angleVector_forward = normalize(angleVector_forward);
+    angleVector_right = normalize(angleVector_right);
+
+    // TODO: see if this is needed and see how other games handle this cause this ain't it
+    // float sideSpeedFactor = 0.7f;
+    // float backSpeedFactor = 0.6f;
+
+    // vec3 wishVel = 
+    //     angleVector_forward * input.z * (input.z < 0 ? backSpeedFactor : 1.0f) + 
+    //     angleVector_right * input.x * sideSpeedFactor;
+
+    vec3 wishVel = 
+        angleVector_forward * input.z + 
+        angleVector_right * input.x;
+
+    wishVel.y = 0;
+
+
+
+    ds.wantedDepDirection = length(wishVel) > 0.0f ? normalize(wishVel) : vec3(0);
+    ds.wantedSpeed = length(wishVel) * wishSpeed * (sprintActivated ? 2.f : 1.f);
+
+    if (
+        upFactor > 0 && // we are pressing the jump key
+        ds.walking && // we are in the walking state
+        !jumpHeld && // we haven't already jumped and are holding the jump key
+        (globals.simulationTime.getElapsedTime() - ds.landedTime) > ds.landedJumpDelay // we didn't just land less than landedJumpDelay seconds ago
+    )
+    {
+        ds.isJumping = true;
+        jumpHeld = true;
+    }
+
+    // grounded = ds.grounded;
+
+    // float accel = !grounded ? ds.airSpeed : (sprintActivated ? ds.sprintSpeed : ds.walkSpeed);
+
+    // vec3 hFront = normalize(globals.currentCamera->getDirection() * vec3(1, 0, 1));
+    // const vec3 hUp = vec3(0, 1, 0);
+    // const vec3 hRight = cross(hUp, hFront);
 
     // const vec3 curVel = PG::toglm(body->getLinearVelocity());
     // float rightCorrection = dot(hRight, normalize(curVel));
@@ -40,25 +86,25 @@ void PlayerController::update()
     // // std::cout << rightCorrection << "\n";
     // rightFactor -= rightCorrection * length(curVel);
 
-    const vec3 hFrontDep = hFront*(float)frontFactor;
-    const vec3 hRightDep = hRight*(float)rightFactor;
+    // const vec3 hFrontDep = hFront*(float)frontFactor;
+    // const vec3 hRightDep = hRight*(float)rightFactor;
 
-    if(frontFactor || rightFactor)
-    {
-        ds.wantedDepDirection = normalize(hFrontDep + hRightDep); 
-        ds.wantedSpeed = accel;
-    }
-    else
-    {
-        ds.wantedDepDirection = vec3(0);
-        ds.wantedSpeed = 0;
-    }
+    // if(frontFactor || rightFactor)
+    // {
+    //     ds.wantedDepDirection = normalize(hFrontDep + hRightDep); 
+    //     ds.wantedSpeed = accel;
+    // }
+    // else
+    // {
+    //     ds.wantedDepDirection = vec3(0);
+    //     ds.wantedSpeed = 0;
+    // }
 
-    if(doJump)
-    {
-        body->applyWorldForceAtCenterOfMass({0.f, 5.f * PG::currentPhysicFreq * body->getMass(), 0.f});
-        doJump = false;
-    }
+    // if(doJump)
+    // {
+    //     body->applyWorldForceAtCenterOfMass({0.f, 5.f * PG::currentPhysicFreq * body->getMass(), 0.f});
+    //     doJump = false;
+    // }
 }
 
 // void PlayerController::update()
@@ -184,7 +230,7 @@ bool PlayerController::inputs(GLFWKeyInfo& input)
         // case GLFW_KEY_S : frontFactor --; break;
         // case GLFW_KEY_A : rightFactor ++; break;
         // case GLFW_KEY_D : rightFactor --; break;
-        case GLFW_KEY_SPACE : doJump = grounded; break;
+        // case GLFW_KEY_SPACE : doJump = grounded; break;
         // case GLFW_KEY_LEFT_SHIFT : sprintActivated = true; break;
         default: break;
         }

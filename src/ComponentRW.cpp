@@ -81,13 +81,21 @@ DATA_WRITE_END_FUNC
 
 AUTOGEN_DATA_RW_FUNC(DeplacementState
     , speed
+    , wantedSpeed
     , deplacementDirection
     , wantedDepDirection
     , grounded
-    , wantedSpeed
+    , walking
+    , isJumping
     , walkSpeed
     , sprintSpeed
     , airSpeed
+    , friction
+    , stopspeed
+    , ground_accelerate
+    , air_accelerate
+    , gravity
+    , jumpVelocity
     )
 
 /* statBars aren't special nor complexe, it's prettier for them to be anonymous when written */

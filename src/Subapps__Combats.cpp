@@ -1,4 +1,5 @@
 #include <App.hpp>
+#include <GLFW/glfw3.h>
 #include <Subapps.hpp>
 #include <EntityBlueprint.hpp>
 #include <Game.hpp>
@@ -97,7 +98,19 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
 
     inputs.push_back(&
         InputManager::addEventInput(
+        "attack", VULPINE_GAMEPAD_BUTTON_X, 0, GLFW_PRESS, PlayerAttack,
+        InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
         "kick", GLFW_MOUSE_BUTTON_MIDDLE, 0, GLFW_PRESS, PlayerStun,
+        InputManager::Filters::always, false)
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "kick", VULPINE_GAMEPAD_BUTTON_Y, 0, GLFW_PRESS, PlayerStun,
         InputManager::Filters::always, false)
     );
 
@@ -127,7 +140,13 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
             PlayerBlock,
             InputManager::Filters::always,
             [&]() {
-                GG::playerEntity->comp<ActionState>().isTryingToBlock = false;
+                if (InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > 0.1f)
+                {
+                    PlayerBlock();
+                }
+                else {
+                    GG::playerEntity->comp<ActionState>().isTryingToBlock = false;
+                }
             }
         )
     );

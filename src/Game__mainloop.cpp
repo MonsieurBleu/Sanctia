@@ -711,10 +711,12 @@ void Game::mainloop()
         // GG::moon->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         globals.drawFullscreenQuad();
-        
-        
 
+        
+        
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
+        std::vector<GLFWKeyInfo> gamepadInputs = InputManager::pollGamepad();
+        for (auto &input : gamepadInputs) userInput(input), InputManager::processEventInput(input);
         InputManager::processContinuousInputs();
 
         // plottest->push(globals.appTime.getDeltaMS());

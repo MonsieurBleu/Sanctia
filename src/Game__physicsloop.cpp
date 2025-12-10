@@ -264,6 +264,7 @@ void Game::physicsLoop()
 
                     float current_speed = dot(velocity, wishdir);
                     float addspeed = wishspeed - current_speed;
+                    // std::cout << "ds.wantedSpeed: " << ds.wantedSpeed << "\n";
                     if (addspeed > 0)
                     {
                         float accelspeed = accel * dt * wishspeed;

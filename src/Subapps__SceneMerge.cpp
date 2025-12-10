@@ -97,10 +97,10 @@ void Apps::SceneMergeApp::init()
 
         auto table = newEntity("table ;_;"
             , model
-            , EntityState3D(true)
+            , state3D(true)
         );
 
-        // table->comp<EntityState3D>().position = vec3(4.0 * (i-size/2), 0, 4 * (j-size/2));
+        // table->comp<state3D>().position = vec3(4.0 * (i-size/2), 0, 4 * (j-size/2));
 
         rp3d::RigidBody *body = PG::world->createRigidBody(
             rp3d::Transform(
@@ -159,7 +159,7 @@ void Apps::SceneMergeApp::init()
             EntityModel chaise_model(EntityModel{Loader<ObjectGroup>::get("chaise").copy()}); 
             // chaise_model->add(chaiseMesh);
 
-            auto chaise = newEntity("table ^_^", chaise_model, EntityState3D(true));
+            auto chaise = newEntity("table ^_^", chaise_model, state3D(true));
 
             rp3d::RigidBody *chaise_body = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(1.5, 0, 0), DEFQUAT));
 

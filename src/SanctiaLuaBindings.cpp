@@ -18,10 +18,10 @@
 #undef CURRENT_CLASS_BINDING
 
 #define VBIND_ADD_ENTITY_COMPONENT(type) \
-    VBIND_ADD_METHOD_ALIAS(comp_##type, comp<type>, ()) \
-    VBIND_ADD_METHOD_ALIAS(hasComp_##type, hasComp<type>, ()) \
+    VBIND_ADD_METHOD_ALIAS(type, comp<type>, ()) \
+    VBIND_ADD_METHOD_ALIAS(has_##type, has<type>, ()) \
     VBIND_ADD_METHOD_ALIAS(set_##type, set<type>, ()) \
-    VBIND_ADD_METHOD_ALIAS(removeComp_##type, removeComp<type>, ())
+    VBIND_ADD_METHOD_ALIAS(remove_##type, remove<type>, ())
 
 #define VBIND_ADD_ENTITY_COMPONENTS(...) MAPGEN_FOR_EACH(VBIND_ADD_ENTITY_COMPONENT, __VA_ARGS__)
 
@@ -364,7 +364,7 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_INIT_HEADER_CATEGORY("GAME ENTITY")
 
     VBIND_CLASS_DECLARE(Entity)
-    VBIND_CLASS_DECLARE(EntityState3D)
+    VBIND_CLASS_DECLARE(state3D)
     VBIND_CLASS_DECLARE(DeplacementState)
     VBIND_CLASS_DECLARE(ActionState)
     VBIND_CLASS_DECLARE(EntityStats)
@@ -373,7 +373,7 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_DECLARE(DeplacementState)
     VBIND_CLASS_DECLARE(statBar)
 
-    #define CURRENT_CLASS_BINDING EntityState3D
+    #define CURRENT_CLASS_BINDING state3D
     {
         VBIND_CREATE_CLASS
         VBIND_ADD_CONSTRUCTORS(((vec3), (bool), (bool, vec3)), (("pos"), ("usequat"), ("usequat", "pos")))
@@ -524,7 +524,7 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
                 WidgetState,
                 WidgetStyle,
                 WidgetText,
-                EntityState3D,
+                state3D,
                 DeplacementState,
                 ActionState,
                 EntityStats,
@@ -537,7 +537,7 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     #undef CURRENT_CLASS_BINDING
 }
 
-bool operator==(const Component<EntityState3D>::ComponentElem &a, const Component<EntityState3D>::ComponentElem &b)
+bool operator==(const Component<state3D>::ComponentElem &a, const Component<state3D>::ComponentElem &b)
 {
     return a.entity == b.entity;
 }

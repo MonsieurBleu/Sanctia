@@ -24,7 +24,7 @@ void spawnPlayer(EntityRef appRoot)
 
 void PlayerAttack()
 {
-    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->hasComp<ActionState>())
+    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->has<ActionState>())
     {
         auto &sa = GG::playerEntity->comp<ActionState>();
 
@@ -39,7 +39,7 @@ void PlayerAttack()
 
 void PlayerBlock()
 {
-    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->hasComp<ActionState>())
+    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->has<ActionState>())
     {
         auto &sa = GG::playerEntity->comp<ActionState>();
 
@@ -54,7 +54,7 @@ void PlayerBlock()
 
 void PlayerStun()
 {
-    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->hasComp<ActionState>())
+    if (globals.currentCamera->getMouseFollow() && GG::playerEntity && GG::playerEntity->has<ActionState>())
     {
         auto &sa = GG::playerEntity->comp<ActionState>();
 
@@ -186,7 +186,7 @@ void Apps::CombatsApp::init()
         GG::sun->shadowCameraSize = vec2(256, 256);
     }
 
-    appRoot->set<EntityState3D>(true);
+    appRoot->set<state3D>(true);
     appRoot->set<Script>(Script());
     appRoot->comp<Script>().addScript("World Update", ScriptHook::ON_UPDATE);
 
@@ -194,8 +194,8 @@ void Apps::CombatsApp::init()
     for(float i = -1.f; i <= 1.f; i += 1.f)
     {
         EntityRef e= spawnEntity("(Combats) Enemy");
-        e->comp<EntityState3D>().useinit = true;
-        e->comp<EntityState3D>().initPosition = vec3(8.f, 0, i*4.f);
+        e->comp<state3D>().useinit = true;
+        e->comp<state3D>().initPosition = vec3(8.f, 0, i*4.f);
         e->comp<Script>().addScript("Action-Dummy Update", ScriptHook::ON_UPDATE);
         ComponentModularity::addChild(*appRoot, e);
     }
@@ -209,8 +209,8 @@ void Apps::CombatsApp::init()
     for(int i = 0; i < 1; i++)
     {
         EntityRef e= spawnEntity("(Combats) Ally");
-        e->comp<EntityState3D>().useinit = true;
-        e->comp<EntityState3D>().initPosition = vec3(-8.f, 0, 0);
+        e->comp<state3D>().useinit = true;
+        e->comp<state3D>().initPosition = vec3(-8.f, 0, 0);
         e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
         e->set<AgentState>(AgentState());
         e->set<Target>((Target){GG::playerEntity.get()});
@@ -221,15 +221,15 @@ void Apps::CombatsApp::init()
     for(int i = 0; i < 0; i ++)
     {
         EntityRef e = spawnEntity("(Combats) Ally");
-        e->comp<EntityState3D>().useinit = true;
-        e->comp<EntityState3D>().initPosition = vec3(rand()%16-8, 0, rand()%24-12);
+        e->comp<state3D>().useinit = true;
+        e->comp<state3D>().initPosition = vec3(rand()%16-8, 0, rand()%24-12);
         e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
         e->set<AgentState>(AgentState());
         ComponentModularity::addChild(*appRoot, e);
 
         EntityRef e2 = spawnEntity("(Combats) Enemy");
-        e2->comp<EntityState3D>().useinit = true;
-        e2->comp<EntityState3D>().initPosition = vec3(rand()%16-8, 0, rand()%24-12);
+        e2->comp<state3D>().useinit = true;
+        e2->comp<state3D>().initPosition = vec3(rand()%16-8, 0, rand()%24-12);
         e2->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
         e2->set<AgentState>(AgentState());
         ComponentModularity::addChild(*appRoot, e2);
@@ -250,7 +250,7 @@ void Apps::CombatsApp::update()
         UPDATING ORBIT CONTROLLER ACTIVATION 
     */
 
-    // auto &tmp = GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT].item->comp<EntityState3D>();
+    // auto &tmp = GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT].item->comp<state3D>();
     // WARNING_MESSAGE(tmp.position << "\t" << tmp.quaternion)
 }
 

@@ -7,11 +7,11 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
 
     ComponentModularity::addChild(*usr, item);
 
-    if(item->hasComp<Effect>())
+    if(item->has<Effect>())
     {
         item->comp<Effect>().usr = usr.get();
     }
-    if(item->hasComp<RigidBody>())
+    if(item->has<RigidBody>())
     {
         auto &b = item->comp<RigidBody>();
 
@@ -36,14 +36,14 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
 
     if(!item) return;
 
-    auto is = item->comp<EntityState3D>();
+    auto is = item->comp<state3D>();
     ComponentModularity::addChild(usr, item);
 
-    if(item->hasComp<Effect>())
+    if(item->has<Effect>())
     {
         item->comp<Effect>().usr = nullptr;
     }
-    if(item->hasComp<RigidBody>())
+    if(item->has<RigidBody>())
     {
         physicsMutex.lock();
 

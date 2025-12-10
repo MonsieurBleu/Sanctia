@@ -41,7 +41,7 @@ EntityRef Blueprint::Terrain(
     HeightMap_loading.start();
 
     /* Make Sure to refresh the heightmap */
-    Loader<Texture2D>::erase(mapName);
+    // Loader<Texture2D>::erase(mapName);
 
     // if(Loader<Texture2D>::loadedAssets.find(mapName) != Loader<Texture2D>::loadedAssets.end())
     // {
@@ -169,7 +169,7 @@ EntityRef Blueprint::Terrain(
         PG::heightFeilds.push_back({field, shape});
 
         /* Creating terrain cell entity */
-        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), EntityState3D(), b, model);
+        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state3D(), b, model);
         Blueprint::Assembly::AddEntityBodies(b, e.get(), 
             {
                 {   shape
@@ -183,7 +183,7 @@ EntityRef Blueprint::Terrain(
         ComponentModularity::addChild(*terrainRoot, e);
     }
 
-    HeightMap.freeSource();
+    // HeightMap.freeSource();
 
     TerrainEntityCreation.stop();
     std::cout << TerrainEntityCreation;
@@ -259,7 +259,7 @@ EntityRef Blueprint::TestManequin()
 
     EntityRef e = newEntity("HumanMale number " + std::to_string(i)
             , EntityModel{newGroup}
-            , EntityState3D(position)
+            , state3D(position)
             , DeplacementState()
             , stats
             , CharacterDialogues("data/commons/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
@@ -287,7 +287,7 @@ EntityRef Blueprint::Zweihander()
 {
     EntityRef zweihander(new Entity("ZweiHander"
         , ItemInfos{100, 10, DamageType::Slash}
-        , EntityState3D(true)
+        , state3D(true)
         , Effect()
         , EntityModel{Loader<ObjectGroup>::get("Zweihander").copy()}
         , ItemTransform{}
@@ -325,7 +325,7 @@ EntityRef Blueprint::Foot()
     EntityRef feet(new Entity("right foot"
         , ItemInfos{0, 5, DamageType::Blunt}
         , Effect()
-        , EntityState3D()
+        , state3D()
         , ItemTransform{}
     ));
 

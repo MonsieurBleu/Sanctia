@@ -114,7 +114,7 @@ ANIMATION_SWITCH_ENTITY(switchKick,
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
 
-    if(!e || !e->hasComp<DeplacementState>() || !e->hasComp<ActionState>())
+    if(!e || !e->has<DeplacementState>() || !e->has<ActionState>())
         return false;
 
     auto &depstate = e->comp<DeplacementState>();
@@ -125,7 +125,7 @@ ANIMATION_SWITCH_ENTITY(switchWalk,
 
 ANIMATION_SWITCH_ENTITY(switchIdle, 
 
-    if(!e || !e->hasComp<DeplacementState>() || !e->hasComp<ActionState>())
+    if(!e || !e->has<DeplacementState>() || !e->has<ActionState>())
         return false;
 
     auto &depstate = e->comp<DeplacementState>();
@@ -140,28 +140,28 @@ ANIMATION_SWITCH_ENTITY(switchRun,
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepLeft, 
-    vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
+    vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
     vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a > PI/4.f && a < 3.f*PI/4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepRight, 
-    vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
+    vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
     vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/-4.f && a > 3.f*PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepFront, 
-    vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
+    vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
     vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/4.f && a > PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepBack, 
-    vec2 d = normalize(toHvec2(e->comp<EntityState3D>().lookDirection));
+    vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
     vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
     float a = angle(b, d);
     return a < -3.f*PI/4.f || a > 3.f*PI/4.f;
@@ -322,7 +322,6 @@ float AnimBlueprint::weaponAttackCallback(
     {
         physicsMutex.lock();
         b->setIsActive(false);
-        // std::cout << TERMINAL_TIMER << "De-activating body\n" << TERMINAL_RESET;
         physicsMutex.unlock();
     }
 
@@ -332,7 +331,7 @@ float AnimBlueprint::weaponAttackCallback(
     )
     {
         physicsMutex.lock();
-        if(!w->hasComp<ItemInfos>())
+        if(!w->has<ItemInfos>())
         {
             WARNING_MESSAGE("Entity " << e->comp<EntityInfos>().name << " doesn't have item infos for applying effect zone.");
             return 1e12;
@@ -367,7 +366,7 @@ float AnimBlueprint::weaponAttackCallback(
     else if(actionState.lockType != lockDep)
     {
         if(lockDep == ActionState::LockedDeplacement::DIRECTION)
-            actionState.lockedDirection = normalize(e->comp<EntityState3D>().lookDirection * vec3(1, 0, 1));
+            actionState.lockedDirection = normalize(e->comp<state3D>().lookDirection * vec3(1, 0, 1));
 
         actionState.lockType = lockDep;
         actionState.lockedMaxSpeed = maxSpeed;
@@ -386,7 +385,9 @@ float AnimBlueprint::weaponAttackCallback(
 
     float fifo = fifoFixedSpeed(prct, 0.25f);
 
-    float speed = e->hasComp<EntityStats>() ? 
+    fifo *= 2.f - smoothstep(0.f, 50.f, prct);
+
+    float speed = e->has<EntityStats>() ? 
         fifo + 0.5*(e->comp<EntityStats>().adrenaline.cur/e->comp<EntityStats>().adrenaline.max)
         :
         fifo;
@@ -396,7 +397,7 @@ float AnimBlueprint::weaponAttackCallback(
 
 std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e || !e->hasComp<ActionState>()) return;
+    if(!e || !e->has<ActionState>()) return;
     e->comp<ActionState>().isTryingToAttack = false;
     e->comp<ActionState>().attacking = false;
     e->comp<ActionState>().lockType = ActionState::LockedDeplacement::NONE;
@@ -406,21 +407,30 @@ std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
 
     auto &slots = e->comp<Items>().equipped;
 
-    if(slots[WEAPON_SLOT].item && slots[WEAPON_SLOT].item->hasComp<Effect>())
+    if(slots[WEAPON_SLOT].item && slots[WEAPON_SLOT].item->has<Effect>())
         slots[WEAPON_SLOT].item->comp<Effect>().clear();
-        // slots[WEAPON_SLOT].item->removeComp<Effect>();
+        // slots[WEAPON_SLOT].item->remove<Effect>();
     
-    if(slots[FOOT_SLOT].item && slots[FOOT_SLOT].item->hasComp<Effect>())
+    if(slots[FOOT_SLOT].item && slots[FOOT_SLOT].item->has<Effect>())
         slots[FOOT_SLOT].item->comp<Effect>().clear();
-        // slots[FOOT_SLOT].item->removeComp<Effect>();
+        // slots[FOOT_SLOT].item->remove<Effect>();
 };
 
 std::function<void (void *)> AnimBlueprint::weaponAttackEnter = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e || !e->hasComp<ActionState>()) return;
+    if(!e || !e->has<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s._stance = s._wantedStance;
     s.isTryingToAttack = false;
+
+    if(e->has<Items>())
+    for(auto &i : e->comp<Items>().equipped)
+        if(i.item and i.item->has<RigidBody>() and i.item->comp<RigidBody>() and i.item->comp<RigidBody>()->isActive())
+            {
+                physicsMutex.lock();
+                i.item->comp<RigidBody>()->setIsActive(false);
+                physicsMutex.unlock();
+            }
 };
 
 // std::function<void (void *)> AnimBlueprint::weaponKickExit = [](void * usr){
@@ -433,23 +443,23 @@ std::function<void (void *)> AnimBlueprint::weaponAttackEnter = [](void * usr){
 
 //     if(slots[WEAPON_SLOT].item)
 //         slots[WEAPON_SLOT].item->comp<Effect>().clear();
-//         // slots[WEAPON_SLOT].item->removeComp<Effect>();
+//         // slots[WEAPON_SLOT].item->remove<Effect>();
     
 //     if(slots[FOOT_SLOT].item)
 //         slots[FOOT_SLOT].item->comp<Effect>().clear();
-//         // slots[FOOT_SLOT].item->removeComp<Effect>();
+//         // slots[FOOT_SLOT].item->remove<Effect>();
 // };
 
 
 std::function<void (void *)> AnimBlueprint::weaponStunExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e || !e->hasComp<ActionState>()) return;
+    if(!e || !e->has<ActionState>()) return;
     e->comp<ActionState>().stun = false;
 };
 
 std::function<void (void *)> AnimBlueprint::weaponGuardEnter = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e || !e->hasComp<ActionState>()) return;
+    if(!e || !e->has<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s.blocking = true;
     s.blockingTime = globals.simulationTime.getElapsedTime();
@@ -463,7 +473,7 @@ std::function<void (void *)> AnimBlueprint::weaponGuardEnter = [](void * usr){
 
 std::function<void (void *)> AnimBlueprint::weaponGuardExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e || !e->hasComp<ActionState>()) return;
+    if(!e || !e->has<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s.blocking = s.hasBlockedAttack;
     // s.blocking = false;
@@ -473,14 +483,14 @@ std::function<void (void *)> AnimBlueprint::weaponGuardExit = [](void * usr){
 
 std::function<void (void *)> AnimBlueprint::weaponBlockExit = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e || !e->hasComp<ActionState>()) return;
+    if(!e || !e->has<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s.hasBlockedAttack = false;
 };
 
 std::function<void (void *)> AnimBlueprint::idleEnter = [](void * usr){
     Entity *e = (Entity*)usr;
-    if(!e || !e->hasComp<ActionState>()) return;
+    if(!e || !e->has<ActionState>()) return;
     auto &s = e->comp<ActionState>();
     s.hasBlockedAttack = false;
     s.blocking = false;
@@ -722,6 +732,23 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
     LOAD_ANIM_FROM_PREFIX(Walk_B)
     LOAD_ANIM_FROM_PREFIX(Walk_L)
     LOAD_ANIM_FROM_PREFIX(Walk_R)
+
+    auto walkCallback = [](float f, void *usr)
+    {
+        Entity *e = (Entity*)usr;
+        auto &s = e->comp<DeplacementState>();
+
+        return max(0.25, 
+            1.5 * (
+                smoothstep(0.f,s.walkSpeed,s.speed) + 
+                smoothstep(s.walkSpeed, s.sprintSpeed, s.speed))
+        );
+    };
+
+    Walk_F->speedCallback = walkCallback;
+    Walk_B->speedCallback = walkCallback;
+    Walk_L->speedCallback = walkCallback;
+    Walk_R->speedCallback = walkCallback;
 
     LOAD_ANIM_FROM_PREFIX(Run_F)
     LOAD_ANIM_FROM_PREFIX(Run_B)

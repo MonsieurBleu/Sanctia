@@ -5,7 +5,7 @@
 
 void applyEffect(Entity *weapon, Entity *target)
 {
-    assert(weapon && target && weapon->hasComp<Effect>());
+    assert(weapon && target && weapon->has<Effect>());
 
     Effect &effect = weapon->comp<Effect>();
 
@@ -48,8 +48,8 @@ void applyEffect(Entity *weapon, Entity *target)
     auto &tAction = target->comp<ActionState>();
     auto &wAction = effect.usr->comp<ActionState>();
 
-    auto &tState = target->comp<EntityState3D>();
-    auto &wState = effect.usr->comp<EntityState3D>();
+    auto &tState = target->comp<state3D>();
+    auto &wState = effect.usr->comp<state3D>();
 
     float angle = dot(normalize(wState.position - tState.position), wState.lookDirection);
 
@@ -144,7 +144,7 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
         // if(pair.getEventType() != _OverlapPair_::EventType::OverlapStart)
         {
             // bool isWearer = false; // True if e2 is equipped with e1 as an Item
-            // if(e2->hasComp<Items>())
+            // if(e2->has<Items>())
             //     for(auto &i : e2->comp<Items>().equipped)
             //         if(i.item.get() == e1)
             //         {
@@ -156,7 +156,7 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
             Entity *wearer = e1;
             Entity *parent = e1->comp<EntityGroupInfo>().parent;
 
-            if(parent && parent->hasComp<Items>())
+            if(parent && parent->has<Items>())
                 for(auto &i : parent->comp<Items>().equipped)
                     if(i.item.get() == e1)
                     {
@@ -164,7 +164,7 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
                         break;
                     }
 
-            if(e1->hasComp<Script>())
+            if(e1->has<Script>())
             {
                 if(isExit)
                     e1->comp<Script>().run_OnCollisionExit(*e1, *e2, *wearer);
@@ -175,11 +175,11 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
 
         // if(pair.getEventType() == _OverlapPair_::EventType::OverlapStart)
         // {
-        //     bool e1IsValidWeapon = e1->hasComp<Effect>();
-        //     bool e1IsValidTarget = e1->hasComp<EntityStats>();
+        //     bool e1IsValidWeapon = e1->has<Effect>();
+        //     bool e1IsValidTarget = e1->has<EntityStats>();
 
-        //     bool e2IsValidWeapon = e2->hasComp<Effect>();
-        //     bool e2IsValidTarget = e2->hasComp<EntityStats>();
+        //     bool e2IsValidWeapon = e2->has<Effect>();
+        //     bool e2IsValidTarget = e2->has<EntityStats>();
             
         //     if(e1IsValidWeapon && e2IsValidTarget)
         //         applyEffect(e1, e2);

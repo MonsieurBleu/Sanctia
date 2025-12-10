@@ -101,7 +101,7 @@ void Game::initInput()
     //                 rp3d::Transform(rp3d::Vector3(0 + (i % 10) * 0.75 * cubeSize, 15 + i * 2.1 * cubeSize, 0),
     //                                 rp3d::Quaternion::identity()));
 
-    //             auto e = newEntity("physictest", body, EntityState3D());
+    //             auto e = newEntity("physictest", body, state3D());
     //             GG::entities.push_back(e);
 
     //             Blueprint::Assembly::AddEntityBodies(body, e.get(),
@@ -111,7 +111,7 @@ void Game::initInput()
     //                                                  }},
     //                                                  {});
 
-    //             e->comp<EntityState3D>().usequat = true;
+    //             e->comp<state3D>().usequat = true;
 
     //             e->set<PhysicsHelpers>(PhysicsHelpers());
     //         }

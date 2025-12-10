@@ -137,7 +137,7 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
                 GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
 
                 for (auto &i : GG::playerEntity->comp<Items>().equipped)
-                    if (i.item.get() && i.item->hasComp<EntityModel>())
+                    if (i.item.get() && i.item->has<EntityModel>())
                         i.item->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
                 App::setController(&Game::spectator);
             }
@@ -146,7 +146,7 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
                 App::setController(&Game::playerControl);
                 // playerControl.body->position = globals.currentCamera->getPosition();
 
-                if (GG::playerEntity->hasComp<RigidBody>())
+                if (GG::playerEntity->has<RigidBody>())
                 {
                     auto body = GG::playerEntity->comp<RigidBody>();
                     if (body)
@@ -159,7 +159,7 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
 
                 GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
                 for (auto &i : GG::playerEntity->comp<Items>().equipped)
-                    if (i.item.get() && i.item->hasComp<EntityModel>())
+                    if (i.item.get() && i.item->has<EntityModel>())
                         i.item->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
             }
         })
@@ -223,7 +223,7 @@ void Apps::MainGameApp::init()
 
         GG::playerEntity = DataLoader<EntityRef>::read(source);
 
-        if (GG::playerEntity->hasComp<RigidBody>())
+        if (GG::playerEntity->has<RigidBody>())
         {
             auto body = GG::playerEntity->comp<RigidBody>();
             if (body)
@@ -416,10 +416,10 @@ void Apps::MainGameApp::init()
     //         // e2->set<Target>(Target{GG::playerEntity});
     //         e2->set<Faction>({Faction::Type::PLAYER_ENEMY});
 
-    //         // e2->comp<EntityState3D>().position.x += 50;
+    //         // e2->comp<state3D>().position.x += 50;
     //         e2->comp<RigidBody>()->setTransform(
     //             rp3d::Transform(
-    //                 PG::torp3d(e2->comp<EntityState3D>().position + vec3(50, 0, 0)),
+    //                 PG::torp3d(e2->comp<state3D>().position + vec3(50, 0, 0)),
     //                 DEFQUAT
     //             )
     //         );
@@ -540,7 +540,7 @@ void Apps::MainGameApp::update()
             GG::playerEntity->comp<ActionState>().isTryingToBlock = false;
         }
 
-        // if(GG::playerEntity) std::cout << "PRINT 1 " << glm::to_string(GG::playerEntity->comp<EntityState3D>().position) << "\n";
+        // if(GG::playerEntity) std::cout << "PRINT 1 " << glm::to_string(GG::playerEntity->comp<state3D>().position) << "\n";
     }
 
     // std::cout << glm::to_string(globals.currentCamera->getPosition()) << "\n";

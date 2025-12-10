@@ -33,7 +33,7 @@ AUTOGEN_DATA_RW_FUNC(ActionState
     , lockedMaxSpeed
     )
 
-AUTOGEN_DATA_READ_FUNC(EntityState3D 
+AUTOGEN_DATA_READ_FUNC(state3D 
     , position
     , quaternion
     , lookDirection
@@ -45,7 +45,7 @@ AUTOGEN_DATA_READ_FUNC(EntityState3D
     , initLookDirection
     )
 
-DATA_WRITE_FUNC_INIT(EntityState3D)
+DATA_WRITE_FUNC_INIT(state3D)
 
     if(data.position != vec3(0))
         FTXTP_WRITE_ELEMENT(data, position);
@@ -235,14 +235,14 @@ DATA_READ_FUNC_INIT(Items)
         else
             data.equipped[i->second].item = DataLoader<EntityRef>::read(buff);
 
-        // if(data.equipped[i->second].item->hasComp<EntityState3D>())
+        // if(data.equipped[i->second].item->has<state3D>())
         // {
         //     WARNING_MESSAGE(data.equipped[i->second].item->toStr())
-        //     data.equipped[i->second].item->comp<EntityState3D>().position = vec3(0);
-        //     data.equipped[i->second].item->comp<EntityState3D>().initPosition = vec3(0);
+        //     data.equipped[i->second].item->comp<state3D>().position = vec3(0);
+        //     data.equipped[i->second].item->comp<state3D>().initPosition = vec3(0);
             
-        //     data.equipped[i->second].item->comp<EntityState3D>().quaternion = quat(1, 0, 0, 0);
-        //     data.equipped[i->second].item->comp<EntityState3D>().initQuat = quat(1, 0, 0, 0);
+        //     data.equipped[i->second].item->comp<state3D>().quaternion = quat(1, 0, 0, 0);
+        //     data.equipped[i->second].item->comp<state3D>().initQuat = quat(1, 0, 0, 0);
         // }
 
         buff->read();
@@ -723,9 +723,9 @@ DATA_READ_FUNC_ENTITY(RigidBody)
 { 
     DATA_READ_INIT(RigidBody)
 
-    if(e->hasComp<EntityState3D>())
+    if(e->has<state3D>())
     {
-        auto &s = e->comp<EntityState3D>();
+        auto &s = e->comp<state3D>();
         rp3d::Vector3 pos = PG::torp3d(s.position);
         rp3d::Quaternion quat = s.usequat ? PG::torp3d(s.quaternion) : DEFQUAT;
         data = PG::world->createRigidBody(Transform(pos, quat));
@@ -735,7 +735,7 @@ DATA_READ_FUNC_ENTITY(RigidBody)
         // TODO : put a warning message here
         FILE_ERROR_MESSAGE(
             buff->getSource(), 
-            "Entity " << e->comp<EntityInfos>().name << " has empty EntityState3D when creating RigidBody"
+            "Entity " << e->comp<EntityInfos>().name << " has empty state3D when creating RigidBody"
             )
         data = PG::world->createRigidBody(rp3d::Transform::identity());
     }

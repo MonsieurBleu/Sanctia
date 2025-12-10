@@ -79,10 +79,10 @@ DATA_READ_FUNC(EntityRef) {
         }
     }
 
-    // if(data->hasComp<EntityState3D>() && data->hasComp<RigidBody>())
+    // if(data->has<state3D>() && data->has<RigidBody>())
     // {
     //     auto &b = data->comp<RigidBody>();
-    //     auto &s = data->comp<EntityState3D>();
+    //     auto &s = data->comp<state3D>();
 
     //     rp3d::Quaternion quat = b->getTransform().getOrientation();
 
@@ -95,7 +95,7 @@ DATA_READ_FUNC(EntityRef) {
     //         quat));
     // }
 
-    if(data->hasComp<AnimationControllerInfos>())
+    if(data->has<AnimationControllerInfos>())
     {
         auto &a = data->comp<AnimationControllerInfos>();
 
@@ -113,7 +113,7 @@ DATA_READ_FUNC(EntityRef) {
         }
     }
 
-    if(data->hasComp<Items>())
+    if(data->has<Items>())
     {
         auto &items = data->comp<Items>();
         for(uint64 i = 0; i < sizeof(items.equipped)/sizeof(Items::Equipement); i++)
@@ -142,7 +142,7 @@ EntityRef& Loader<EntityRef>::loadFromInfos()
 }
 
 AUTOGEN_COMPONENT_RWFUNC(Script)
-AUTOGEN_COMPONENT_RWFUNC(EntityState3D)
+AUTOGEN_COMPONENT_RWFUNC(state3D)
 AUTOGEN_COMPONENT_RWFUNC(DeplacementState)
 AUTOGEN_COMPONENT_RWFUNC(EntityStats)
 AUTOGEN_COMPONENT_RWFUNC(CharacterDialogues)

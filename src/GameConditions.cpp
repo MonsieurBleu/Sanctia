@@ -24,7 +24,7 @@ GameConditionsHandler& GameConditionsHandler::set(
         {
         auto &i = DialogueController::interlocutor;
 
-        if(i->hasComp<NpcPcRelation>())
+        if(i->has<NpcPcRelation>())
             i->comp<NpcPcRelation>().known = value == COND_TRUE;
         else
             WARNING_MESSAGE("Script or dialogue is trying to set COND_NPC_KNOW to the entity '" << i->comp<EntityInfos>().name << "' who has no components relative to player relation.");
@@ -88,17 +88,17 @@ GameConditionState GameConditionsHandler::check(GameConditionTrigger p)
         case COND_ALL : return COND_TRUE;
         case COND_RANDOM : return RANDOM;
 
-        case INTERLOCUTOR_NEMESIS           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -16 ? COND_TRUE : COND_FALSE;
-        case INTERLOCUTOR_HOSTILE           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -8  ? COND_TRUE : COND_FALSE;
-        case INTERLOCUTOR_DESPISED          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -4  ? COND_TRUE : COND_FALSE;
-        case INTERLOCUTOR_BAD_ACQUAINTANCE  : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -1  ? COND_TRUE : COND_FALSE;
-        case INTERLOCUTOR_GOOD_ACQUAINTANCE : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 1  ? COND_TRUE : COND_FALSE;
-        case INTERLOCUTOR_FRIENDLY          : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 4  ? COND_TRUE : COND_FALSE;
-        case INTERLOCUTOR_TRUSTED           : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 8  ? COND_TRUE : COND_FALSE;
-        case INTERLOCUTOR_MAX_AFFINITY      : return i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 16 ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_NEMESIS           : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -16 ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_HOSTILE           : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -8  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_DESPISED          : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -4  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_BAD_ACQUAINTANCE  : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity <= -1  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_GOOD_ACQUAINTANCE : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 1  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_FRIENDLY          : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 4  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_TRUSTED           : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 8  ? COND_TRUE : COND_FALSE;
+        case INTERLOCUTOR_MAX_AFFINITY      : return i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known && i->comp<NpcPcRelation>().affinity >= 16 ? COND_TRUE : COND_FALSE;
 
         case INTERLOCUTOR_KNOWN : 
-            return (i->hasComp<NpcPcRelation>() && i->comp<NpcPcRelation>().known) == p.value ? COND_TRUE : COND_FALSE;
+            return (i->has<NpcPcRelation>() && i->comp<NpcPcRelation>().known) == p.value ? COND_TRUE : COND_FALSE;
 
         default:
             return p.value == (states[p.condition] == COND_TRUE) ? COND_TRUE : COND_FALSE;

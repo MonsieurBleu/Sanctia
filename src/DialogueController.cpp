@@ -177,7 +177,7 @@ void DialogueController::addChoice(const Dialogue &d)
 void DialogueController::init()
 {
     for(auto i : GG::entities)
-        if(i->hasComp<CharacterDialogues>())
+        if(i->has<CharacterDialogues>())
         {
             interlocutor = i;
             break;

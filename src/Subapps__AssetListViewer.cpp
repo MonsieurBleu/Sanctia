@@ -49,11 +49,11 @@ rp3d::Transform toRP3D(aiMatrix4x4 ai, vec3 posOff = vec3(0))
     );
 }
 
-EntityState3D toVulpine(aiMatrix4x4 ai)
+state3D toVulpine(aiMatrix4x4 ai)
 {
     mat4 m = toGLM(ai);
 
-    EntityState3D s(true);
+    state3D s(true);
     s.initQuat = quat(m);
     s.initPosition = vec3(m*vec4(0, 0, 0, 1));
 
@@ -171,7 +171,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY))
             WARNING_MESSAGE("Exporting SCENE_AS_ENTITY without OBJECT_AS_ENTITY isn't supported. The scene entity will not be created.")
         else 
-            sceneEntity = newEntity("[TMP SCENE] " + getNameOnlyFromPath(path.c_str()) + ".vEntity", EntityState3D(true));
+            sceneEntity = newEntity("[TMP SCENE] " + getNameOnlyFromPath(path.c_str()) + ".vEntity", state3D(true));
     }
 
     if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY) && !(vulpineImportFlags & 1<<VEAC::SceneConvertOption::IGNORE_MESH))
@@ -208,7 +208,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         colPos *= vec3(1, 0, 1);
         colPos = vec3(0);
 
-        EntityRef entity = newEntity(collection->mName.C_Str(), EntityState3D(true));
+        EntityRef entity = newEntity(collection->mName.C_Str(), state3D(true));
 
         std::string dirNameEntity = dirName + collection->mName.C_Str();
         // std::filesystem::create_directory(dirNameEntity);
@@ -231,7 +231,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 std::string dirNameLOD = dirNameEntity + " LOD" + lodcnt;
                 lodcnt ++;
 
-                if(!entity->hasComp<EntityModel>())
+                if(!entity->has<EntityModel>())
                     entity->set<EntityModel>({newObjectGroup()});
 
                 entity->comp<EntityModel>()->add(newObjectGroup(getFileNameFromPath(dirNameLOD.c_str())));
@@ -277,7 +277,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         if(scene->mMeshes[mesh->mMeshes[0]]->HasBones())
                         {
                             outModel->write(CONST_CSTRING_SIZED("\"Animated Packing Paint\""));
-                            entity->comp<EntityState3D>().usequat = false;
+                            entity->comp<state3D>().usequat = false;
                             entity->set<SkeletonAnimationState>(SkeletonAnimationState(Loader<SkeletonRef>::get(skeletonTarget)));
                         }
                         else
@@ -476,7 +476,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         if(sceneEntity)
             ComponentModularity::addChild(*sceneEntity, 
                 newEntity(entity->comp<EntityInfos>().name + " [000]"
-                    , EntityState3D(true, vec3(7.5*(i%5), 0, 7.5*(i/5)))
+                    , state3D(true, vec3(7.5*(i%5), 0, 7.5*(i/5)))
                     , EntityGroupInfo({entity})
                 )
             );
@@ -784,7 +784,7 @@ void Apps::AssetListViewer::init()
         },
         [&](Entity *e)
         {
-            if(e->hasComp<EntityGroupInfo>())
+            if(e->has<EntityGroupInfo>())
             {
                 auto parent = e->comp<EntityGroupInfo>().parent;
 

@@ -9,16 +9,16 @@
 #include <glm/gtx/string_cast.hpp>
 #include <reactphysics3d/mathematics/Vector3.h>
 
-COMPONENT_DEFINE_SYNCH(EntityState3D) /**************** UNUSED TODO: remove*****************/
+COMPONENT_DEFINE_SYNCH(state3D) /**************** UNUSED TODO: remove*****************/
 {
     if(
-        child->hasComp<RigidBody>() &&
+        child->has<RigidBody>() &&
         child->comp<RigidBody>()->getType() != rp3d::BodyType::KINEMATIC
         )
         return;
 
-    auto &ps = parent.comp<EntityState3D>();
-    auto &cs = child->comp<EntityState3D>();
+    auto &ps = parent.comp<state3D>();
+    auto &cs = child->comp<state3D>();
     cs.position = cs.initPosition + ps.position;
 
     if(ps.usequat)
@@ -80,7 +80,7 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
     auto &childBody = child->comp<RigidBody>();
 
 
-    if(newParent.hasComp<RigidBody>())
+    if(newParent.has<RigidBody>())
     {
         auto childBodyType = childBody->getType();
         childBody->setType(rp3d::BodyType::KINEMATIC);
@@ -95,9 +95,9 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
 
         child->set<RigidBody>(childBody);
     }
-    else if(child->hasComp<EntityState3D>())
+    else if(child->has<state3D>())
     {
-        auto &s = child->comp<EntityState3D>();
+        auto &s = child->comp<state3D>();
 
         auto cbtype = childBody->getType();
         
@@ -117,17 +117,17 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
     // child->set<RigidBody>(childBody);
 }   
 
-COMPONENT_DEFINE_REPARENT(EntityState3D)
+COMPONENT_DEFINE_REPARENT(state3D)
 {
-    auto &cs = child->comp<EntityState3D>();
+    auto &cs = child->comp<state3D>();
 
-    if(!cs.usequat && child->hasComp<EntityModel>() && child->comp<EntityModel>())
+    if(!cs.usequat && child->has<EntityModel>() && child->comp<EntityModel>())
         child->comp<EntityModel>()->state.setRotation(directionToEuler(cs.lookDirection));
 
-    if(!newParent.hasComp<EntityState3D>())
+    if(!newParent.has<state3D>())
         return;
 
-    auto &ps = newParent.comp<EntityState3D>();
+    auto &ps = newParent.comp<state3D>();
     
 
     quat ps_q = ps.usequat ? ps.quaternion : directionToQuat(ps.lookDirection);
@@ -141,7 +141,7 @@ COMPONENT_DEFINE_REPARENT(EntityState3D)
     cs._PhysicTmpPos = cs.position;
     cs._PhysicTmpQuat = cs.quaternion;
 
-    if(!newParent.hasComp<RigidBody>() && child->hasComp<RigidBody>())
+    if(!newParent.has<RigidBody>() && child->has<RigidBody>())
     {
         auto &b = child->comp<RigidBody>();
 
@@ -174,17 +174,17 @@ COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)
     return child->comp<RigidBody>()->getType() == parent.comp<RigidBody>()->getType();
 }   
 
-COMPONENT_DEFINE_COMPATIBILITY_CHECK(EntityState3D)
+COMPONENT_DEFINE_COMPATIBILITY_CHECK(state3D)
 {
-    auto &childState = child->comp<EntityState3D>();
-    auto &parentState = parent.comp<EntityState3D>();
+    auto &childState = child->comp<state3D>();
+    auto &parentState = parent.comp<state3D>();
 
     return childState.usequat == parentState.usequat;
 }   
 
 COMPONENT_DEFINE_MERGE(EntityModel)
 {
-    if(!parent.hasComp<EntityModel>())
+    if(!parent.has<EntityModel>())
     {
         parent.set<EntityModel>({newObjectGroup()});
     }
@@ -207,7 +207,7 @@ COMPONENT_DEFINE_MERGE(RigidBody)
 {
     auto &childBody = child->comp<RigidBody>();
 
-    if(!parent.hasComp<RigidBody>())
+    if(!parent.has<RigidBody>())
     {
         parent.set<RigidBody>(PG::world->createRigidBody(
             // childBody->getTransform()
@@ -259,7 +259,7 @@ template<> void Component<EntityModel>::ComponentElem::clean()
 
 template<> void Component<SkeletonAnimationState>::ComponentElem::init()
 {
-    if(entity->hasComp<EntityModel>())
+    if(entity->has<EntityModel>())
     {
         entity->comp<EntityModel>()->setAnimation(&data);
     }
@@ -271,7 +271,7 @@ template<> void Component<Items>::ComponentElem::clean()
         i = {0, EntityRef()};
 };
 
-template<> void Component<EntityState3D>::ComponentElem::clean()
+template<> void Component<state3D>::ComponentElem::clean()
 {
     System<Target>([&](Entity &e)
     {
@@ -441,7 +441,7 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
 {
     data = {newObjectGroup()};
 
-    // if(entity->hasComp<B_DynamicBodyRef>() && entity != GG::playerEntity.get())
+    // if(entity->has<B_DynamicBodyRef>() && entity != GG::playerEntity.get())
     // {
     //     auto &b = entity->comp<B_DynamicBodyRef>();
     //     data->add(getModelFromCollider(b->boundingCollider, vec3(1, 1, 0)));
@@ -454,7 +454,7 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
     //     data->add(getModelFromCollider(l.zone, vec3(1, 0, 0)));
     // }
 
-    if(entity->hasComp<RigidBody>())
+    if(entity->has<RigidBody>())
     {
         // std::cout << TERMINAL_NOTIF << entity->comp<EntityInfos>().name << "\n" << TERMINAL_RESET;
 
@@ -502,7 +502,7 @@ template<> void Component<PhysicsHelpers>::ComponentElem::clean()
 
 template<> void Component<InfosStatsHelpers>::ComponentElem::init()
 {
-    if(!entity->hasComp<EntityModel>()) return;
+    if(!entity->has<EntityModel>()) return;
 
     float textScale = 3.0;
     float offHeight = 0.11;
@@ -523,7 +523,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
     //     dir = vec3(1, 0, 0);
     // }
     
-    if(entity->hasComp<ItemInfos>())
+    if(entity->has<ItemInfos>())
     {
         curHeight = 0;
         dir = vec3(1, 0, 0);
@@ -539,7 +539,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
     ValueHelperRef<std::string> N(new ValueHelper(entity->comp<EntityInfos>().name, U"Name ", vec3(0.85)));
     ADD_VALUE_HELPER(N)
 
-    if(entity->hasComp<EntityStats>())
+    if(entity->has<EntityStats>())
     {
         auto &s = entity->comp<EntityStats>();
         ValueHelperRef<float> HP(new ValueHelper(s.health.cur, U"Health ", vec3(0, 1, 0)));
@@ -549,7 +549,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
         ADD_VALUE_HELPER(ST)
     }
 
-    if(entity->hasComp<NpcPcRelation>())
+    if(entity->has<NpcPcRelation>())
     {
         auto &r = entity->comp<NpcPcRelation>();
         ValueHelperRef<safeBoolOverload> K(new ValueHelper(*(safeBoolOverload*)&r.known, U"Know Player ", ColorHexToV(0x6668DE))); 
@@ -559,7 +559,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
         ADD_VALUE_HELPER(A)
     }
 
-    if(entity->hasComp<ItemInfos>())
+    if(entity->has<ItemInfos>())
     {
         auto &i = entity->comp<ItemInfos>();
 
@@ -575,7 +575,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
 
 template<> void Component<InfosStatsHelpers>::ComponentElem::clean()
 {
-    if(!entity || entity->ids[GRAPHIC] < 0 || entity->ids[GRAPHIC] > MAX_ENTITY || !entity->hasComp<EntityModel>()) return;
+    if(!entity || entity->ids[GRAPHIC] < 0 || entity->ids[GRAPHIC] > MAX_ENTITY || !entity->has<EntityModel>()) return;
 
     for(auto &i : data.models)
     {
@@ -593,10 +593,10 @@ template<> void Component<RigidBody>::ComponentElem::init()
     }
 
     /* TODO : maybe remove this and make a special static rigid body component */
-    if(data->getType() == rp3d::BodyType::STATIC && entity->hasComp<EntityState3D>())
+    if(data->getType() == rp3d::BodyType::STATIC && entity->has<state3D>())
     {
         auto &t = data->getTransform();
-        auto &s = entity->comp<EntityState3D>();
+        auto &s = entity->comp<state3D>();
         s.usePhysicInterpolation = false;
         s.position = PG::toglm(t.getPosition());
         s.quaternion = PG::toglm(t.getOrientation());
@@ -635,9 +635,9 @@ void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
 
     activated = true;
 
-    bool hasModel = e->hasComp<EntityModel>();
-    bool hasRigidBody = e->hasComp<RigidBody>();
-    bool hasChildren = e->hasComp<EntityGroupInfo>() && e->comp<EntityGroupInfo>().children.size();
+    bool hasModel = e->has<EntityModel>();
+    bool hasRigidBody = e->has<RigidBody>();
+    bool hasChildren = e->has<EntityGroupInfo>() && e->comp<EntityGroupInfo>().children.size();
 
     aabbmin = vec3(1e12);
     aabbmax = vec3(-1e12);
@@ -669,7 +669,7 @@ void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
     if(hasChildren)
     {
         for(auto c : e->comp<EntityGroupInfo>().children)
-            if(c->hasComp<LevelOfDetailsInfos>())
+            if(c->has<LevelOfDetailsInfos>())
             {
                 auto lodi = c->comp<LevelOfDetailsInfos>();
 
@@ -741,7 +741,7 @@ COMPONENT_DEFINE_REPARENT(LevelOfDetailsInfos)
 
 COMPONENT_DEFINE_MERGE(LevelOfDetailsInfos)
 {
-    if(parent.hasComp<LevelOfDetailsInfos>())
+    if(parent.has<LevelOfDetailsInfos>())
     {
         auto &clodi = child->comp<LevelOfDetailsInfos>();
         auto &plodi = parent.comp<LevelOfDetailsInfos>();
@@ -792,9 +792,9 @@ EntityRef spawnEntity(const std::string &name)
 
 bool isVisible(Entity &a, Entity &b)
 {
-    if(a.hasComp<EntityState3D>() && b.hasComp<EntityState3D>())
+    if(a.has<state3D>() && b.has<state3D>())
     {
-        return distance(a.comp<EntityState3D>().position, b.comp<EntityState3D>().position) < 100.f;
+        return distance(a.comp<state3D>().position, b.comp<state3D>().position) < 100.f;
     }
 
     return true;
@@ -802,14 +802,14 @@ bool isVisible(Entity &a, Entity &b)
 
 Entity* getClosestVisibleEnemy(Entity &e)
 {
-    auto &state3D1 = e.comp<EntityState3D>();
+    auto &state3D1 = e.comp<state3D>();
     auto &faction1 = e.comp<Faction>();
     Entity *bestMatch = &e;
     float minDistance = 1e6f;
 
-    System<EntityState3D, Faction>([&](Entity &f){
+    System<state3D, Faction>([&](Entity &f){
         
-        auto &state3D2 = f.comp<EntityState3D>();
+        auto &state3D2 = f.comp<state3D>();
         auto &faction2 = f.comp<Faction>();
 
         if(Faction::areEnemy(faction1, faction2) and isVisible(e, f))
@@ -829,14 +829,14 @@ Entity* getClosestVisibleEnemy(Entity &e)
 
 Entity* getClosestVisibleAlly(Entity &e)
 {
-    auto &state3D1 = e.comp<EntityState3D>();
+    auto &state3D1 = e.comp<state3D>();
     auto &faction1 = e.comp<Faction>();
     Entity *bestMatch = &e;
     float minDistance = 1e6f;
 
-    System<EntityState3D, Faction>([&](Entity &f){
+    System<state3D, Faction>([&](Entity &f){
         
-        auto &state3D2 = f.comp<EntityState3D>();
+        auto &state3D2 = f.comp<state3D>();
         auto &faction2 = f.comp<Faction>();
 
         if(!Faction::areEnemy(faction1, faction2) and isVisible(e, f))

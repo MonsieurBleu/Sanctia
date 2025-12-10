@@ -18,7 +18,10 @@
 
 #include <ModManager.hpp>
 
-Game::Game(GLFWwindow *window) : App(window){}
+Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSizeAddr())), defferedBuffer(static_cast<DefferedBuffer *>(renderBuffer)), paintShaderPass(*defferedBuffer)
+{
+    // defferedBuffer = static_cast<DefferedBuffer *>(renderBuffer);
+}
 
 void Game::init(int paramSample)
 {
@@ -224,4 +227,6 @@ void Game::init(int paramSample)
     doScriptHotReload = true;
 
     initInput();
+
+    paintShaderPass.setup();
 }

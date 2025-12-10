@@ -55,7 +55,7 @@ void Game::physicsLoop()
         ManageGarbage<RigidBody>();
         ManageGarbage<Target>();
 
-        if(GG::playerEntity && globals._currentController == &spectator && GG::playerEntity->hasComp<RigidBody>())
+        if(GG::playerEntity && globals._currentController == &spectator && GG::playerEntity->has<RigidBody>())
         {
             auto body = GG::playerEntity->comp<RigidBody>();
             if(body)
@@ -74,7 +74,7 @@ void Game::physicsLoop()
             Note ; isnan isn't working, the glm one AND the rp3d version. But the same check can be make by checking low infinity bound.
             This is probablly caused by the fastmath compiler argument.
         */
-        System<RigidBody, EntityState3D, staticEntityFlag>([](Entity &entity){
+        System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
             vec3 p = PG::toglm(b->getTransform().getPosition());
             const float lowinf = 1e6;
@@ -93,9 +93,9 @@ void Game::physicsLoop()
         PG::physicInterpolationMutex.unlock();
 
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
-        System<RigidBody, EntityState3D, staticEntityFlag>([](Entity &entity){
+        System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
-            auto &s = entity.comp<EntityState3D>();
+            auto &s = entity.comp<state3D>();
             auto &ds = entity.comp<DeplacementState>();
 
             #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
@@ -123,7 +123,7 @@ void Game::physicsLoop()
                     s.position = PG::toglm(t.getPosition());
                     s.quaternion = PG::toglm(t.getOrientation());
                     
-                    if(!entity.hasComp<DeplacementState>()) break;
+                    if(!entity.has<DeplacementState>()) break;
 
                     const float small_threshold = 0.05f;
 
@@ -185,7 +185,7 @@ void Game::physicsLoop()
 
 
                     // get input from ActionState if any
-                    if(entity.hasComp<ActionState>())
+                    if(entity.has<ActionState>())
                     {
                         auto &as = entity.comp<ActionState>();
 
@@ -359,9 +359,9 @@ void Game::physicsLoop()
 
         // static int i = 0;
         // if((i++)%10 == 0)
-        // System<EntityState3D, DeplacementState, AgentState__old, ActionState, Target>([&, this](Entity &entity){
+        // System<state3D, DeplacementState, AgentState__old, ActionState, Target>([&, this](Entity &entity){
 
-        //     auto &s = entity.comp<EntityState3D>();
+        //     auto &s = entity.comp<state3D>();
         //     auto &ds = entity.comp<DeplacementState>();
         //     auto target = entity.comp<Target>();
         //     auto &as = entity.comp<AgentState__old>();
@@ -370,14 +370,14 @@ void Game::physicsLoop()
         //     if(action.stun)
         //         return;
             
-        //     if(entity.hasComp<EntityStats>() && !entity.comp<EntityStats>().alive)
+        //     if(entity.has<EntityStats>() && !entity.comp<EntityStats>().alive)
         //         return;
 
         //     switch (as.state)
         //     {
         //         case AgentState__old::COMBAT_POSITIONING : if(!target.get()) return;
         //             {
-        //                 auto &st = target->comp<EntityState3D>();   
+        //                 auto &st = target->comp<state3D>();   
         //                 float d = distance(s.position, st.position);
 
         //                 if(!target->comp<EntityStats>().alive)
@@ -450,7 +450,7 @@ void Game::physicsLoop()
 
         //         case AgentState__old::COMBAT_BLOCKING : if(!target.get()) return;
         //             {
-        //                 auto &st = target->comp<EntityState3D>();  
+        //                 auto &st = target->comp<state3D>();  
         //                 auto &taction = target->comp<ActionState>();   
         //                 s.lookDirection = normalize(st.position-s.position);
 

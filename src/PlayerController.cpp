@@ -13,15 +13,15 @@ void PlayerController::update()
 {
     if(!GG::playerEntity) return;
 
-    if(GG::playerEntity->hasComp<RigidBody>())
+    if(GG::playerEntity->has<RigidBody>())
         body = GG::playerEntity->comp<RigidBody>();
 
-    if(!GG::playerEntity->hasComp<DeplacementState>())
+    if(!GG::playerEntity->has<DeplacementState>())
         return;
 
     if(!body) return;
 
-    if(GG::playerEntity->hasComp<EntityStats>() && !GG::playerEntity->comp<EntityStats>().alive) return;
+    if(GG::playerEntity->has<EntityStats>() && !GG::playerEntity->comp<EntityStats>().alive) return;
 
     updateDirectionStateWASD();
 

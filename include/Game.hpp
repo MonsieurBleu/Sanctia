@@ -8,6 +8,8 @@
 #include <DialogueController.hpp>
 #include <EffectHandler.hpp>
 
+#include <SanctiaRenders.hpp>
+
 class Game final : public App
 {
 private:
@@ -37,6 +39,9 @@ private:
     int editorModeEnable = true;
     int worldRegionHelperEnlable = false;
     EntityRef gameScreenWidget;
+
+    DefferedBuffer *defferedBuffer;
+    PaintShaderPass paintShaderPass;
 
 
 public:

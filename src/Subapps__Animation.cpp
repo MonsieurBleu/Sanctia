@@ -243,7 +243,7 @@ void Apps::AnimationApp::init()
     ComponentModularity::addChild(
         *appRoot,
         newEntity("Skeleton Helper 1",
-            EntityState3D(vec3(0, 0, 2)),
+            state3D(vec3(0, 0, 2)),
             helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState)))
         )
     );
@@ -253,7 +253,7 @@ void Apps::AnimationApp::init()
     ComponentModularity::addChild(
         *appRoot,
         newEntity("Skeleton Helper 2",
-            EntityState3D(vec3(0, 0, -2)),
+            state3D(vec3(0, 0, -2)),
             helper2 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState2)))
         )
     );
@@ -264,7 +264,7 @@ void Apps::AnimationApp::init()
     ComponentModularity::addChild(
         *appRoot,
         newEntity("Skeleton Helper 1",
-            EntityState3D(vec3(0, 3, 2)),
+            state3D(vec3(0, 3, 2)),
             helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(tmp)))
         )
     );
@@ -272,7 +272,7 @@ void Apps::AnimationApp::init()
     ComponentModularity::addChild(
         *appRoot,
         newEntity("Skeleton Helper 2",
-            EntityState3D(vec3(0, 3, -2)),
+            state3D(vec3(0, 3, -2)),
             helper2 = EntityModel(SkeletonHelperRef(new SkeletonHelper(tmp2)))
         )
     );

@@ -45,8 +45,8 @@ Entity* getClosestVisibleAlly(Entity &e);
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY DATA
 
-    Component_Init_Compatible(EntityState3D)
-    template<> void Component<EntityState3D>::ComponentElem::clean();
+    Component_Init_Compatible(state3D)
+    template<> void Component<state3D>::ComponentElem::clean();
 
     Component(DeplacementState)
 

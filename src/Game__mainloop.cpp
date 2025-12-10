@@ -56,7 +56,7 @@ void Game::mainloop()
     GG::skybox->loadFromFolder("data/commons/models/skybox/", false, false);
 
     // GG::skybox->invertFaces = true;
-    // GG::skybox->depthWrite = true;
+    GG::skybox->depthWrite = true;
     GG::skybox->state.frustumCulled = false;
     GG::skybox->state.scaleScalar(1E6);
     GG::skybox->uniforms.add(ShaderUniform(&GG::skyboxType, 32));
@@ -253,7 +253,7 @@ void Game::mainloop()
             [](Entity *e, float f){},
             [](Entity *e){
                 
-                if(e->hasComp<EntityGroupInfo>())
+                if(e->has<EntityGroupInfo>())
                 {
                     auto parent = e->comp<EntityGroupInfo>().parent;
 
@@ -643,6 +643,76 @@ void Game::mainloop()
     while (state != AppState::quit)
     {
         mainloopStartRoutine();
+        mainloopPreRenderRoutine();
+
+        /* UI & 2D Render */
+        glEnable(GL_BLEND);
+        glEnable(GL_FRAMEBUFFER_SRGB);
+
+        glDepthFunc(GL_GEQUAL);
+        glEnable(GL_DEPTH_TEST);
+        // glDisable(GL_DEPTH_TEST);
+
+        fuiBatch->batch();
+        screenBuffer2D.activate();
+        if (!hideHUD)
+        {
+            scene2D.cull();
+            scene2D.draw();
+        }
+        screenBuffer2D.deactivate();
+
+        /* 3D Pre-Render */
+        glDisable(GL_FRAMEBUFFER_SRGB);
+        glDisable(GL_BLEND);
+        glDepthFunc(GL_GREATER);
+        glEnable(GL_DEPTH_TEST);
+
+        scene.generateShadowMaps();
+        globals.currentCamera = &camera;
+        defferedBuffer->activate();
+        scene.cull();
+
+        if (wireframe)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            // GG::skybox->state.hide = ModelStatus::HIDE;
+        }
+        else
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            // GG::skybox->state.hide = ModelStatus::SHOW;
+        }
+
+        /* 3D Early Depth Testing */
+        // scene.depthOnlyDraw(*globals.currentCamera, true);
+        // glDepthFunc(GL_EQUAL);
+
+        /* 3D Render */
+        EnvironementMap.bind(4);
+
+        scene.genLightBuffer();
+        scene.draw();
+        defferedBuffer->deactivate();
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        paintShaderPass.render(*globals.currentCamera);
+
+        /* Post Processing */
+        defferedBuffer->bindTextures();
+        SSAO.render(*globals.currentCamera);
+        Bloom.render(*globals.currentCamera);
+
+        /* Final Screen Composition */
+        glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
+        finalProcessingStage.activate();
+        GG::sun->shadowMap.bindTexture(0, 6);
+        // GG::moon->shadowMap.bindTexture(0, 6);
+        screenBuffer2D.bindTexture(0, 7);
+        globals.drawFullscreenQuad();
+        
+        
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
         InputManager::processContinuousInputs();
@@ -684,6 +754,8 @@ void Game::mainloop()
                 SSAO.getShader().reset();
                 depthOnlyMaterial->reset();
                 skyboxMaterial->reset();
+
+                paintShaderPass.getShader().reset();
 
                 ui.fontMaterial->reset();
                 defaultSUIMaterial->reset();
@@ -973,7 +1045,7 @@ void Game::mainloop()
         effects.update();
 
         if (GG::playerEntity && GG::playerEntity->comp<EntityStats>().alive)
-            GG::playerEntity->comp<EntityState3D>().lookDirection = camera.getDirection();
+            GG::playerEntity->comp<state3D>().lookDirection = camera.getDirection();
 
         /*****
             Executing scripts on update
@@ -1010,13 +1082,13 @@ void Game::mainloop()
 
         /***** DEMO DEPLACEMENT SYSTEM
         *****/
-        System<EntityState3D, DeplacementState, DeplacementBehaviour>([&, this](Entity &entity) {
-            auto &s = entity.comp<EntityState3D>();
+        System<state3D, DeplacementState, DeplacementBehaviour>([&, this](Entity &entity) {
+            auto &s = entity.comp<state3D>();
             auto &ds = entity.comp<DeplacementState>();
 
             if (&entity == this->dialogueControl.interlocutor.get())
             {
-                vec3 dir = GG::playerEntity->comp<EntityState3D>().position - s.position;
+                vec3 dir = GG::playerEntity->comp<state3D>().position - s.position;
                 float dist = length(dir);
                 s.lookDirection = ds.wantedDepDirection = dir / dist;
                 ds.speed = dist < 1.5f ? 0.f : ds.speed;
@@ -1053,8 +1125,8 @@ void Game::mainloop()
             clamp((PG::PG::physicInterpolationTick.timeSinceLastTick() * physicsTicks.freq), 0.f, 1.f);
         PG::physicInterpolationMutex.unlock();
 
-        System<EntityModel, EntityState3D>([&, this](Entity &entity) {
-            auto &s = entity.comp<EntityState3D>();
+        System<EntityModel, state3D>([&, this](Entity &entity) {
+            auto &s = entity.comp<state3D>();
             EntityModel &model = entity.comp<EntityModel>();
 
             if (s.usequat && s.position == model->state.position && s.quaternion == model->state.quaternion)
@@ -1108,9 +1180,9 @@ void Game::mainloop()
 
         /***** UPDATING PHYSICS HELPER *****/
 #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
-        System<PhysicsHelpers, RigidBody, EntityState3D>([&, this](Entity &entity) {
+        System<PhysicsHelpers, RigidBody, state3D>([&, this](Entity &entity) {
             auto &model = entity.comp<PhysicsHelpers>();
-            auto &s = entity.comp<EntityState3D>();
+            auto &s = entity.comp<state3D>();
 
             if (!s.physicActivated)
             {
@@ -1165,7 +1237,7 @@ void Game::mainloop()
 
             if (!entity.comp<EntityStats>().alive)
             {
-                if(entity.hasComp<Items>())
+                if(entity.has<Items>())
                 {
                     entity.comp<Items>().unequip(
                         entity,
@@ -1174,18 +1246,18 @@ void Game::mainloop()
                 }
 
                 if(
-                    entity.hasComp<RigidBody>() && entity.comp<RigidBody>()->getLinearVelocity().y == 0.f && 
-                    (!entity.hasComp<DeplacementState>() || entity.comp<DeplacementState>().grounded)
+                    entity.has<RigidBody>() && entity.comp<RigidBody>()->getLinearVelocity().y == 0.f && 
+                    (!entity.has<DeplacementState>() || entity.comp<DeplacementState>().grounded)
                 )
                 {
-                    entity.removeComp<RigidBody>();
+                    entity.remove<RigidBody>();
                 }
 
-                entity.removeComp<DeplacementBehaviour>();
+                entity.remove<DeplacementBehaviour>();
                 entity.comp<ActionState>().lockType = ActionState::LockedDeplacement::SPEED_ONLY;
                 entity.comp<ActionState>().lockedMaxSpeed = 0;
                 entity.comp<DeplacementState>().speed = 0;
-                entity.removeComp<AgentState>();
+                entity.remove<AgentState>();
             }
 
 
@@ -1207,32 +1279,7 @@ void Game::mainloop()
             GlobalComponentToggler<LevelOfDetailsInfos>::updateALL();
         }
 
-        mainloopPreRenderRoutine();
-
-        /* UI & 2D Render */
-        glEnable(GL_BLEND);
-        glEnable(GL_FRAMEBUFFER_SRGB);
-
-        glDepthFunc(GL_GEQUAL);
-        glEnable(GL_DEPTH_TEST);
-        // glDisable(GL_DEPTH_TEST);
-
         scene2D.updateAllObjects();
-        fuiBatch->batch();
-        screenBuffer2D.activate();
-        if (!hideHUD)
-        {
-            scene2D.cull();
-            scene2D.draw();
-        }
-        screenBuffer2D.deactivate();
-
-        /* 3D Pre-Render */
-        glDisable(GL_FRAMEBUFFER_SRGB);
-        glDisable(GL_BLEND);
-        glDepthFunc(GL_GREATER);
-        glEnable(GL_DEPTH_TEST);
-
         scene.updateAllObjects();
 
         /***** Items follow the skeleton
@@ -1248,7 +1295,7 @@ void Game::mainloop()
                     mat4 &t = i.item->comp<ItemTransform>().mat;
                     t = m * sa[i.id] * inverse(sa.skeleton->at(i.id).t);
 
-                    if (i.item->hasComp<EntityModel>())
+                    if (i.item->has<EntityModel>())
                     {
                         auto &model = i.item->comp<EntityModel>();
 
@@ -1259,14 +1306,14 @@ void Game::mainloop()
                         t = model->getChildren()[0]->state.modelMatrix;
                     }
 
-                    auto &is = i.item->comp<EntityState3D>();
+                    auto &is = i.item->comp<state3D>();
                     is.quaternion = quat(t);
                     // is.position = vec3(t[0].w, t[1].w, t[2].w);
                     is.position = vec3(t[3]);
                     is.usequat = true;
                 }
             
-            if(entity.hasComp<AnimationControllerInfos>())
+            if(entity.has<AnimationControllerInfos>())
             {
                 auto n = entity.comp<AnimationControllerInfos>().c_str();
                 auto &i = it.equipped[WEAPON_SLOT];
@@ -1304,7 +1351,7 @@ void Game::mainloop()
                     pl /= cnt;
                     pr /= cnt;
 
-                    auto &is = i.item->comp<EntityState3D>();
+                    auto &is = i.item->comp<state3D>();
 
                     int iHand = sa.skeleton->boneNamesMap["RightHand"];
                     mat4 tHand = m * sa[iHand] * inverse(sa.skeleton->at(iHand).t);
@@ -1322,7 +1369,7 @@ void Game::mainloop()
                     is.usequat = true;
 
 
-                    if (i.item->hasComp<EntityModel>())
+                    if (i.item->has<EntityModel>())
                     {
                         auto &model = i.item->comp<EntityModel>();
                         model->state.setQuaternion(is.quaternion);
@@ -1333,47 +1380,6 @@ void Game::mainloop()
             }
         });
 
-        scene.generateShadowMaps();
-        globals.currentCamera = &camera;
-        renderBuffer.activate();
-        scene.cull();
-
-        if (wireframe)
-        {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            // GG::skybox->state.hide = ModelStatus::HIDE;
-        }
-        else
-        {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            // GG::skybox->state.hide = ModelStatus::SHOW;
-        }
-
-        /* 3D Early Depth Testing */
-        // scene.depthOnlyDraw(*globals.currentCamera, true);
-        // glDepthFunc(GL_EQUAL);
-
-        /* 3D Render */
-        EnvironementMap.bind(4);
-
-        scene.genLightBuffer();
-        scene.draw();
-        renderBuffer.deactivate();
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-        /* Post Processing */
-        renderBuffer.bindTextures();
-        SSAO.render(*globals.currentCamera);
-        Bloom.render(*globals.currentCamera);
-
-        /* Final Screen Composition */
-        glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
-        finalProcessingStage.activate();
-        GG::sun->shadowMap.bindTexture(0, 6);
-        // GG::moon->shadowMap.bindTexture(0, 6);
-        screenBuffer2D.bindTexture(0, 7);
-        globals.drawFullscreenQuad();
 
         /* Main loop End */
         mainloopEndRoutine();

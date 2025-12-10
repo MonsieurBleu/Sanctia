@@ -40,7 +40,7 @@
 
 bool entityFilterAny(EntityRef e, std::function<bool(Entity *e)> filter)
 {
-    if(e->hasComp<EntityGroupInfo>())
+    if(e->has<EntityGroupInfo>())
         for(auto c : e->comp<EntityGroupInfo>().children)
         {
             if(entityFilterAny(c, filter))
@@ -63,7 +63,7 @@ bool getLightPresence(ObjectGroupRef &m)
 
 std::function<bool(Entity *e)> filterLightSources = [](Entity *e)
 {
-    if(!e->hasComp<EntityModel>() || !e->comp<EntityModel>())
+    if(!e->has<EntityModel>() || !e->comp<EntityModel>())
         return false;
     
     return getLightPresence(e->comp<EntityModel>());
@@ -71,17 +71,17 @@ std::function<bool(Entity *e)> filterLightSources = [](Entity *e)
 
 std::function<bool(Entity *e)> filterStaticEnv = [](Entity *e)
 {
-    return e->hasComp<RigidBody>() && e->comp<RigidBody>()->getType() != rp3d::BodyType::STATIC;
+    return e->has<RigidBody>() && e->comp<RigidBody>()->getType() != rp3d::BodyType::STATIC;
 };
 
 std::function<bool(Entity *e)> filterItems = [](Entity *e)
 {
-    return e->hasComp<ItemInfos>();
+    return e->has<ItemInfos>();
 };
 
 std::function<bool(Entity *e)> filterTerrain = [](Entity *e)
 {
-    if(!e->hasComp<RigidBody>() || !e->comp<RigidBody>())
+    if(!e->has<RigidBody>() || !e->comp<RigidBody>())
         return false;
 
     auto &b = *e->comp<RigidBody>();
@@ -229,7 +229,7 @@ Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
 
                     if(!this->currentEntity.ref.get())
                     {
-                        this->currentEntity.ref = newEntity(this->currentEntity.name, EntityState3D(true));
+                        this->currentEntity.ref = newEntity(this->currentEntity.name, state3D(true));
                     }
                     
                     VulpineTextBuffRef source(new VulpineTextBuff(
@@ -238,7 +238,7 @@ Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
 
                     auto c = DataLoader<EntityRef>::read(source);
 
-                    EntityState3D transform = controlledEntity->comp<EntityState3D>();
+                    state3D transform = controlledEntity->comp<state3D>();
                     
                     EntityRef p = newEntity(processNewLoadedChild(str), transform);
 
@@ -249,7 +249,7 @@ Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
                     physicsMutex.unlock();
 
                     controlledEntity = p.get();
-                    controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+                    controlledEntityEuleur = eulerAngles(controlledEntity->comp<state3D>().initQuat);
 
                 }
             },
@@ -311,7 +311,7 @@ Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
             "Center Camera On Controlled Child", GLFW_KEY_SPACE, 0, GLFW_PRESS, [&]() {
                 if(controlledEntity)
                 {
-                    vec3 p = controlledEntity->comp<EntityState3D>().position;
+                    vec3 p = controlledEntity->comp<state3D>().position;
 
                     globals.currentCamera->setPosition(p + globals.currentCamera->getPosition() - orbitController.position);
                     orbitController.position = p;
@@ -345,12 +345,12 @@ void Apps::EntityCreator::UpdateCurrentEntityTransform()
 bool Apps::EntityCreator::isEntityPlayable(EntityRef e)
 {
     return 
-        e->hasComp<DeplacementState>() &&
-        e->hasComp<SkeletonAnimationState>() &&
-        e->hasComp<EntityState3D>() &&
-        !e->comp<EntityState3D>().usequat && 
-        e->hasComp<EntityModel>() &&
-        e->hasComp<RigidBody>()
+        e->has<DeplacementState>() &&
+        e->has<SkeletonAnimationState>() &&
+        e->has<state3D>() &&
+        !e->comp<state3D>().usequat && 
+        e->has<EntityModel>() &&
+        e->has<RigidBody>()
         ;
 }
 
@@ -365,7 +365,7 @@ void Apps::EntityCreator::playEntity(EntityRef e)
     }
 
     globals.currentCamera->setDirection(
-        e->comp<EntityState3D>().lookDirection
+        e->comp<state3D>().lookDirection
     );
 
     Game::playerControl = PlayerController(globals.currentCamera);
@@ -412,7 +412,7 @@ void Apps::EntityCreator::RemoveCurrentEntityChild(const std::string &str)
 
 void HideEntityRecursive(EntityRef e)
 {
-    if(e->hasComp<EntityModel>() && e->comp<EntityModel>())
+    if(e->has<EntityModel>() && e->comp<EntityModel>())
     {
         e->comp<EntityModel>()->state.setHideStatus(
 
@@ -422,7 +422,7 @@ void HideEntityRecursive(EntityRef e)
         );
     }
 
-    if(e->hasComp<EntityGroupInfo>())
+    if(e->has<EntityGroupInfo>())
     {
         for(auto c : e->comp<EntityGroupInfo>().children)
             HideEntityRecursive(c);
@@ -431,12 +431,12 @@ void HideEntityRecursive(EntityRef e)
 
 bool isEntityHidden(EntityRef e)
 {
-    if(e->hasComp<EntityModel>() && e->comp<EntityModel>())
+    if(e->has<EntityModel>() && e->comp<EntityModel>())
     {
         return e->comp<EntityModel>()->state.hide == ModelStatus::HIDE;
     }
 
-    if(e->hasComp<EntityGroupInfo>())
+    if(e->has<EntityGroupInfo>())
     {
         for(auto c : e->comp<EntityGroupInfo>().children)
             if(isEntityHidden(c))
@@ -580,7 +580,7 @@ EntityRef Apps::EntityCreator::UImenu()
         }, 
         [&](Entity *e)
         {
-            if(e->hasComp<EntityGroupInfo>())
+            if(e->has<EntityGroupInfo>())
             {
                 auto parent = e->comp<EntityGroupInfo>().parent;
 
@@ -643,7 +643,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
             if(!this->currentEntity.ref.get())
             {
-                this->currentEntity.ref = newEntity(this->currentEntity.name, EntityState3D(true));
+                this->currentEntity.ref = newEntity(this->currentEntity.name, state3D(true));
             }
             
             VulpineTextBuffRef source(new VulpineTextBuff(
@@ -652,7 +652,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
             auto c = DataLoader<EntityRef>::read(source);
 
-            EntityState3D transform = EntityState3D(true);
+            state3D transform = state3D(true);
 
             auto p = newEntity(processNewLoadedChild(e->comp<EntityInfos>().name), transform);
 
@@ -683,7 +683,7 @@ EntityRef Apps::EntityCreator::UImenu()
             if(str == c->comp<EntityInfos>().name && controlledEntity != c.get())
             {
                 controlledEntity = c.get();
-                controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+                controlledEntityEuleur = eulerAngles(controlledEntity->comp<state3D>().initQuat);
                 
                 return;
             }
@@ -692,7 +692,7 @@ EntityRef Apps::EntityCreator::UImenu()
         }, 
         [&](Entity *e)
         {
-            if(e->hasComp<EntityGroupInfo>())
+            if(e->has<EntityGroupInfo>())
             {
                 auto parent = e->comp<EntityGroupInfo>().parent;
 
@@ -850,13 +850,13 @@ EntityRef Apps::EntityCreator::UImenu()
                                         , [&](float f)
                                         {
                                             if(!controlledEntity) return;
-                                            auto &s = controlledEntity->comp<EntityState3D>();
+                                            auto &s = controlledEntity->comp<state3D>();
                                             s.position.x = s.initPosition.x = f;
                                         }
                                         , [&]()
                                         {
                                             if(!controlledEntity) return 0.f;
-                                            return controlledEntity->comp<EntityState3D>().position.x;
+                                            return controlledEntity->comp<state3D>().position.x;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
                                     ), 0.25, false, VulpineColorUI::HightlightColor1
@@ -866,13 +866,13 @@ EntityRef Apps::EntityCreator::UImenu()
                                         , [&](float f)
                                         {
                                             if(!controlledEntity) return;
-                                            auto &s = controlledEntity->comp<EntityState3D>();
+                                            auto &s = controlledEntity->comp<state3D>();
                                             s.position.y = s.initPosition.y = f;
                                         }
                                         , [&]()
                                         {
                                             if(!controlledEntity) return 0.f;
-                                            return controlledEntity->comp<EntityState3D>().position.y;
+                                            return controlledEntity->comp<state3D>().position.y;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
                                     ), 0.25, false, VulpineColorUI::HightlightColor2
@@ -882,13 +882,13 @@ EntityRef Apps::EntityCreator::UImenu()
                                         , [&](float f)
                                         {
                                             if(!controlledEntity) return;
-                                            auto &s = controlledEntity->comp<EntityState3D>();
+                                            auto &s = controlledEntity->comp<state3D>();
                                             s.position.z = s.initPosition.z = f;
                                         }
                                         , [&]()
                                         {
                                             if(!controlledEntity) return 0.f;
-                                            return controlledEntity->comp<EntityState3D>().position.z;
+                                            return controlledEntity->comp<state3D>().position.z;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
                                     ), 0.25, false, VulpineColorUI::HightlightColor3
@@ -911,7 +911,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                     {
                                         if(!controlledEntity) return;
                                         controlledEntityEuleur.x = radians(f - 180.f);
-                                        controlledEntity->comp<EntityState3D>().initQuat = quat(controlledEntityEuleur);
+                                        controlledEntity->comp<state3D>().initQuat = quat(controlledEntityEuleur);
                                     }
                                     , [&]()
                                     {
@@ -926,7 +926,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                     {
                                         if(!controlledEntity) return;
                                         controlledEntityEuleur.y = radians(f - 180.f);
-                                        controlledEntity->comp<EntityState3D>().initQuat = quat(controlledEntityEuleur);
+                                        controlledEntity->comp<state3D>().initQuat = quat(controlledEntityEuleur);
                                     }
                                     , [&]()
                                     {
@@ -941,7 +941,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                     {
                                         if(!controlledEntity) return;
                                         controlledEntityEuleur.z = radians(f - 180.f);
-                                        controlledEntity->comp<EntityState3D>().initQuat = quat(controlledEntityEuleur);
+                                        controlledEntity->comp<state3D>().initQuat = quat(controlledEntityEuleur);
                                     }
                                     , [&]()
                                     {
@@ -1582,14 +1582,14 @@ void Apps::EntityCreator::update()
             else
             {
                 controlledEntity = mindistChild.get();
-                controlledEntityEuleur = eulerAngles(controlledEntity->comp<EntityState3D>().initQuat);
+                controlledEntityEuleur = eulerAngles(controlledEntity->comp<state3D>().initQuat);
             }
         }
     }
 
     if(controlledEntity && gizmoActivated && globals._currentController == &orbitController)
     {
-        auto &s = controlledEntity->comp<EntityState3D>();
+        auto &s = controlledEntity->comp<state3D>();
 
         // if(!globals.mouseLeftClickDown())
         // {
@@ -1633,12 +1633,12 @@ void Apps::EntityCreator::update()
 
 
         // auto entity = controlledEntity->comp<EntityGroupInfo>().children[0];
-        // vec3 pos = entity->comp<EntityState3D>().position;
+        // vec3 pos = entity->comp<state3D>().position;
         // orbitController.position = pos;
         // gizmo->comp<EntityModel>()->state.setPosition(pos);
 
 
-        if(controlledEntity->hasComp<LevelOfDetailsInfos>())
+        if(controlledEntity->has<LevelOfDetailsInfos>())
         {
             auto &lodi = controlledEntity->comp<LevelOfDetailsInfos>();
 
@@ -1798,7 +1798,7 @@ void Apps::EntityCreator::update()
         if(snapToGrid)
             s.position = round(s.position*4.f)/4.f;
 
-        auto ps = controlledEntity->comp<EntityGroupInfo>().parent->comp<EntityState3D>();
+        auto ps = controlledEntity->comp<EntityGroupInfo>().parent->comp<state3D>();
         s.initPosition = (s.position - ps.position) * (ps.usequat ? ps.quaternion : directionToQuat(ps.lookDirection));
 
         // EDITOR::gridPositionScale = vec4(s.position, EDITOR::gridPositionScale.w);

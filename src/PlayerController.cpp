@@ -25,19 +25,22 @@ void PlayerController::update()
 
     updateDirectionStateWASD();
 
-    float joystickRightY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_Y);
-    float joystickRightX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_X);
-    float lookDeadzone = 0.2f;
-    vec2 joystickLookInput = vec2(joystickRightX, joystickRightY);
-    if(length(joystickLookInput) > lookDeadzone)
+    if (InputManager::isGamePadConnected())
     {
-        float factor = (length(joystickLookInput) - lookDeadzone) / (1.0f - lookDeadzone);
-        joystickLookInput = normalize(joystickLookInput) * factor * 30.0f; // look speed factor
+        float joystickRightY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_Y);
+        float joystickRightX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_X);
+        float lookDeadzone = 0.2f;
+        vec2 joystickLookInput = vec2(joystickRightX, joystickRightY);
+        if(length(joystickLookInput) > lookDeadzone)
+        {
+            float factor = (length(joystickLookInput) - lookDeadzone) / (1.0f - lookDeadzone);
+            joystickLookInput = normalize(joystickLookInput) * factor * 30.0f; // look speed factor
 
-        mouseEvent(vec2(
-            globals.windowWidth() * 0.5f + joystickLookInput.x,
-            globals.windowHeight() * 0.5f + joystickLookInput.y
-        ), globals.getWindow());
+            mouseEvent(vec2(
+                globals.windowWidth() * 0.5f + joystickLookInput.x,
+                globals.windowHeight() * 0.5f + joystickLookInput.y
+            ), globals.getWindow());
+        }
     }
 
 
@@ -50,20 +53,23 @@ void PlayerController::update()
 
     vec3 input = vec3((float)rightFactor, (float)upFactor, (float)frontFactor);
     
-
-    float joystickLeftX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X);
-    float joystickLeftY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y);
-    float deadzone = 0.2f;
-    vec2 joystickInput = vec2(joystickLeftX, joystickLeftY);
-    float stickLength = 1.0f;
-    if(length(joystickInput) > deadzone)
+    // scale input by this factor to allow analog input from gamepad
+    float continuousInputFactor = 1.0f;
+    if (InputManager::isGamePadConnected())
     {
-        stickLength = length(joystickInput);
-        float factor = (length(joystickInput) - deadzone) / (1.0f - deadzone);
-        joystickInput = normalize(joystickInput) * factor;
+        float joystickLeftX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X);
+        float joystickLeftY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y);
+        float deadzone = 0.2f;
+        vec2 joystickInput = vec2(joystickLeftX, joystickLeftY);
+        if(length(joystickInput) > deadzone)
+        {
+            continuousInputFactor = length(joystickInput);
+            float factor = (length(joystickInput) - deadzone) / (1.0f - deadzone);
+            joystickInput = normalize(joystickInput) * factor;
 
-        input.x += -joystickInput.x;
-        input.z += -joystickInput.y; // inverted Y axis
+            input.x += -joystickInput.x;
+            input.z += -joystickInput.y; // inverted Y axis
+        }
     }
 
     if (length(input) > 1e-6f)
@@ -119,7 +125,7 @@ void PlayerController::update()
 
     ds.wantedDepDirection = length(wishVel) > 0.0f ? normalize(wishVel) : vec3(0);
     // ds.wantedSpeed = length(wishVel) * ds.walkSpeed * (sprintActivated ? 2.f : 1.f);
-    ds.wantedSpeed = length(wishVel) > 0.0f ? (sprintActivated ? ds.sprintSpeed: ds.walkSpeed * stickLength) : 0.f;
+    ds.wantedSpeed = length(wishVel) > 0.0f ? (sprintActivated ? ds.sprintSpeed: ds.walkSpeed * continuousInputFactor) : 0.f;
 
     ds.wantedSpeed *= speedFactor;
 

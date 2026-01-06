@@ -148,9 +148,11 @@ void Apps::EntityCreator::toggleTerrain()
     {
         ComponentModularity::removeChild(*appRoot, terrain);
         terrain = EntityRef();
+        EDITOR::gridPositionScale.w = EDITOR::gridPositionScale.w == 0.5f;
     }   
     else
     {
+        EDITOR::gridPositionScale.w = EDITOR::gridPositionScale.w == 0.0;
         ComponentModularity::addChild(*appRoot, terrain = Blueprint::SpawnMainGameTerrain());
     }
 
@@ -158,6 +160,8 @@ void Apps::EntityCreator::toggleTerrain()
 
     physicsMutex.unlock();
 }
+
+Controller *tmpController = nullptr;
 
 Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
 {
@@ -319,6 +323,56 @@ Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
             },
             InputManager::Filters::always, false)
     );
+
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "toggle free cam", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { 
+            if (globals.getController() != &Game::spectator)
+            {
+                if(GG::playerEntity)
+                {
+                    GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
+    
+                    for (auto &i : GG::playerEntity->comp<Items>().equipped)
+                        if (i.item.get() && i.item->has<EntityModel>())
+                            i.item->comp<EntityModel>()->state.hide = ModelStatus::HIDE;
+                }
+                
+                globals.currentCamera->setMouseFollow(true);
+                tmpController = globals.getController();
+                App::setController(&Game::spectator);
+            }
+            else if (globals.getController() == &Game::spectator && tmpController)
+            {
+                App::setController(tmpController);
+                // glfwSetInputMode(globals.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                // App::setController(&Game::playerControl);
+                // playerControl.body->position = globals.currentCamera->getPosition();
+                // globals.currentCamera->setMouseFollow(false);
+                
+                if(GG::playerEntity)
+                {
+                    if (GG::playerEntity->has<RigidBody>())
+                    {
+                        auto body = GG::playerEntity->comp<RigidBody>();
+                        if (body)
+                        {
+                            body->setIsActive(true);
+                            body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 5, 0)),
+                                                               rp3d::Quaternion::identity()));
+                        }
+                    }
+    
+                    GG::playerEntity->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
+                    for (auto &i : GG::playerEntity->comp<Items>().equipped)
+                        if (i.item.get() && i.item->has<EntityModel>())
+                            i.item->comp<EntityModel>()->state.hide = ModelStatus::SHOW;
+                }
+            }
+        })
+    );
+
 
     for(auto &i : inputs)
         i->activated = false;
@@ -580,33 +634,33 @@ EntityRef Apps::EntityCreator::UImenu()
         }, 
         [&](Entity *e)
         {
-            if(e->has<EntityGroupInfo>())
-            {
-                auto parent = e->comp<EntityGroupInfo>().parent;
+            // if(e->has<EntityGroupInfo>())
+            // {
+            //     auto parent = e->comp<EntityGroupInfo>().parent;
 
-                if(parent && parent->comp<EntityGroupInfo>().children.size() == 1)
-                {
-                    std::string name = Loader<EntityRef>::loadingInfos[e->comp<EntityInfos>().name]->buff->getSource();
-                    name[0] = name[1] = ' ';
+            //     if(parent && parent->comp<EntityGroupInfo>().children.size() == 1)
+            //     {
+            //         std::string name = Loader<EntityRef>::loadingInfos[e->comp<EntityInfos>().name]->buff->getSource();
+            //         name[0] = name[1] = ' ';
 
-                    auto path = newEntity(e->comp<EntityInfos>().name + " - editor path"
-                        , UI_BASE_COMP
-                        , WidgetBox(vec2(-1./3., 1), vec2(-1, 1))
-                        , WidgetStyle()
-                            .settextColor1(VulpineColorUI::HightlightColor1)
-                        , WidgetText(UFTconvert.from_bytes(name), StringAlignment::TO_LEFT)
-                    );
+            //         auto path = newEntity(e->comp<EntityInfos>().name + " - editor path"
+            //             , UI_BASE_COMP
+            //             , WidgetBox(vec2(-1./3., 1), vec2(-1, 1))
+            //             , WidgetStyle()
+            //                 .settextColor1(VulpineColorUI::HightlightColor1)
+            //             , WidgetText(UFTconvert.from_bytes(name), StringAlignment::TO_LEFT)
+            //         );
 
-                    parent->comp<WidgetStyle>().setautomaticTabbing(0);
+            //         parent->comp<WidgetStyle>().setautomaticTabbing(0);
                     
-                    auto &box = e->comp<WidgetBox>();
-                    box.set(
-                        vec2(-1, -1./3.), vec2(box.initMin.y, box.initMax.y)
-                    );
+            //         auto &box = e->comp<WidgetBox>();
+            //         box.set(
+            //             vec2(-1, -1./3.), vec2(box.initMin.y, box.initMax.y)
+            //         );
                     
-                    ComponentModularity::addChild(*parent, path);
-                }
-            }
+            //         ComponentModularity::addChild(*parent, path);
+            //     }
+            // }
 
             return currentEntity.name == e->comp<EntityInfos>().name ? 0.f : 1.f;
         },
@@ -812,7 +866,7 @@ EntityRef Apps::EntityCreator::UImenu()
                 .setautomaticTabbing(1)
             , EntityGroupInfo({
                 childrenToLoadMenu,
-                newEntity("empty menu space")
+                // newEntity("empty menu space")
             })
         ),
         "Add Child"
@@ -1147,6 +1201,17 @@ EntityRef Apps::EntityCreator::UIcontrols()
                 return EDITOR::gridPositionScale.w > 0.f ? 0.f : 1.f;
             }),
 
+            VulpineBlueprintUI::Toggable("Show Terrain", "", 
+            [&](Entity *e, float v)
+            {
+                toggleTerrain();
+            },
+            [&](Entity *e)
+            {
+                return terrain ? 0.f : 1.f;
+            }),
+
+
             VulpineBlueprintUI::Toggable("Snap to Grid", "", 
             [&](Entity *e, float v)
             {
@@ -1247,6 +1312,9 @@ void Apps::EntityCreator::init()
         PG::world->setIsGravityEnabled(false);
 
         EDITOR::gridPositionScale.w = 0.5f;
+
+        GG::sun->shadowCameraSize = vec2(256, 256);
+        GG::sun->activateShadows();
 
         glLineWidth(5);
     }

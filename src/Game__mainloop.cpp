@@ -31,6 +31,9 @@
 
 #include <Scripting/ScriptInstance.hpp>
 
+
+#include <FenceGPU.hpp>
+
 void Game::mainloop()
 {
     /****** Loading Script Related States ******/
@@ -82,11 +85,11 @@ void Game::mainloop()
 
     GG::moon = newDirectionLight(DirectionLight()
         .setColor(0.25f*vec3(0.6, 0.9, 1.0)));
-    scene.add(GG::moon);
+    // scene.add(GG::moon);
 
     GG::moon->cameraResolution = vec2(8192);
     GG::moon->shadowCameraSize = vec2(256);
-    GG::moon->activateShadows();
+    // GG::moon->activateShadows();
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
@@ -467,84 +470,82 @@ void Game::mainloop()
     );
 
     {
-        auto &bloom = Bloom;
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
             VulpineBlueprintUI::Toggable(
                 "Bloom", 
                 "",
-                [&bloom](Entity *e, float v)
+                [&](Entity *e, float v)
                 {
-                    bloom.toggle();
+                    paintShaderPass.enableBloom = !paintShaderPass.enableBloom;
                 },
-                [&bloom](Entity *e)
+                [&](Entity *e)
                 {
-                    return bloom.isPassEnable() ? 0.f : 1.f;
+                    return paintShaderPass.enableBloom ? 0.f : 1.f;
                 }
             )
         );
     }
     {
-        auto &ssao = SSAO;
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
             VulpineBlueprintUI::Toggable(
                 "AO", 
                 "",
-                [&ssao](Entity *e, float v)
+                [&](Entity *e, float v)
                 {
-                    ssao.toggle();
+                    paintShaderPass.enableAO = !paintShaderPass.enableAO;
                 },
-                [&ssao](Entity *e)
+                [&](Entity *e)
                 {
-                    return ssao.isPassEnable() ? 0.f : 1.f;
+                    return paintShaderPass.enableAO? 0.f : 1.f;
                 }
             )
         );
     }
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        VulpineBlueprintUI::Toggable(
-            "Physic Interpolation", 
-            "",
-            [](Entity *e, float v)
-            {
-                PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
-            },
-            [](Entity *e)
-            {
-                return PG::doPhysicInterpolation ? 0.f : 1.f;
-            }
-        )
-    );
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    //     VulpineBlueprintUI::Toggable(
+    //         "Physic Interpolation", 
+    //         "",
+    //         [](Entity *e, float v)
+    //         {
+    //             PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
+    //         },
+    //         [](Entity *e)
+    //         {
+    //             return PG::doPhysicInterpolation ? 0.f : 1.f;
+    //         }
+    //     )
+    // );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        VulpineBlueprintUI::Toggable(
-            "Shader Hot Reload", 
-            "",
-            [](Entity *e, float v)
-            {
-                Game::doAutomaticShaderRefresh = !Game::doAutomaticShaderRefresh;
-            },
-            [](Entity *e)
-            {
-                return Game::doAutomaticShaderRefresh ? 0.f : 1.f;
-            }
-        )
-    );
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    //     VulpineBlueprintUI::Toggable(
+    //         "Shader Hot Reload", 
+    //         "",
+    //         [](Entity *e, float v)
+    //         {
+    //             Game::doAutomaticShaderRefresh = !Game::doAutomaticShaderRefresh;
+    //         },
+    //         [](Entity *e)
+    //         {
+    //             return Game::doAutomaticShaderRefresh ? 0.f : 1.f;
+    //         }
+    //     )
+    // );
 
-    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        VulpineBlueprintUI::Toggable(
-            "Script Hot Reload", 
-            "",
-            [](Entity *e, float v)
-            {
-                Game::doScriptHotReload = !Game::doScriptHotReload;
-            },
-            [](Entity *e)
-            {
-                return Game::doScriptHotReload ? 0.f : 1.f;
-            }
-        )
-    );
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    //     VulpineBlueprintUI::Toggable(
+    //         "Script Hot Reload", 
+    //         "",
+    //         [](Entity *e, float v)
+    //         {
+    //             Game::doScriptHotReload = !Game::doScriptHotReload;
+    //         },
+    //         [](Entity *e)
+    //         {
+    //             return Game::doScriptHotReload ? 0.f : 1.f;
+    //         }
+    //     )
+    // );
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
         VulpineBlueprintUI::Toggable(
@@ -638,12 +639,16 @@ void Game::mainloop()
 
     // Loader<ScriptInstance>::get("test").run();
 
+    // for (auto &m : Loader<MeshMaterial>::loadingInfos)
+    //     Loader<MeshMaterial>::get(m.first);
+
 
     /******  Main Loop ******/
     while (state != AppState::quit)
     {
         mainloopStartRoutine();
         mainloopPreRenderRoutine();
+
 
         /* UI & 2D Render */
         glEnable(GL_BLEND);
@@ -653,12 +658,20 @@ void Game::mainloop()
         glEnable(GL_DEPTH_TEST);
         // glDisable(GL_DEPTH_TEST);
 
+        // FenceGPU::list["Scene 2D Preparation"] = FenceGPU();
+
         fuiBatch->batch();
         screenBuffer2D.activate();
         if (!hideHUD)
         {
             scene2D.cull();
+
+            // FenceGPU::list["Scene 2D Draw"] = FenceGPU();
+
             scene2D.draw();
+            
+            glFlush();
+            // FenceGPU::list["Scene 2D Draw End"] = FenceGPU();
         }
         screenBuffer2D.deactivate();
 
@@ -667,6 +680,8 @@ void Game::mainloop()
         glDisable(GL_BLEND);
         glDepthFunc(GL_GREATER);
         glEnable(GL_DEPTH_TEST);
+        
+        // FenceGPU::list["Scene 3D Preparation"] = FenceGPU();
 
         scene.generateShadowMaps();
         globals.currentCamera = &camera;
@@ -685,24 +700,29 @@ void Game::mainloop()
         }
 
         /* 3D Early Depth Testing */
-        // scene.depthOnlyDraw(*globals.currentCamera, true);
-        // glDepthFunc(GL_EQUAL);
+        scene.depthOnlyDraw(*globals.currentCamera, true);
+        glDepthFunc(GL_EQUAL);
 
         /* 3D Render */
         EnvironementMap.bind(4);
 
         scene.genLightBuffer();
+        // FenceGPU::list["Scene 3D Draw"] = FenceGPU();
         scene.draw();
+        // FenceGPU::list["Scene 3D Draw End"] = FenceGPU();
         defferedBuffer->deactivate();
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+        // FenceGPU::list["Deffered Pass Draw"] = FenceGPU();
         paintShaderPass.render(*globals.currentCamera);
 
         /* Post Processing */
         defferedBuffer->bindTextures();
-        SSAO.render(*globals.currentCamera);
-        Bloom.render(*globals.currentCamera);
+        // SSAO.render(*globals.currentCamera);
+        // Bloom.render(*globals.currentCamera);
+
+        // FenceGPU::list["Deffered Pass End"] = FenceGPU();
 
         /* Final Screen Composition */
         glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
@@ -710,7 +730,12 @@ void Game::mainloop()
         GG::sun->shadowMap.bindTexture(0, 6);
         // GG::moon->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
+        paintShaderPass.getFBO().bindTexture(2, 8);
+        paintShaderPass.FBO_AO.bindTexture(0, 3);
+        ShaderUniform(&GG::skyboxType, 25).activate();
+        // WARNING_MESSAGE(paintShaderPass.getFBO().getNBtextures())
         globals.drawFullscreenQuad();
+        glFlush();
         
         
 
@@ -754,21 +779,27 @@ void Game::mainloop()
                 SSAO.getShader().reset();
                 depthOnlyMaterial->reset();
                 skyboxMaterial->reset();
+                skyboxMaterial.depthOnly->reset();
 
                 paintShaderPass.getShader().reset();
+                paintShaderPass.copyShader.reset();
+                paintShaderPass.cloudShader.reset();
+                paintShaderPass.bloomShader.reset();
+                paintShaderPass.aoShader.reset();
 
                 ui.fontMaterial->reset();
                 defaultSUIMaterial->reset();
-
+                
+                
                 for (auto &m : Loader<MeshMaterial>::loadedAssets)
                 {
                     m.second->reset();
 
                     if(m.second.depthOnly)
-                        m.second.depthOnly.reset();
+                        m.second.depthOnly->reset();
                 }
             }
-        }
+        }   
 
         if(doScriptHotReload)
         {
@@ -1021,6 +1052,8 @@ void Game::mainloop()
             GG::moon->setDirection(-normalize(moonDirWorld * tangentSpace));
             GG::moon->setIntensity(0.25 * (1.0 - sunIntensity));
         }
+
+        // for(int i = 0; i < 512; i++) WARNING_MESSAGE("Yooo");
 
         SubApps::UpdateApps();
         
@@ -1379,7 +1412,6 @@ void Game::mainloop()
                 }
             }
         });
-
 
         /* Main loop End */
         mainloopEndRoutine();

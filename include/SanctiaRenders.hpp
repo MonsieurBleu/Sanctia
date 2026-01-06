@@ -16,11 +16,24 @@ class DefferedBuffer : public RenderBuffer
 class PaintShaderPass : public RenderPass
 {
     private:
-        ShaderProgram copyShader;
-        FrameBuffer FBO2;
         DefferedBuffer &defferedBuffer;
+        Texture2D ssaoNoiseTexture;
+        std::vector<glm::vec3> ssaoKernel;
 
     public:
+        FrameBuffer FBO_Clouds;
+        FrameBuffer FBO_Bloom;
+        FrameBuffer FBO_CopyAndDeform;
+        FrameBuffer FBO_AO;
+        
+        ShaderProgram copyShader;
+        ShaderProgram cloudShader;
+        ShaderProgram bloomShader;
+        ShaderProgram aoShader;
+
+        bool enableBloom = true;
+        bool enableAO = true;
+
         PaintShaderPass(DefferedBuffer &defferedBuffer) : defferedBuffer(defferedBuffer){};
         void setup();
         void render(Camera &camera);

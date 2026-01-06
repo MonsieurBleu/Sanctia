@@ -120,14 +120,39 @@ void Game::initInput()
     //     InputManager::Filters::always, false);
 
     Inputs::togglePhysicsInterpolation = InputManager::addEventInput(
-        "toggle physics interpolation", GLFW_KEY_KP_1, 0, GLFW_PRESS, [&]() {
-            PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
+        "toggle FPS Limit", GLFW_KEY_KP_1, 0, GLFW_PRESS, [&]() {
+            // PG::doPhysicInterpolation = !PG::doPhysicInterpolation;
+            globals.fpsLimiter.toggle();
         },
         InputManager::Filters::always, false);
 
     Inputs::toggleAutoShaderRefresh = InputManager::addEventInput(
         "toggle auto shader refresh", GLFW_KEY_F6, 0, GLFW_PRESS, [&]() {
             doAutomaticShaderRefresh = !doAutomaticShaderRefresh;
+        },
+        InputManager::Filters::always, false);
+
+
+
+    Inputs::toggleAutoShaderRefresh = InputManager::addEventInput(
+        "Reduce FOV", GLFW_KEY_PAGE_UP, 0, GLFW_PRESS, [&]() {
+            if(globals.currentCamera)
+            {
+                float &fov = globals.currentCamera->getState().FOV;
+
+                fov = clamp(fov - radians(5.f), 0.f, radians(180.f));
+            }
+        },
+        InputManager::Filters::always, false);
+
+    Inputs::toggleAutoShaderRefresh = InputManager::addEventInput(
+        "Increase FOV", GLFW_KEY_PAGE_DOWN, 0, GLFW_PRESS, [&]() {
+            if(globals.currentCamera)
+            {
+                float &fov = globals.currentCamera->getState().FOV;
+
+                fov = clamp(fov + radians(5.f), 0.f, radians(180.f));
+            }
         },
         InputManager::Filters::always, false);
 

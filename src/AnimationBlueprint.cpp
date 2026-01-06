@@ -765,7 +765,7 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
     const float D_toGuard       = 1.0*0.15;
     const float D_toBlock       = 1.0*0.15;
     const float D_toBlockImpact = 1.0*0.05;
-    const float D_toCombo       = 1.0*1.0;
+    const float D_toCombo       = 1.0*0.25;
 
     AnimationControllerRef ac( new AnimationController(
         {

@@ -11,6 +11,8 @@
 
 #include <filesystem>
 
+#define HELPERS_BASE_HEIGHT 50
+
 struct MaterialViewInfo
 {
     vec3 color;
@@ -137,7 +139,7 @@ void Apps::MaterialViewerApp::spawnHelper()
     );
 
     auto papernessSelector = VulpineBlueprintUI::ValueInputSlider(
-        "paperness", 0, 1, 1, 
+        "Absorbent", 0, 1, 1, 
         [&, id](Entity *e, float v){PSBD[id].x = v;},
         [&, id](Entity *e){return PSBD[id].x;},
         [&, id](std::u32string t){PSBD[id].x = u32strtof2(t, PSBD[id].x);},
@@ -145,7 +147,7 @@ void Apps::MaterialViewerApp::spawnHelper()
     );
 
     auto streakingSelector = VulpineBlueprintUI::ValueInputSlider(
-        "streaking", 0, 1, 7, 
+        "Sub Surface", 0, 1, 7, 
         [&, id](Entity *e, float v){PSBD[id].y = v;},
         [&, id](Entity *e){return PSBD[id].y;},
         [&, id](std::u32string t){PSBD[id].y = u32strtof2(t, PSBD[id].y);},
@@ -200,8 +202,8 @@ void Apps::MaterialViewerApp::spawnHelper()
                     VulpineBlueprintUI::NamedEntry(U"Metalness", metalnessSelector,          0.5),
                     VulpineBlueprintUI::NamedEntry(U"Smoothness", smoothnessSelector,        0.5), 
                     VulpineBlueprintUI::NamedEntry(U"Emmisive", emmisiveSelector,            0.5), 
-                    VulpineBlueprintUI::NamedEntry(U"Paperness", papernessSelector,          0.5), 
-                    VulpineBlueprintUI::NamedEntry(U"Streaking", streakingSelector,          0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Absorbent", papernessSelector,          0.5), 
+                    VulpineBlueprintUI::NamedEntry(U"Sub Surface", streakingSelector,        0.5), 
                     VulpineBlueprintUI::NamedEntry(U"Blood Factor", bloodynessSelector,     0.5), 
                     VulpineBlueprintUI::NamedEntry(U"Blood Level", bloodynessCurSelector,   0.5), 
                     VulpineBlueprintUI::NamedEntry(U"Dirt Factor", dirtynessSelector,       0.5), 
@@ -272,6 +274,9 @@ Apps::MaterialViewerApp::MaterialViewerApp() : SubApps("Material Viewer")
     for(auto &i : inputs)
         i->activated = false;
 }
+
+
+
 
 EntityRef Apps::MaterialViewerApp::UImenu()
 {
@@ -345,7 +350,13 @@ EntityRef Apps::MaterialViewerApp::UImenu()
                    menuInfosTab->comp<EntityGroupInfo>().children[0] 
                 };
 
-                appRoot->comp<EntityGroupInfo>().children.clear();
+                // appRoot->comp<EntityGroupInfo>().children.clear();
+                auto tmp = appRoot->comp<EntityGroupInfo>().children;
+                for(auto c : tmp)
+                {
+                    if(c->comp<EntityInfos>().name == "materialHelper")
+                        ComponentModularity::removeChild(*appRoot, c);
+                }
 
                 GG::ManageEntityGarbage();
 
@@ -471,6 +482,8 @@ EntityRef Apps::MaterialViewerApp::UIcontrols()
     );
 }
 
+ModelRef helper;
+
 void Apps::MaterialViewerApp::init()
 {
     /***** Preparing App Settings *****/
@@ -480,11 +493,51 @@ void Apps::MaterialViewerApp::init()
 
         App::setController(&orbitController);
 
-        globals.currentCamera->setPosition(vec3(-1, 0, 0));
+        globals.currentCamera->setPosition(vec3(-1, HELPERS_BASE_HEIGHT, 0));
         globals.currentCamera->getState().FOV = radians(40.f);
         orbitController.distance = 10;
+        orbitController.position = vec3(0, HELPERS_BASE_HEIGHT, 0);
+        
+        // GG::sun->shadowCameraSize = vec2(64, 64);
+        GG::sun->shadowCameraSize = vec2(256, 256);
+        GG::sun->activateShadows();
+    }
 
-        GG::sun->shadowCameraSize = vec2(64, 64);
+    /***** buste *****/
+    {
+        // auto &tmp = Loader<MeshMaterial>::get("packingPaint");
+        
+        helper = newModel(Loader<MeshMaterial>::get("packingPaint"), Loader<MeshVao>::get("Buste Helper"));
+
+        // ERROR_MESSAGE(
+        //        "\n\t" <<
+        //     helper->getMaterial()->vert.get_Path()
+        //     << "\n\t" <<
+        //     helper->getMaterial()->frag.get_Path()
+        //     << "\n\t" <<
+        //     helper->getMaterial()->geom.get_Path()
+        //     << "\n\t" <<
+        //     helper->getMaterial()->tesc.get_Path()
+        //     << "\n\t" <<
+        //     helper->getMaterial()->tese.get_Path()
+        // );
+        // helper->getMaterial()->reset(false);
+
+        EntityModel model(EntityModel{newObjectGroup()}); 
+        model->add(helper);
+        helper->state
+            .setPosition(vec3(0, HELPERS_BASE_HEIGHT-8, 0))
+            .setRotation(vec3(0, radians(-90.f), 0))
+            .scaleScalar(1.0)
+            ;
+
+        model->iterateOnAllMesh_Recursive([](ModelRef m){
+            m->uniforms.add(ShaderUniform((int)1, 24));
+        });
+
+        ComponentModularity::addChild(*appRoot, newEntity("busteHelper", model));
+
+        ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
     }
 
     // MaterialPalette palette;
@@ -501,6 +554,7 @@ void Apps::MaterialViewerApp::init()
     // test->saveAs("data/[0] Editor/palettes/test2.MaterialPalette");
 }
 
+
 void Apps::MaterialViewerApp::update()
 {
     float cnt = 0;
@@ -511,7 +565,7 @@ void Apps::MaterialViewerApp::update()
 
         h->state.setPosition(vec3(
             0, 
-            2.0  * (mod(size - cnt, 4.f) - 1.5f), 
+            HELPERS_BASE_HEIGHT + 2.0  * (mod(size - cnt, 4.f) - 1.5f), 
             2.0 * (cnt - mod(cnt, 4.f) - 0.5f*(size - mod(size, 4.f)))
             ));
         h->state.update();
@@ -528,6 +582,21 @@ void Apps::MaterialViewerApp::update()
         globals.currentCamera->setMouseFollow(false);
     else
         globals.currentCamera->setMouseFollow(true);
+
+    // ERROR_MESSAGE(
+    //     helper->getMaterial().depthOnly.get()
+    //     //     "\n\t" <<
+    //     // helper->getMaterial().depthOnly->vert.get_Path()
+    //     // << "\n\t" <<
+    //     // helper->getMaterial().depthOnly->frag.get_Path()
+    //     // << "\n\t" <<
+    //     // helper->getMaterial().depthOnly->geom.get_Path()
+    //     // << "\n\t" <<
+    //     // helper->getMaterial().depthOnly->tesc.get_Path()
+    //     // << "\n\t" <<
+    //     // helper->getMaterial().depthOnly->tese.get_Path()
+    // );
+    // helper->getMaterial()->reset(false);
 }
 
 void Apps::MaterialViewerApp::clean()

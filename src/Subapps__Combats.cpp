@@ -183,7 +183,8 @@ void Apps::CombatsApp::init()
         Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
         Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
         
-        GG::sun->shadowCameraSize = vec2(256, 256);
+        GG::sun->shadowCameraSize = vec2(64, 64);
+        GG::sun->activateShadows();
     }
 
     appRoot->set<state3D>(true);

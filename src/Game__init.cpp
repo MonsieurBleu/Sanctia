@@ -16,6 +16,8 @@
 #include <Settings.hpp>
 #include <Scripting/ScriptInstance.hpp>
 
+#include <Graphics/Shader.hpp>
+
 #include <ModManager.hpp>
 
 Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSizeAddr())), defferedBuffer(static_cast<DefferedBuffer *>(renderBuffer)), paintShaderPass(*defferedBuffer)
@@ -32,15 +34,18 @@ void Game::init(int paramSample)
 
     // load settings
     Settings::load();
-    if (Settings::ssaoEnabled)
-        SSAO.enable();
-    else
-        SSAO.disable();
+    // if (Settings::ssaoEnabled)
+    //     SSAO.enable();
+    // else
+    //     SSAO.disable();
 
-    if (Settings::bloomEnabled)
-        Bloom.enable();
-    else
-        Bloom.disable();
+    // if (Settings::bloomEnabled)
+    //     Bloom.enable();
+    // else
+    //     Bloom.disable();
+
+    paintShaderPass.enableBloom = Settings::bloomEnabled;
+    paintShaderPass.enableAO = Settings::ssaoEnabled;
 
     globals._renderScale = Settings::renderScale;
 
@@ -151,7 +156,15 @@ void Game::init(int paramSample)
             "",
             globals.standartShaderUniform3D(),
             "#define IN_SKYBOX_MESH"
-        ));
+        ),
+        std::make_shared<ShaderProgram>(
+            Loader<ShaderFragPath>::get("depthOnly").path,
+            "shader/foward/basic.vert",
+            "",
+            globals.standartShaderUniform3D(),
+            "#define IN_SKYBOX_MESH"
+        )
+    );
 
     GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
     GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;

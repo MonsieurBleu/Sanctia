@@ -238,6 +238,22 @@ COMPONENT_DEFINE_MERGE(RigidBody)
     parentBody->updateLocalCenterOfMassFromColliders();
 }
 
+void setEntityModelStaticFlagUniform(Entity *e)
+{
+    if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<staticEntityFlag>())
+    {
+        auto &m = e->comp<EntityModel>();
+        auto &f = e->comp<staticEntityFlag>();
+
+        m->iterateOnAllMesh_Recursive([&](ModelRef mesh)
+        {
+            mesh->uniforms.add(ShaderUniform((int *)&f.isDYnamic, 24));
+        });
+
+        // NOTIF_MESSAGE(f.isDYnamic << "  " << e->toStr());
+    }
+}
+
 template<> void Component<EntityModel>::ComponentElem::init()
 {
     if(data.get())
@@ -603,9 +619,14 @@ template<> void Component<RigidBody>::ComponentElem::init()
         s._PhysicTmpQuat = s.quaternion;
         s._PhysicTmpPos = s.position;
         s.usequat = true;
+
+        entity->set<staticEntityFlag>({false});
     }
     else
+    {
         entity->set<staticEntityFlag>({true});
+    }
+    setEntityModelStaticFlagUniform(entity);
 }
 
 template<> void Component<RigidBody>::ComponentElem::clean()

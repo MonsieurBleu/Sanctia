@@ -739,7 +739,11 @@ void Game::mainloop()
         
         
 
+        
+        
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
+        std::vector<GLFWKeyInfo> gamepadInputs = InputManager::pollGamepad();
+        for (auto &input : gamepadInputs) userInput(input), InputManager::processEventInput(input);
         InputManager::processContinuousInputs();
 
         // plottest->push(globals.appTime.getDeltaMS());

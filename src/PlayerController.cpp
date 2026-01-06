@@ -25,6 +25,25 @@ void PlayerController::update()
 
     updateDirectionStateWASD();
 
+    if (InputManager::isGamePadConnected())
+    {
+        float joystickRightY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_Y);
+        float joystickRightX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_X);
+        float lookDeadzone = 0.2f;
+        vec2 joystickLookInput = vec2(joystickRightX, joystickRightY);
+        if(length(joystickLookInput) > lookDeadzone)
+        {
+            float factor = (length(joystickLookInput) - lookDeadzone) / (1.0f - lookDeadzone);
+            joystickLookInput = normalize(joystickLookInput) * factor * 30.0f; // look speed factor
+
+            mouseEvent(vec2(
+                globals.windowWidth() * 0.5f + joystickLookInput.x,
+                globals.windowHeight() * 0.5f + joystickLookInput.y
+            ), globals.getWindow());
+        }
+    }
+
+
     auto &ds = GG::playerEntity->comp<DeplacementState>();
 
     angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);
@@ -33,8 +52,30 @@ void PlayerController::update()
         jumpHeld = false;
 
     vec3 input = vec3((float)rightFactor, (float)upFactor, (float)frontFactor);
+    
+    // scale input by this factor to allow analog input from gamepad
+    float continuousInputFactor = 1.0f;
+    if (InputManager::isGamePadConnected())
+    {
+        float joystickLeftX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X);
+        float joystickLeftY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y);
+        float deadzone = 0.2f;
+        vec2 joystickInput = vec2(joystickLeftX, joystickLeftY);
+        if(length(joystickInput) > deadzone)
+        {
+            continuousInputFactor = length(joystickInput);
+            float factor = (length(joystickInput) - deadzone) / (1.0f - deadzone);
+            joystickInput = normalize(joystickInput) * factor;
+
+            input.x += -joystickInput.x;
+            input.z += -joystickInput.y; // inverted Y axis
+        }
+    }
+
     if (length(input) > 1e-6f)
         input = normalize(input); 
+
+    // std::cout << "input: " << glm::to_string(input) << "\n";
 
     angleVector_forward.y = 0;
     angleVector_right.y = 0;
@@ -42,13 +83,39 @@ void PlayerController::update()
     angleVector_forward = normalize(angleVector_forward);
     angleVector_right = normalize(angleVector_right);
 
-    // TODO: see if this is needed and see how other games handle this cause this ain't it
-    // float sideSpeedFactor = 0.7f;
-    // float backSpeedFactor = 0.6f;
+    float sideSpeedFactor = 0.8f;
+    float backSpeedFactor = 0.7f;
 
-    // vec3 wishVel = 
-    //     angleVector_forward * input.z * (input.z < 0 ? backSpeedFactor : 1.0f) + 
-    //     angleVector_right * input.x * sideSpeedFactor;
+    float dotRight = dot(vec2(input.x, input.z), vec2(1, 0));
+    float dotForward = dot(vec2(input.x, input.z), vec2(0, 1));
+
+    float angleStart = radians(60.0f); // effect starts at this angle and is interpolated to angleEnd
+    float angleEnd = radians(30.0f);
+
+    // std::cout << "dotRight: " << dotRight << ", dotForward: " << dotForward << "\n";
+    // std::cout << "abs(cos(angleStart)): " << abs(cos(angleStart)) << ", -cos(angleStart): " << -cos(angleStart) << "\n";
+
+    float speedFactor = 1.0f;
+    if (abs(dotRight) > abs(cos(angleStart)))
+    {
+        float t = (abs(dotRight) - abs(cos(angleStart))) / (abs(cos(angleEnd)) - abs(cos(angleStart)));
+        t = clamp(t, 0.0f, 1.0f);
+        float factor = mix(1.0f, sideSpeedFactor, t);
+        speedFactor = min(speedFactor, factor);
+    }
+    
+    if (-dotForward > abs(cos(angleStart)))
+    {
+        float t = (-dotForward - abs(cos(angleStart))) / (abs(cos(angleEnd)) - abs(cos(angleStart)));
+        t = clamp(t, 0.0f, 1.0f);
+        float factor = mix(1.0f, backSpeedFactor, t);
+        speedFactor = min(speedFactor, factor);
+    }
+
+
+    // std::cout << "speedFactor: " << speedFactor << "\n";
+    
+    
 
     vec3 wishVel = 
         angleVector_forward * input.z + 
@@ -58,7 +125,9 @@ void PlayerController::update()
 
     ds.wantedDepDirection = length(wishVel) > 0.0f ? normalize(wishVel) : vec3(0);
     // ds.wantedSpeed = length(wishVel) * ds.walkSpeed * (sprintActivated ? 2.f : 1.f);
-    ds.wantedSpeed = sprintActivated ? ds.sprintSpeed: ds.walkSpeed;
+    ds.wantedSpeed = length(wishVel) > 0.0f ? (sprintActivated ? ds.sprintSpeed: ds.walkSpeed * continuousInputFactor) : 0.f;
+
+    ds.wantedSpeed *= speedFactor;
 
     if (
         upFactor > 0 && // we are pressing the jump key

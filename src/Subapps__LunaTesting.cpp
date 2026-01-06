@@ -26,6 +26,14 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
             InputManager::Filters::always, false)
     );
 
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "test gamepad input", VULPINE_GAMEPAD_BUTTON_A, 0, GLFW_PRESS, []() {    
+                NOTIF_MESSAGE("Gamepad A button pressed!");
+            }
+        )
+    );
+
     for(auto &i : inputs)
         i->activated = false;
 };
@@ -237,6 +245,10 @@ void Apps::LunaTesting::update()
         globals.currentCamera->setMouseFollow(false);
     else
         globals.currentCamera->setMouseFollow(true);
+
+
+    // bool b = InputManager::getGamepadButtonValue(VULPINE_GAMEPAD_BUTTON_A);
+    // std::cout << "button A is: " << (b ? "Pressed" : "Not Pressed") << std::endl;
 }
 
 

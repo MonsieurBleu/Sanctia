@@ -202,8 +202,15 @@ void Game::init(int paramSample)
 
     /* VSYNC and fps limit */
     globals.fpsLimiter.activate();
+    // TODO: add a setting for target refresh rate
     globals.fpsLimiter.freq = 144.f;
     // globals.fpsLimiter.freq = 45.f;
+
+    const GLFWvidmode* videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    int refreshRate = videoMode->refreshRate;
+    // NOTIF_MESSAGE("Primary monitor Refresh Rate: " << refreshRate);
+    globals.fpsLimiter.freq = refreshRate;
+    
     glfwSwapInterval(0);
 
     ambientLight = vec3(0.07);

@@ -398,7 +398,7 @@ void PlayerController::mouseEvent(vec2 dir, GLFWwindow* window)
         front = mat3(rotate(mat4(1), pitch, cross(front, up))) * front;
         front = normalize(front);
 
-        front.y = clamp(front.y, -0.9f, 0.9f);
+        front.y = clamp(front.y, -0.8f, 0.8f);
         globals.currentCamera->setDirection(front);
 
         glfwSetCursorPos(window, center.x, center.y);

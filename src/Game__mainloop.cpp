@@ -1085,6 +1085,14 @@ void Game::mainloop()
             GG::playerEntity->comp<state3D>().lookDirection = camera.getDirection();
 
         /*****
+            UPDATING VISUAL FATIGUE LEVEL
+        */
+        System<EntityStats, StainStatus>([&](Entity &entity) {
+            auto &stats = entity.comp<EntityStats>();
+            entity.comp<StainStatus>().fatigue = 1.0 - stats.stamina.cur/stats.stamina.max;
+        });
+
+        /*****
             Executing scripts on update
         */
         System<Script>([&](Entity &entity) {
@@ -1249,7 +1257,7 @@ void Game::mainloop()
         });
 #endif
 
-        /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
+        /***** UPDATING ENTITY STATS *****/
         System<EntityStats>([](Entity &entity) {
             /* TODO : move entity despawn code elswhere*/
             // void *ptr = &entity;
@@ -1272,6 +1280,25 @@ void Game::mainloop()
             if(abs(stats.adrenaline.cur) < 1)
                 stats.adrenaline.cur = 0;
 
+            float runningMod = 0;
+            
+            if(entity.has<DeplacementState>())
+            {
+                runningMod = 20*smoothstep(
+                    entity.comp<DeplacementState>().walkSpeed,
+                    entity.comp<DeplacementState>().sprintSpeed,
+                    entity.comp<DeplacementState>().speed
+                );
+            }
+
+            stats.stamina.cur = clamp(
+                stats.stamina.cur + globals.simulationTime.getDelta()*(10 - runningMod),
+                stats.stamina.min,
+                stats.stamina.max
+            );
+
+            
+            // Kill unalive entity
             if (!entity.comp<EntityStats>().alive)
             {
                 if(entity.has<Items>())

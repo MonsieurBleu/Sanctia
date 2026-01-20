@@ -11,6 +11,7 @@ struct ItemInfos
 {
     int price = 1.f;
     float damageMultiplier = 20.f;
+    float staminaUseMultiplier = 20.f;
     int dmgType = DamageType::Pure;
 };
 

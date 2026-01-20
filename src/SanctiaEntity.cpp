@@ -182,6 +182,44 @@ COMPONENT_DEFINE_COMPATIBILITY_CHECK(state3D)
     return childState.usequat == parentState.usequat;
 }   
 
+void setEntityStainStatusUniform(Entity *e)
+{
+    // NOTIF_MESSAGE(e->has<StainStatus>())
+    if(e->comp<EntityModel>() and e->has<StainStatus>())
+    {
+        auto &m = e->comp<EntityModel>();
+        auto &s = e->comp<StainStatus>();
+
+        m->iterateOnAllMesh_Recursive([&](ModelRef mesh)
+        {
+            mesh->baseUniforms.add(ShaderUniform((vec3 *)&s, 25));
+            // mesh->uniforms.add(ShaderUniform(&s.bloodyness, 26));
+            // mesh->uniforms.add(ShaderUniform(&s.fatigue, 27));
+        });
+    }
+}
+
+void removeEntityStainStatusUniform(Entity *e)
+{
+    if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<StainStatus>())
+    {
+        auto &m = e->comp<EntityModel>();
+        auto &s = e->comp<StainStatus>();
+
+        m->iterateOnAllMesh_Recursive([&](ModelRef mesh)
+        {
+            for(auto i = mesh->uniforms.uniforms.begin(); i != mesh->uniforms.uniforms.end(); i++)
+                if(i->getLocation() == 25){mesh->uniforms.uniforms.erase(i);break;}
+
+            // for(auto i = mesh->uniforms.uniforms.begin(); i != mesh->uniforms.uniforms.end(); i++)
+            //     if(i->getLocation() == 26){mesh->uniforms.uniforms.erase(i);break;}
+
+            // for(auto i = mesh->uniforms.uniforms.begin(); i != mesh->uniforms.uniforms.end(); i++)
+            //     if(i->getLocation() == 27){mesh->uniforms.uniforms.erase(i);break;}
+        });
+    }
+}
+
 COMPONENT_DEFINE_MERGE(EntityModel)
 {
     if(!parent.has<EntityModel>())
@@ -192,6 +230,9 @@ COMPONENT_DEFINE_MERGE(EntityModel)
     auto childModel = child->comp<EntityModel>();
     auto &parentModel = parent.comp<EntityModel>();
 
+    removeEntityStainStatusUniform(child.get());
+    removeEntityStainStatusUniform(&parent);
+
     if(true)
     {
         mat4 t = inverse(parentModel->state.modelMatrix) * childModel->state.modelMatrix;
@@ -201,6 +242,8 @@ COMPONENT_DEFINE_MERGE(EntityModel)
 
         parentModel->add(childModel);
     }
+
+    setEntityStainStatusUniform(&parent);
 }
 
 COMPONENT_DEFINE_MERGE(RigidBody)
@@ -263,6 +306,9 @@ template<> void Component<EntityModel>::ComponentElem::init()
     }
 
     globals.getScene()->add(data);
+
+    entity->set<StainStatus>(StainStatus());
+    setEntityStainStatusUniform(entity);
 };
 
 template<> void Component<EntityModel>::ComponentElem::clean()
@@ -796,7 +842,24 @@ COMPONENT_DEFINE_COMPATIBILITY_CHECK(Script)
     return false;
 }
 
-EntityRef spawnEntity(const std::string &name)
+
+
+template<> void Component<StainStatus>::ComponentElem::init()
+{
+    // setEntityStainStatusUniform(entity);
+}
+
+template<> void Component<StainStatus>::ComponentElem::clean()
+{
+    removeEntityStainStatusUniform(entity);
+}
+
+// COMPONENT_DEFINE_MERGE(StainStatus)
+// {
+//     removeEntityStainStatusUniform(child)
+// }
+
+EntityRef spawnEntity(const std::string &name, vec3 spawnPoint)
 {
     auto it = Loader<EntityRef>::loadingInfos.find(name);
 
@@ -808,8 +871,17 @@ EntityRef spawnEntity(const std::string &name)
 
     VulpineTextBuffRef file(new VulpineTextBuff(it->second->buff->getSource().c_str()));
 
-    return DataLoader<EntityRef>::read(file);
+    auto e = DataLoader<EntityRef>::read(file);
+
+    if(e->has<state3D>())
+    {
+        e->comp<state3D>().useinit = true;
+        e->comp<state3D>().initPosition = spawnPoint;
+    }
+
+    return e;
 }
+
 
 bool isVisible(Entity &a, Entity &b)
 {
@@ -833,19 +905,26 @@ Entity* getClosestVisibleEnemy(Entity &e)
         auto &state3D2 = f.comp<state3D>();
         auto &faction2 = f.comp<Faction>();
 
-        if(Faction::areEnemy(faction1, faction2) and isVisible(e, f))
+        if(
+            f.ids[0] != e.ids[0] and
+            Faction::areEnemy(faction1, faction2) and
+            (!f.has<EntityStats>() or f.comp<EntityStats>().alive) and
+            isVisible(e, f)
+        )
         {
             float d = distance(state3D1.position, state3D2.position);
+
+            // d += (float)(rand()%8)/8.f - 4.f;
     
             if(d < minDistance)
             {
                 minDistance = d;
-                bestMatch = &e;
+                bestMatch = &f;
             }
         }
     });
 
-    return &e;
+    return bestMatch;
 }
 
 Entity* getClosestVisibleAlly(Entity &e)
@@ -860,17 +939,21 @@ Entity* getClosestVisibleAlly(Entity &e)
         auto &state3D2 = f.comp<state3D>();
         auto &faction2 = f.comp<Faction>();
 
-        if(!Faction::areEnemy(faction1, faction2) and isVisible(e, f))
+        if(
+            !f.is(e) and 
+            !Faction::areEnemy(faction1, faction2) and 
+            (!f.has<EntityStats>() or f.comp<EntityStats>().alive) and
+            isVisible(e, f))
         {
             float d = distance(state3D1.position, state3D2.position);
     
             if(d < minDistance)
             {
                 minDistance = d;
-                bestMatch = &e;
+                bestMatch = &f;
             }
         }
     });
 
-    return &e;
+    return bestMatch;
 }

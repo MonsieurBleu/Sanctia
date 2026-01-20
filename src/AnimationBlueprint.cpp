@@ -90,7 +90,11 @@ ANIMATION_SWITCH_ENTITY(switchAttackSpecial,
     return s.isTryingToAttack && s.stance() == ActionState::Stance::SPECIAL;
 )
 
-ANIMATION_SWITCH_ENTITY(switchAttack, 
+ANIMATION_SWITCH_ENTITY(switchAttack,
+    
+    if(e->has<EntityStats>() and e->comp<EntityStats>().stamina.cur < 10)
+        return false;
+
     auto &s = e->comp<ActionState>();
     return s.isTryingToAttack && s.stance() == ActionState::Stance::RIGHT;
 )
@@ -135,7 +139,20 @@ ANIMATION_SWITCH_ENTITY(switchIdle,
 )
 
 ANIMATION_SWITCH_ENTITY(switchRun, 
+
+    // if(e->has<EntityStats>() and e->comp<EntityStats>().stamina.cur < 10)
+    //     return false;
+
     auto &s = e->comp<DeplacementState>();
+
+    // NOTIF_MESSAGE(
+    //     s.speed
+    //     << "\n\t" <<
+    //     s.walkSpeed
+    //     << "\n\t" <<
+    //     s.sprintSpeed
+    // )
+
     return s.speed >= s.walkSpeed + (s.sprintSpeed + s.walkSpeed)*0.25;
 )
 
@@ -387,8 +404,11 @@ float AnimBlueprint::weaponAttackCallback(
 
     fifo *= 2.f - smoothstep(0.f, 50.f, prct);
 
+    float adrenalineSpeedMod = (e->comp<EntityStats>().adrenaline.cur/e->comp<EntityStats>().adrenaline.max);
+    float enduranceSpeedMod  = 0.5*smoothstep(0.25f, 0.f, e->comp<EntityStats>().stamina.cur/e->comp<EntityStats>().stamina.max);
+
     float speed = e->has<EntityStats>() ? 
-        fifo + 0.5*(e->comp<EntityStats>().adrenaline.cur/e->comp<EntityStats>().adrenaline.max)
+        fifo + 0.5f*clamp(adrenalineSpeedMod-enduranceSpeedMod, -1.f, 1.f)
         :
         fifo;
 
@@ -424,13 +444,27 @@ std::function<void (void *)> AnimBlueprint::weaponAttackEnter = [](void * usr){
     s.isTryingToAttack = false;
 
     if(e->has<Items>())
-    for(auto &i : e->comp<Items>().equipped)
-        if(i.item and i.item->has<RigidBody>() and i.item->comp<RigidBody>() and i.item->comp<RigidBody>()->isActive())
+    {
+        physicsMutex.lock();
+        for(auto &i : e->comp<Items>().equipped)
+            if(i.item and i.item->has<RigidBody>() and i.item->comp<RigidBody>() and i.item->comp<RigidBody>()->isActive())
             {
-                physicsMutex.lock();
                 i.item->comp<RigidBody>()->setIsActive(false);
-                physicsMutex.unlock();
             }
+        physicsMutex.unlock();
+
+        auto weapon = e->comp<Items>().equipped[WEAPON_SLOT].item;
+
+        if(e->has<EntityStats>() && weapon && weapon->has<ItemInfos>())
+        {
+            e->comp<EntityStats>().stamina.cur = 
+            clamp(
+                e->comp<EntityStats>().stamina.cur - weapon->comp<ItemInfos>().staminaUseMultiplier,
+                e->comp<EntityStats>().stamina.min,
+                e->comp<EntityStats>().stamina.max
+            );
+        }
+    }
 };
 
 // std::function<void (void *)> AnimBlueprint::weaponKickExit = [](void * usr){

@@ -29,6 +29,7 @@ void VulpineLuaBindings::Entities(sol::state &lua)
 {
     VBIND_INIT_HEADER_CATEGORY("ENGINE ENTITY COMPMONENT")
     VBIND_CLASS_DECLARE_ALIAS(std::shared_ptr<Entity>, Entity)
+    VBIND_CLASS_DECLARE_ALIAS(decltype(Entity::ids), integer[])
     VBIND_CLASS_DECLARE(Entity)
     VBIND_CLASS_DECLARE(EntityInfos)
     VBIND_CLASS_DECLARE(EntityGroupInfo)
@@ -215,7 +216,6 @@ void VulpineLuaBindings::Entities(sol::state &lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
-
 // MARK: Entity file IO
     {
         lua.set_function(
@@ -363,6 +363,8 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
 {
     VBIND_INIT_HEADER_CATEGORY("GAME ENTITY")
 
+    VBIND_CLASS_DECLARE_ALIAS(std::string_view, string)
+
     VBIND_CLASS_DECLARE(Entity)
     VBIND_CLASS_DECLARE(state3D)
     VBIND_CLASS_DECLARE(DeplacementState)
@@ -372,6 +374,10 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_DECLARE(Target)
     VBIND_CLASS_DECLARE(DeplacementState)
     VBIND_CLASS_DECLARE(statBar)
+    VBIND_CLASS_DECLARE(Faction)
+    VBIND_CLASS_DECLARE(StainStatus)
+    VBIND_CLASS_DECLARE(ItemInfos)
+    VBIND_CLASS_DECLARE(AgentProfile)
 
     #define CURRENT_CLASS_BINDING state3D
     {
@@ -509,11 +515,71 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
+    VBIND_CLASS_DECLARE(Faction::Type)
+    VBIND_ADD_ENUM(
+        "FactionType",
+        ("NEUTRAL", Faction::Type::NEUTRAL),
+        ("ENVIRONEMENT", Faction::Type::ENVIRONEMENT),
+        ("PLAYER", Faction::Type::PLAYER),
+        ("PLAYER_ENEMY", Faction::Type::PLAYER_ENEMY),
+        ("PLAYER_ENEMY2", Faction::Type::PLAYER_ENEMY2),
+        ("TEST1", Faction::Type::TEST1),
+        ("TEST2", Faction::Type::TEST2),
+        ("MONSTERS", Faction::Type::MONSTERS),
+        ("BANDITS", Faction::Type::BANDITS),
+        ("PROVIDENCE", Faction::Type::PROVIDENCE),
+        ("GUARDS", Faction::Type::GUARDS),
+        ("CIVILIAN", Faction::Type::CIVILIAN),
+        ("MEHIRLITS", Faction::Type::MEHIRLITS),
+    )
+
+    #define CURRENT_CLASS_BINDING Faction
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(type)
+        VBIND_ADD_METHODS(
+            areEnemy,
+            areAlly
+        )
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+
+    #define CURRENT_CLASS_BINDING StainStatus
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(bloodyness, dirtyness, fatigue)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    #define CURRENT_CLASS_BINDING ItemInfos
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(price, damageMultiplier, staminaUseMultiplier, dmgType)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    #define CURRENT_CLASS_BINDING AgentProfile
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_METHODS(setRule, getRule, combine, toString)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
     #define CURRENT_CLASS_BINDING Entity
     {
         VBIND_CREATE_CLASS
         VBIND_ADD_CONSTRUCTORS((), ())
         VBIND_ADD_METHODS(toStr, is)
+        VBIND_ADD_MEMBERS(ids)
         VBIND_ADD_ENTITY_COMPONENTS(
                 EntityInfos,
                 EntityGroupInfo,
@@ -530,7 +596,11 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
                 EntityStats,
                 AgentState,
                 Target,
-                DeplacementState
+                DeplacementState,
+                Faction,
+                StainStatus,
+                ItemInfos,
+                AgentProfile
         )
     }
     VBIND_CLASS_END

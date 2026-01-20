@@ -136,7 +136,17 @@ class Faction
             ENVIRONEMENT, 
             PLAYER, 
             PLAYER_ENEMY, 
-            MONSTERS        
+            PLAYER_ENEMY2,
+            TEST1,
+            TEST2,
+
+            
+            MONSTERS,
+            BANDITS,
+            PROVIDENCE,
+            GUARDS,
+            CIVILIAN,
+            MEHIRLITS
         );
 
         Type type = Type::NEUTRAL;
@@ -159,18 +169,30 @@ class Faction
 
         static inline std::unordered_set<uint16> isEnemy;
 
+        static inline std::unordered_set<uint16> isAlly;
+
     public :
         static void setEnemy(Faction f1, Faction f2)
         {
             isEnemy.insert(Pair(f1, f2));
         };
 
-        static bool areEnemy(Faction f1, Faction f2)
+        static void setAlly(Faction f1, Faction f2)
         {
-            return isEnemy.find(Pair(f1, f2)) != isEnemy.end();
+            isAlly.insert(Pair(f1, f2));
         };
 
-        static void clearRelations(){isEnemy.clear();};
+        static bool areEnemy(Faction f1, Faction f2)
+        {
+            return f1.type != f2.type and isEnemy.find(Pair(f1, f2)) != isEnemy.end();
+        };
+
+        static bool areAlly(Faction f1, Faction f2)
+        {
+            return f1.type == f2.type or isAlly.find(Pair(f1, f2)) != isAlly.end();
+        };
+
+        static void clearRelations(){isEnemy.clear(); isAlly.clear();};
     
 };
 
@@ -203,4 +225,14 @@ struct LevelOfDetailsInfos
 
     void computeEntityAABB(Entity *e);
     void computeLevel(vec3 p);
+};
+
+struct StainStatus
+{
+    float dirtyness  = 0.f;
+    // float __stencil1__ = 0.f;
+    float bloodyness = 0.f;
+    // float __stencil2__ = 0.f;
+    float fatigue    = 0.f;
+    // float __stencil3__ = 0.f;
 };

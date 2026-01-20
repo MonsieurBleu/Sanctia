@@ -260,7 +260,19 @@ void Game::physicsLoop()
 
                     // do movement
                     vec3 wishdir = ds.wantedDepDirection;
+                    
                     float wishspeed = ds.wantedSpeed;
+                    
+                    if(entity.has<EntityStats>())
+                        wishspeed = mix(
+                            ds.wantedSpeed,
+                            min(ds.wantedSpeed, ds.walkSpeed),
+                            smoothstep(
+                                15.f,
+                                0.f,
+                                entity.comp<EntityStats>().stamina.cur
+                            )
+                        );
 
                     float current_speed = dot(velocity, wishdir);
                     float addspeed = wishspeed - current_speed;

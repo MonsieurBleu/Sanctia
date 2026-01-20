@@ -85,6 +85,15 @@ void DefferedBuffer::generate()
                 .setFilter(GL_NEAREST)
                 .setWrapMode(GL_CLAMP_TO_EDGE)
                 .setAttachement(GL_COLOR_ATTACHMENT5))
+        // .addTexture(
+        //     Texture2D() // BLOOD DIRT PROPERTY
+        //         .setResolution(*resolution)
+        //         .setInternalFormat(GL_RGBA8_SNORM)
+        //         .setFormat(GL_RGBA)
+        //         .setPixelType(GL_SHORT)
+        //         .setFilter(GL_NEAREST)
+        //         .setWrapMode(GL_CLAMP_TO_EDGE)
+        //         .setAttachement(GL_COLOR_ATTACHMENT5))
         .generate(); 
 }
 

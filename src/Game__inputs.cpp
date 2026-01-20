@@ -41,6 +41,18 @@ void Game::initInput()
         },
         InputManager::Filters::always, false);
 
+    Inputs::toggleEditorMode = InputManager::addEventInput(
+        "toggle editor mode", VULPINE_GAMEPAD_BUTTON_BACK, 0, GLFW_PRESS, [&]() {
+            editorModeEnable = editorModeEnable ? false : true;
+
+            if (editorModeEnable)
+                gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1. / 3., +0.4));
+            else
+                gameScreenWidget->comp<WidgetBox>().set(vec2(-1, +1), vec2(-1, +1));
+        },
+        InputManager::Filters::always, false);
+
+
     Inputs::toggleBloom = InputManager::addEventInput(
         "toggle bloom", GLFW_KEY_1, 0, GLFW_PRESS, [&]() { Bloom.toggle(); },
         InputManager::Filters::always, false);

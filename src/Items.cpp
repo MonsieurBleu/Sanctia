@@ -52,9 +52,9 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
         b->setTransform(rp3d::Transform(PG::torp3d(is.position), PG::torp3d(is.usequat ? is.quaternion : directionToQuat(is.lookDirection))));
  
         auto tmp = b->getTransform();
-        std::cout << item->toStr() << "\n";
-        NOTIF_MESSAGE(is.position << "\t" << is.quaternion)
-        NOTIF_MESSAGE(PG::toglm(tmp.getPosition()) << "\t" << PG::toglm(tmp.getOrientation()))
+        // std::cout << item->toStr() << "\n";
+        // NOTIF_MESSAGE(is.position << "\t" << is.quaternion)
+        // NOTIF_MESSAGE(PG::toglm(tmp.getPosition()) << "\t" << PG::toglm(tmp.getOrientation()))
 
         b->setType(rp3d::BodyType::DYNAMIC);
 

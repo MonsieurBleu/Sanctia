@@ -29,7 +29,7 @@
 #define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
 
-EntityRef spawnEntity(const std::string &name);
+EntityRef spawnEntity(const std::string &name, vec3 spawnPoint = vec3(0));
 
 bool isVisible(Entity &a, Entity &b);
 
@@ -62,6 +62,10 @@ Entity* getClosestVisibleAlly(Entity &e);
 
     Component_Init_Synch_Merge(LevelOfDetailsInfos)
     template<> void Component<LevelOfDetailsInfos>::ComponentElem::init();
+
+    Component(StainStatus)
+    template<> void Component<StainStatus>::ComponentElem::init();
+    template<> void Component<StainStatus>::ComponentElem::clean();
 
 /***************** ITEMS *****************/
 
@@ -127,6 +131,7 @@ Entity* getClosestVisibleAlly(Entity &e);
     Component(Target)
     template<> void Component<Target>::ComponentElem::clean();
 
+    Component(AgentProfile)
 
 
 

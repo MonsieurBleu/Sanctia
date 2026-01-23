@@ -1,4 +1,5 @@
 #include "Graphics/Textures.hpp"
+#include "PhysicsGlobals.hpp"
 #include "Timer.hpp"
 #include "Utils.hpp"
 #include <EntityBlueprint.hpp>
@@ -13,7 +14,7 @@
 
 EntityRef Blueprint::SpawnMainGameTerrain()
 {
-    return Blueprint::Terrain("Herault_8192", vec3(4096, 512, 4096), vec3(0), 256);
+    return Blueprint::Terrain("Herault_8192", vec3(4096, 512, 4096), vec3(0), cellSize);
 }
 
 EntityRef Blueprint::Terrain(
@@ -71,12 +72,12 @@ EntityRef Blueprint::Terrain(
     HeightMap_loading.stop();
     std::cout << HeightMap_loading;
 
-    for(auto i : PG::heightFeilds)
+    for(auto i : PG::heightFields)
     {
         PG::common.destroyHeightFieldShape(i.second);
         PG::common.destroyHeightField(i.first);
     }
-    PG::heightFeilds.clear();
+    PG::heightFields.clear();
 
     TerrainEntityCreation.start();
 
@@ -155,6 +156,8 @@ EntityRef Blueprint::Terrain(
             dsize, dsize, heightData.data(),
             reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
             messages);
+
+        std::cout << "dsize * dsize = " << dsize * dsize << std::endl;
         
         for(auto &i : messages)
             ERROR_MESSAGE(i.text);
@@ -166,10 +169,10 @@ EntityRef Blueprint::Terrain(
 
         rp3d::HeightFieldShape *shape = PG::common.createHeightFieldShape(field, rp3d::Vector3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1)));
 
-        PG::heightFeilds.push_back({field, shape});
+        PG::heightFields.push_back({field, shape});
 
         /* Creating terrain cell entity */
-        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state3D(), b, model);
+        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state3D(), b, model, HeightFieldDummyFlag());
         Blueprint::Assembly::AddEntityBodies(b, e.get(), 
             {
                 {   shape
@@ -178,6 +181,8 @@ EntityRef Blueprint::Terrain(
                         rp3d::Quaternion::identity()
                     )}
             }, {});
+
+        b->getCollider(0)->setIsWorldQueryCollider(false);
 
         // GG::entities.push_back(e);
         ComponentModularity::addChild(*terrainRoot, e);

@@ -7,6 +7,7 @@
 #include <Constants.hpp>
 #include <AssetManager.hpp>
 #include <MathsUtils.hpp>
+#include <EntityBlueprint.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
@@ -82,15 +83,67 @@ void Game::physicsLoop()
                 b->setTransform(rp3d::Transform::identity());
         });
 
+        System<DeplacementState>([](Entity& entity)
+        {
+            entity.comp<DeplacementState>()._grounded = false;
+        });
+
         physicsWorldUpdateTimer.start();
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
         physicsWorldUpdateTimer.stop();
+
+        System<DeplacementState>([](Entity& entity)
+        {
+            DeplacementState& ds = entity.comp<DeplacementState>();
+            if (!ds.grounded) // just landed
+            {
+                ds.landedTime = globals.simulationTime.getElapsedTime();
+            }
+            if (ds._grounded)
+            {
+                ds.grounded = true;
+                ds.walking  = true;
+            }
+            else {
+                ds.grounded = false;
+                ds.walking  = false;
+            }
+            ds.groundNormalY = ds._groundNormalY;
+        });
 
         physicsSystemsTimer.start();
 
         PG::physicInterpolationMutex.lock();
         PG::physicInterpolationTick.tick();
         PG::physicInterpolationMutex.unlock();
+
+        int nearbyCells = 0;
+        System<RigidBody, state3D, HeightFieldDummyFlag>([&nearbyCells](Entity &entity){
+            RigidBody b = entity.comp<RigidBody>();
+            
+            vec3 centerPos = PG::toglm(b->getTransform().getPosition());
+            centerPos.y = 0;
+
+            if (!GG::playerEntity || !GG::playerEntity->has<state3D>())
+            {
+                return;
+            }
+            vec3 playerPos = GG::playerEntity->comp<state3D>().position;
+            playerPos.y = 0;
+
+            float d = distance(playerPos, centerPos);
+
+            if (d < Blueprint::cellSize)
+            {
+                b->getCollider(0)->setIsWorldQueryCollider(true);
+                nearbyCells++;
+            }
+            else {
+                b->getCollider(0)->setIsWorldQueryCollider(false);
+            }
+        });
+
+        // std::cout << "nearbyCells: " << nearbyCells << std::endl;
 
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
         System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
@@ -133,50 +186,6 @@ void Game::physicsLoop()
 
                     ds.deplacementDirection = normalize(velocity);
                     ds.speed = length(velocity);
-                    
-
-                    // check grounded
-                    PG::GroundedRayCastCallback callback;
-                    float radius = 0.25f;
-                    // here we try multiple raycasts in a grid to better detect ground when on slopes and stuff but idk if it really is necessary :/
-                    for (int i = -1; i <= 1; i++)
-                    {
-                        for (int j = -1; j <= 1; j++)
-                        {
-                            vec3 offset = vec3(i * radius * 1.5, 0, j * radius * 1.5);
-                            vec3 from_glm = s.position + offset + vec3(0, 1.0f, 0); // cursed magic value offset, should probably do something about that
-                            rp3d::Vector3 from = PG::torp3d(from_glm);
-                            rp3d::Vector3 to = PG::torp3d(s.position + offset + vec3(0, -0.15f, 0));
-                            PG::GroundedRayCastCallback callback_offset(from_glm);
-                            rp3d::Ray ray(from, to);
-                            PG::world->raycast(ray, &callback_offset);
-                            if (callback_offset.hit)
-                            {
-                                callback = callback_offset;
-                                break;
-                            }
-                        }
-                    }
-                    if (!callback.hit)
-                    {
-                        ds.walking = false;
-                        ds.grounded = false;
-                    }
-                    else if (dot(velocity, vec3(0, 1, 0)) > 0 && dot(velocity, callback.hitNormal) > small_threshold)
-                    {
-                        ds.walking = false;
-                        ds.grounded = false;
-                    }
-                    else 
-                    {
-                        if (ds.grounded == false)
-                        {
-                            // we just landed
-                            ds.landedTime = globals.simulationTime.getElapsedTime();
-                        }
-                        ds.grounded = true;
-                        ds.walking = true;
-                    }
 
                     // apply gravity
                     vec3 v = velocity + vec3(0, -ds.gravity, 0) * dt;
@@ -217,6 +226,26 @@ void Game::physicsLoop()
                         }
                     }
 
+                    vec3 angleVector_forward, angleVector_right, angleVector_up;
+                    angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);
+                    angleVector_forward.y = 0.00001;
+                    angleVector_forward = normalize(angleVector_forward);
+                    vec3 vaultGroundCheck = angleVector_forward * 1.5f + s.position;
+
+                    vec3 verticalOffset = vec3(0, 1.0, 0);
+                    vec3 p1 = s.position       + verticalOffset;
+                    p1.x = p1.x == 0.0f ? 0.0001f : p1.x;
+                    p1.y = p1.y == 0.0f ? 0.0001f : p1.y;
+                    p1.z = p1.z == 0.0f ? 0.0001f : p1.z;
+                    vec3 p2 = vaultGroundCheck + verticalOffset;
+                    rp3d::Ray ray(PG::torp3d(p1), PG::torp3d(p2));
+                    PG::RayCastCallback cb(p1, p2);
+                    PG::world->raycast(ray, &cb, 1<<CollideCategory::ENVIRONEMENT);
+
+                    std::cout << "p1: " << p1 << std::endl;
+                    if (cb.hit)
+                        std::cout << "[" << globals.simulationTime.getElapsedTime() << "] Hit: distance: " << std::to_string(cb.minDistance) << std::endl;
+
                     // check jump
                     if (ds.isJumping)
                     {
@@ -229,7 +258,21 @@ void Game::physicsLoop()
                     float accel;
                     if (ds.walking)
                     {
-                        accel = ds.ground_accelerate;
+                        // accel = ds.ground_accelerate;
+
+                        // try to slow the player down if they're on a slope
+                        // kinda magic values, they give a nicer feel imo
+                        const float scaling = 4.0f;
+                        const float accelZeroAtThisNormal = 0.6f;
+                        // normalize t to be between accelZeroAtThisNormal and 1
+                        float t = (ds.groundNormalY - accelZeroAtThisNormal) / (1.0f - accelZeroAtThisNormal);
+                        // function from https://easings.net/#easeInExpo with modified scaling
+                        float normalDistanceFromUp = t == 0.0f ? 0 : pow(2.0f, t * scaling - scaling);
+
+                        normalDistanceFromUp = clamp(normalDistanceFromUp, 0.0f, 1.0f);
+
+                        // interpolate between air accelerate and ground accelerate depending on the slope's angle
+                        accel = mix(ds.air_accelerate, ds.ground_accelerate, normalDistanceFromUp); 
                     }
                     else
                     {
@@ -270,50 +313,10 @@ void Game::physicsLoop()
                         float accelspeed = accel * dt * wishspeed;
                         accelspeed = min(accelspeed, addspeed);
                         velocity += wishdir * accelspeed;
-                    }                    
-
-                    
-
-
-                    // float maxspeed = ds.grounded ? ds.wantedSpeed : ds.airSpeed; 
-                    // vec3 vel = PG::toglm(b->getLinearVelocity());
-                    // vec3 dir = ds.wantedDepDirection;
-                    // ds.speed = length(vec2(vel.x, vel.z));
-                    // ds.speed = length(vel);
-
+                    }
                     
 
                     b->setLinearVelocity(PG::torp3d(velocity));
-
-                    // std::cout << 
-                    //     "pos: " << glm::to_string(s.position) << "\n" <<
-                    //     "vel: " << glm::to_string(velocity) << "\n" <<
-                    //     "wishdir: " << glm::to_string(wishdir) << "\n" <<
-                    //     "wishspeed: " << wishspeed << "\n" <<
-                    //     "grounded: " << ds.grounded << "\n" <<
-                    //     "walking: " << ds.walking << "\n" <<
-                    //     "velocity . ground normal: " << dot(velocity, callback.hitNormal) << "\n"
-                    //     ;
-
-                    // // if(ds.speed > 0.001)
-                    // // {
-                    // //     ds.speed *= abs(dot(dir, normalize(vel)));
-                    // //     std::cout << abs(dot(dir, normalize(vel))) << "\n";
-                    // // }
-
-                    // if(ds.speed > 0.001)
-                    // {
-                    //     b->applyWorldForceAtCenterOfMass(PG::torp3d(-vec3(vel.x, 0, vel.z) * pow(maxspeed, 0.5f) * 5.f * b->getMass()));
-                    // }
-
-                    // // b->getCollider(0)->getMaterial().
-                    
-
-                    // if(ds.speed < maxspeed)
-                    //     b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 50.f * b->getMass())); 
-                    
-                    // // b->applyWorldForceAtCenterOfMass(PG::torp3d(dir * pow(maxspeed, 0.5f) * 15.f * b->getMass())); 
-
                 }
                 break;
             

@@ -10,3 +10,7 @@ struct staticEntityFlag
 };
 
 
+
+// dummy component to apply system only to height fields
+struct HeightFieldDummyFlag {
+};

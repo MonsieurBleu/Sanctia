@@ -106,12 +106,13 @@ Entity* getClosestVisibleAlly(Entity &e);
     #define CURRENT_CATEGORY PHYSIC
 
     Component(Effect)
-
+    
     Component_Init_Merge_Compatible(RigidBody)
     template<> void Component<RigidBody>::ComponentElem::init();
     template<> void Component<RigidBody>::ComponentElem::clean();
 
     Component(staticEntityFlag)
+    Component(HeightFieldDummyFlag)
 
 /***************** IA *****************/
 

@@ -63,6 +63,7 @@ struct DeplacementState
     vec3 wantedDepDirection = vec3(0, 0, 0);
 
     bool grounded = false;
+    bool _grounded = false;
     bool walking = false;
     bool isJumping = false;
 
@@ -78,6 +79,8 @@ struct DeplacementState
     float jumpVelocity = 10.0f;
     float landedTime = 0.f;
     float landedJumpDelay = 0.15f;
+    float groundNormalY = 0.0f;
+    float _groundNormalY = 0.0f;
 };
 
 

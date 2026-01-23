@@ -114,6 +114,71 @@ void applyEffect(Entity *weapon, Entity *target)
     }
 }
 
+void PhysicsEventListener::onContact(const rp3d::CollisionCallback::CallbackData& callbackData) 
+{
+    uint32 nb = callbackData.getNbContactPairs();
+
+    for(uint32 i = 0; i < nb; i++) 
+    {
+        _ContactPair pair = callbackData.getContactPair(i);
+
+        rp3d::Collider *c1 = pair.getCollider1();
+        rp3d::Collider *c2 = pair.getCollider2();
+
+        
+        Entity *e1 = (Entity*)c1->getUserData();
+        Entity *e2 = (Entity*)c2->getUserData();
+
+        if(!e1 || !e2)
+        {
+            #ifdef DO_EVENT_LISTENER_DEBUG_PRINT
+            WARNING_MESSAGE("Physic collide event with null user data will be ignored :(");
+            #endif
+            continue;
+        }
+
+        // bool isExit = pair.getEventType() == _ContactPair::EventType::ContactExit;
+        bool isStart = pair.getEventType() == _ContactPair::EventType::ContactStart;
+        bool isStay = pair.getEventType() == _ContactPair::EventType::ContactStay;
+
+        bool e1Deplacement = e1->has<DeplacementState>();
+        bool e2Deplacement = e2->has<DeplacementState>();
+        if (
+               ((e1Deplacement || e2Deplacement) && !(e1Deplacement && e2Deplacement))  // e1 or e2 are dynamic but not both
+        && (isStart || isStay)                                                          // we are entering or staying in collision
+        )
+        {
+            Entity* dynamicEntity = e1Deplacement ? e1 : e2;
+            DeplacementState& ds = dynamicEntity->comp<DeplacementState>();
+            
+            // check if ground is flat enough to walk
+            const float Y_THRESHOLD = 0.80; // threshold for grounded
+            uint32 nbContacts = pair.getNbContactPoints();
+            // std::cout << "nbContacts: " << nbContacts << std::endl;
+            float maxY = -1.0f;
+            bool found_grounded = false;
+            for (int j = 0; j < nbContacts; j++)
+            {
+                rp3d::CollisionCallback::ContactPoint contactPoint = pair.getContactPoint(j);
+                rp3d::Vector3 normal = contactPoint.getWorldNormal();
+
+                // the normal direction depends on which entity is the dynamic one so we may need to invert it 
+                float n = e1Deplacement ? -normal.y : normal.y; 
+
+                // std::cout << "[" << std::fixed << std::setprecision(4) << globals.simulationTime.getElapsedTime() << "] Debug :3 normal.y is : " << n << std::endl;
+                maxY = max(n, maxY);
+                if (n > Y_THRESHOLD) 
+                {
+                    ds._grounded = true;
+                    found_grounded = true;
+                    // break;
+                }
+            }
+            if (found_grounded)
+                ds._groundNormalY = maxY;
+        }
+    }
+}
 
 void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& callbackData)
 {
@@ -140,6 +205,7 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
 
         bool isExit = pair.getEventType() == _OverlapPair_::EventType::OverlapExit;
         bool isEnter = pair.getEventType() == _OverlapPair_::EventType::OverlapStart;
+        // bool isStay = pair.getEventType() == _OverlapPair_::EventType::OverlapStay;
 
         // if(pair.getEventType() != _OverlapPair_::EventType::OverlapStart)
         {
@@ -164,6 +230,9 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
                         break;
                     }
 
+            // TODO: maybe see if we should move this to the collide event also 
+            // (since it's called onCollision and all that and that for now it will only apply to trigger colliders)
+            // (maybe separate onCollide And onTrigger ? that's what they do in unity)
             if(e1->has<Script>())
             {
                 if(isExit)

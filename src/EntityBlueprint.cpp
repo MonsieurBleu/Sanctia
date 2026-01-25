@@ -157,7 +157,7 @@ EntityRef Blueprint::Terrain(
             reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
             messages);
 
-        std::cout << "dsize * dsize = " << dsize * dsize << std::endl;
+        // std::cout << "dsize * dsize = " << dsize * dsize << std::endl;
         
         for(auto &i : messages)
             ERROR_MESSAGE(i.text);

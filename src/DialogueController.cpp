@@ -250,7 +250,7 @@ void DialogueController::pushNewDialogue(const std::string &id, bool changeNPCli
     auto it = cd.find(id);
     if(it == cd.end())
     {
-        FILE_ERROR_MESSAGE("Dialogue '" << id << "' from entity " << interlocutor->comp<EntityInfos>().name, "Can't find dialogue screen inside loaded dialogue file");
+        FILE_ERROR_MESSAGE("Dialogue '" ,  id ,  "' from entity " ,  interlocutor->comp<EntityInfos>().name, "Can't find dialogue screen inside loaded dialogue file");
         return;
     }
 

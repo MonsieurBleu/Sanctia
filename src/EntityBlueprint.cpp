@@ -62,7 +62,7 @@ EntityRef Blueprint::Terrain(
         HeightMap.getFormat() != GL_DEPTH_COMPONENT
     )
     {
-        ERROR_MESSAGE("Can't create terrain entity, requested heightmap '" << mapName << "' isn't a single channel floating point texture. The function will return an empty entity, have fun with your level !");
+        ERROR_MESSAGE("Can't create terrain entity, requested heightmap '" ,  mapName ,  "' isn't a single channel floating point texture. The function will return an empty entity, have fun with your level !");
         return  terrainRoot;
     }
     

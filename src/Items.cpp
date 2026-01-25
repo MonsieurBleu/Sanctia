@@ -53,8 +53,8 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
  
         auto tmp = b->getTransform();
         std::cout << item->toStr() << "\n";
-        NOTIF_MESSAGE(is.position << "\t" << is.quaternion)
-        NOTIF_MESSAGE(PG::toglm(tmp.getPosition()) << "\t" << PG::toglm(tmp.getOrientation()))
+        NOTIF_MESSAGE(is.position ,  "\t" ,  is.quaternion)
+        NOTIF_MESSAGE(PG::toglm(tmp.getPosition()) ,  "\t" ,  PG::toglm(tmp.getOrientation()))
 
         b->setType(rp3d::BodyType::DYNAMIC);
 

@@ -302,7 +302,7 @@ DATA_READ_FUNC_ENTITY(EntityGroupInfo)
 
                 if(ent == Loader<EntityRef>::loadingInfos.end())
                 {
-                    ERROR_MESSAGE("No information loaded for entity '" << name << "' referenced inside the file '" << buff->getSource() << "'");
+                    ERROR_MESSAGE("No information loaded for entity '" ,  name ,  "' referenced inside the file '" ,  buff->getSource() ,  "'");
                     assert(false);
                 }
 
@@ -339,7 +339,7 @@ DATA_WRITE_FUNC_INIT(EntityModel)
             }
             else
             {
-                WARNING_MESSAGE("Can't save " << type_name<EntityModel>() << " component. Name is empty");
+                WARNING_MESSAGE("Can't save " ,  type_name<EntityModel>() ,  " component. Name is empty");
                 out->write("\"\"", 2);
             }
         }
@@ -378,7 +378,7 @@ DATA_WRITE_FUNC_INIT(SkeletonAnimationState)
     WRITE_NAME(name, out)
     if(!data.name.size())
     {
-        WARNING_MESSAGE("Can't save " << type_name<decltype(data)>() << " component. Name is empty");
+        WARNING_MESSAGE("Can't save " ,  type_name<decltype(data)>() ,  " component. Name is empty");
         out->write("\"\"", 2);
     }  
     else 
@@ -412,7 +412,7 @@ DATA_WRITE_FUNC_INIT(AnimationControllerInfos)
     WRITE_NAME(name, out)
     if(!data.size())
     {
-        WARNING_MESSAGE("Can't save " << type_name<decltype(data)>() << " component. Name is empty");
+        WARNING_MESSAGE("Can't save " ,  type_name<decltype(data)>() ,  " component. Name is empty");
         out->write("\"\"", 2);
     }  
     else 
@@ -735,7 +735,7 @@ DATA_READ_FUNC_ENTITY(RigidBody)
         // TODO : put a warning message here
         FILE_ERROR_MESSAGE(
             buff->getSource(), 
-            "Entity " << e->comp<EntityInfos>().name << " has empty state3D when creating RigidBody"
+            "Entity " ,  e->comp<EntityInfos>().name ,  " has empty state3D when creating RigidBody"
             )
         data = PG::world->createRigidBody(rp3d::Transform::identity());
     }

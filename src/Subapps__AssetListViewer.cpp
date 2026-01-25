@@ -35,8 +35,8 @@ vec2 gridScale = vec2(2);
 
 #define COMPONENT_NOT_RECOGNIZED FILE_ERROR_MESSAGE(                                                                \
         (path + ":" + collection->mName.C_Str() + ":" + component->mName.C_Str() + ":" + collider->mName.C_Str()),  \
-        "Invalid number of mesh. Physic primitives shapes requires 1 mesh, but got " << collider->mNumChildren      \
-        << ". VEAC will ignore this collider."                                                                      \
+        "Invalid number of mesh. Physic primitives shapes requires 1 mesh, but got " ,  collider->mNumChildren      \
+        ,  ". VEAC will ignore this collider."                                                                      \
     )
 
 rp3d::Transform toRP3D(aiMatrix4x4 ai, vec3 posOff = vec3(0))
@@ -406,7 +406,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         {
                             FILE_ERROR_MESSAGE(
                                 (path + ":" + collection->mName.C_Str()), 
-                                "The import system for mesh colliders only support 1 mesh per collider, this one has " << collider->mNumMeshes
+                                "The import system for mesh colliders only support 1 mesh per collider, this one has " ,  collider->mNumMeshes
                             )
                         }
 
@@ -429,7 +429,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         if(error.size())
                         {
                             FILE_ERROR_MESSAGE((path + ":" + collection->mName.C_Str()), 
-                                "RP3D error while creating convex hull from mesh. Returned messages : " << [&]()
+                                "RP3D error while creating convex hull from mesh. Returned messages : " ,  [&]()
                                 {
                                     std::string fullstring;
                                     std::vector<std::string> types({"Error", "Warning", "Information"});
@@ -446,8 +446,8 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                     else {
                         FILE_ERROR_MESSAGE(
                             (path + ":" + collection->mName.C_Str()), 
-                            "Entity physic body '" << component->mName.C_Str() << "' not recognized. "
-                            << "Either something is wrong with the scene layout, or the VEAC entity export option was used by mistake."
+                            "Entity physic body '" ,  component->mName.C_Str() ,  "' not recognized. "
+                            ,  "Either something is wrong with the scene layout, or the VEAC entity export option was used by mistake."
                         )
                     }
                 }
@@ -459,8 +459,8 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             {
                 FILE_ERROR_MESSAGE(
                     (path + ":" + collection->mName.C_Str()), 
-                    "Entity Collection '" << component->mName.C_Str() << "' not recognized. "
-                    << "Either something is wrong with the scene layout, or the VEAC entity export option was used by mistake."
+                    "Entity Collection '" ,  component->mName.C_Str() ,  "' not recognized. "
+                    ,  "Either something is wrong with the scene layout, or the VEAC entity export option was used by mistake."
                 )
             }
 
@@ -468,7 +468,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
         // std::string fileName(std::string("EntityDragnDropTest_") + collection->mName.C_Str() + ".vEntity");
         std::string fileName(dirNameEntity + ".vEntity");
-        NOTIF_MESSAGE("Creating entity file : " << fileName)
+        NOTIF_MESSAGE("Creating entity file : " ,  fileName)
         DataLoader<EntityRef>::write(entity, VulpineTextOutputRef(new VulpineTextOutput(1<<16)))->saveAs(fileName.c_str());
         
         Loader<EntityRef>::addInfosTextless(fileName.c_str());
@@ -485,7 +485,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     if(sceneEntity)
     {
         std::string fileName(dirName + sceneEntity->comp<EntityInfos>().name + ".vEntity");
-        NOTIF_MESSAGE("Creating entity file : " << fileName)
+        NOTIF_MESSAGE("Creating entity file : " ,  fileName)
         DataLoader<EntityRef>::write(sceneEntity, VulpineTextOutputRef(new VulpineTextOutput(1<<16)))->saveAs(fileName.c_str());
     }
 
@@ -598,7 +598,7 @@ EntityRef Apps::AssetListViewer::UImenu()
         {
             for(auto &f : filesToBeProcessed)
             {
-                NOTIF_MESSAGE("Exporting " << f.first);
+                NOTIF_MESSAGE("Exporting " ,  f.first);
 
                 ConvertSceneFile__SanctiaEntity(
                     f.first, 

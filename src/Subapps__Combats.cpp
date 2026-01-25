@@ -271,7 +271,7 @@ void Apps::CombatsApp::update()
     */
 
     // auto &tmp = GG::playerEntity->comp<Items>().equipped[WEAPON_SLOT].item->comp<state3D>();
-    // WARNING_MESSAGE(tmp.position << "\t" << tmp.quaternion)
+    // WARNING_MESSAGE(tmp.position ,  "\t" ,  tmp.quaternion)
 }
 
 

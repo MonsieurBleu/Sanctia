@@ -74,7 +74,7 @@ DATA_READ_FUNC(EntityRef) {
 
         if(!found)
         {
-            WARNING_MESSAGE("No read method is repertoried for component '" << member << "'. Aborting Entity loading from here !");
+            WARNING_MESSAGE("No read method is repertoried for component '" ,  member ,  "'. Aborting Entity loading from here !");
             return data;
         }
     }

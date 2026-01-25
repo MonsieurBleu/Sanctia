@@ -15,7 +15,7 @@ Script::Script(std::string scriptAssetName, ScriptHook hook) {
     for (std::string s : scripts[hook]) { \
         if (Loader<ScriptInstance>::loadingInfos.find(s) != Loader<ScriptInstance>::loadingInfos.end()) { \
             Loader<ScriptInstance>::get(s).run(__VA_ARGS__); \
-        } else WARNING_MESSAGE("Can't find Script " << s << " on hook " << hook) \
+        } else WARNING_MESSAGE("Can't find Script " ,  s ,  " on hook " ,  hook) \
     }
 
 void Script::run_OnInit(Entity& self) {

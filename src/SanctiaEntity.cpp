@@ -250,7 +250,7 @@ void setEntityModelStaticFlagUniform(Entity *e)
             mesh->uniforms.add(ShaderUniform((int *)&f.isDYnamic, 24));
         });
 
-        // NOTIF_MESSAGE(f.isDYnamic << "  " << e->toStr());
+        // NOTIF_MESSAGE(f.isDYnamic ,  "  " ,  e->toStr());
     }
 }
 
@@ -270,7 +270,7 @@ template<> void Component<EntityModel>::ComponentElem::clean()
     if(data.get())
         globals.getScene()->remove(data);
     else
-        WARNING_MESSAGE("Trying to clean null component from entity " << entity->ids[ENTITY_LIST] << " named " << entity->comp<EntityInfos>().name)
+        WARNING_MESSAGE("Trying to clean null component from entity " ,  entity->ids[ENTITY_LIST] ,  " named " ,  entity->comp<EntityInfos>().name)
 };
 
 template<> void Component<SkeletonAnimationState>::ComponentElem::init()
@@ -513,7 +513,7 @@ template<> void Component<PhysicsHelpers>::ComponentElem::clean()
     if(data.get())
         globals.getScene()->remove(data);
     else
-        WARNING_MESSAGE("Trying to clean null component from entity " << entity->ids[ENTITY_LIST] << " named " << entity->comp<EntityInfos>().name)
+        WARNING_MESSAGE("Trying to clean null component from entity " ,  entity->ids[ENTITY_LIST] ,  " named " ,  entity->comp<EntityInfos>().name)
 };
 
 template<> void Component<InfosStatsHelpers>::ComponentElem::init()

@@ -242,7 +242,7 @@ void Game::physicsLoop()
                     PG::RayCastCallback cb(p1, p2);
                     PG::world->raycast(ray, &cb, 1<<CollideCategory::ENVIRONEMENT);
 
-                    std::cout << "p1: " << p1 << std::endl;
+                    // std::cout << "p1: " << p1 << std::endl;
                     if (cb.hit)
                         std::cout << "[" << globals.simulationTime.getElapsedTime() << "] Hit: distance: " << std::to_string(cb.minDistance) << std::endl;
 

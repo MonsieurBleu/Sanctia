@@ -309,8 +309,8 @@ float AnimBlueprint::weaponAttackCallback(
     if(!w.get())
     {
         WARNING_MESSAGE(
-            "Empty item slot " << EquipementSlotsReverseMap[slot] 
-            << " of entity " << e->comp<EntityInfos>().name << ". Animation logic can't be applied here!");
+            "Empty item slot " ,  EquipementSlotsReverseMap[slot] 
+            ,  " of entity " ,  e->comp<EntityInfos>().name ,  ". Animation logic can't be applied here!");
         return 1.f;
     }
 
@@ -333,7 +333,7 @@ float AnimBlueprint::weaponAttackCallback(
         physicsMutex.lock();
         if(!w->has<ItemInfos>())
         {
-            WARNING_MESSAGE("Entity " << e->comp<EntityInfos>().name << " doesn't have item infos for applying effect zone.");
+            WARNING_MESSAGE("Entity " ,  e->comp<EntityInfos>().name ,  " doesn't have item infos for applying effect zone.");
             return 1e12;
         }
 
@@ -468,7 +468,7 @@ std::function<void (void *)> AnimBlueprint::weaponGuardEnter = [](void * usr){
     s.lockedMaxSpeed = 0.5;
 
     // inputLag.stop();
-    // NOTIF_MESSAGE("Input Latency : " << inputLag.getDeltaMS())
+    // NOTIF_MESSAGE("Input Latency : " ,  inputLag.getDeltaMS())
 };
 
 std::function<void (void *)> AnimBlueprint::weaponGuardExit = [](void * usr){

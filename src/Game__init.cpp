@@ -208,12 +208,14 @@ void Game::init(int paramSample)
 
     const GLFWvidmode* videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     int refreshRate = videoMode->refreshRate;
-    // NOTIF_MESSAGE("Primary monitor Refresh Rate: " << refreshRate);
+    // NOTIF_MESSAGE("Primary monitor Refresh Rate: " ,  refreshRate);
     globals.fpsLimiter.freq = refreshRate;
     
     glfwSwapInterval(0);
 
     ambientLight = vec3(0.07);
+
+    Logger::init();
 
 
     dialogueControl.dialogueFont = FUIfont;

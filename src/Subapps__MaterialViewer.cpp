@@ -510,15 +510,15 @@ void Apps::MaterialViewerApp::init()
         helper = newModel(Loader<MeshMaterial>::get("packingPaint"), Loader<MeshVao>::get("Buste Helper"));
 
         // ERROR_MESSAGE(
-        //        "\n\t" <<
+        //        "\n\t" , 
         //     helper->getMaterial()->vert.get_Path()
-        //     << "\n\t" <<
+        //     ,  "\n\t" , 
         //     helper->getMaterial()->frag.get_Path()
-        //     << "\n\t" <<
+        //     ,  "\n\t" , 
         //     helper->getMaterial()->geom.get_Path()
-        //     << "\n\t" <<
+        //     ,  "\n\t" , 
         //     helper->getMaterial()->tesc.get_Path()
-        //     << "\n\t" <<
+        //     ,  "\n\t" , 
         //     helper->getMaterial()->tese.get_Path()
         // );
         // helper->getMaterial()->reset(false);
@@ -585,15 +585,15 @@ void Apps::MaterialViewerApp::update()
 
     // ERROR_MESSAGE(
     //     helper->getMaterial().depthOnly.get()
-    //     //     "\n\t" <<
+    //     //     "\n\t" , 
     //     // helper->getMaterial().depthOnly->vert.get_Path()
-    //     // << "\n\t" <<
+    //     // ,  "\n\t" , 
     //     // helper->getMaterial().depthOnly->frag.get_Path()
-    //     // << "\n\t" <<
+    //     // ,  "\n\t" , 
     //     // helper->getMaterial().depthOnly->geom.get_Path()
-    //     // << "\n\t" <<
+    //     // ,  "\n\t" , 
     //     // helper->getMaterial().depthOnly->tesc.get_Path()
-    //     // << "\n\t" <<
+    //     // ,  "\n\t" , 
     //     // helper->getMaterial().depthOnly->tese.get_Path()
     // );
     // helper->getMaterial()->reset(false);

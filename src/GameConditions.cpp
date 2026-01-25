@@ -27,7 +27,7 @@ GameConditionsHandler& GameConditionsHandler::set(
         if(i->has<NpcPcRelation>())
             i->comp<NpcPcRelation>().known = value == COND_TRUE;
         else
-            WARNING_MESSAGE("Script or dialogue is trying to set COND_NPC_KNOW to the entity '" << i->comp<EntityInfos>().name << "' who has no components relative to player relation.");
+            WARNING_MESSAGE("Script or dialogue is trying to set COND_NPC_KNOW to the entity '" ,  i->comp<EntityInfos>().name ,  "' who has no components relative to player relation.");
         }
         break;
     

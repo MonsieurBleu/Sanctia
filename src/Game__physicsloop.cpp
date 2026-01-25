@@ -117,31 +117,31 @@ void Game::physicsLoop()
         PG::physicInterpolationTick.tick();
         PG::physicInterpolationMutex.unlock();
 
-        int nearbyCells = 0;
-        System<RigidBody, state3D, HeightFieldDummyFlag>([&nearbyCells](Entity &entity){
-            RigidBody b = entity.comp<RigidBody>();
+        // int nearbyCells = 0;
+        // System<RigidBody, state3D, HeightFieldDummyFlag>([&nearbyCells](Entity &entity){
+        //     RigidBody b = entity.comp<RigidBody>();
             
-            vec3 centerPos = PG::toglm(b->getTransform().getPosition());
-            centerPos.y = 0;
+        //     vec3 centerPos = PG::toglm(b->getTransform().getPosition());
+        //     centerPos.y = 0;
 
-            if (!GG::playerEntity || !GG::playerEntity->has<state3D>())
-            {
-                return;
-            }
-            vec3 playerPos = GG::playerEntity->comp<state3D>().position;
-            playerPos.y = 0;
+        //     if (!GG::playerEntity || !GG::playerEntity->has<state3D>())
+        //     {
+        //         return;
+        //     }
+        //     vec3 playerPos = GG::playerEntity->comp<state3D>().position;
+        //     playerPos.y = 0;
 
-            float d = distance(playerPos, centerPos);
+        //     float d = distance(playerPos, centerPos);
 
-            if (d < Blueprint::cellSize)
-            {
-                b->getCollider(0)->setIsWorldQueryCollider(true);
-                nearbyCells++;
-            }
-            else {
-                b->getCollider(0)->setIsWorldQueryCollider(false);
-            }
-        });
+        //     if (d < Blueprint::cellSize)
+        //     {
+        //         b->getCollider(0)->setIsWorldQueryCollider(true);
+        //         nearbyCells++;
+        //     }
+        //     else {
+        //         b->getCollider(0)->setIsWorldQueryCollider(false);
+        //     }
+        // });
 
         // std::cout << "nearbyCells: " << nearbyCells << std::endl;
 

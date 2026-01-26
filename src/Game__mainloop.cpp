@@ -1119,15 +1119,15 @@ void Game::mainloop()
 
         /***** DEMO DEPLACEMENT SYSTEM
         *****/
-        System<state3D, DeplacementState, DeplacementBehaviour>([&, this](Entity &entity) {
+        System<state3D, MovementState, DeplacementBehaviour>([&, this](Entity &entity) {
             auto &s = entity.comp<state3D>();
-            auto &ds = entity.comp<DeplacementState>();
+            auto &ds = entity.comp<MovementState>();
 
             if (&entity == this->dialogueControl.interlocutor.get())
             {
                 vec3 dir = GG::playerEntity->comp<state3D>().position - s.position;
                 float dist = length(dir);
-                s.lookDirection = ds.wantedDepDirection = dir / dist;
+                s.lookDirection = ds.wantedMoveDirection = dir / dist;
                 ds.speed = dist < 1.5f ? 0.f : ds.speed;
                 return;
             }
@@ -1140,8 +1140,8 @@ void Game::mainloop()
                     PI * 2.f *
                         random01Vec2(vec2(time - mod(time, 0.5f + random01Vec2(vec2(entity.ids[ENTITY_LIST]))))) +
                     entity.ids[ENTITY_LIST];
-                ds.wantedDepDirection.x = cos(angle);
-                ds.wantedDepDirection.z = sin(angle);
+                ds.wantedMoveDirection.x = cos(angle);
+                ds.wantedMoveDirection.z = sin(angle);
                 ds.speed = 1;
             }
             break;
@@ -1284,16 +1284,16 @@ void Game::mainloop()
 
                 if(
                     entity.has<RigidBody>() && entity.comp<RigidBody>()->getLinearVelocity().y == 0.f && 
-                    (!entity.has<DeplacementState>() || entity.comp<DeplacementState>().grounded)
+                    (!entity.has<MovementState>() || entity.comp<MovementState>().grounded)
                 )
                 {
                     entity.remove<RigidBody>();
                 }
 
                 entity.remove<DeplacementBehaviour>();
-                entity.comp<ActionState>().lockType = ActionState::LockedDeplacement::SPEED_ONLY;
+                entity.comp<ActionState>().lockType = ActionState::LockedMovement::SPEED_ONLY;
                 entity.comp<ActionState>().lockedMaxSpeed = 0;
-                entity.comp<DeplacementState>().speed = 0;
+                entity.comp<MovementState>().speed = 0;
                 entity.remove<AgentState>();
             }
 

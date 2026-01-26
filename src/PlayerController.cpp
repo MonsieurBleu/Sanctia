@@ -4,6 +4,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <Game.hpp>
 #include <PhysicsGlobals.hpp>
+#include "PlayerUtils.hpp"
 
 PlayerController::PlayerController(Camera *playerCam) : playerCam(playerCam)
 {
@@ -16,7 +17,7 @@ void PlayerController::update()
     if(GG::playerEntity->has<RigidBody>())
         body = GG::playerEntity->comp<RigidBody>();
 
-    if(!GG::playerEntity->has<DeplacementState>())
+    if(!GG::playerEntity->has<MovementState>())
         return;
 
     if(!body) return;
@@ -44,7 +45,7 @@ void PlayerController::update()
     }
 
 
-    auto &ds = GG::playerEntity->comp<DeplacementState>();
+    auto &ds = GG::playerEntity->comp<MovementState>();
 
     angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);
     
@@ -123,7 +124,7 @@ void PlayerController::update()
 
     wishVel.y = 0;
 
-    ds.wantedDepDirection = length(wishVel) > 0.0f ? normalize(wishVel) : vec3(0);
+    ds.wantedMoveDirection = length(wishVel) > 0.0f ? normalize(wishVel) : vec3(0);
     // ds.wantedSpeed = length(wishVel) * ds.walkSpeed * (sprintActivated ? 2.f : 1.f);
     ds.wantedSpeed = length(wishVel) > 0.0f ? (sprintActivated ? ds.sprintSpeed: ds.walkSpeed * continuousInputFactor) : 0.f;
 
@@ -131,14 +132,18 @@ void PlayerController::update()
 
     if (
         upFactor > 0 && // we are pressing the jump key
-        ds.walking && // we are in the walking state
-        !jumpHeld && // we haven't already jumped and are holding the jump key
+        ds.walking &&   // we are in the walking state
+        !jumpHeld &&    // we haven't already jumped and are holding the jump key
         (globals.simulationTime.getElapsedTime() - ds.landedTime) > ds.landedJumpDelay // we didn't just land less than landedJumpDelay seconds ago
     )
     {
-        ds.isJumping = true;
+        ds.isTryingToJump = true;
         jumpHeld = true;
     }
+    
+    vec3 d = playerCam->getDirection();
+    d = PlayerViewController::apply(d);
+    playerCam->setDirection(d);
 
     // grounded = ds.grounded;
 
@@ -159,12 +164,12 @@ void PlayerController::update()
 
     // if(frontFactor || rightFactor)
     // {
-    //     ds.wantedDepDirection = normalize(hFrontDep + hRightDep); 
+    //     ds.wantedMoveDirection = normalize(hFrontDep + hRightDep); 
     //     ds.wantedSpeed = accel;
     // }
     // else
     // {
-    //     ds.wantedDepDirection = vec3(0);
+    //     ds.wantedMoveDirection = vec3(0);
     //     ds.wantedSpeed = 0;
     // }
 
@@ -214,12 +219,12 @@ void PlayerController::update()
 
 //     switch (actionState.lockDirection)
 //     {
-//     case ActionState::LockedDeplacement::DIRECTION :
+//     case ActionState::LockedMovement::DIRECTION :
 //         frontFactor = 1;
 //         rightFactor = 0;
 //         hFront = normalize(actionState.lockedDirection * vec3(1, 0, 1));
     
-//     case ActionState::LockedDeplacement::SPEED_ONLY :
+//     case ActionState::LockedMovement::SPEED_ONLY :
 //         maxSpeed = actionState.lockedMaxSpeed;
 //         daccel = actionState.lockedAcceleration;
 

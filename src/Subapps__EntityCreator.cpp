@@ -399,7 +399,7 @@ void Apps::EntityCreator::UpdateCurrentEntityTransform()
 bool Apps::EntityCreator::isEntityPlayable(EntityRef e)
 {
     return 
-        e->has<DeplacementState>() &&
+        e->has<MovementState>() &&
         e->has<SkeletonAnimationState>() &&
         e->has<state3D>() &&
         !e->comp<state3D>().usequat && 

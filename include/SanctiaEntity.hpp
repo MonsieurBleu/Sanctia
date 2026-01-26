@@ -48,7 +48,7 @@ Entity* getClosestVisibleAlly(Entity &e);
     Component_Init_Compatible(state3D)
     template<> void Component<state3D>::ComponentElem::clean();
 
-    Component(DeplacementState)
+    Component(MovementState)
 
     Component(EntityStats)
 

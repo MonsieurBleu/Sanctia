@@ -141,15 +141,15 @@ void PhysicsEventListener::onContact(const rp3d::CollisionCallback::CallbackData
         bool isStart = pair.getEventType() == _ContactPair::EventType::ContactStart;
         bool isStay = pair.getEventType() == _ContactPair::EventType::ContactStay;
 
-        bool e1Deplacement = e1->has<DeplacementState>();
-        bool e2Deplacement = e2->has<DeplacementState>();
+        bool e1Deplacement = e1->has<MovementState>();
+        bool e2Deplacement = e2->has<MovementState>();
         if (
                ((e1Deplacement || e2Deplacement) && !(e1Deplacement && e2Deplacement))  // e1 or e2 are dynamic but not both
         && (isStart || isStay)                                                          // we are entering or staying in collision
         )
         {
             Entity* dynamicEntity = e1Deplacement ? e1 : e2;
-            DeplacementState& ds = dynamicEntity->comp<DeplacementState>();
+            MovementState& ds = dynamicEntity->comp<MovementState>();
             
             // check if ground is flat enough to walk
             const float Y_THRESHOLD = 0.80; // threshold for grounded

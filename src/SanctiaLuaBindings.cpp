@@ -365,12 +365,12 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
 
     VBIND_CLASS_DECLARE(Entity)
     VBIND_CLASS_DECLARE(state3D)
-    VBIND_CLASS_DECLARE(DeplacementState)
+    VBIND_CLASS_DECLARE(MovementState)
     VBIND_CLASS_DECLARE(ActionState)
     VBIND_CLASS_DECLARE(EntityStats)
     VBIND_CLASS_DECLARE(AgentState)
     VBIND_CLASS_DECLARE(Target)
-    VBIND_CLASS_DECLARE(DeplacementState)
+    VBIND_CLASS_DECLARE(MovementState)
     VBIND_CLASS_DECLARE(statBar)
 
     #define CURRENT_CLASS_BINDING state3D
@@ -479,12 +479,12 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
-    #define CURRENT_CLASS_BINDING DeplacementState
+    #define CURRENT_CLASS_BINDING MovementState
     {
         VBIND_CREATE_CLASS
         VBIND_ADD_CONSTRUCTORS((), ())
         VBIND_ADD_MEMBERS(
-            wantedDepDirection,
+            wantedMoveDirection,
             wantedSpeed,
             speed,
             deplacementDirection,
@@ -525,12 +525,12 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
                 WidgetStyle,
                 WidgetText,
                 state3D,
-                DeplacementState,
+                MovementState,
                 ActionState,
                 EntityStats,
                 AgentState,
                 Target,
-                DeplacementState
+                MovementState
         )
     }
     VBIND_CLASS_END

@@ -114,55 +114,55 @@ ANIMATION_SWITCH_ENTITY(switchKick,
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
 
-    if(!e || !e->has<DeplacementState>() || !e->has<ActionState>())
+    if(!e || !e->has<MovementState>() || !e->has<ActionState>())
         return false;
 
-    auto &depstate = e->comp<DeplacementState>();
+    auto &depstate = e->comp<MovementState>();
     auto &astate = e->comp<ActionState>();
 
-    return depstate.speed >= 0.1 && !astate.isTryingToBlock && !astate.isTryingToAttack && !astate.attacking && !astate.blocking;
+    return depstate.speed >= 0.1 && !astate.isTryingToBlock && !astate.isTryingToAttack && !astate.attacking && !astate.blocking && !astate.climbing;
 )
 
 ANIMATION_SWITCH_ENTITY(switchIdle, 
 
-    if(!e || !e->has<DeplacementState>() || !e->has<ActionState>())
+    if(!e || !e->has<MovementState>() || !e->has<ActionState>())
         return false;
 
-    auto &depstate = e->comp<DeplacementState>();
+    auto &depstate = e->comp<MovementState>();
     auto &astate = e->comp<ActionState>();
 
     return depstate.speed < 0.1f && !astate.isTryingToBlock && !astate.isTryingToAttack && !astate.attacking && !astate.blocking;
 )
 
 ANIMATION_SWITCH_ENTITY(switchRun, 
-    auto &s = e->comp<DeplacementState>();
+    auto &s = e->comp<MovementState>();
     return s.speed >= s.walkSpeed + (s.sprintSpeed + s.walkSpeed)*0.25;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepLeft, 
     vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<MovementState>().deplacementDirection));
     float a = angle(b, d);
     return a > PI/4.f && a < 3.f*PI/4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepRight, 
     vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<MovementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/-4.f && a > 3.f*PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepFront, 
     vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<MovementState>().deplacementDirection));
     float a = angle(b, d);
     return a < PI/4.f && a > PI/-4.f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchDepBack, 
     vec2 d = normalize(toHvec2(e->comp<state3D>().lookDirection));
-    vec2 b = normalize(toHvec2(e->comp<DeplacementState>().deplacementDirection));
+    vec2 b = normalize(toHvec2(e->comp<MovementState>().deplacementDirection));
     float a = angle(b, d);
     return a < -3.f*PI/4.f || a > 3.f*PI/4.f;
 )
@@ -297,7 +297,7 @@ float AnimBlueprint::weaponAttackCallback(
     float end, 
     float dmgMult, 
     int maxTrigger,
-    ActionState::LockedDeplacement lockDep,
+    ActionState::LockedMovement lockDep,
     float maxSpeed,
     EquipementSlots slot
     )
@@ -361,11 +361,11 @@ float AnimBlueprint::weaponAttackCallback(
     // actionState._stance = actionState._wantedStance;
     if(prct >= end)
     {
-        actionState.lockType = ActionState::LockedDeplacement::NONE;
+        actionState.lockType = ActionState::LockedMovement::NONE;
     }
     else if(actionState.lockType != lockDep)
     {
-        if(lockDep == ActionState::LockedDeplacement::DIRECTION)
+        if(lockDep == ActionState::LockedMovement::DIRECTION)
             actionState.lockedDirection = normalize(e->comp<state3D>().lookDirection * vec3(1, 0, 1));
 
         actionState.lockType = lockDep;
@@ -400,7 +400,7 @@ std::function<void (void *)> AnimBlueprint::weaponAttackExit = [](void * usr){
     if(!e || !e->has<ActionState>()) return;
     e->comp<ActionState>().isTryingToAttack = false;
     e->comp<ActionState>().attacking = false;
-    e->comp<ActionState>().lockType = ActionState::LockedDeplacement::NONE;
+    e->comp<ActionState>().lockType = ActionState::LockedMovement::NONE;
 
     if(e->comp<ActionState>().stance() == ActionState::Stance::SPECIAL)
         e->comp<ActionState>().setStance(ActionState::Stance::RIGHT);
@@ -437,7 +437,7 @@ std::function<void (void *)> AnimBlueprint::weaponAttackEnter = [](void * usr){
 //     Entity *e = (Entity*)usr;
 //     e->comp<ActionState>().isTryingToBlock = false;
 //     e->comp<ActionState>().kicking = false;
-//     e->comp<ActionState>().lockType = ActionState::LockedDeplacement::NONE;
+//     e->comp<ActionState>().lockType = ActionState::LockedMovement::NONE;
 
 //     auto &slots = e->comp<Items>().equipped;
 
@@ -464,7 +464,7 @@ std::function<void (void *)> AnimBlueprint::weaponGuardEnter = [](void * usr){
     s.blocking = true;
     s.blockingTime = globals.simulationTime.getElapsedTime();
     // s.isTryingToBlock = false;
-    s.lockType = ActionState::LockedDeplacement::SPEED_ONLY;
+    s.lockType = ActionState::LockedMovement::SPEED_ONLY;
     s.lockedMaxSpeed = 0.5;
 
     // inputLag.stop();
@@ -478,7 +478,7 @@ std::function<void (void *)> AnimBlueprint::weaponGuardExit = [](void * usr){
     s.blocking = s.hasBlockedAttack;
     // s.blocking = false;
     // s.hasBlockedAttack = false;
-    s.lockType = ActionState::LockedDeplacement::NONE;
+    s.lockType = ActionState::LockedMovement::NONE;
 };
 
 std::function<void (void *)> AnimBlueprint::weaponBlockExit = [](void * usr){
@@ -616,7 +616,7 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     #define WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, maxspeed, slot) \
         a->onEnterAnimation = weaponAttackEnter;\
         a->onExitAnimation = AnimBlueprint::weaponAttackExit;\
-        a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, beg, end, dmgMult, maxTrigger, ActionState::LockedDeplacement::lockDep, maxspeed, EquipementSlots::slot););\
+        a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, beg, end, dmgMult, maxTrigger, ActionState::LockedMovement::lockDep, maxspeed, EquipementSlots::slot););\
     
     {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_R");
         WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
@@ -736,7 +736,7 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
     auto walkCallback = [](float f, void *usr)
     {
         Entity *e = (Entity*)usr;
-        auto &s = e->comp<DeplacementState>();
+        auto &s = e->comp<MovementState>();
 
         return max(0.25, 
             1.5 * (

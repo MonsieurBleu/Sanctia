@@ -59,7 +59,7 @@ void Apps::MovementDemo::update()
 {
     ComponentModularity::synchronizeChildren(appRoot);
 
-    // std::cout << "Player velocity: " << GG::playerEntity->comp<DeplacementState>().velocity << std::endl;
+    // std::cout << "Player velocity: " << GG::playerEntity->comp<MovementState>().velocity << std::endl;
 }
 
 

@@ -161,7 +161,6 @@ EntityRef Blueprint::Terrain(
         
         for(auto &i : messages)
             ERROR_MESSAGE(i.text);
-        
 
         float maxv = field->getMaxHeight();
         float minv = field->getMinHeight();
@@ -265,7 +264,7 @@ EntityRef Blueprint::TestManequin()
     EntityRef e = newEntity("HumanMale number " + std::to_string(i)
             , EntityModel{newGroup}
             , state3D(position)
-            , DeplacementState()
+            , MovementState()
             , stats
             , CharacterDialogues("data/commons/dialogues/Fariah Grisnier.md", "Fariah Grisnier")
             , DeplacementBehaviour{DEMO}

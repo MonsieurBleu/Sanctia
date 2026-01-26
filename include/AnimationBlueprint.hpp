@@ -16,7 +16,7 @@ namespace AnimBlueprint
         float end, 
         float dmgMult, 
         int maxTrigger,
-        ActionState::LockedDeplacement lockDep,
+        ActionState::LockedMovement lockDep,
         float maxSpeed,
         EquipementSlots slot = EquipementSlots::WEAPON_SLOT
         );

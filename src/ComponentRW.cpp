@@ -79,14 +79,14 @@ DATA_WRITE_FUNC_INIT(state3D)
 
 DATA_WRITE_END_FUNC
 
-AUTOGEN_DATA_RW_FUNC(DeplacementState
+AUTOGEN_DATA_RW_FUNC(MovementState
     , speed
     , wantedSpeed
     , deplacementDirection
-    , wantedDepDirection
+    , wantedMoveDirection
     , grounded
     , walking
-    , isJumping
+    , isTryingToJump
     , walkSpeed
     , sprintSpeed
     , airSpeed
@@ -96,6 +96,7 @@ AUTOGEN_DATA_RW_FUNC(DeplacementState
     , air_accelerate
     , gravity
     , jumpVelocity
+    , isAllowedToClimb
     )
 
 /* statBars aren't special nor complexe, it's prettier for them to be anonymous when written */

@@ -54,18 +54,18 @@ struct state3D
 };
 
 
-struct DeplacementState
+struct MovementState
 {
     float speed = 0.f;
     float wantedSpeed = 0.f;
 
     vec3 deplacementDirection = vec3(1, 0, 0);
-    vec3 wantedDepDirection = vec3(0, 0, 0);
+    vec3 wantedMoveDirection = vec3(0, 0, 0);
 
     bool grounded = false;
     bool _grounded = false;
     bool walking = false;
-    bool isJumping = false;
+    bool isTryingToJump = false;
 
     float walkSpeed = 2.f;
     float sprintSpeed = 7.f;
@@ -81,6 +81,11 @@ struct DeplacementState
     float landedJumpDelay = 0.15f;
     float groundNormalY = 0.0f;
     float _groundNormalY = 0.0f;
+
+    vec3 climbStartPos, climbEndPos, climbVaultPos;
+    float climbStartSpeed;
+    float climbHeight;
+    bool isAllowedToClimb = true;
 };
 
 
@@ -124,7 +129,10 @@ class ActionState
         bool attacking = false;
         float attackingTime = 0;
 
-        enum LockedDeplacement{NONE, SPEED_ONLY, DIRECTION} lockType;
+        bool climbing = false;
+        float climbingTime = 0;
+
+        enum LockedMovement{NONE, SPEED_ONLY, DIRECTION} lockType;
         float lockedMaxSpeed = 0;
         vec3 lockedDirection = vec3(1, 0, 0);
 

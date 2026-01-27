@@ -139,6 +139,7 @@ namespace Blueprint
 
             EntityRef GlobalBenchmarkScreen();
             EntityRef AmbientControls();
+            EntityRef DebugConsole();
         };        
     };
 };

@@ -230,6 +230,12 @@ void Game::mainloop()
 
     VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 
+        Blueprint::EDITOR_ENTITY::INO::DebugConsole(),
+        "Debug Console", ""
+    );
+
+    VulpineBlueprintUI::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab, 
         Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
         "Ambient Controls", ""
     );

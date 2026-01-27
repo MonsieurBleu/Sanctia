@@ -96,7 +96,6 @@ AUTOGEN_DATA_RW_FUNC(MovementState
     , air_accelerate
     , gravity
     , jumpVelocity
-    , isAllowedToClimb
     )
 
 /* statBars aren't special nor complexe, it's prettier for them to be anonymous when written */

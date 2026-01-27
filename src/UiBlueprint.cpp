@@ -293,6 +293,65 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
     );
 }
 
+EntityRef Blueprint::EDITOR_ENTITY::INO::DebugConsole()
+{
+    auto LogFactory = [](){
+        return newEntity("Log Entry"
+            , UI_BASE_COMP
+        , WidgetBox(
+            vec2(-.98, .98),
+            vec2(-1, -.75))
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        , WidgetText(U"text'd")
+        );
+    };
+
+
+
+    EntityRef DebugConsoleLogs = newEntity("Debug Console Logs"
+        , UI_BASE_COMP
+        , WidgetBox(
+            vec2(-1, 1),
+            vec2(-1, .75))
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE)
+        , WidgetText(U"text :)")
+        , EntityGroupInfo({
+            LogFactory(),
+            LogFactory(),
+            LogFactory(),
+            LogFactory(),
+        })
+    );
+
+    EntityRef DebugConsoleInput = newEntity("Debug Console Input"
+        , UI_BASE_COMP
+        , WidgetBox(
+            vec2(-1, 1),
+            vec2(.75, 1))
+        , WidgetBackground()
+        , WidgetStyle()
+            .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
+            .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+        , WidgetText(U"text 2 electric boogaloo")
+    );
+
+    return newEntity("Debug Console Parent"
+        , UI_BASE_COMP
+        , WidgetBox()
+        , WidgetStyle()
+        , EntityGroupInfo({
+            DebugConsoleLogs,
+            DebugConsoleInput
+        })
+    );
+}
+
 EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
 {
 

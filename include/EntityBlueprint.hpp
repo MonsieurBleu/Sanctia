@@ -21,7 +21,7 @@ namespace Blueprint
 
     EntityRef SpawnMainGameTerrain();
 
-    inline constexpr int cellSize = 256;
+    inline constexpr int cellSize = 128;
     EntityRef Terrain(
         const char *mapName, 
         vec3 terrainSize,

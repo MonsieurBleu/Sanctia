@@ -8,6 +8,8 @@
 
 #define Y_SPAWN_LEVEL 38
 
+#define PLAYER_SET "(Combats) Player 2"
+
 void spawnPlayer(EntityRef appRoot)
 {
     physicsMutex.lock();
@@ -17,7 +19,7 @@ void spawnPlayer(EntityRef appRoot)
     GG::playerEntity = EntityRef();  
     GameGlobals::ManageEntityGarbage__WithPhysics();
 
-    auto tmp = spawnEntity("(Combats) Player", vec3(16, Y_SPAWN_LEVEL, 0));
+    auto tmp = spawnEntity(PLAYER_SET, vec3(16, Y_SPAWN_LEVEL, 0));
     GG::playerEntity = tmp; 
 
     ComponentModularity::addChild(*appRoot, tmp);
@@ -223,6 +225,7 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
                     if (body)
                     {
                         body->setIsActive(true);
+                        if(GG::playerEntity->has<staticEntityFlag>()) GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = body->isActive();
                         body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 5, 0)),
                                                            rp3d::Quaternion::identity()));
                     }
@@ -291,7 +294,7 @@ void Apps::CombatsApp::init()
         ComponentModularity::addChild(*appRoot, stageNPC);
 
         // spawnPlayer(appRoot);
-        GG::playerEntity = spawnEntity("(Combats) Player");
+        GG::playerEntity = spawnEntity(PLAYER_SET);
         GG::playerEntity->comp<state3D>().useinit = true;
         GG::playerEntity->comp<state3D>().initPosition = vec3(16, Y_SPAWN_LEVEL, 0);
         ComponentModularity::addChild(*stageNPC, GG::playerEntity);
@@ -353,7 +356,7 @@ void Apps::CombatsApp::init()
     for(int i = 0; i < 0; i ++)
     {
         // EntityRef e = spawnEntity("(Combats) Ally");
-        EntityRef e = spawnEntity("(Combats) Player", vec3(16 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12));
+        EntityRef e = spawnEntity(PLAYER_SET, vec3(16 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12));
         e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
         e->set<AgentState>(AgentState());
         // e->set<Faction>({Faction::TEST1});
@@ -439,6 +442,16 @@ void Apps::CombatsApp::init()
             {
                 EntityRef e = spawnEntity("(Combats) Enemy");
                 e->comp<state3D>().useinit = true;
+                e->comp<state3D>().initPosition = vec3(0.f, Y_SPAWN_LEVEL, i*4.f);
+                e->comp<Script>().addScript("Action-Dummy Update", ScriptHook::ON_UPDATE);
+                e->set<Faction>({Faction::PLAYER_ENEMY});
+                ComponentModularity::addChild(*stageNPC, e);
+            }
+
+            for(float i = -1.f; i <= 1.f; i += 1.f)
+            {
+                EntityRef e = spawnEntity("(Combats) Enemy 2");
+                e->comp<state3D>().useinit = true;
                 e->comp<state3D>().initPosition = vec3(8.f, Y_SPAWN_LEVEL, i*4.f);
                 e->comp<Script>().addScript("Action-Dummy Update", ScriptHook::ON_UPDATE);
                 e->set<Faction>({Faction::PLAYER_ENEMY});
@@ -452,6 +465,25 @@ void Apps::CombatsApp::init()
         [&]()
         {
             EntityRef e= spawnEntity("(Combats) Ally", vec3(-8.f, Y_SPAWN_LEVEL, 0));
+            e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+            e->set<AgentState>(AgentState());
+            e->set<Target>((Target){GG::playerEntity.get()});
+            e->set<Faction>({Faction::PLAYER_ENEMY});
+            e->set<AgentProfile>(AgentProfile());
+            e->comp<AgentProfile>() 
+                + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs Beginner")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Passive")->comp<AgentProfile>()
+            ;
+            ComponentModularity::addChild(*stageNPC, e);
+        }
+    );
+
+    addStage("1v1 Weak Enemy - Sword And Shield",
+        vec4(1., 0.5, 0.5, 1.0),
+        [&]()
+        {
+            EntityRef e= spawnEntity("(Combats) Ally 2", vec3(-8.f, Y_SPAWN_LEVEL, 0));
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
             e->set<Target>((Target){GG::playerEntity.get()});
@@ -494,6 +526,25 @@ void Apps::CombatsApp::init()
         }
     );
 
+    addStage("1v1 Strong Enemy - Sword And Shield",
+        vec4(1., 0.5, 0.5, 1.0),
+        [&]()
+        {
+            EntityRef e= spawnEntity("(Combats) Ally 2", vec3(-8.f, Y_SPAWN_LEVEL, 0));
+            e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+            e->set<AgentState>(AgentState());
+            e->set<Target>((Target){GG::playerEntity.get()});
+            e->set<Faction>({Faction::PLAYER_ENEMY});
+            e->set<AgentProfile>(AgentProfile());
+            e->comp<AgentProfile>() 
+                + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+            ;
+            ComponentModularity::addChild(*stageNPC, e);
+        }
+    );
+
     addStage("1v1 Very Strong Enemy - Zweihander",
         vec4(1., 0.5, 0.5, 1.0),
         [&]()
@@ -513,13 +564,45 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("1v2 Weak Enemy - Zweihander",
+    addStage("1v1 Very Strong Enemy - Sword And Shield",
         vec4(1., 0.5, 0.5, 1.0),
         [&]()
         {
-            for(int i = 0; i < 2; i++)
+            EntityRef e= spawnEntity("(Combats) Ally 2", vec3(-8.f, Y_SPAWN_LEVEL, 0));
+            e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+            e->set<AgentState>(AgentState());
+            e->set<Target>((Target){GG::playerEntity.get()});
+            e->set<Faction>({Faction::PLAYER_ENEMY});
+            e->set<AgentProfile>(AgentProfile());
+            e->comp<AgentProfile>() 
+                + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs God Duelist")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Passive")->comp<AgentProfile>()
+            ;
+            ComponentModularity::addChild(*stageNPC, e);
+        }
+    );
+
+    addStage("1v2 Weak Enemies",
+        vec4(1., 0.5, 0.5, 1.0),
+        [&]()
+        {
             {
                 EntityRef e= spawnEntity("(Combats) Ally", vec3(-8.f, Y_SPAWN_LEVEL, 0));
+                e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+                e->set<AgentState>(AgentState());
+                e->set<Target>((Target){GG::playerEntity.get()});
+                e->set<Faction>({Faction::PLAYER_ENEMY});
+                e->set<AgentProfile>(AgentProfile());
+                e->comp<AgentProfile>() 
+                    + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                    + spawnEntity("Combat Profile Tactitcs Beginner")->comp<AgentProfile>()
+                    + spawnEntity("Combat Profile Initiative Passive")->comp<AgentProfile>()
+                ;
+                ComponentModularity::addChild(*stageNPC, e);
+            }
+            {
+                EntityRef e = spawnEntity("(Combats) Ally 2", vec3(-8.f, Y_SPAWN_LEVEL, 0));
                 e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
                 e->set<AgentState>(AgentState());
                 e->set<Target>((Target){GG::playerEntity.get()});
@@ -543,51 +626,128 @@ void Apps::CombatsApp::init()
     //     }
     // );
 
-    addStage("Catalys Training Dummies",
-        vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
-        [&]()
-        {
+    // addStage("Catalys Training Dummies",
+    //     vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
+    //     [&]()
+    //     {
 
+    //     }
+    // );
+
+    // addStage("1v1 Weak Mage",
+    //     vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
+    //     [&]()
+    //     {
+
+    //     }
+    // );
+
+    // addStage("1v1 String Mage",
+    //     vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
+    //     [&]()
+    //     {
+
+    //     }
+    // );
+
+
+    std::function<void(int, int, int, int)> spawnBattle = [&](int enemyS, int enemyZ, int allyS, int allyZ)
+    {
+        for(int i = 0; i < enemyS; i++) // Enemy Shields
+        {
+            vec3 randPos(-8 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12);
+            EntityRef e= spawnEntity("(Combats) Enemy 2", randPos);
+            e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+            e->set<AgentState>(AgentState());
+            // e->set<Target>((Target){GG::playerEntity.get()});
+            e->set<Target>(Target());
+            e->set<Faction>({Faction::PLAYER_ENEMY});
+            e->set<AgentProfile>(AgentProfile());
+            e->comp<AgentProfile>() 
+                + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Passive")->comp<AgentProfile>()
+            ;
+            ComponentModularity::addChild(*stageNPC, e);
+        }
+        for(int i = 0; i < enemyZ; i++) // Enemy Zweihander
+        {
+            vec3 randPos(-16 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12);
+            EntityRef e= spawnEntity("(Combats) Enemy", randPos);
+            e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+            e->set<AgentState>(AgentState());
+            // e->set<Target>((Target){GG::playerEntity.get()});
+            e->set<Target>(Target());
+            e->set<Faction>({Faction::PLAYER_ENEMY});
+            e->set<AgentProfile>(AgentProfile());
+            e->comp<AgentProfile>() 
+                + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+            ;
+            ComponentModularity::addChild(*stageNPC, e);
+        }
+
+
+        for(int i = 0; i < allyS; i++) // Ally Shields
+        {
+            vec3 randPos(+8 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12);
+            EntityRef e= spawnEntity("(Combats) Player 2", randPos);
+            e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+            e->set<AgentState>(AgentState());
+            // e->set<Target>((Target){GG::playerEntity.get()});
+            e->set<Target>(Target());
+            e->set<Faction>({Faction::PLAYER});
+            e->set<AgentProfile>(AgentProfile());
+            e->comp<AgentProfile>() 
+                + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+            ;
+            ComponentModularity::addChild(*stageNPC, e);
+        }
+        for(int i = 0; i < allyZ; i++) // Ally Zweihander
+        {
+            vec3 randPos(+16 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12);
+            EntityRef e= spawnEntity("(Combats) Player", randPos);
+            e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
+            e->set<AgentState>(AgentState());
+            // e->set<Target>((Target){GG::playerEntity.get()});
+            e->set<Target>(Target());
+            e->set<Faction>({Faction::PLAYER});
+            e->set<AgentProfile>(AgentProfile());
+            e->comp<AgentProfile>() 
+                + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+            ;
+            ComponentModularity::addChild(*stageNPC, e);
+        }
+    };
+
+
+    addStage("3v4 Easy Battle",
+        vec4(0.5, 1.0, 0.5, 1.0),
+        [spawnBattle]()
+        {
+            spawnBattle(2, 2, 1, 1);
         }
     );
 
-    addStage("1v1 Weak Mage",
-        vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
-        [&]()
-        {
-
-        }
-    );
-
-    addStage("1v1 String Mage",
-        vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
-        [&]()
-        {
-
-        }
-    );
-
-    addStage("4v3 Easy Battle",
+    addStage("10v4 Hard Battle",
         vec4(0.5, 1.0, 0.5, 1.0) * 0.8f,
-        [&]()
-        {
-
-        }
-    );
-
-    addStage("4v10 Hard Battle",
-        vec4(0.5, 1.0, 0.5, 1.0) * 0.8f,
-        [&]()
+        [spawnBattle]()
         {
 
         }
     );
 
     addStage("War",
-        vec4(0.5, 1.0, 0.5, 1.0) * 0.8f,
-        [&]()
+        vec4(0.5, 1.0, 0.5, 1.0),
+        [spawnBattle]()
         {
-
+            const float nb = 250;
+            spawnBattle(nb/2, nb/2, nb/2, nb/2);
         }
     );
 

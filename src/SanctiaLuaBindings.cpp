@@ -378,6 +378,7 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_DECLARE(StainStatus)
     VBIND_CLASS_DECLARE(ItemInfos)
     VBIND_CLASS_DECLARE(AgentProfile)
+    VBIND_CLASS_DECLARE(Items)
 
     #define CURRENT_CLASS_BINDING state3D
     {
@@ -518,19 +519,19 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_DECLARE(Faction::Type)
     VBIND_ADD_ENUM(
         "FactionType",
-        ("NEUTRAL", Faction::Type::NEUTRAL),
-        ("ENVIRONEMENT", Faction::Type::ENVIRONEMENT),
-        ("PLAYER", Faction::Type::PLAYER),
-        ("PLAYER_ENEMY", Faction::Type::PLAYER_ENEMY),
-        ("PLAYER_ENEMY2", Faction::Type::PLAYER_ENEMY2),
-        ("TEST1", Faction::Type::TEST1),
-        ("TEST2", Faction::Type::TEST2),
-        ("MONSTERS", Faction::Type::MONSTERS),
-        ("BANDITS", Faction::Type::BANDITS),
-        ("PROVIDENCE", Faction::Type::PROVIDENCE),
-        ("GUARDS", Faction::Type::GUARDS),
-        ("CIVILIAN", Faction::Type::CIVILIAN),
-        ("MEHIRLITS", Faction::Type::MEHIRLITS),
+        ("NEUTRAL", Faction::Type::NEUTRAL+1),
+        ("ENVIRONEMENT", Faction::Type::ENVIRONEMENT+1),
+        ("PLAYER", Faction::Type::PLAYER+1),
+        ("PLAYER_ENEMY", Faction::Type::PLAYER_ENEMY+1),
+        ("PLAYER_ENEMY2", Faction::Type::PLAYER_ENEMY2+1),
+        ("TEST1", Faction::Type::TEST1+1),
+        ("TEST2", Faction::Type::TEST2+1),
+        ("MONSTERS", Faction::Type::MONSTERS+1),
+        ("BANDITS", Faction::Type::BANDITS+1),
+        ("PROVIDENCE", Faction::Type::PROVIDENCE+1),
+        ("GUARDS", Faction::Type::GUARDS+1),
+        ("CIVILIAN", Faction::Type::CIVILIAN+1),
+        ("MEHIRLITS", Faction::Type::MEHIRLITS+1),
     )
 
     #define CURRENT_CLASS_BINDING Faction
@@ -574,6 +575,35 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
+    VBIND_CLASS_DECLARE_ALIAS(Items::Equipement, Items_Equipement)
+    VBIND_CLASS_DECLARE_ALIAS(decltype(Items::equipped), Items_Equipement[])
+
+    #define CURRENT_CLASS_BINDING Items::Equipement
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(id, item)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    VBIND_CLASS_DECLARE(EquipementSlots)
+    VBIND_ADD_ENUM(
+        "EquipementSlots",
+        ("WEAPON_SLOT", EquipementSlots::WEAPON_SLOT+1),
+        ("SECOND_HAND_SLOT", EquipementSlots::SECOND_HAND_SLOT+1),
+        ("FOOT_SLOT", EquipementSlots::FOOT_SLOT+1)
+    )
+
+    #define CURRENT_CLASS_BINDING Items
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(equipped)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
     #define CURRENT_CLASS_BINDING Entity
     {
         VBIND_CREATE_CLASS
@@ -600,7 +630,8 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
                 Faction,
                 StainStatus,
                 ItemInfos,
-                AgentProfile
+                AgentProfile,
+                Items
         )
     }
     VBIND_CLASS_END

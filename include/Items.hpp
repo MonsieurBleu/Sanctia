@@ -17,8 +17,8 @@ struct ItemInfos
 
 GENERATE_ENUM_FAST_REVERSE(EquipementSlots
     , WEAPON_SLOT
+    , SECOND_HAND_SLOT
     , FOOT_SLOT
-    , UNNAMED_SLOT_3
     , UNNAMED_SLOT_4
     , UNNAMED_SLOT_5
     , UNNAMED_SLOT_6
@@ -42,7 +42,8 @@ enum BipedSkeletonID : int
 
 struct Items
 {
-    struct Equipement{int id = 0; EntityRef item;} equipped[16];
+    struct Equipement{int id = -1; EntityRef item;};
+    std::array<Equipement, 16> equipped;
 
     // ~Items(){for(auto i : equipped) i.item = EntityRef();};
 

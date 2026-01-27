@@ -92,10 +92,20 @@ ANIMATION_SWITCH_ENTITY(switchAttackSpecial,
 
 ANIMATION_SWITCH_ENTITY(switchAttack,
     
-    if(e->has<EntityStats>() and e->comp<EntityStats>().stamina.cur < 10)
-        return false;
-
     auto &s = e->comp<ActionState>();
+    
+    if( e->has<EntityStats>() 
+        // and e->has<ItemInfos>()
+        and e->comp<EntityStats>().stamina.cur < 15
+    )
+    {
+        if(e->has<ActionState>())
+            e->comp<ActionState>().isTryingToAttack = false;
+
+        return false;
+    }
+
+    
     return s.isTryingToAttack && s.stance() == ActionState::Stance::RIGHT;
 )
 
@@ -236,7 +246,8 @@ ANIMATION_SWITCH_ENTITY(switchBlockRight,
 )
 
 ANIMATION_SWITCH(switchRandom2, 
-    return ((int)(globals.appTime.getElapsedTime()*1000.f))%2 == 0;
+    return rand()%2;
+    // return ((int)(globals.appTime.getElapsedTime()*1000.f))%2 == 0;
 )
 
 #define ACT_TO_RANDOM(maccro, animA, animB, time, cond) \
@@ -319,7 +330,58 @@ float AnimBlueprint::weaponAttackCallback(
     EquipementSlots slot
     )
 {
+    // if(prct == 0.f)
+    //     WARNING_MESSAGE("YOooo  " << e->ids[0])
+
     if(!e) return 1.f;
+
+
+    if(prct == 0.f)
+    if(e->has<Items>())
+    {
+        // bool needLock = false;
+        // for(auto &i : e->comp<Items>().equipped)
+        //     if(i.item and i.item->has<RigidBody>() and i.item->comp<RigidBody>() and i.item->comp<RigidBody>()->isActive())
+        //     {
+        //         needLock = true;
+        //         break;
+        //     }
+        
+        // if(needLock)
+        {
+            // physicsMutex.lock();
+            for(auto &i : e->comp<Items>().equipped)
+                // if(i.item and i.item->has<RigidBody>() and i.item->comp<RigidBody>() and i.item->comp<RigidBody>()->isActive())
+                if(
+                    i.item 
+                    and i.item->has<RigidBody>() 
+                    and i.item->comp<RigidBody>() 
+                    and i.item->has<staticEntityFlag>()
+                    and i.item->comp<staticEntityFlag>().isActive
+                )
+                {
+                    // i.item->comp<RigidBody>()->setIsActive(false);
+                    i.item->comp<staticEntityFlag>().shoudBeActive = false;
+                }
+            // physicsMutex.unlock();
+        }
+
+        auto weapon = e->comp<Items>().equipped[slot].item;
+
+        if(e->has<EntityStats>() && weapon && weapon->has<ItemInfos>())
+        {
+            e->comp<EntityStats>().stamina.cur = 
+            clamp(
+                e->comp<EntityStats>().stamina.cur - weapon->comp<ItemInfos>().staminaUseMultiplier,
+                e->comp<EntityStats>().stamina.min,
+                e->comp<EntityStats>().stamina.max
+            );
+        }
+    }
+
+
+
+
 
     auto &w = e->comp<Items>().equipped[slot].item;
 
@@ -335,19 +397,22 @@ float AnimBlueprint::weaponAttackCallback(
 
     
     /* Disable effect componment and mark it for removal */
-    if( prct >= end && b->isActive())
+    if( prct >= end and w->has<staticEntityFlag>() and w->comp<staticEntityFlag>().isActive)
     {
-        physicsMutex.lock();
-        b->setIsActive(false);
-        physicsMutex.unlock();
+        // physicsMutex.lock();
+        // b->setIsActive(false);
+        // physicsMutex.unlock();
+        w->comp<staticEntityFlag>().shoudBeActive = false;
     }
 
     if(prct >= begin && prct < end
-        && !b->isActive()
-        && w->comp<Effect>().affectedEntities.empty()
+        // && !b->isActive()
+        and w->has<staticEntityFlag>()
+        and !w->comp<staticEntityFlag>().isActive
+        and w->comp<Effect>().affectedEntities.empty()
     )
     {
-        physicsMutex.lock();
+        // physicsMutex.lock();
         if(!w->has<ItemInfos>())
         {
             WARNING_MESSAGE("Entity " << e->comp<EntityInfos>().name << " doesn't have item infos for applying effect zone.");
@@ -367,8 +432,9 @@ float AnimBlueprint::weaponAttackCallback(
 
         // std::cout << " with effect type" << EffectTypeReverseMap[w->comp<Effect>().type] << "\n" << TERMINAL_RESET;
 
-        b->setIsActive(true);
-        physicsMutex.unlock();
+        // b->setIsActive(true);
+        w->comp<staticEntityFlag>().shoudBeActive = true;
+        // physicsMutex.unlock();
     }
 
     auto &actionState = e->comp<ActionState>();
@@ -402,10 +468,10 @@ float AnimBlueprint::weaponAttackCallback(
 
     float fifo = fifoFixedSpeed(prct, 0.25f);
 
-    fifo *= 2.f - smoothstep(0.f, 50.f, prct);
+    fifo *= 1.5f - 0.5*smoothstep(0.f, 50.f, prct);
 
     float adrenalineSpeedMod = (e->comp<EntityStats>().adrenaline.cur/e->comp<EntityStats>().adrenaline.max);
-    float enduranceSpeedMod  = 0.5*smoothstep(0.25f, 0.f, e->comp<EntityStats>().stamina.cur/e->comp<EntityStats>().stamina.max);
+    float enduranceSpeedMod  = smoothstep(0.25f, 0.f, e->comp<EntityStats>().stamina.cur/e->comp<EntityStats>().stamina.max);
 
     float speed = e->has<EntityStats>() ? 
         fifo + 0.5f*clamp(adrenalineSpeedMod-enduranceSpeedMod, -1.f, 1.f)
@@ -443,28 +509,7 @@ std::function<void (void *)> AnimBlueprint::weaponAttackEnter = [](void * usr){
     s._stance = s._wantedStance;
     s.isTryingToAttack = false;
 
-    if(e->has<Items>())
-    {
-        physicsMutex.lock();
-        for(auto &i : e->comp<Items>().equipped)
-            if(i.item and i.item->has<RigidBody>() and i.item->comp<RigidBody>() and i.item->comp<RigidBody>()->isActive())
-            {
-                i.item->comp<RigidBody>()->setIsActive(false);
-            }
-        physicsMutex.unlock();
 
-        auto weapon = e->comp<Items>().equipped[WEAPON_SLOT].item;
-
-        if(e->has<EntityStats>() && weapon && weapon->has<ItemInfos>())
-        {
-            e->comp<EntityStats>().stamina.cur = 
-            clamp(
-                e->comp<EntityStats>().stamina.cur - weapon->comp<ItemInfos>().staminaUseMultiplier,
-                e->comp<EntityStats>().stamina.min,
-                e->comp<EntityStats>().stamina.max
-            );
-        }
-    }
 };
 
 // std::function<void (void *)> AnimBlueprint::weaponKickExit = [](void * usr){
@@ -708,14 +753,10 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     
     /* DEMO 2025 */
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Attack");
-        WEAPON_CALLBACK(33.0, 66, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
-        // const float l = a->getLength();
-        // a->speedCallback = [l](float f, void *e){return (1./0.75) / l;};
+        WEAPON_CALLBACK(45.0, 66, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Kick");
         WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 1.5, FOOT_SLOT);
-        // const float l = a->getLength();
-        // a->speedCallback = [l](float f, void *e){return (1./0.5) / l;};
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Death_1");
         a->repeat = false;
@@ -740,9 +781,67 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
         const float duration = 0.5;
         const float l = a->getLength();
         // a->speedCallback = [l, duration](float f, void *e){return (1./duration)/l;};
-        a->speedCallback = [l, duration](float f, void *e){return fifoFixedLength(f, l, duration, 0.25);};
+        a->speedCallback = [l, duration](float f, void *p){
+            Entity *e = (Entity*)p;
+            if(e and e->has<ActionState>())
+            {
+                e->comp<ActionState>().isTryingToAttack = false;
+                e->comp<ActionState>().isTryingToBlock = false;
+            }
+
+            return fifoFixedLength(f, l, duration, 0.25);
+        };
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Idle");
+        a->onEnterAnimation = AnimBlueprint::idleEnter;
+    }
+
+
+
+
+
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Attack");
+        WEAPON_CALLBACK(33.0, 66.0, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Kick");
+        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 1.5, FOOT_SLOT);
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Death_1");
+        a->repeat = false;
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Death_2");
+        a->repeat = false;
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Blocking");
+        a->onExitAnimation = AnimBlueprint::weaponGuardExit;
+        a->onEnterAnimation = AnimBlueprint::weaponGuardEnter;
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Blocking_Impact");
+        a->onExitAnimation = AnimBlueprint::weaponBlockExit;
+        a->repeat = false;
+        // const float duration = 0.5;
+        // const float l = a->getLength();
+        // // a->speedCallback = [l, duration](float f, void *e){return 2*1-(f/100.f);};
+        // a->speedCallback = [l, duration](float f, void *e){return fifoFixedLength(f, l, duration, 0.25);};
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Impact");
+        a->onExitAnimation = AnimBlueprint::weaponStunExit;
+        const float duration = 0.5;
+        const float l = a->getLength();
+        // a->speedCallback = [l, duration](float f, void *e){return (1./duration)/l;};
+        a->speedCallback = [l, duration](float f, void *p){
+            Entity *e = (Entity*)p;
+            if(e and e->has<ActionState>())
+            {
+                e->comp<ActionState>().isTryingToAttack = false;
+                e->comp<ActionState>().isTryingToBlock = false;
+            }
+
+            // return fifoFixedLength(f, l, duration, 0.25);
+            return 1.f;
+        };
+    }
+    {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Idle");
         a->onEnterAnimation = AnimBlueprint::idleEnter;
     }
 }
@@ -755,6 +854,30 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
 
     LOAD_ANIM_FROM_PREFIX(Death_1)
     LOAD_ANIM_FROM_PREFIX(Death_2)
+
+    auto deathCallback = [](float f, void *usr)
+    {
+        if(!usr) return 1.f;
+
+        Entity *e = (Entity*)usr;
+
+        if(f > 90.f and e->has<Items>())
+        {
+            e->comp<Items>().unequip(
+                *e,
+                WEAPON_SLOT
+            );
+            e->comp<Items>().unequip(
+                *e,
+                SECOND_HAND_SLOT
+            );
+        }
+
+        return 1.f;
+    };
+
+    Death_1->speedCallback = deathCallback;
+    Death_2->speedCallback = deathCallback;
 
     LOAD_ANIM_FROM_PREFIX(Kick)
     LOAD_ANIM_FROM_PREFIX(Attack)
@@ -769,11 +892,16 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
 
     auto walkCallback = [](float f, void *usr)
     {
+        if(!usr)
+        {
+            // WARNING_MESSAGE("Empty USR for walking animation !")
+            return 1.f;
+        }
         Entity *e = (Entity*)usr;
         auto &s = e->comp<DeplacementState>();
 
-        return max(0.25, 
-            1.5 * (
+        return max(0.25f, 
+            (
                 smoothstep(0.f,s.walkSpeed,s.speed) + 
                 smoothstep(s.walkSpeed, s.sprintSpeed, s.speed))
         );

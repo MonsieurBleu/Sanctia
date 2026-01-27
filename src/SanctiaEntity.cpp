@@ -102,6 +102,7 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
         auto cbtype = childBody->getType();
         
         childBody->setIsActive(false);
+        if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = childBody->isActive();
         childBody->setType(rp3d::BodyType::KINEMATIC);
         
         childBody->setTransform(
@@ -112,6 +113,7 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
         
         childBody->setType(cbtype);
         childBody->setIsActive(true);
+        if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = childBody->isActive();
     }
 
     // child->set<RigidBody>(childBody);
@@ -148,6 +150,7 @@ COMPONENT_DEFINE_REPARENT(state3D)
         if(b->getType() != rp3d::BodyType::STATIC)
         {
             b->setIsActive(false);
+            if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = b->isActive();
             auto childBodyType = b->getType();
             b->setType(rp3d::BodyType::KINEMATIC);
 
@@ -162,6 +165,7 @@ COMPONENT_DEFINE_REPARENT(state3D)
             child->set<RigidBody>(b);
 
             b->setIsActive(true);
+            if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = b->isActive();
         }
 
     }
@@ -940,8 +944,9 @@ Entity* getClosestVisibleAlly(Entity &e)
         auto &faction2 = f.comp<Faction>();
 
         if(
-            !f.is(e) and 
-            !Faction::areEnemy(faction1, faction2) and 
+            // !f.is(e) and 
+            f.ids[0] != e.ids[0] and
+            Faction::areAlly(faction1, faction2) and 
             (!f.has<EntityStats>() or f.comp<EntityStats>().alive) and
             isVisible(e, f))
         {

@@ -52,6 +52,10 @@ void Game::physicsLoop()
         physicsTimer.start();
         physicsMutex.lock();
         
+        PG::physicInterpolationMutex.lock();
+        PG::physicInterpolationTick.tick();
+        PG::physicInterpolationMutex.unlock();
+
         ManageGarbage<RigidBody>();
         ManageGarbage<Target>();
 
@@ -59,7 +63,12 @@ void Game::physicsLoop()
         {
             auto body = GG::playerEntity->comp<RigidBody>();
             if(body)
+            {
                 body->setIsActive(false);
+
+                if(GG::playerEntity->has<staticEntityFlag>())
+                    GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = false;
+            }
         }
         
         /*
@@ -88,15 +97,39 @@ void Game::physicsLoop()
 
         physicsSystemsTimer.start();
 
-        PG::physicInterpolationMutex.lock();
-        PG::physicInterpolationTick.tick();
-        PG::physicInterpolationMutex.unlock();
+
+
+        System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
+            auto &b = entity.comp<RigidBody>();
+            auto &f = entity.comp<staticEntityFlag>();
+
+            f.isActive = b->isActive();
+            
+            if(f.isActive) f.activeIterationCnt ++;
+            else f.activeIterationCnt = 0;
+
+            if(f.shoudBeActive != f.isActive
+            
+                and b->isAllowedToSleep()
+            )
+            {
+                // WARNING_MESSAGE(f.shoudBeActive << "\t" <<  entity.toStr())
+                b->setIsActive(f.shoudBeActive);
+                f.isActive = f.shoudBeActive;
+
+                // b->setIsAllowedToSleep(bool isAllowedToSleep)
+            }
+
+
+        });
+
+        // static vec3 minPos = vec3(1e6);
+        // WARNING_MESSAGE(minPos.y);
 
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
         System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
             auto &s = entity.comp<state3D>();
-            auto &ds = entity.comp<DeplacementState>();
 
             #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
             s.physicActivated = b->isActive();
@@ -122,8 +155,18 @@ void Game::physicsLoop()
 
                     s.position = PG::toglm(t.getPosition());
                     s.quaternion = PG::toglm(t.getOrientation());
+
+
+
+                    
+                    // minPos = min(minPos, s.position);
+                    
+
+
                     
                     if(!entity.has<DeplacementState>()) break;
+
+                    auto &ds = entity.comp<DeplacementState>();
 
                     const float small_threshold = 0.05f;
 
@@ -136,47 +179,47 @@ void Game::physicsLoop()
                     
 
                     // check grounded
-                    PG::GroundedRayCastCallback callback;
-                    float radius = 0.25f;
-                    // here we try multiple raycasts in a grid to better detect ground when on slopes and stuff but idk if it really is necessary :/
-                    for (int i = -1; i <= 1; i++)
-                    {
-                        for (int j = -1; j <= 1; j++)
-                        {
-                            vec3 offset = vec3(i * radius * 1.5, 0, j * radius * 1.5);
-                            vec3 from_glm = s.position + offset + vec3(0, 1.0f, 0); // cursed magic value offset, should probably do something about that
-                            rp3d::Vector3 from = PG::torp3d(from_glm);
-                            rp3d::Vector3 to = PG::torp3d(s.position + offset + vec3(0, -0.15f, 0));
-                            PG::GroundedRayCastCallback callback_offset(from_glm);
-                            rp3d::Ray ray(from, to);
-                            PG::world->raycast(ray, &callback_offset);
-                            if (callback_offset.hit)
-                            {
-                                callback = callback_offset;
-                                break;
-                            }
-                        }
-                    }
-                    if (!callback.hit)
-                    {
-                        ds.walking = false;
-                        ds.grounded = false;
-                    }
-                    else if (dot(velocity, vec3(0, 1, 0)) > 0 && dot(velocity, callback.hitNormal) > small_threshold)
-                    {
-                        ds.walking = false;
-                        ds.grounded = false;
-                    }
-                    else 
-                    {
-                        if (ds.grounded == false)
-                        {
-                            // we just landed
-                            ds.landedTime = globals.simulationTime.getElapsedTime();
-                        }
+                    // PG::GroundedRayCastCallback callback;
+                    // float radius = 0.25f;
+                    // // here we try multiple raycasts in a grid to better detect ground when on slopes and stuff but idk if it really is necessary :/
+                    // for (int i = -1; i <= 1; i++)
+                    // {
+                    //     for (int j = -1; j <= 1; j++)
+                    //     {
+                    //         vec3 offset = vec3(i * radius * 1.5, 0, j * radius * 1.5);
+                    //         vec3 from_glm = s.position + offset + vec3(0, 1.0f, 0); // cursed magic value offset, should probably do something about that
+                    //         rp3d::Vector3 from = PG::torp3d(from_glm);
+                    //         rp3d::Vector3 to = PG::torp3d(s.position + offset + vec3(0, -0.15f, 0));
+                    //         PG::GroundedRayCastCallback callback_offset(from_glm);
+                    //         rp3d::Ray ray(from, to);
+                    //         PG::world->raycast(ray, &callback_offset);
+                    //         if (callback_offset.hit)
+                    //         {
+                    //             callback = callback_offset;
+                    //             break;
+                    //         }
+                    //     }
+                    // }
+                    // if (!callback.hit)
+                    // {
+                    //     ds.walking = false;
+                    //     ds.grounded = false;
+                    // }
+                    // else if (dot(velocity, vec3(0, 1, 0)) > 0 && dot(velocity, callback.hitNormal) > small_threshold)
+                    // {
+                    //     ds.walking = false;
+                    //     ds.grounded = false;
+                    // }
+                    // else 
+                    // {
+                    //     if (ds.grounded == false)
+                    //     {
+                    //         // we just landed
+                    //         ds.landedTime = globals.simulationTime.getElapsedTime();
+                    //     }
                         ds.grounded = true;
                         ds.walking = true;
-                    }
+                    // }
 
                     // apply gravity
                     vec3 v = velocity + vec3(0, -ds.gravity, 0) * dt;
@@ -369,6 +412,9 @@ void Game::physicsLoop()
             }
         });
 
+        
+
+
 
         // static int i = 0;
         // if((i++)%10 == 0)
@@ -504,21 +550,24 @@ void Game::physicsLoop()
         physicsTimer.stop();
 
         float maxFreq = 200.f;
-        float minFreq = 25.f;
-        if(physicsTimer.getDelta() > 1.f/physicsTicks.freq)
-        {
-            physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
-        }
-        else if(physicsTimer.getDelta() < 0.4f/physicsTicks.freq)
-        {
-            physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
-        }
+        float minFreq = 5.f;
 
-        
+        // if(physicsTimer.getDelta() > 1.0/physicsTicks.freq)
+        // {
+        //     physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
+        // }
+        // else if(physicsTimer.getDelta() < 0.5f/physicsTicks.freq)
+        // {
+        //     physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
+        // }
 
         physicsMutex.unlock();
 
         physicsTicks.waitForEnd();
+
+        const float stepSize = 10.f;
+        physicsTicks.freq = ceil(1.0/(physicsTimer.getDelta()*stepSize))*stepSize;
+        physicsTicks.freq = clamp(physicsTicks.freq, minFreq, maxFreq);
     }
 
     for(auto &i : Loader<ScriptInstance>::loadedAssets)

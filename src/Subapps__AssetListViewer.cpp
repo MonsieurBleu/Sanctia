@@ -139,12 +139,14 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             if(vulpineImportFlags & 1<<VEAC::RETARGET_SKELETON)
             {
                 if(skeletonTarget.size() && retargetMethode.size() && vulpineImportFlags)
-                    VEAC::retargetVulpineAnimation(anim, bonesInfosMap, anim.mName.C_Str(), dirName, skeletonTarget, retargetMethode);
+                    // VEAC::retargetVulpineAnimation(anim, bonesInfosMap, anim.mName.C_Str(), dirName, skeletonTarget, retargetMethode);
+                    VEAC::retargetVulpineAnimation(anim, bonesInfosMap, getNameOnlyFromPath(path.c_str()), dirName, skeletonTarget, retargetMethode);
                 else
                     WARNING_MESSAGE("Can't retarget animations without skeleton target or methode.");
             }
             else
-                VEAC::saveAsVulpineAnimation(anim, bonesInfosMap, dirName + anim.mName.C_Str() + ".vAnimation");
+                // VEAC::saveAsVulpineAnimation(anim, bonesInfosMap, dirName + anim.mName.C_Str() + ".vAnimation");
+                VEAC::saveAsVulpineAnimation(anim, bonesInfosMap, dirName + getNameOnlyFromPath(path.c_str()) + ".vAnimation");
 
         }
     }
@@ -340,6 +342,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 rp3d::Transform transform;
                 entity->set<RigidBody>(PG::world->createRigidBody(transform));
                 entity->comp<RigidBody>()->setIsActive(false);
+                if(entity->has<staticEntityFlag>()) entity->comp<staticEntityFlag>().shoudBeActive = entity->comp<RigidBody>()->isActive();
 
                 if(STR_CASE_STR(component->mName.C_Str(), "kinematic"))
                     entity->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);

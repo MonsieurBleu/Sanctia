@@ -134,51 +134,61 @@ void Apps::AnimationApp::init()
         globals.simulationTime.resume();
 
         GG::skyboxType = 2;
+
+
+        GG::sun->shadowCameraSize = vec2(64, 64);
+        GG::sun->activateShadows();
+
     }   
+
+    physicsMutex.lock();
+    ComponentModularity::addChild(*appRoot, spawnEntity("Ground_Demo_64xh", vec3(0)));
+    ComponentModularity::ReparentChildren(*appRoot);
+    physicsMutex.unlock();
 
     // setTopDownView();
     
-    skeleton = Loader<SkeletonRef>::get(
-        // "__tmp__"
+    // skeleton = Loader<SkeletonRef>::get(
+    //     // "__tmp__"
         
-        // "_f_h_magespellcast_05"
+    //     // "_f_h_magespellcast_05"
 
-        "dance-graceful"
+    //     "dance-graceful"
 
-        // "catwalk-loop"
+    //     // "catwalk-loop"
 
-        // "walk-2"
-    );
+    //     // "walk-2"
+    // );
 
     skeleton2 = Loader<SkeletonRef>::get(
         "Human"
     );
 
     // skeleton = Loader<SkeletonRef>::get("Xbot");
-    skeletonState = SkeletonAnimationState(skeleton);
+    // skeletonState = SkeletonAnimationState(skeleton);
     skeletonState2 = SkeletonAnimationState(skeleton2);
 
-    animation = Loader<AnimationRef>::get(
+    // animation = Loader<AnimationRef>::get(
 
-        // "65_2HSword_ATTACK_L"
+    //     // "65_2HSword_ATTACK_L"
 
-        // "__tmp__"
+    //     // "__tmp__"
 
-        // "_Armature_Armature_mixamo.com_Layer0"
+    //     // "_Armature_Armature_mixamo.com_Layer0"
 
-        // "_mixamo.com"
+    //     // "_mixamo.com"
 
-        // "_f_h_magespellcast_05"
+    //     // "_f_h_magespellcast_05"
 
-        "dance-graceful-378939"
+    //     "dance-graceful-378939"
 
-        // "catwalk-loop-378982"
+    //     // "catwalk-loop-378982"
 
-        // "walk-2loop-379004"
+    //     // "walk-2loop-379004"
 
-        // "0_T-Pose"
+    //     // "0_T-Pose"
     
-    );
+    // );
 
     animation2 = Loader<AnimationRef>::get(
         // "_mixamo.com"
@@ -195,9 +205,9 @@ void Apps::AnimationApp::init()
         "(Human) 2H Sword Walk_L"
     );
 
-    animController = AnimationController({
-        // AnimationControllerTransition(animation, animation, COND_ANIMATION_FINISHED, 0.2, TransitionType::TRANSITION_SMOOTH)
-    },animation,nullptr);
+    // animController = AnimationController({
+    //     // AnimationControllerTransition(animation, animation, COND_ANIMATION_FINISHED, 0.2, TransitionType::TRANSITION_SMOOTH)
+    // },animation,nullptr);
 
     // animController2 = AnimationController({
     //     // AnimationControllerTransition(animation2, animation2, COND_ANIMATION_FINISHED, 0.2, TransitionType::TRANSITION_SMOOTH)
@@ -211,7 +221,7 @@ void Apps::AnimationApp::init()
 
     for(auto &i : Loader<AnimationRef>::loadingInfos)
     {
-        if(STR_CASE_STR(i.first.c_str(), "(Human) 2H Sword"))
+        if(STR_CASE_STR(i.first.c_str(), "(Human) Sword And Shield"))
             animList.push_back(Loader<AnimationRef>::get(i.first));
     }
 
@@ -240,15 +250,15 @@ void Apps::AnimationApp::init()
 
     // animation.skeleton-
 
-    ComponentModularity::addChild(
-        *appRoot,
-        newEntity("Skeleton Helper 1",
-            state3D(vec3(0, 0, 2)),
-            helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState)))
-        )
-    );
+    // ComponentModularity::addChild(
+    //     *appRoot,
+    //     newEntity("Skeleton Helper 1",
+    //         state3D(vec3(0, 0, 2)),
+    //         helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState)))
+    //     )
+    // );
 
-    entityHelper1 = appRoot->comp<EntityGroupInfo>().children.back().get();
+    // entityHelper1 = appRoot->comp<EntityGroupInfo>().children.back().get();
 
     ComponentModularity::addChild(
         *appRoot,
@@ -258,16 +268,16 @@ void Apps::AnimationApp::init()
         )
     );
 
-    tmp = SkeletonAnimationState(skeleton);
+    // tmp = SkeletonAnimationState(skeleton);
     tmp2 = SkeletonAnimationState(skeleton2);
 
-    ComponentModularity::addChild(
-        *appRoot,
-        newEntity("Skeleton Helper 1",
-            state3D(vec3(0, 3, 2)),
-            helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(tmp)))
-        )
-    );
+    // ComponentModularity::addChild(
+    //     *appRoot,
+    //     newEntity("Skeleton Helper 1",
+    //         state3D(vec3(0, 3, 2)),
+    //         helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(tmp)))
+    //     )
+    // );
     
     ComponentModularity::addChild(
         *appRoot,
@@ -281,13 +291,13 @@ void Apps::AnimationApp::init()
 
     // EntityRef player = spawnEntity("Player");
     // EntityRef player = spawnEntity("(Human) Mannequin Blue");
-    EntityRef player = spawnEntity("(Combats) Player");
+    EntityRef player = spawnEntity("(Combats) Player 2");
 
     player->set<AnimationControllerRef>(AnimationControllerRef(new AnimationController(animController2)));
 
     ComponentModularity::addChild(*appRoot, player);
 
-    EDITOR::gridPositionScale.w = 0.5;
+    // EDITOR::gridPositionScale.w = 0.5;
 
 }
 
@@ -298,11 +308,11 @@ void Apps::AnimationApp::update()
     // if(!globals.simulationTime.isPaused())
     float deltaAnim = globals.simulationTime.isPaused() ? 0.f : globals.simulationTime.getDelta();
     {
-        animController.update(deltaAnim);
-        animController.applyKeyframes(skeletonState);
+        // animController.update(deltaAnim);
+        // animController.applyKeyframes(skeletonState);
     
-        skeletonState.skeleton->applyGraph(skeletonState);
-        skeletonState.update();
+        // skeletonState.skeleton->applyGraph(skeletonState);
+        // skeletonState.update();
 
         
         animController2.update(deltaAnim);

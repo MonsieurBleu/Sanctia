@@ -359,6 +359,7 @@ Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
                         if (body)
                         {
                             body->setIsActive(true);
+                            if(GG::playerEntity->has<staticEntityFlag>()) GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = body->isActive();
                             body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 5, 0)),
                                                                rp3d::Quaternion::identity()));
                         }

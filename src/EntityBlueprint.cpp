@@ -13,7 +13,7 @@
 
 EntityRef Blueprint::SpawnMainGameTerrain()
 {
-    return Blueprint::Terrain("Herault_8192", vec3(4096, 512, 4096), vec3(0), 256);
+    return Blueprint::Terrain("Herault_8192", vec3(4096, 512, 4096), vec3(0), 128);
 }
 
 EntityRef Blueprint::Terrain(
@@ -275,7 +275,7 @@ EntityRef Blueprint::TestManequin()
     e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset_POC2024("65_2HSword", e.get()));
 
     Items::equip(e, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
-    Items::equip(e, Blueprint::Foot(), FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
+    // Items::equip(e, Blueprint::Foot(), FOOT_SLOT, Loader<SkeletonRef>::get("Human")->boneNamesMap["RightFoot"]);
 
     // GG::entities.push_back(e);
 

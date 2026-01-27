@@ -152,6 +152,7 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
                     if (body)
                     {
                         body->setIsActive(true);
+                        if(GG::playerEntity->has<staticEntityFlag>()) GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = body->isActive();
                         body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 5, 0)),
                                                            rp3d::Quaternion::identity()));
                     }
@@ -229,6 +230,7 @@ void Apps::MainGameApp::init()
             if (body)
             {
                 body->setIsActive(true);
+                if(GG::playerEntity->has<staticEntityFlag>()) GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = body->isActive();
                 body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 256, 0)),
                                                     rp3d::Quaternion::identity()));
             }

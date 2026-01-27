@@ -117,6 +117,9 @@ void applyEffect(Entity *weapon, Entity *target)
 
 void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& callbackData)
 {
+    // static NAMED_TIMER(EventListener)
+    // EventListener.start();
+
     uint32 nb = callbackData.getNbOverlappingPairs();
 
     for(uint32 i = 0; i < nb; i++)
@@ -138,8 +141,17 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
             continue;
         }
 
+        if(
+            (e1->has<staticEntityFlag>() and !e1->comp<staticEntityFlag>().shoudBeActive)
+            or
+            (e2->has<staticEntityFlag>() and !e2->comp<staticEntityFlag>().shoudBeActive)
+        )
+            continue;
+
         bool isExit = pair.getEventType() == _OverlapPair_::EventType::OverlapExit;
         bool isEnter = pair.getEventType() == _OverlapPair_::EventType::OverlapStart;
+
+
 
         // if(pair.getEventType() != _OverlapPair_::EventType::OverlapStart)
         {
@@ -189,4 +201,7 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
         // }
         
     }
+
+    // EventListener.stop();
+    // WARNING_MESSAGE(EventListener)
 }

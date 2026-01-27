@@ -171,7 +171,13 @@ void Game::init(int paramSample)
     scene.depthOnlyMaterial = depthOnlyMaterial;
 
     /* Physics */
-    PG::world = PG::common.createPhysicsWorld();
+    rp3d::PhysicsWorld::WorldSettings settings;
+    // settings.defaultVelocitySolverNbIterations = 20;
+    // settings.isSleepingEnabled = false;
+    // settings.gravity = Vector3(0, -9.81, 0);
+    // settings.
+
+    PG::world = PG::common.createPhysicsWorld(settings);
 
     /* UI */
     FUIfont = FontRef(new FontUFT8);

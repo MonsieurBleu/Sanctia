@@ -224,10 +224,11 @@ void Game::physicsLoop()
                                 climbSpeed = climbSpeedFast;
                             }
 
-
+                            // 0 < t < ms.climbHeight
                             float t = (globals.simulationTime.getElapsedTime() - as.climbingTime) * climbSpeed;
                             
-                            if (t < ms.climbHeight)
+                            // climb anim 
+                            if (t <= ms.climbHeight)
                             {
                                 if (ms.climbHeight == vaultOffset) ms.climbHeight += 0.0001; // prevent division by 0 error
 
@@ -239,6 +240,8 @@ void Game::physicsLoop()
                             
                                 pos = mix(pos, ms.climbVaultPos, t_vault);
 
+                                // Logger::debug("pos'd: ", pos);
+
                                 rp3d::Transform transform(PG::torp3d(pos), b->getTransform().getOrientation());
                                 b->setTransform(transform);
 
@@ -246,7 +249,7 @@ void Game::physicsLoop()
                                 forward.y = 0;
                                 PlayerViewController::setTargetDir(normalize(forward));
                             }
-                            else 
+                            else // climb anim end
                             {
                                 as.climbing = false;
                                 ms.isAllowedToClimb = true;
@@ -285,10 +288,9 @@ void Game::physicsLoop()
                         }
                     }
 
-                    
                     bool canClimb = false;
                     vec3 handPosLeft, handPosRight;
-                    if (ms.isAllowedToClimb)
+                    if (entity.is(*GG::playerEntity) && ms.isAllowedToClimb)
                     {
                         vec3 angleVector_forward, angleVector_right, angleVector_up;
                         angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);
@@ -298,7 +300,7 @@ void Game::physicsLoop()
 
                         vec3 verticalOffset = vec3(0, 0.75, 0);
 
-                        float distanceFromCenter = 0.4;
+                        float distanceFromCenter = 0.3;
                         
                         vec3 p1 = s.position + verticalOffset;
                         vec3 p2 = s.position + verticalOffset + vaultWallCheckRoot;
@@ -367,7 +369,7 @@ void Game::physicsLoop()
                                     ms.climbEndPos.y += height;
                                     ms.climbVaultPos =    ms.climbEndPos 
                                                         + angleVector_forward * cb_1.minDistance 
-                                                        + angleVector_forward * offset_in * 5.0f;
+                                                        + angleVector_forward * offset_in * 2.0f;
                                     ms.climbHeight = height;
                                     ms.climbStartSpeed = length(velocity);
 
@@ -405,8 +407,12 @@ void Game::physicsLoop()
                             }
 
                             // Logger::debug("[", globals.appTime.getElapsedTime(), "] climb :)");
+                            // Logger::debug("start pos: ", ms.climbStartPos);
+                            // Logger::debug("end pos: ", ms.climbEndPos);
+                            // Logger::debug("vault pos: ", ms.climbVaultPos);
                         }
                         else {
+                            // Logger::debug("[", globals.appTime.getElapsedTime(), "] jump");
                             velocity.y = ms.jumpVelocity; // for nicer instantaneous jumps, try to change to += if it feels weird
                         }
                     }

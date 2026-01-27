@@ -334,7 +334,7 @@ void Game::physicsLoop()
 
                     bool canClimb = false;
                     vec3 handPosLeft, handPosRight;
-                    if (entity.is(*GG::playerEntity) && ms.isAllowedToClimb)
+                    if (GG::playerEntity != nullptr && entity.is(*GG::playerEntity) && ms.isAllowedToClimb)
                     {
                         vec3 angleVector_forward, angleVector_right, angleVector_up;
                         angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);

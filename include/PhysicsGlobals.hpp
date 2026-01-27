@@ -15,7 +15,8 @@ using namespace glm;
 
 #define DEFQUAT rp3d::Quaternion::identity()
 
-typedef  rp3d::RigidBody* RigidBody;
+typedef rp3d::RigidBody* RigidBody;
+
 typedef rp3d::Collider* Collider;
 
 extern std::mutex physicsMutex;

@@ -23,6 +23,43 @@ DATA_READ_FUNC(Faction)
     DATA_READ_END;
 }
 
+DATA_WRITE_FUNC_INIT(AgentProfile);
+    for(auto &i : data.base())
+    {
+        out->Entry();
+        out->write("\"", 1);
+        out->write(i.first.data(), i.first.size());
+        out->write("\"", 1);
+        out->Tabulate();
+        for(auto &j : i.second)
+        {
+            out->Entry();
+            out->write("\"", 1);
+            out->write(j.first.data(), j.first.size());
+            out->write("\"", 1);
+            out->write(" ", 1);
+            FastTextParser::write<float>(j.second, out->getReadHead());
+        }
+        out->Break();
+    }
+DATA_WRITE_END_FUNC
+
+DATA_READ_FUNC(AgentProfile)
+{
+    DATA_READ_INIT(AgentProfile);
+    while(NEW_VALUE)
+    {        
+        std::string_view category(buff->read());
+        while(NEW_VALUE)
+        {
+            std::string_view member(buff->read());
+            const char *value = buff->read();
+            data[category, member] = FastTextParser::read<float>(value);
+        }
+    }
+    DATA_READ_END;
+}
+
 AUTOGEN_DATA_RW_FUNC(ActionState 
     , lockedDirection
     , isTryingToAttack
@@ -148,7 +185,7 @@ DATA_READ_FUNC_INIT(EntityStats)
             value = buff->read();
 
             if(id == -1) continue;
-
+            
             data.resistances[id] = FastTextParser::read<float>(value);
         }
     }
@@ -187,6 +224,7 @@ AUTOGEN_DATA_RW_FUNC(NpcPcRelation, known, affinity);
 DATA_WRITE_FUNC_INIT(ItemInfos)
     FTXTP_WRITE_ELEMENT(data, price);
     FTXTP_WRITE_ELEMENT(data, damageMultiplier);
+    FTXTP_WRITE_ELEMENT(data, staminaUseMultiplier);
     out->Entry();
     WRITE_NAME(damageType, out);
     out->write(CONST_STRING_SIZED(DamageTypeReverseMap[data.dmgType]));
@@ -195,6 +233,7 @@ DATA_WRITE_END_FUNC
 DATA_READ_FUNC_INIT(ItemInfos)
     IF_MEMBER_FTXTP_LOAD(data, price)
     else IF_MEMBER_FTXTP_LOAD(data, damageMultiplier)
+    else IF_MEMBER_FTXTP_LOAD(data, staminaUseMultiplier)
     else IF_MEMBER(damageType)
         MAP_SAFE_READ(DamageTypeMap, buff, data.dmgType, buff->read())
 DATA_READ_END_FUNC

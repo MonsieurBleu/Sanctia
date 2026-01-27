@@ -1091,6 +1091,14 @@ void Game::mainloop()
             GG::playerEntity->comp<state3D>().lookDirection = camera.getDirection();
 
         /*****
+            UPDATING VISUAL FATIGUE LEVEL
+        */
+        System<EntityStats, StainStatus>([&](Entity &entity) {
+            auto &stats = entity.comp<EntityStats>();
+            entity.comp<StainStatus>().fatigue = 1.0 - stats.stamina.cur/stats.stamina.max;
+        });
+
+        /*****
             Executing scripts on update
         */
         System<Script>([&](Entity &entity) {
@@ -1175,7 +1183,14 @@ void Game::mainloop()
             if (s.usequat && s.position == model->state.position && s.quaternion == model->state.quaternion)
                 return;
 
-            vec3 &dir = s.lookDirection;
+            vec3 dir = s.lookDirection;
+
+            auto n = entity.comp<AnimationControllerInfos>().c_str();
+            const bool isSwordAndShield = !strcmp(n, "(Human) Sword And Shield ");
+            if(isSwordAndShield)
+            {
+                dir = normalize(dir - 0.25f*cross(dir, vec3(0, 1, 0)));
+            }
 
             if (s.usequat)
             {
@@ -1186,12 +1201,13 @@ void Game::mainloop()
             }
             else if (dir.x != 0.f || dir.z != 0.f)
             {
+                
                 quat wantQuat = quatLookAt(normalize(dir * vec3(-1, 0, -1)), vec3(0, 1, 0));
                 quat currQuat = quat(model->state.rotation);
                 float a = min(1.f, globals.simulationTime.getDelta() * 5.f);
-
+                
                 quat resQuat = slerp(currQuat, wantQuat, a);
-
+                
                 model->state.setRotation(glm::eulerAngles(resQuat));
             }
 
@@ -1255,7 +1271,7 @@ void Game::mainloop()
         });
 #endif
 
-        /***** KILLS VIOLENTLY UNALIVE ENTITIES *****/
+        /***** UPDATING ENTITY STATS *****/
         System<EntityStats>([](Entity &entity) {
             /* TODO : move entity despawn code elswhere*/
             // void *ptr = &entity;
@@ -1278,19 +1294,42 @@ void Game::mainloop()
             if(abs(stats.adrenaline.cur) < 1)
                 stats.adrenaline.cur = 0;
 
+            float runningMod = 0;
+            
+            if(entity.has<MovementState>())
+            {
+                runningMod = 20*smoothstep(
+                    entity.comp<MovementState>().walkSpeed,
+                    entity.comp<MovementState>().sprintSpeed,
+                    entity.comp<MovementState>().speed
+                );
+            }
+
+            float adrenalineMod = 250.f*stats.adrenaline.cur/stats.adrenaline.max;
+            adrenalineMod = max(adrenalineMod, 0.f);
+
+            stats.stamina.cur = clamp(
+                stats.stamina.cur + globals.simulationTime.getDelta()*(10 - runningMod + adrenalineMod),
+                stats.stamina.min,
+                stats.stamina.max
+            );
+
+            
+            // Kill unalive entity
             if (!entity.comp<EntityStats>().alive)
             {
-                if(entity.has<Items>())
-                {
-                    entity.comp<Items>().unequip(
-                        entity,
-                        WEAPON_SLOT
-                    );
-                }
+                // if(entity.has<Items>())
+                // {
+                //     entity.comp<Items>().unequip(
+                //         entity,
+                //         WEAPON_SLOT
+                //     );
+                // }
 
                 if(
-                    entity.has<RigidBody>() && entity.comp<RigidBody>()->getLinearVelocity().y == 0.f && 
-                    (!entity.has<MovementState>() || entity.comp<MovementState>().grounded)
+                    entity.has<RigidBody>() 
+                    && (!entity.has<MovementState>() || entity.comp<MovementState>().grounded)
+                    // && entity.comp<RigidBody>()->getLinearVelocity().y == 0.f 
                 )
                 {
                     entity.remove<RigidBody>();
@@ -1360,29 +1399,37 @@ void Game::mainloop()
             {
                 auto n = entity.comp<AnimationControllerInfos>().c_str();
                 auto &i = it.equipped[WEAPON_SLOT];
+                auto &i2 = it.equipped[SECOND_HAND_SLOT];
                 
+                const bool is2HSword = !strcmp(n, "(Human) 2H Sword ");
+                const bool isSwordAndShield = !strcmp(n, "(Human) Sword And Shield ");
+                // const bool isSwordAndShield = false;
+
+                // NOTIF_MESSAGE(isSwordAndShield << "\t" << is2HSword)
+
                 /*
                     Special rule for 2H weapon that need to be attached depending on both hands
                 */
-                if(i.item && !strcmp(n, "(Human) 2H Sword "))
+                if(i.item && is2HSword)
                 {
                     
                     std::vector<std::string> affectedBones = {
-                        "Hand",
-                        "HandThumb2",
-                        "HandIndex2",
-                        "HandMiddle2",
-                        "HandRing2",
-                        "HandPinky2"
-                    };
+                            "Hand",
+                            "HandThumb2",
+                            "HandIndex2",
+                            "HandMiddle2",
+                            "HandRing2",
+                            "HandPinky2"
+                        };
 
                     vec3 pl(0);
                     vec3 pr(0);
                     float cnt = 0;
                     for(auto &i : affectedBones)
                     {
-                        int idl = sa.skeleton->boneNamesMap["Left" + i];
-                        int idr = sa.skeleton->boneNamesMap["Right" + i];
+                        int idl = 0, idr = 0;
+                        idl = sa.skeleton->boneNamesMap["Left" + i];
+                        idr = sa.skeleton->boneNamesMap["Right" + i];
 
                         mat4 tl = m * sa[idl] * inverse(sa.skeleton->at(idl).t);
                         mat4 tr = m * sa[idr] * inverse(sa.skeleton->at(idr).t);
@@ -1396,8 +1443,8 @@ void Game::mainloop()
 
                     auto &is = i.item->comp<state3D>();
 
-                    int iHand = sa.skeleton->boneNamesMap["RightHand"];
-                    mat4 tHand = m * sa[iHand] * inverse(sa.skeleton->at(iHand).t);
+                    // int iHand = sa.skeleton->boneNamesMap["RightHand"];
+                    // mat4 tHand = m * sa[iHand] * inverse(sa.skeleton->at(iHand).t);
 
                     
                     quat frontFix = angleAxis(radians(180.f), normalize(vec3(1, 0, 0))) * angleAxis(radians(45.f), normalize(vec3(0, 0, 1)));
@@ -1415,6 +1462,126 @@ void Game::mainloop()
                     if (i.item->has<EntityModel>())
                     {
                         auto &model = i.item->comp<EntityModel>();
+                        model->state.setQuaternion(is.quaternion);
+                        model->state.setPosition(is.position);
+                        model->update(true);
+                    }
+                }
+                if(i.item and isSwordAndShield)
+                {
+                    std::vector<std::string> affectedBones = {
+                            "RightHand",
+                            "RightHandThumb2",
+                            "RightHandIndex2",
+                            "RightHandMiddle2",
+                            "RightHandRing2",
+                            "RightHandPinky2"
+                        };
+
+                    // vec3 p(0);
+                    // vec3 d(0);
+                    // float cnt = 0;
+                    // for(auto &i : affectedBones)
+                    // {
+                    //     int id = sa.skeleton->boneNamesMap[i];
+                    //     mat4 t = m * sa[id] * inverse(sa.skeleton->at(id).t);
+                    //     p += vec3(t * vec4(0, 0, 0, 1));
+                    //     d += vec3(t * vec4(1, 0, 0, 0));
+                    //     cnt ++;
+                    // }
+                    // p /= cnt;
+                    // d = normalize(d/cnt);
+                    
+                    // auto &is = i.item->comp<state3D>();
+
+                    // quat frontFix = angleAxis(radians(180.f), normalize(vec3(1, 0, 0))) * angleAxis(radians(45.f), normalize(vec3(0, 0, 1)));
+                    // vec3 u = normalize(vec3(0, 0, 1));
+                    // vec3 dir = d;
+                    // float a = abs(dot(u, dir));
+                    // u = normalize(mix(u, normalize(vec3(1, 0, 0)), max(0.f, (a-0.9f)*10.f)));
+                    // vec3 s = normalize(cross(u, dir));
+                    // vec3 r = cross(dir, s);
+                    // is.quaternion = quat(mat3(s, r, dir)) * frontFix;
+                    // // is.quaternion = angleAxis(radians(90.f), axis(is.quaternion));
+                    // // NOTIF_MESSAGE(angle(is.quaternion))
+                    // is.position = p + dir*0.45f;
+                    // is.usequat = true;
+
+
+
+                    vec3 p(0);
+                    vec3 d(0);
+                    vec3 lastp(0);
+                    float cnt = 0;
+                    for(auto &i : affectedBones)
+                    {
+                        int id = sa.skeleton->boneNamesMap[i];
+                        mat4 t = m * sa[id] * inverse(sa.skeleton->at(id).t);
+                        p += vec3(t * vec4(0, 0, 0, 1));
+                        d += vec3(t * vec4(1, 0, 0, 0));
+                        cnt ++;
+                    }
+                    
+                    p /= cnt;
+                    d = normalize(d/cnt);
+
+                    
+                    auto &is = i.item->comp<state3D>();
+                    is.quaternion = quatLookAt(-d, vec3(0, 1, 0));
+                    is.position = p;
+                    is.usequat = true;
+
+
+
+
+                    if (i.item->has<EntityModel>())
+                    {
+                        auto &model = i.item->comp<EntityModel>();
+                        model->state.setQuaternion(is.quaternion);
+                        model->state.setPosition(is.position);
+                        model->update(true);
+                    }
+                }
+                if(i2.item and isSwordAndShield)
+                {
+                    std::vector<std::string> affectedBones = {
+                            "LeftHand",
+                            "LeftHandThumb2",
+                            "LeftHandIndex2",
+                            "LeftHandMiddle2",
+                            "LeftHandRing2",
+                            "LeftHandPinky2"
+                        };
+
+                    vec3 p(0);
+                    vec3 d(0);
+                    vec3 lastp(0);
+                    float cnt = 0;
+                    for(auto &i : affectedBones)
+                    {
+                        int id = sa.skeleton->boneNamesMap[i];
+                        mat4 t = m * sa[id] * inverse(sa.skeleton->at(id).t);
+                        p += vec3(t * vec4(0, 0, 0, 1));
+                        d += vec3(t * vec4(1, 0, 0, 0));
+                        cnt ++;
+                    }
+                    
+                    p /= cnt;
+                    d = normalize(d/cnt);
+                    
+                    mat4 t = m * sa[0] * inverse(sa.skeleton->at(0).t);
+                    vec3 ptmp = vec3(t * vec4(0, 0, 0, 1));
+                    vec3 wf = normalize(ptmp-p);
+                    wf = normalize(wf * vec3(1, 0, 1));
+                    
+                    auto &is = i2.item->comp<state3D>();
+                    is.quaternion = quatLookAt(wf, -d);
+                    is.position = p + d*0.f;
+                    is.usequat = true;
+
+                    if (i2.item->has<EntityModel>())
+                    {
+                        auto &model = i2.item->comp<EntityModel>();
                         model->state.setQuaternion(is.quaternion);
                         model->state.setPosition(is.position);
                         model->update(true);

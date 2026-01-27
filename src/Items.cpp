@@ -11,22 +11,24 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
     {
         item->comp<Effect>().usr = usr.get();
     }
-    if(item->has<RigidBody>())
+    if(item->has<RigidBody>() and item->has<staticEntityFlag>())
     {
         auto &b = item->comp<RigidBody>();
 
         b->setIsActive(false);
+        item->comp<staticEntityFlag>().shoudBeActive = false;
         b->setType(rp3d::BodyType::KINEMATIC);
-
+        
         int size = b->getNbColliders();
-
+        
         for(int i = 0; i < size; i++)
         {
             auto c = b->getCollider(i);
-
+            
             if(c->getCollisionCategoryBits() == 1<<CollideCategory::ENVIRONEMENT)
-                c->setCollideWithMaskBits(0);
+            c->setCollideWithMaskBits(0);
         }
+        // b->setIsActive(true);
     }
 }
 
@@ -37,13 +39,13 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
     if(!item) return;
 
     auto is = item->comp<state3D>();
-    ComponentModularity::addChild(usr, item);
+    // ComponentModularity::addChild(usr, item);
 
     if(item->has<Effect>())
     {
         item->comp<Effect>().usr = nullptr;
     }
-    if(item->has<RigidBody>())
+    if(item->has<RigidBody>() and item->has<staticEntityFlag>())
     {
         physicsMutex.lock();
 
@@ -51,14 +53,15 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
         
         b->setTransform(rp3d::Transform(PG::torp3d(is.position), PG::torp3d(is.usequat ? is.quaternion : directionToQuat(is.lookDirection))));
  
-        auto tmp = b->getTransform();
-        std::cout << item->toStr() << "\n";
-        NOTIF_MESSAGE(is.position ,  "\t" ,  is.quaternion)
-        NOTIF_MESSAGE(PG::toglm(tmp.getPosition()) ,  "\t" ,  PG::toglm(tmp.getOrientation()))
+        // auto tmp = b->getTransform();
+        // std::cout << item->toStr() << "\n";
+        // NOTIF_MESSAGE(is.position << "\t" << is.quaternion)
+        // NOTIF_MESSAGE(PG::toglm(tmp.getPosition()) << "\t" << PG::toglm(tmp.getOrientation()))
 
         b->setType(rp3d::BodyType::DYNAMIC);
 
         b->setIsActive(true);
+        item->comp<staticEntityFlag>().shoudBeActive = false;
 
         int size = b->getNbColliders();
 

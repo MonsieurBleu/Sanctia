@@ -55,6 +55,10 @@ void Game::physicsLoop()
         physicsTimer.start();
         physicsMutex.lock();
         
+        PG::physicInterpolationMutex.lock();
+        PG::physicInterpolationTick.tick();
+        PG::physicInterpolationMutex.unlock();
+
         ManageGarbage<RigidBody>();
         ManageGarbage<Target>();
 
@@ -62,7 +66,12 @@ void Game::physicsLoop()
         {
             auto body = GG::playerEntity->comp<RigidBody>();
             if(body)
+            {
                 body->setIsActive(false);
+
+                if(GG::playerEntity->has<staticEntityFlag>())
+                    GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = false;
+            }
         }
         
         /*
@@ -115,9 +124,34 @@ void Game::physicsLoop()
 
         physicsSystemsTimer.start();
 
-        PG::physicInterpolationMutex.lock();
-        PG::physicInterpolationTick.tick();
-        PG::physicInterpolationMutex.unlock();
+
+
+        System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
+            auto &b = entity.comp<RigidBody>();
+            auto &f = entity.comp<staticEntityFlag>();
+
+            f.isActive = b->isActive();
+            
+            if(f.isActive) f.activeIterationCnt ++;
+            else f.activeIterationCnt = 0;
+
+            if(f.shoudBeActive != f.isActive
+            
+                and b->isAllowedToSleep()
+            )
+            {
+                // WARNING_MESSAGE(f.shoudBeActive << "\t" <<  entity.toStr())
+                b->setIsActive(f.shoudBeActive);
+                f.isActive = f.shoudBeActive;
+
+                // b->setIsAllowedToSleep(bool isAllowedToSleep)
+            }
+
+
+        });
+
+        // static vec3 minPos = vec3(1e6);
+        // WARNING_MESSAGE(minPos.y);
 
         // int nearbyCells = 0;
         // System<RigidBody, state3D, HeightFieldDummyFlag>([&nearbyCells](Entity &entity){
@@ -151,7 +185,7 @@ void Game::physicsLoop()
         System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
             auto &s = entity.comp<state3D>();
-            auto &ms = entity.comp<MovementState>();
+            
 
             #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
             s.physicActivated = b->isActive();
@@ -177,8 +211,18 @@ void Game::physicsLoop()
 
                     s.position = PG::toglm(t.getPosition());
                     s.quaternion = PG::toglm(t.getOrientation());
+
+
+
+                    
+                    // minPos = min(minPos, s.position);
+                    
+
+
                     
                     if(!entity.has<MovementState>()) break;
+
+                    auto &ms = entity.comp<MovementState>();
 
                     const float small_threshold = 0.05f;
 
@@ -468,6 +512,17 @@ void Game::physicsLoop()
                     vec3 wishdir = ms.wantedMoveDirection;
                     float wishspeed = ms.wantedSpeed;
 
+                    if(entity.has<EntityStats>())
+                        wishspeed = mix(
+                            ms.wantedSpeed,
+                            min(ms.wantedSpeed, ms.walkSpeed),
+                            smoothstep(
+                                25.f,
+                                10.f,
+                                entity.comp<EntityStats>().stamina.cur
+                            )
+                        );
+
                     float current_speed = dot(velocity, wishdir);
                     float addspeed = wishspeed - current_speed;
                     // std::cout << "ds.wantedSpeed: " << ds.wantedSpeed << "\n";
@@ -522,6 +577,9 @@ void Game::physicsLoop()
                 entity.comp<Script>().run_OnAgentUpdate(entity);
             }
         });
+
+        
+
 
 
         // static int i = 0;
@@ -658,21 +716,24 @@ void Game::physicsLoop()
         physicsTimer.stop();
 
         float maxFreq = 200.f;
-        float minFreq = 25.f;
-        if(physicsTimer.getDelta() > 1.f/physicsTicks.freq)
-        {
-            physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
-        }
-        else if(physicsTimer.getDelta() < 0.4f/physicsTicks.freq)
-        {
-            physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
-        }
+        float minFreq = 5.f;
 
-        
+        // if(physicsTimer.getDelta() > 1.0/physicsTicks.freq)
+        // {
+        //     physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
+        // }
+        // else if(physicsTimer.getDelta() < 0.5f/physicsTicks.freq)
+        // {
+        //     physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
+        // }
 
         physicsMutex.unlock();
 
         physicsTicks.waitForEnd();
+
+        const float stepSize = 10.f;
+        physicsTicks.freq = ceil(1.0/(physicsTimer.getDelta()*stepSize))*stepSize;
+        physicsTicks.freq = clamp(physicsTicks.freq, minFreq, maxFreq);
     }
 
     for(auto &i : Loader<ScriptInstance>::loadedAssets)

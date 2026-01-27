@@ -5,13 +5,86 @@
 #include <Game.hpp>
 #include <PhysicsGlobals.hpp>
 #include "PlayerUtils.hpp"
+#include <Blueprint/EngineBlueprintUI.hpp>
+#include <Subapps.hpp>
 
 PlayerController::PlayerController(Camera *playerCam) : playerCam(playerCam)
 {
 }
 
+float manageDeadZone(float axis)
+{
+    if(abs(axis) < 0.1) return 0.f;
+    return axis;
+}
+
 void PlayerController::update()
 {
+    bool cameraFollow = globals.currentCamera->getMouseFollow();
+    GLFWwindow *window = globals.getWindow();
+
+    auto currentMod = glfwGetInputMode(window, GLFW_CURSOR);
+
+    if(InputManager::isGamePadUsed())
+    {
+        if(currentMod != GLFW_CURSOR_DISABLED)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+    else
+    {
+        if(cameraFollow)
+        {
+            if(currentMod != GLFW_CURSOR_DISABLED)
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+        else if(currentMod != GLFW_CURSOR_NORMAL)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    if(!cameraFollow and InputManager::isGamePadUsed())
+    {
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
+
+        auto res = globals.windowSize();
+        x += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_X))*globals.appTime.getDelta();
+        y += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_Y))*globals.appTime.getDelta();
+        x += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X ))*globals.appTime.getDelta();
+        y += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y ))*globals.appTime.getDelta();
+
+        glfwSetCursorPos(window, x, y);
+
+        if(!gamepadCursor)
+        {
+            gamepadCursor = newEntity("Gamepad Cursor"
+                , UI_BASE_COMP
+                , WidgetBox(vec2(-1), vec2(-1))
+                , WidgetStyle()
+                , WidgetSprite("icon")
+            );
+        }
+
+        if(gamepadCursor and !gamepadCursor->comp<EntityGroupInfo>().parent and SubApps::getCurrentRoot())
+        {
+            ComponentModularity::addChild(*SubApps::getCurrentRoot(), gamepadCursor);
+        }
+
+        gamepadCursor->comp<WidgetBox>().set(
+            ((float)x/res.x)*2.f - 1.f + vec2(0.025)*vec2(-1, 1), 
+            ((float)y/res.y)*2.f - 1.f + vec2(0.025)*vec2(-1, 1)
+        );
+        gamepadCursor->comp<WidgetBox>().staticDepth = true;
+        gamepadCursor->comp<WidgetBox>().depth = 0.8;
+    }
+
+    if(gamepadCursor)
+    {
+        gamepadCursor->comp<WidgetState>().status = cameraFollow or !InputManager::isGamePadUsed() ? ModelStatus::HIDE : ModelStatus::SHOW;
+    }
+
+
+
+
     if(!GG::playerEntity) return;
 
     if(GG::playerEntity->has<RigidBody>())
@@ -26,7 +99,7 @@ void PlayerController::update()
 
     updateDirectionStateWASD();
 
-    if (InputManager::isGamePadConnected())
+    if (InputManager::isGamePadUsed())
     {
         float joystickRightY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_Y);
         float joystickRightX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_X);
@@ -56,7 +129,7 @@ void PlayerController::update()
     
     // scale input by this factor to allow analog input from gamepad
     float continuousInputFactor = 1.0f;
-    if (InputManager::isGamePadConnected())
+    if (InputManager::isGamePadUsed() and globals.currentCamera->getMouseFollow())
     {
         float joystickLeftX = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X);
         float joystickLeftY = InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y);
@@ -116,7 +189,7 @@ void PlayerController::update()
 
     // std::cout << "speedFactor: " << speedFactor << "\n";
     
-    
+    float gamepadSprint = InputManager::isGamePadUsed() ? 0.5+0.5*InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) : 0.f;
 
     vec3 wishVel = 
         angleVector_forward * input.z + 
@@ -127,6 +200,7 @@ void PlayerController::update()
     ds.wantedMoveDirection = length(wishVel) > 0.0f ? normalize(wishVel) : vec3(0);
     // ds.wantedSpeed = length(wishVel) * ds.walkSpeed * (sprintActivated ? 2.f : 1.f);
     ds.wantedSpeed = length(wishVel) > 0.0f ? (sprintActivated ? ds.sprintSpeed: ds.walkSpeed * continuousInputFactor) : 0.f;
+    ds.wantedSpeed = mix(ds.wantedSpeed, ds.sprintSpeed, gamepadSprint);
 
     ds.wantedSpeed *= speedFactor;
 
@@ -369,17 +443,19 @@ void PlayerController::mouseEvent(vec2 dir, GLFWwindow* window)
 {
     if(!GG::playerEntity) return;
     
-    static bool lastCameraFollow = !globals.currentCamera->getMouseFollow();
+    // static bool lastCameraFollow = !globals.currentCamera->getMouseFollow();
     bool cameraFollow = globals.currentCamera->getMouseFollow();
 
-    if(!lastCameraFollow && cameraFollow)
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    else if(lastCameraFollow && !cameraFollow)
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    // if(!lastCameraFollow && cameraFollow)
+    //     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // else if(lastCameraFollow && !cameraFollow)
+    //     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    lastCameraFollow = cameraFollow;
 
-    if(globals.currentCamera->getMouseFollow())
+
+    // lastCameraFollow = cameraFollow;
+
+    if(cameraFollow)
     {
         vec2 center(globals.windowWidth()*0.5, globals.windowHeight()*0.5);
         vec2 sensibility(50.0);
@@ -408,4 +484,10 @@ void PlayerController::mouseEvent(vec2 dir, GLFWwindow* window)
 
         glfwSetCursorPos(window, center.x, center.y);
     }
+    
+
+
+
+    // NOTIF_MESSAGE(InputManager::isGamePadUsed())
+    // NOTIF_MESSAGE((InputManager::lastGamepadUseTime > InputManager::lastNonGamepadUseTime))
 }

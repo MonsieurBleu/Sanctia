@@ -64,3 +64,27 @@ struct AgentState
         nextUpdateDelay = delay;
     }
 };
+
+struct AgentProfileBase : 
+    public std::unordered_map
+    <
+        std::string, 
+        std::unordered_map<std::string, float>
+    >
+{};
+
+struct AgentProfile : 
+    private AgentProfileBase
+{
+    float & operator[](const std::string_view & category, const std::string_view & value);
+
+    AgentProfile& operator+(const AgentProfile& other);
+
+    float &getRule(const std::string_view & category, const std::string_view & value){return operator[](category, value);};
+    float &setRule(const std::string_view & category, const std::string_view & value, const float x){return operator[](category, value) = x;};
+    AgentProfile& combine(const AgentProfile& other){return *this + other;};
+
+    std::string toString();
+
+    const AgentProfileBase& base() const {return *this;};
+};

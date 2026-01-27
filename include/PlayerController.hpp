@@ -1,4 +1,5 @@
-#pragma once 
+#pragma once
+#include <SanctiaEntity.hpp>
 #include <Controller.hpp>
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -14,6 +15,8 @@ class PlayerController : public SpectatorController
         Camera *playerCam;
         
         rp3d::RigidBody *body = nullptr;
+
+        EntityRef gamepadCursor;
 
     public : 
 

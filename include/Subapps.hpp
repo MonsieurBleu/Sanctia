@@ -369,6 +369,16 @@ namespace Apps
     {
         private :
 
+            EntityRef stageSelectionScreen;
+            EntityRef buttonsZone;
+            EntityRef stageNPC;
+
+            void addStage(
+                const std::string &name, 
+                vec4 newStageColor, 
+                std::function<void()> spawnScript
+            );
+
         public : 
 
             CombatsApp();

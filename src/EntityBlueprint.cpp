@@ -279,7 +279,7 @@ EntityRef Blueprint::TestManequin()
     e->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset_POC2024("65_2HSword", e.get()));
 
     Items::equip(e, Blueprint::Zweihander(), WEAPON_SLOT, BipedSkeletonID::RIGHT_HAND);
-    Items::equip(e, Blueprint::Foot(), FOOT_SLOT, BipedSkeletonID::LEFT_FOOT);
+    // Items::equip(e, Blueprint::Foot(), FOOT_SLOT, Loader<SkeletonRef>::get("Human")->boneNamesMap["RightFoot"]);
 
     // GG::entities.push_back(e);
 

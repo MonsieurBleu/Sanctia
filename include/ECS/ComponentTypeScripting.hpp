@@ -34,8 +34,8 @@ public:
 
     void run_OnInit(Entity& self);
     void run_OnUpdate(Entity& self);
-    void run_OnCollisionEnter(Entity& self, Entity& other, Entity& wearer);
-    void run_OnCollisionExit(Entity& self, Entity& other, Entity& wearer);
+    void run_OnCollisionEnter(Entity& self, Entity& other, Entity& wearer, int categorySelf, int categoryOther);
+    void run_OnCollisionExit(Entity& self, Entity& other, Entity& wearer, int categorySelf, int categoryOther);
     void run_OnAgentUpdate(Entity& self);
 
     void addScript(std::string scriptAssetName, ScriptHook hook);

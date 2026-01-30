@@ -242,15 +242,17 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
                         break;
                     }
 
+            
+
             // TODO: maybe see if we should move this to the collide event also 
             // (since it's called onCollision and all that and that for now it will only apply to trigger colliders)
             // (maybe separate onCollide And onTrigger ? that's what they do in unity)
             if(e1->has<Script>())
             {
                 if(isExit)
-                    e1->comp<Script>().run_OnCollisionExit(*e1, *e2, *wearer);
+                    e1->comp<Script>().run_OnCollisionExit(*e1, *e2, *wearer, c1->getCollisionCategoryBits(), c2->getCollisionCategoryBits());
                 else if(isEnter)
-                    e1->comp<Script>().run_OnCollisionEnter(*e1, *e2, *wearer);
+                    e1->comp<Script>().run_OnCollisionEnter(*e1, *e2, *wearer, c1->getCollisionCategoryBits(), c2->getCollisionCategoryBits());
             }
         }
 

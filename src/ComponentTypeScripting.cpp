@@ -27,12 +27,12 @@ void Script::run_OnUpdate(Entity& self) {
     RUN_FOR_HOOK(ScriptHook::ON_UPDATE, self)
 }
 
-void Script::run_OnCollisionEnter(Entity& self, Entity& other, Entity& wearer) {
-    RUN_FOR_HOOK(ScriptHook::ON_COLLISION_ENTER, self, other, wearer, false)
+void Script::run_OnCollisionEnter(Entity& self, Entity& other, Entity& wearer, int categorySelf, int categoryOther) {
+    RUN_FOR_HOOK(ScriptHook::ON_COLLISION_ENTER, self, other, wearer, categorySelf, categoryOther, false)
 }
 
-void Script::run_OnCollisionExit(Entity& self, Entity& other, Entity& wearer) {
-    RUN_FOR_HOOK(ScriptHook::ON_COLLISION_EXIT, self, other, wearer, true)
+void Script::run_OnCollisionExit(Entity& self, Entity& other, Entity& wearer, int categorySelf, int categoryOther) {
+    RUN_FOR_HOOK(ScriptHook::ON_COLLISION_EXIT, self, other, wearer, categorySelf, categoryOther, true)
 }
 
 void Script::run_OnAgentUpdate(Entity& self) {

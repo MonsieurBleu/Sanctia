@@ -444,8 +444,13 @@ void Game::physicsLoop()
                         ms.grounded = false;
                         ms.isTryingToJump = false;
                         
-                        if (canClimb)
+                        // Logger::debug("[",  globals.simulationTime.getElapsedTime(), "] ???");
+                        
+                        if (ms.canClimb)
                         {
+
+                            // Logger::debug("[",  globals.simulationTime.getElapsedTime(), "] ??? 2 electric boogaloo");
+
                             // assuming the entity has an action state cause like it's the player
                             auto &as = entity.comp<ActionState>();
                             as.climbing = true;
@@ -465,7 +470,7 @@ void Game::physicsLoop()
                             // Logger::debug("end pos: ", ms.climbEndPos);
                             // Logger::debug("vault pos: ", ms.climbVaultPos);
                         }
-                        else {
+                        else if (ms.walking) {
                             // Logger::debug("[", globals.appTime.getElapsedTime(), "] jump");
                             velocity.y = ms.jumpVelocity; // for nicer instantaneous jumps, try to change to += if it feels weird
                         }
@@ -542,7 +547,6 @@ void Game::physicsLoop()
                         accelspeed = min(accelspeed, addspeed);
                         velocity += wishdir * accelspeed;
                     }
-                    
 
                     b->setLinearVelocity(PG::torp3d(velocity));
                 }

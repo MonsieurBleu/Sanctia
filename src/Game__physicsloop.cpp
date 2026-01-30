@@ -222,6 +222,16 @@ void Game::physicsLoop()
                     
                     if(!entity.has<MovementState>()) break;
 
+                    vec3 lookDir = s.usequat ? eulerAngles(s.quaternion) : s.lookDirection;
+                    vec3 eulerY = vec3(
+                        0.0f, 
+                        atan(-lookDir.x, -lookDir.z), 
+                        0.0f
+                    );
+
+                    rp3d::Transform transform(b->getTransform().getPosition(), PG::torp3d(quat(eulerY)));
+                    b->setTransform(transform);
+
                     auto &ms = entity.comp<MovementState>();
 
                     const float small_threshold = 0.05f;

@@ -82,10 +82,11 @@ struct MovementState
     float groundNormalY = 0.0f;
     float _groundNormalY = 0.0f;
 
-    vec3 climbStartPos, climbEndPos, climbVaultPos;
+    vec3 climbStartPos, climbEndPos;
     float climbStartSpeed;
     float climbHeight;
-    bool isAllowedToClimb = true;
+    bool isAllowedToClimb = true; // is the entity even allowed to try climbing
+    bool canClimb = false; // can the entity try climbing this very frame
 };
 
 

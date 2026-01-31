@@ -202,6 +202,8 @@ void PlayerController::update()
     ds.wantedSpeed = length(wishVel) > 0.0f ? (sprintActivated ? ds.sprintSpeed: ds.walkSpeed * continuousInputFactor) : 0.f;
     ds.wantedSpeed = mix(ds.wantedSpeed, ds.sprintSpeed, gamepadSprint);
 
+    ds.inputVector = input;
+
     ds.wantedSpeed *= speedFactor;
 
     // Logger::debug(

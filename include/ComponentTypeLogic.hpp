@@ -61,6 +61,7 @@ struct MovementState
 
     vec3 deplacementDirection = vec3(1, 0, 0);
     vec3 wantedMoveDirection = vec3(0, 0, 0);
+    vec3 inputVector = vec3(0);
 
     bool grounded = false;
     bool _grounded = false;

@@ -13,7 +13,7 @@ rp3d::decimal PG::RayCastCallback::notifyRaycastHit(const rp3d::RaycastInfo& inf
         // hitCollider = info.collider;
     }
     hit = true;
-    return distance / maxDistance;
+    return info.hitFraction;
 }
 
 PG::RayCastCallback& PG::RayCastCallback::operator=(const PG::RayCastCallback& other)

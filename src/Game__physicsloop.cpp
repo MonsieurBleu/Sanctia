@@ -53,7 +53,7 @@ struct OverlapCallbackTest : public rp3d::OverlapCallback
 void TryPlayerClimb()
 {
     state3D& s = GG::playerEntity->comp<state3D>();
-    rp3d::RigidBody* b = GG::playerEntity->comp<rp3d::RigidBody*>();
+    rp3d::RigidBody* playerBody = GG::playerEntity->comp<RigidBody>();
     MovementState& ms = GG::playerEntity->comp<MovementState>();
 
     if (!ms.isAllowedToClimb) return;
@@ -72,7 +72,7 @@ void TryPlayerClimb()
 
     const float epsilon = 0.01;
 
-    rp3d::RigidBody* playerBody = GG::playerEntity->comp<RigidBody>();
+    
 
     const float halfHeight = (testHeightMax - testHeightMin) / 2;
     rp3d::RigidBody* testBody = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(.001, .001, .001), DEFQUAT));
@@ -87,6 +87,8 @@ void TryPlayerClimb()
     rp3d::Transform obstructionTransform_2(rp3d::Vector3(0, testHeightMax + halfHeight, -distanceCheck / 2), DEFQUAT);
     rp3d::Collider *obstructionCollider_1 = testBody->addCollider(ObstructionBox_1, obstructionTransform_1);
     rp3d::Collider *obstructionCollider_2 = testBody->addCollider(ObstructionBox_2, obstructionTransform_2);
+    obstructionCollider_1->setIsSimulationCollider(false);
+    obstructionCollider_2->setIsSimulationCollider(false);
     obstructionCollider_1->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
     obstructionCollider_1->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
     obstructionCollider_2->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
@@ -121,6 +123,7 @@ void TryPlayerClimb()
     static rp3d::BoxShape* box = PG::common.createBoxShape(PG::torp3d(halfExtents));
 
     rp3d::Collider *depthCollider = testBody->addCollider(box, rp3d::Transform());
+    depthCollider->setIsSimulationCollider(false);
     depthCollider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
     depthCollider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
 
@@ -148,6 +151,7 @@ void TryPlayerClimb()
         
         testBody->removeCollider(depthCollider);
         rp3d::Collider* playerHeightCollider = testBody->addCollider(playerbox, rp3d::Transform());
+        playerHeightCollider->setIsSimulationCollider(false);
         playerHeightCollider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
         playerHeightCollider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
 
@@ -227,7 +231,7 @@ void TryPlayerClimb()
             ms.climbStartPos = s.position;
             ms.climbEndPos = newPlayerPos;
             ms.climbHeight = height;
-            ms.climbStartSpeed = length(PG::toglm(b->getLinearVelocity()));
+            ms.climbStartSpeed = length(PG::toglm(playerBody->getLinearVelocity()));
             ms.canClimb = true;
             break;
         }

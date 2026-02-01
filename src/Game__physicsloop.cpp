@@ -66,8 +66,8 @@ public:
 };
 
 #define TIMESTAMP_PHYSICS "[", globals.simulationTime.getElapsedTime(), "] "
-#define CLIMB_DEBUG_DRAW 1
-#define STEP_DEBUG_DRAW 1
+#define CLIMB_DEBUG_DRAW 0
+#define STEP_DEBUG_DRAW 0
 void TryPlayerClimb()
 {
     state3D& s = GG::playerEntity->comp<state3D>();

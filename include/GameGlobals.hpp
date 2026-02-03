@@ -10,8 +10,8 @@
 #include <list>
 
 /* second letter hex, first letter hex*/
-#define LANGUAGE_FRENCH (uint16)0x7266
-#define LANGUAGE_ENGLISH (uint16)0x6E65
+#define LANGUAGE_FRENCH (uint16)"fr"_hex
+#define LANGUAGE_ENGLISH (uint16)"en"_hex
 
 namespace GameGlobals
 {

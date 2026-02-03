@@ -656,9 +656,12 @@ void Game::physicsLoop()
                     ms.speed = length(velocity);
 
                     // apply gravity
-                    vec3 v = velocity + vec3(0, -ms.gravity, 0) * dt;
-
-                    velocity = (velocity + v) * 0.5f; // smoothing the gravity effect, feels nicer imo
+                    if (!ms.walking)
+                    {
+                        vec3 v = velocity + vec3(0, -ms.gravity, 0) * dt;
+                        
+                        velocity = (velocity + v) * 0.5f; // smoothing the gravity effect, feels nicer imo
+                    }
 
 
                     // get input from ActionState if any

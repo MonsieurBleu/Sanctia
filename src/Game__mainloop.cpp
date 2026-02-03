@@ -228,11 +228,11 @@ void Game::mainloop()
         "Global Benchmark", "icon_chrono"
     );
 
-    VulpineBlueprintUI::AddToSelectionMenu(
-        GlobalInfosTitleTab, GlobalInfosSubTab, 
-        Blueprint::EDITOR_ENTITY::INO::DebugConsole(),
-        "Debug Console", ""
-    );
+    // VulpineBlueprintUI::AddToSelectionMenu(
+    //     GlobalInfosTitleTab, GlobalInfosSubTab, 
+    //     Blueprint::EDITOR_ENTITY::INO::DebugConsole(),
+    //     "Debug Console", ""
+    // );
 
     VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 

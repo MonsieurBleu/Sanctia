@@ -526,6 +526,8 @@ template<> void Component<PhysicsHelpers>::ComponentElem::init()
 
         RigidBody b = entity->comp<RigidBody>();
 
+        // b->testAABBOverlap(const AABB &worldAABB)
+
         const int nb = b->getNbColliders();
 
         auto tmp = b->getTransform();
@@ -601,7 +603,7 @@ template<> void Component<InfosStatsHelpers>::ComponentElem::init()
         globals.getScene()->add(Helper); \
         data.models.push_back(Helper); \
         curHeight += offHeight; 
-
+    
     ValueHelperRef<std::string> N(new ValueHelper(entity->comp<EntityInfos>().name, U"Name ", vec3(0.85)));
     ADD_VALUE_HELPER(N)
 

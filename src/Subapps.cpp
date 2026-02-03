@@ -28,6 +28,8 @@ void SubApps::cleanActiveApp()
     activeApp->clean();
 
     EDITOR::MENUS::AppControl->comp<EntityGroupInfo>().children.clear();
+    
+    GG::draw = nullptr;
 
     globals.mainThreadTime.reset();
 
@@ -69,6 +71,7 @@ void SubApps::UpdateApps()
         {
             ComponentModularity::synchronizeChildren(activeApp->appRoot);
             activeApp->update();
+            GG::draw->update();
         }
     }
 }
@@ -99,6 +102,8 @@ void SubApps::switchTo(SubApps *ptr)
 
     ptr->uiMenuParentTMP->comp<WidgetBox>().displayMax = vec2(UNINITIALIZED_FLOAT);
     ptr->uiMenuParentTMP->comp<WidgetBox>().displayMin = vec2(UNINITIALIZED_FLOAT);
+
+    GG::draw = std::make_shared<Draw>(activeApp->appRoot);
 
     // for(auto a : apps)
     // {

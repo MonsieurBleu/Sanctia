@@ -82,7 +82,7 @@ void Apps::SceneMergeApp::init()
     /***** Creating Scene To Stress Test *****/
     // int size = 100;
     int size = 25;
-    size = 6;
+    size = 8;
 
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
@@ -130,7 +130,8 @@ void Apps::SceneMergeApp::init()
 
         /* Adding zweihander */
         {
-            auto z = Blueprint::Zweihander();
+            // auto z = Blueprint::Zweihander();
+            auto z = spawnEntity("2HSword Stylish Steel-Copper");
 
 
             z->comp<RigidBody>()->setTransform(rp3d::Transform(

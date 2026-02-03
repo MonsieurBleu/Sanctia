@@ -569,7 +569,7 @@ void Game::mainloop()
     );
 
     
-    Apps::MainGameApp testsubapps1;
+    // Apps::MainGameApp testsubapps1;
     Apps::EntityCreator entityCreator;
     Apps::AssetListViewer assetView;
     Apps::MaterialViewerApp materialView;
@@ -652,6 +652,8 @@ void Game::mainloop()
     /******  Main Loop ******/
     while (state != AppState::quit)
     {
+        // PG::doPhysicInterpolation = false;
+
         mainloopStartRoutine();
         mainloopPreRenderRoutine();
 
@@ -1185,6 +1187,9 @@ void Game::mainloop()
 
             vec3 dir = s.lookDirection;
 
+            float physicInterpolationValue2 = entity.has<EntityStats>() and !entity.comp<EntityStats>().alive ? 1.f : physicInterpolationValue;
+            // physicInterpolationValue2 = 1.f;
+
             auto n = entity.comp<AnimationControllerInfos>().c_str();
             const bool isSwordAndShield = !strcmp(n, "(Human) Sword And Shield ");
             if(isSwordAndShield)
@@ -1197,7 +1202,7 @@ void Game::mainloop()
                 // model->state.setRotation(glm::eulerAngles(s.quaternion));
                 // model->state.setQuaternion(s.quaternion);
                 model->state.setQuaternion(
-                    glm::eulerAngles(slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue)));
+                    glm::eulerAngles(slerp(s._PhysicTmpQuat, s.quaternion, physicInterpolationValue2)));
             }
             else if (dir.x != 0.f || dir.z != 0.f)
             {
@@ -1216,7 +1221,7 @@ void Game::mainloop()
             if (s._PhysicTmpPos == vec3(UNINITIALIZED_FLOAT))
                 model->state.setPosition(s.position);
             else
-                model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue));
+                model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue2));
 
             if (GG::playerEntity && &entity == GG::playerEntity.get() && globals._currentController != &this->spectator)
             {
@@ -1224,7 +1229,7 @@ void Game::mainloop()
 
                 model->state.update();
                 // model->state.setPosition(s.position);
-                model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue));
+                model->state.setPosition(mix(s._PhysicTmpPos, s.position, physicInterpolationValue2));
 
                 auto &s = entity.comp<SkeletonAnimationState>();
 
@@ -1305,7 +1310,7 @@ void Game::mainloop()
                 );
             }
 
-            float adrenalineMod = 250.f*stats.adrenaline.cur/stats.adrenaline.max;
+            float adrenalineMod = 0.5*250.f*stats.adrenaline.cur/stats.adrenaline.max;
             adrenalineMod = max(adrenalineMod, 0.f);
 
             stats.stamina.cur = clamp(
@@ -1326,6 +1331,8 @@ void Game::mainloop()
                 //     );
                 // }
 
+                // physicsMutex.lock();
+
                 if(
                     entity.has<RigidBody>() 
                     && (!entity.has<MovementState>() || entity.comp<MovementState>().grounded)
@@ -1334,6 +1341,9 @@ void Game::mainloop()
                 {
                     entity.remove<RigidBody>();
                 }
+
+
+                // physicsMutex.unlock();
 
                 entity.remove<DeplacementBehaviour>();
                 entity.comp<ActionState>().lockType = ActionState::LockedMovement::SPEED_ONLY;

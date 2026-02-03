@@ -18,7 +18,8 @@ namespace AnimBlueprint
         int maxTrigger,
         ActionState::LockedMovement lockDep,
         float maxSpeed,
-        EquipementSlots slot = EquipementSlots::WEAPON_SLOT
+        EquipementSlots slot = EquipementSlots::WEAPON_SLOT,
+        float quicknessModifier = 1.0
         );
 
     extern std::function<void (void *)> weaponAttackExit;

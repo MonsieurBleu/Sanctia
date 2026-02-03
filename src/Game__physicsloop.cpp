@@ -66,7 +66,7 @@ public:
 };
 
 #define TIMESTAMP_PHYSICS "[", globals.simulationTime.getElapsedTime(), "] "
-#define CLIMB_DEBUG_DRAW 0
+#define CLIMB_DEBUG_DRAW 1
 #define STEP_DEBUG_DRAW 0
 void TryPlayerClimb()
 {
@@ -78,7 +78,7 @@ void TryPlayerClimb()
 
     ms.canClimb = false;
 
-    const float distanceCheck = 1.0;
+    const float distanceCheck = 2.0;
     const float offset_in = 0.5;
 
     const float testHeightMax = 2.5;
@@ -117,6 +117,9 @@ void TryPlayerClimb()
 #if CLIMB_DEBUG_DRAW
     if (GG::draw != nullptr)
     {
+        // NOTIF_MESSAGE(
+        //     PG::toglm(playerBody->getTransform().getPosition())
+        // )
         GG::draw->drawBox(ObstructionBox_1, playerBody->getTransform() * obstructionTransform_1, 0.0f, ModelState3D(), "#ffffff"_rgb);
         GG::draw->drawBox(ObstructionBox_2, playerBody->getTransform() * obstructionTransform_2, 0.0f, ModelState3D(), "#ffffff"_rgb);
     }
@@ -198,8 +201,12 @@ void TryPlayerClimb()
             rp3d::Transform pointTransform = transformWorldHeight * rp3d::Transform(
                 rp3d::Vector3(
                     0, 
-                    -1.0f + testHeightMax / N_HEIGHT, 
-                    -offset_in
+                    // -1.0f + testHeightMax / N_HEIGHT, 
+                    // -offset_in
+
+                     -1.0f + testHeightMax / N_HEIGHT,
+                     -offset_in
+
                 ), DEFQUAT);
             vec3 newPlayerPos = PG::toglm(pointTransform.getPosition());
 
@@ -216,8 +223,8 @@ void TryPlayerClimb()
             }
 #endif
 
-            const float normalDotLow = 1.0;
-            const float normalDotHigh = 0.9;
+            const float normalDotLow = 0.9;
+            const float normalDotHigh = 0.4;
 
             float playerHeight = s.position.y;
             float height = newPlayerPos.y - playerHeight;
@@ -237,12 +244,18 @@ void TryPlayerClimb()
             //     " bounds limit: ", transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon
             // );
 
+            if(cb.hit)
+                WARNING_MESSAGE(cb.hitNormal.y)
+
 
             if (
                    !cb.hit // raycast missed
-                || dot(cb.hitNormal, vec3(0, 1, 0)) < normalDotMax // normal of hit is too steep
+                // || dot(cb.hitNormal, vec3(0, 1, 0)) < normalDotMax // normal of hit is too steep
+                || cb.hitNormal.y < normalDotMax // normal of hit is too steep
                 || cb.hitPoint.y < transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon // hit is outside the bounds of the test (essentially also a miss)
             ) break;
+
+            NOTIF_MESSAGE(cb.hitNormal.y)
 
             found = true;
 #if CLIMB_DEBUG_DRAW
@@ -254,6 +267,7 @@ void TryPlayerClimb()
 
             ms.climbStartPos = s.position;
             ms.climbEndPos = newPlayerPos;
+            // ms.climbEndPos = cb.hitPoint + vec3(0,1,0);
             ms.climbHeight = height;
             ms.climbStartSpeed = length(PG::toglm(playerBody->getLinearVelocity()));
             ms.canClimb = true;
@@ -1123,22 +1137,29 @@ void Game::physicsLoop()
         float maxFreq = 200.f;
         float minFreq = 5.f;
 
-        // if(physicsTimer.getDelta() > 1.0/physicsTicks.freq)
-        // {
-        //     physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
-        // }
-        // else if(physicsTimer.getDelta() < 0.5f/physicsTicks.freq)
-        // {
-        //     physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
-        // }
+        if(physicsTimer.getDelta() > 1.0/physicsTicks.freq)
+        {
+            physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
+        }
+        else if(physicsTimer.getDelta() < 0.5f/physicsTicks.freq)
+        {
+            physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
+        }
 
         physicsMutex.unlock();
 
         physicsTicks.waitForEnd();
 
-        const float stepSize = 10.f;
-        physicsTicks.freq = ceil(1.0/(physicsTimer.getDelta()*stepSize))*stepSize;
-        physicsTicks.freq = clamp(physicsTicks.freq, minFreq, maxFreq);
+        // const float stepSize = 5.f / 1000.f;
+        // // physicsTicks.freq = ceil(1.0/(physicsTimer.getDelta()*stepSize))*stepSize;
+        
+        // float delta = ceil(physicsTimer.getDelta()/stepSize)*stepSize;
+        // physicsTicks.freq = 1.0/delta;
+        
+        // physicsTicks.freq = clamp(physicsTicks.freq, minFreq, maxFreq);
+
+
+
     }
 
     for(auto &i : Loader<ScriptInstance>::loadedAssets)

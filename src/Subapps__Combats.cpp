@@ -6,9 +6,11 @@
 
 #include <AnimationBlueprint.hpp>
 
+#include <Helpers.hpp>
+
 #define Y_SPAWN_LEVEL 38
 
-#define PLAYER_SET "(Combats) Player 2"
+#define PLAYER_SET "(Combats) Player"
 
 void spawnPlayer(EntityRef appRoot)
 {
@@ -39,6 +41,19 @@ void Apps::CombatsApp::addStage(const std::string &name, vec4 newStageColor, std
             [&, spawnScript](Entity *e, float f)
             {
                 globals.currentCamera->setMouseFollow(true);
+
+                std::vector<EntityRef> garbage;
+                for(auto i : appRoot->comp<EntityGroupInfo>().children)
+                {
+                    if(i->has<staticEntityFlag>() and i->comp<staticEntityFlag>().isDYnamic)
+                        garbage.push_back(i);
+                }
+
+                for(auto i : garbage)
+                    ComponentModularity::removeChild(*appRoot, i);
+
+                garbage.clear();
+
                 spawnPlayer(stageNPC);
                 spawnScript();
             }, 
@@ -325,7 +340,7 @@ void Apps::CombatsApp::init()
 
         globals.currentCamera->setMouseFollow(false);
 
-        GG::draw = std::make_shared<Draw>(appRoot);
+        glLineWidth(10.0);
     }
 
 
@@ -459,6 +474,89 @@ void Apps::CombatsApp::init()
                 e->set<Faction>({Faction::PLAYER_ENEMY});
                 ComponentModularity::addChild(*stageNPC, e);
             }
+
+            EntityModel tutorialGroup({newObjectGroup()});
+
+            {
+                static std::string str = 
+                    "Zweihander deals a lot of damage, and have a long reach.\n"
+                    "If you get caught by one, you will get **seriously** hurt."
+                ;
+                ValueHelperRef<std::string> text( new ValueHelper(str, U"", vec3(1, 0, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0, 0));
+                tutorialGroup->add(text);
+            }
+
+            static std::string strAtck = 
+                "Primary attacks can be blocked.\n"
+                "When blocking an attack, you can counter attack if you are quick enough.\n"
+                "With good timing, you can also do a perfect pary, that can also counter attack."
+                ;
+            {
+                ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(1, 1, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, 0));
+                tutorialGroup->add(text);
+            }
+            {
+                ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(1, 1, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, 0));
+                tutorialGroup->add(text);
+            }
+            
+
+
+
+            {
+                static std::string str = 
+                    "Shields are very effective for blocking.\n"
+                    "The guard of a shield user can only be broken by depleating their stamina.\n"
+                    "Kicks are the most effective way to do that.\n"
+                ;
+                ValueHelperRef<std::string> text( new ValueHelper(str, U"", vec3(1, 0, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0, 4));
+                tutorialGroup->add(text);
+            }
+
+            static std::string strBlock = 
+                "When an enemy is blocking, they can't be hurt unless their guard is broken.\n"
+                "Kicks are the most effective way to do so.\n"
+                "When a kick break the guard of an enemy, you can directlly follow up with an attack.\n"
+                ;
+            {
+                ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(1, 1, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, 4));
+                tutorialGroup->add(text);
+            }
+            {
+                ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(1, 1, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, 4));
+                tutorialGroup->add(text);
+            }
+
+
+
+
+            static std::string strKick = 
+                "A kick can often-times break your guard.\n"
+                "Regular attacks are faster to perform and have a longer reach than kicks.\n"
+                ;
+            {
+                ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(1, 1, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, -4));
+                tutorialGroup->add(text);
+            }
+            {
+                ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(1, 1, 0)));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, -4));
+                tutorialGroup->add(text);
+            }
+
+
+
+            tutorialGroup->state.setPosition(vec3(0, Y_SPAWN_LEVEL + 2.25, 0));
+
+
+            ComponentModularity::addChild(*stageNPC, newEntity("Tutorial", tutorialGroup));
         }
     );
 
@@ -658,7 +756,7 @@ void Apps::CombatsApp::init()
         for(int i = 0; i < enemyS; i++) // Enemy Shields
         {
             vec3 randPos(-8 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12);
-            EntityRef e= spawnEntity("(Combats) Enemy 2", randPos);
+            EntityRef e= spawnEntity("(Combats) Ally 2", randPos);
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
             // e->set<Target>((Target){GG::playerEntity.get()});
@@ -675,7 +773,7 @@ void Apps::CombatsApp::init()
         for(int i = 0; i < enemyZ; i++) // Enemy Zweihander
         {
             vec3 randPos(-16 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12);
-            EntityRef e= spawnEntity("(Combats) Enemy", randPos);
+            EntityRef e= spawnEntity("(Combats) Ally", randPos);
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
             // e->set<Target>((Target){GG::playerEntity.get()});
@@ -736,11 +834,13 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("10v4 Hard Battle",
-        vec4(0.5, 1.0, 0.5, 1.0) * 0.8f,
+    addStage("Rigged Battle",
+        vec4(0.5, 1.0, 0.5, 1.0),
         [spawnBattle]()
         {
-
+            const float nbAlly = 100;
+            const float nbEnemy = 120;
+            spawnBattle(nbEnemy/2, nbEnemy/2, nbAlly/2, nbAlly/2);
         }
     );
 
@@ -748,7 +848,7 @@ void Apps::CombatsApp::init()
         vec4(0.5, 1.0, 0.5, 1.0),
         [spawnBattle]()
         {
-            const float nb = 250;
+            const float nb = 150;
             spawnBattle(nb/2, nb/2, nb/2, nb/2);
         }
     );
@@ -781,8 +881,6 @@ void Apps::CombatsApp::update()
         globals.simulationTime.resume();
     else 
         globals.simulationTime.pause();
-
-    GG::draw->update();
 }
 
 
@@ -805,6 +903,5 @@ void Apps::CombatsApp::clean()
     physicsMutex.unlock();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
-    GG::draw = nullptr;
 }
 

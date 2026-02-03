@@ -246,8 +246,8 @@ ANIMATION_SWITCH_ENTITY(switchBlockRight,
 )
 
 ANIMATION_SWITCH(switchRandom2, 
-    return rand()%2;
-    // return ((int)(globals.appTime.getElapsedTime()*1000.f))%2 == 0;
+    // return rand()%2;
+    return ((int)(globals.appTime.getElapsedTime()*10000.f))%2 == 0;
 )
 
 #define ACT_TO_RANDOM(maccro, animA, animB, time, cond) \
@@ -327,7 +327,8 @@ float AnimBlueprint::weaponAttackCallback(
     int maxTrigger,
     ActionState::LockedMovement lockDep,
     float maxSpeed,
-    EquipementSlots slot
+    EquipementSlots slot,
+    float quicknessModifier
     )
 {
     // if(prct == 0.f)
@@ -468,7 +469,14 @@ float AnimBlueprint::weaponAttackCallback(
 
     float fifo = fifoFixedSpeed(prct, 0.25f);
 
-    fifo *= 1.5f - 0.5*smoothstep(0.f, 50.f, prct);
+    float fastStarMod = (quicknessModifier - 1.0f)*0.5f;
+    fastStarMod = 0.0;
+    fifo *= (1.5f + fastStarMod) - (fastStarMod + 0.5)*smoothstep(0.f, 50.f, prct);
+
+    // WARNING_MESSAGE(
+    //     fastStarMod, "\n\t",
+    //     (1.5f + fastStarMod) - (fastStarMod + 0.5)*smoothstep(0.f, 50.f, prct)
+    // )
 
     float adrenalineSpeedMod = (e->comp<EntityStats>().adrenaline.cur/e->comp<EntityStats>().adrenaline.max);
     float enduranceSpeedMod  = smoothstep(0.25f, 0.f, e->comp<EntityStats>().stamina.cur/e->comp<EntityStats>().stamina.max);
@@ -477,6 +485,8 @@ float AnimBlueprint::weaponAttackCallback(
         fifo + 0.5f*clamp(adrenalineSpeedMod-enduranceSpeedMod, -1.f, 1.f)
         :
         fifo;
+
+    speed += (quicknessModifier-1.0)*0.25;
 
     return max(speed, 0.01f);
 }
@@ -692,71 +702,82 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_POC2024(const std::string & p
 
 void AnimBlueprint::PrepareAnimationsCallbacks()
 {
-    #define WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, maxspeed, slot) \
+    #define WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, maxspeed, slot, quicknessModifier) \
         a->onEnterAnimation = weaponAttackEnter;\
         a->onExitAnimation = AnimBlueprint::weaponAttackExit;\
-        a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback(prct, e, beg, end, dmgMult, maxTrigger, ActionState::LockedMovement::lockDep, maxspeed, EquipementSlots::slot););\
+        a->speedCallback = ANIMATION_CALLBACK(return AnimBlueprint::weaponAttackCallback( \
+            prct, \
+            e, \
+            beg, \
+            end, \
+            dmgMult, \
+            maxTrigger, \
+            ActionState::LockedMovement::lockDep, \
+            maxspeed, \
+            EquipementSlots::slot, \
+            quicknessModifier \
+            ););
     
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_R");
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_L");
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_S");
-        WEAPON_CALLBACK(37.5, 70, 2, 1, SPEED_ONLY, 0.25, WEAPON_SLOT);
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_R");
-        a->repeat = false;
-        WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, WEAPON_SLOT);
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_L");
-        a->repeat = false;
-        WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, WEAPON_SLOT);
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_S");
-        a->repeat = false;
-        WEAPON_CALLBACK(37.5, 70, 2, 1, DIRECTION, 4, WEAPON_SLOT);
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_DEATH_B");
-        a->repeat = false;
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_DEATH_F");
-        a->repeat = false;
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_IMPACT_F");
-        a->onExitAnimation = AnimBlueprint::weaponStunExit;
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_IMPACT_B");
-        a->onExitAnimation = AnimBlueprint::weaponStunExit;
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_L");
-        a->onExitAnimation = AnimBlueprint::weaponGuardExit;
-        a->onEnterAnimation = AnimBlueprint::weaponGuardEnter;
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_R");
-        a->onExitAnimation = AnimBlueprint::weaponGuardExit;
-        a->onEnterAnimation = AnimBlueprint::weaponGuardEnter;
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_S");
-        a->onExitAnimation = AnimBlueprint::weaponAttackExit;
-        WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0, FOOT_SLOT);
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_IMPACT_L");
-        a->onExitAnimation = AnimBlueprint::weaponBlockExit;
-    }
-    {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_IMPACT_R");
-        a->onExitAnimation = AnimBlueprint::weaponBlockExit;
-    }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_R");
+    //     WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_L");
+    //     WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0.5, WEAPON_SLOT);
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_ATTACK_S");
+    //     WEAPON_CALLBACK(37.5, 70, 2, 1, SPEED_ONLY, 0.25, WEAPON_SLOT);
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_R");
+    //     a->repeat = false;
+    //     WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, WEAPON_SLOT);
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_L");
+    //     a->repeat = false;
+    //     WEAPON_CALLBACK(37.5, 70, 1, 3, DIRECTION, 5, WEAPON_SLOT);
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_RUN_ATTACK_S");
+    //     a->repeat = false;
+    //     WEAPON_CALLBACK(37.5, 70, 2, 1, DIRECTION, 4, WEAPON_SLOT);
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_DEATH_B");
+    //     a->repeat = false;
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_DEATH_F");
+    //     a->repeat = false;
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_IMPACT_F");
+    //     a->onExitAnimation = AnimBlueprint::weaponStunExit;
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_IMPACT_B");
+    //     a->onExitAnimation = AnimBlueprint::weaponStunExit;
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_L");
+    //     a->onExitAnimation = AnimBlueprint::weaponGuardExit;
+    //     a->onEnterAnimation = AnimBlueprint::weaponGuardEnter;
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_R");
+    //     a->onExitAnimation = AnimBlueprint::weaponGuardExit;
+    //     a->onEnterAnimation = AnimBlueprint::weaponGuardEnter;
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_S");
+    //     a->onExitAnimation = AnimBlueprint::weaponAttackExit;
+    //     WEAPON_CALLBACK(37.5, 70, 1, 1, SPEED_ONLY, 0, FOOT_SLOT);
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_IMPACT_L");
+    //     a->onExitAnimation = AnimBlueprint::weaponBlockExit;
+    // }
+    // {   AnimationRef a = Loader<AnimationRef>::get("65_2HSword_GUARD_IMPACT_R");
+    //     a->onExitAnimation = AnimBlueprint::weaponBlockExit;
+    // }
 
     // WEAPON_CALLBACK(beg, end, dmgMult, maxTrigger, lockDep, maxspeed, slot)
     
     /* DEMO 2025 */
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Attack");
-        WEAPON_CALLBACK(45.0, 66, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
+        WEAPON_CALLBACK(45.0, 66, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT, 1.0);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Kick");
-        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 1.5, FOOT_SLOT);
+        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 1.5, FOOT_SLOT, 1.5);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) 2H Sword Death_1");
         a->repeat = false;
@@ -801,10 +822,10 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
 
 
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Attack");
-        WEAPON_CALLBACK(33.0, 66.0, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT);
+        WEAPON_CALLBACK(33.0, 66.0, 1, 1, SPEED_ONLY, 0.75, WEAPON_SLOT, 1.0);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Kick");
-        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 1.5, FOOT_SLOT);
+        WEAPON_CALLBACK(33.0, 66, 0.1, 1, SPEED_ONLY, 1.5, FOOT_SLOT, 1.0);
     }
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Death_1");
         a->repeat = false;
@@ -857,11 +878,13 @@ AnimationControllerRef AnimBlueprint::bipedMoveset_PREALPHA_2025(const std::stri
 
     auto deathCallback = [](float f, void *usr)
     {
-        if(!usr) return 1.f;
+        if(!usr || f >= 100.0) return 1.f;
 
         Entity *e = (Entity*)usr;
 
-        if(f > 90.f and e->has<Items>())
+        srand(e->ids[0]);
+
+        if(f > 50.f + (rand()%25) and e->has<Items>())
         {
             e->comp<Items>().unequip(
                 *e,

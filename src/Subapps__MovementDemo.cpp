@@ -37,7 +37,9 @@ void Apps::MovementDemo::init()
         globals.currentCamera->getState().FOV = radians(100.f);
         globals.simulationTime.resume();
 
-        GG::playerEntity = spawnEntity("(Combats) Player");
+        appRoot->set<state3D>(true);
+        GG::playerEntity = spawnEntity("(Combats) Player", vec3(-700, 50, -750));
+        ComponentModularity::addChild(*appRoot, GG::playerEntity);
 
         Game::playerControl = PlayerController(globals.currentCamera);
         App::setController(&Game::playerControl);
@@ -48,8 +50,10 @@ void Apps::MovementDemo::init()
         
         GG::sun->shadowCameraSize = vec2(256, 256);
 
-        GG::draw = std::make_shared<Draw>(appRoot);
+        
     }
+
+    ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
 
     physicsMutex.lock();
     ComponentModularity::addChild(*appRoot, spawnEntity("movement demo terrain"));
@@ -59,7 +63,7 @@ void Apps::MovementDemo::init()
 
 void Apps::MovementDemo::update()
 {
-    GG::draw->update();
+    
     
     // GG::draw->drawLine(vec3(-5), vec3(5));
     // GG::draw->drawSphere(vec3(sin(globals.appTime.getElapsedTime()), 0, 0), 3.0f);
@@ -71,6 +75,7 @@ void Apps::MovementDemo::update()
 
 void Apps::MovementDemo::clean()
 {
+
     globals.simulationTime.pause();
 
     appRoot = EntityRef();
@@ -79,6 +84,6 @@ void Apps::MovementDemo::clean()
 
     GG::sun->shadowCameraSize = vec2(0, 0);
 
-    GG::draw = nullptr;
+    
 }
 

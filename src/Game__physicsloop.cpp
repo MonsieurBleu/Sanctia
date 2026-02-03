@@ -718,22 +718,29 @@ void Game::physicsLoop()
         float maxFreq = 200.f;
         float minFreq = 5.f;
 
-        // if(physicsTimer.getDelta() > 1.0/physicsTicks.freq)
-        // {
-        //     physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
-        // }
-        // else if(physicsTimer.getDelta() < 0.5f/physicsTicks.freq)
-        // {
-        //     physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
-        // }
+        if(physicsTimer.getDelta() > 1.0/physicsTicks.freq)
+        {
+            physicsTicks.freq = clamp(physicsTicks.freq/2.f, minFreq, maxFreq);
+        }
+        else if(physicsTimer.getDelta() < 0.5f/physicsTicks.freq)
+        {
+            physicsTicks.freq = clamp(physicsTicks.freq*2.f, minFreq, maxFreq);
+        }
 
         physicsMutex.unlock();
 
         physicsTicks.waitForEnd();
 
-        const float stepSize = 10.f;
-        physicsTicks.freq = ceil(1.0/(physicsTimer.getDelta()*stepSize))*stepSize;
-        physicsTicks.freq = clamp(physicsTicks.freq, minFreq, maxFreq);
+        // const float stepSize = 5.f / 1000.f;
+        // // physicsTicks.freq = ceil(1.0/(physicsTimer.getDelta()*stepSize))*stepSize;
+        
+        // float delta = ceil(physicsTimer.getDelta()/stepSize)*stepSize;
+        // physicsTicks.freq = 1.0/delta;
+        
+        // physicsTicks.freq = clamp(physicsTicks.freq, minFreq, maxFreq);
+
+
+
     }
 
     for(auto &i : Loader<ScriptInstance>::loadedAssets)

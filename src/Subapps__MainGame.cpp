@@ -55,26 +55,6 @@ Apps::MainGameApp::MainGameApp() : SubApps("Main Game")
         InputManager::Filters::always, false)
     );
 
-
-    EntityRef* appRootPTR = &appRoot;
-
-    inputs.push_back(&
-        InputManager::addEventInput(
-        "start combat", GLFW_KEY_P, 0, GLFW_PRESS, [appRootPTR]() {
-            // if(!GG::playerEntity) return;
-            physicsMutex.lock();
-            auto e = Blueprint::TestManequin();
-
-            e->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-            e->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
-            e->set<Target>(Target{GG::playerEntity.get()});
-
-            ComponentModularity::addChild(**appRootPTR, e);
-            physicsMutex.unlock();
-        },
-        InputManager::Filters::always, true)
-    );
-
     inputs.push_back(&
         InputManager::addEventInput(
         "attack", GLFW_MOUSE_BUTTON_LEFT, 0, GLFW_PRESS, [&]() {
@@ -352,89 +332,6 @@ void Apps::MainGameApp::init()
     //     }
 
     //     physicsMutex.unlock();
-    // }
-
-    
-    // /***** Testing Entity Loading *****/
-    // {
-    //     NAMED_TIMER(EntityRW)
-    //     EntityRW.start();
-
-    //     EntityRef writeTest = Blueprint::TestManequin();
-    //     writeTest->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
-    //     writeTest->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //     // writeTest->set<Target>({GG::playerEntity});
-    //     // EntityRef writeTest = Blueprint::Zweihander();
-    //     VulpineTextOutputRef out(new VulpineTextOutput(1 << 16));
-    //     DataLoader<EntityRef>::write(writeTest, out);
-    //     out->saveAs("MannequinTest.vulpineEntity");
-
-    //     VulpineTextBuffRef in(new VulpineTextBuff("MannequinTest.vulpineEntity"));
-    //     EntityRef readTest = DataLoader<EntityRef>::read(in);
-    //     // readTest->set<Target>({GG::playerEntity});
-
-    //     VulpineTextOutputRef out2(new VulpineTextOutput(1 << 16));
-    //     DataLoader<EntityRef>::write(readTest, out2);
-    //     out2->saveAs("MannequinTest2.vulpineEntity");
-    //     // GG::entities.push_back(readTest);
-
-    //     EntityRW.end();
-    //     std::cout << EntityRW;
-
-    //     readTest->set<EntityGroupInfo>(EntityGroupInfo());
-
-    //     ComponentModularity::addChild(*appRoot, writeTest);
-    //     ComponentModularity::addChild(*appRoot, readTest);
-    // }
-
-
-    // /***** Spawning a chill dude for small talking ******/
-    {
-        auto e = Blueprint::TestManequin();
-        e->set<DeplacementBehaviour>(STAND_STILL);
-        vec4 &c1 = e->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-        c1 = vec4(ColorHexToV(0x00FF00), c1.a);
-
-        ComponentModularity::addChild(*appRoot, e);
-    }
-
-
-    /***** Spawning a legion fight *****/
-    // {
-    //     for(int i = 0; i < 150; i++)
-    //     {
-    //         auto e1 = Blueprint::TestManequin();
-    //         auto e2 = Blueprint::TestManequin();
-
-    //         e1->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //         e1->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
-    //         e1->set<Target>(Target{e2});
-    //         // e1->set<Target>(Target{GG::playerEntity});
-    //         e1->set<Faction>({Faction::Type::PLAYER});
-
-    //         e2->set<DeplacementBehaviour>(FOLLOW_WANTED_DIR);
-    //         e2->set<AgentState__old>({AgentState__old::COMBAT_POSITIONING});
-    //         e2->set<Target>(Target{e1});
-    //         // e2->set<Target>(Target{GG::playerEntity});
-    //         e2->set<Faction>({Faction::Type::PLAYER_ENEMY});
-
-    //         // e2->comp<state3D>().position.x += 50;
-    //         e2->comp<RigidBody>()->setTransform(
-    //             rp3d::Transform(
-    //                 PG::torp3d(e2->comp<state3D>().position + vec3(50, 0, 0)),
-    //                 DEFQUAT
-    //             )
-    //         );
-
-    //         vec4 &c1 = e1->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-    //         c1 = vec4(ColorHexToV(0xFFFF00), c1.a);
-
-    //         vec4 &c2 = e2->comp<EntityModel>()->getLights()[0]->getInfos()._color;
-    //         c2 = vec4(ColorHexToV(0xFF50FF), c2.a);
-
-    //         ComponentModularity::addChild(*appRoot, e1);
-    //         ComponentModularity::addChild(*appRoot, e2);
-    //     }
     // }
 
     /***** GAME UI *****/

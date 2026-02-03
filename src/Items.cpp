@@ -1,6 +1,8 @@
 #include <SanctiaEntity.hpp>
 #include <MathsUtils.hpp>
 
+#include <Subapps.hpp>
+
 void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
 {
     usr->comp<Items>().equipped[slot] = {id, item};
@@ -26,7 +28,7 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
             auto c = b->getCollider(i);
             
             if(c->getCollisionCategoryBits() == 1<<CollideCategory::ENVIRONEMENT)
-            c->setCollideWithMaskBits(0);
+                c->setCollideWithMaskBits(0);
         }
         // b->setIsActive(true);
     }
@@ -41,6 +43,12 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
     auto is = item->comp<state3D>();
     // ComponentModularity::addChild(usr, item);
 
+    is.initPosition = is.position;
+    is.initQuat = is.quaternion;
+
+    
+    
+
     if(item->has<Effect>())
     {
         item->comp<Effect>().usr = nullptr;
@@ -51,6 +59,7 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
 
         auto &b = item->comp<RigidBody>();
         
+        ComponentModularity::addChild(*SubApps::getCurrentRoot(), item);
         b->setTransform(rp3d::Transform(PG::torp3d(is.position), PG::torp3d(is.usequat ? is.quaternion : directionToQuat(is.lookDirection))));
  
         // auto tmp = b->getTransform();
@@ -60,8 +69,6 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
 
         b->setType(rp3d::BodyType::DYNAMIC);
 
-        b->setIsActive(true);
-        item->comp<staticEntityFlag>().shoudBeActive = false;
 
         int size = b->getNbColliders();
 
@@ -73,8 +80,13 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
                 c->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
         }
 
+        b->setIsActive(true);
+        item->comp<staticEntityFlag>().shoudBeActive = true;
+
         physicsMutex.unlock();
     }
+
+    
 
     usr.comp<Items>().equipped[slot] = { };
 }

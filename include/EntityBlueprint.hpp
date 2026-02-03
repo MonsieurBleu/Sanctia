@@ -29,13 +29,6 @@ namespace Blueprint
         int cellSize
     );
 
-
-    EntityRef TestManequin();
-
-    EntityRef Zweihander();
-
-    EntityRef Foot();
-
     namespace EDITOR_ENTITY
     {
         namespace INO

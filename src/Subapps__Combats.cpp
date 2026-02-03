@@ -340,7 +340,7 @@ void Apps::CombatsApp::init()
 
         globals.currentCamera->setMouseFollow(false);
 
-        GG::draw = std::make_shared<Draw>(appRoot);
+        glLineWidth(10.0);
     }
 
 
@@ -881,8 +881,6 @@ void Apps::CombatsApp::update()
         globals.simulationTime.resume();
     else 
         globals.simulationTime.pause();
-
-    GG::draw->update();
 }
 
 
@@ -905,6 +903,5 @@ void Apps::CombatsApp::clean()
     physicsMutex.unlock();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
-    GG::draw = nullptr;
 }
 

@@ -202,11 +202,19 @@ void PlayerController::update()
     ds.wantedSpeed = length(wishVel) > 0.0f ? (sprintActivated ? ds.sprintSpeed: ds.walkSpeed * continuousInputFactor) : 0.f;
     ds.wantedSpeed = mix(ds.wantedSpeed, ds.sprintSpeed, gamepadSprint);
 
+    ds.inputVector = input;
+
     ds.wantedSpeed *= speedFactor;
+
+    // Logger::debug(
+    //     "upFactor: ", upFactor, " ",
+    //     "jumpHeld: ", jumpHeld, " ",
+    //     "landed time: ", globals.simulationTime.getElapsedTime() - ds.landedTime
+    // );
 
     if (
         upFactor > 0 && // we are pressing the jump key
-        ds.walking &&   // we are in the walking state
+        // ds.walking &&   // we are in the walking state
         !jumpHeld &&    // we haven't already jumped and are holding the jump key
         (globals.simulationTime.getElapsedTime() - ds.landedTime) > ds.landedJumpDelay // we didn't just land less than landedJumpDelay seconds ago
     )

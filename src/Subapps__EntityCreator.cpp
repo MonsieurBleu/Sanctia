@@ -1318,6 +1318,8 @@ void Apps::EntityCreator::init()
         GG::sun->activateShadows();
 
         glLineWidth(5);
+
+        GG::draw = std::make_shared<Draw>(appRoot);
     }
 
     // for(int cnt = 0; cnt < 128; cnt++)
@@ -1882,6 +1884,8 @@ void Apps::EntityCreator::update()
         ComponentModularity::ReparentChildren(*currentEntity.ref);
         physicsMutex.unlock();
     }
+
+    GG::draw->update();
 }
 
 
@@ -1929,5 +1933,7 @@ void Apps::EntityCreator::clean()
     PG::world->setIsGravityEnabled(true);
 
     glLineWidth(1.0);
+
+    GG::draw = nullptr;
 }
 

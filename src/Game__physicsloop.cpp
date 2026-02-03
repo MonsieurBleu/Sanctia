@@ -21,6 +21,380 @@
 
 #include "PlayerUtils.hpp"
 
+
+struct ClimbOverlapCallback : public rp3d::OverlapCallback
+{
+    bool hit = false;
+
+    void onOverlap(CallbackData &callbackData) override
+    {
+        size_t pairs = callbackData.getNbOverlappingPairs();
+        for (size_t i = 0; i < pairs; i++)
+        {
+            rp3d::OverlapCallback::OverlapPair pair = callbackData.getOverlappingPair(i);
+            rp3d::Collider *c1 = pair.getCollider1();
+            rp3d::Collider *c2 = pair.getCollider2();
+
+            Entity *other = (Entity*)c2->getUserData();
+
+            if (
+                    other == nullptr
+                || other->has<MovementState>()
+            ) continue;
+
+            hit = true;
+            return;
+        }
+    }
+};
+
+class ClimbRaycastCallback : public PG::RayCastCallback
+{
+private:
+    rp3d::decimal notifyRaycastHit(const rp3d::RaycastInfo& info) override
+    {
+        
+        Entity* e = (Entity*)info.body->getUserData();
+        if (
+            e != nullptr && e->has<MovementState>()
+        )  return -1.0;
+
+        return PG::RayCastCallback::notifyRaycastHit(info);
+    }
+public:
+    ClimbRaycastCallback(vec3 p1, vec3 p2) : PG::RayCastCallback(p1, p2) {};
+};
+
+#define TIMESTAMP_PHYSICS "[", globals.simulationTime.getElapsedTime(), "] "
+#define CLIMB_DEBUG_DRAW 0
+#define STEP_DEBUG_DRAW 0
+void TryPlayerClimb()
+{
+    state3D& s = GG::playerEntity->comp<state3D>();
+    rp3d::RigidBody* playerBody = GG::playerEntity->comp<RigidBody>();
+    MovementState& ms = GG::playerEntity->comp<MovementState>();
+
+    if (!ms.isAllowedToClimb) return;
+
+    ms.canClimb = false;
+
+    const float distanceCheck = 1.0;
+    const float offset_in = 0.5;
+
+    const float testHeightMax = 2.5;
+    const float testHeightMin = 0.25;
+    const float playerHeight = 2.0f;
+
+    constexpr int N_DEPTH = 8;
+    constexpr int N_HEIGHT = 8;
+
+    const float epsilon = 0.01;
+
+    
+
+    const float halfHeight = (testHeightMax - testHeightMin) / 2;
+    rp3d::RigidBody* testBody = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(.001, .001, .001), DEFQUAT));
+    testBody->setType(rp3d::BodyType::KINEMATIC);
+
+    // first test for obstructions to climbing
+    vec3 ObstructionBoxHalfExtents_1 = vec3(0.25f, halfHeight, .25);
+    vec3 ObstructionBoxHalfExtents_2 = vec3(0.25f, playerHeight / 2.0f, distanceCheck / 2.0f);
+    static rp3d::BoxShape* ObstructionBox_1 = PG::common.createBoxShape(PG::torp3d(ObstructionBoxHalfExtents_1));
+    static rp3d::BoxShape* ObstructionBox_2 = PG::common.createBoxShape(PG::torp3d(ObstructionBoxHalfExtents_2));
+    rp3d::Transform obstructionTransform_1(rp3d::Vector3(0, playerHeight + halfHeight, 0), DEFQUAT);
+    rp3d::Transform obstructionTransform_2(rp3d::Vector3(0, testHeightMax + halfHeight, -distanceCheck / 2), DEFQUAT);
+    rp3d::Collider *obstructionCollider_1 = testBody->addCollider(ObstructionBox_1, obstructionTransform_1);
+    rp3d::Collider *obstructionCollider_2 = testBody->addCollider(ObstructionBox_2, obstructionTransform_2);
+    obstructionCollider_1->setIsSimulationCollider(false);
+    obstructionCollider_2->setIsSimulationCollider(false);
+    obstructionCollider_1->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+    obstructionCollider_1->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+    obstructionCollider_2->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+    obstructionCollider_2->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+
+    testBody->setTransform(playerBody->getTransform());
+
+#if CLIMB_DEBUG_DRAW
+    if (GG::draw != nullptr)
+    {
+        GG::draw->drawBox(ObstructionBox_1, playerBody->getTransform() * obstructionTransform_1, 0.0f, ModelState3D(), "#ffffff"_rgb);
+        GG::draw->drawBox(ObstructionBox_2, playerBody->getTransform() * obstructionTransform_2, 0.0f, ModelState3D(), "#ffffff"_rgb);
+    }
+#endif
+    
+    ClimbOverlapCallback testObstruction;
+    PG::world->testOverlap(testBody, testObstruction);
+
+    if (testObstruction.hit) 
+    {
+        PG::world->destroyRigidBody(testBody);
+        return;
+    }
+    
+    testBody->removeCollider(obstructionCollider_1);
+    testBody->removeCollider(obstructionCollider_2);
+
+    vec3 halfExtents = vec3(.25f, halfHeight, distanceCheck / N_DEPTH);
+    vec3 halfPlayerBoxExtents = vec3(.25, playerHeight / 2, .25);
+    static rp3d::BoxShape* playerbox = PG::common.createBoxShape(PG::torp3d(halfPlayerBoxExtents));
+
+    static rp3d::BoxShape* box = PG::common.createBoxShape(PG::torp3d(halfExtents));
+
+    
+    rp3d::Collider* depthCollider = nullptr;
+    for (int i = 0; i < N_DEPTH; i++)
+    {
+        depthCollider = testBody->addCollider(box, rp3d::Transform());
+        depthCollider->setIsSimulationCollider(false);
+        depthCollider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+        depthCollider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+
+        const float step_size_depth = distanceCheck / N_DEPTH;
+        vec3 offset = vec3(0, halfHeight + testHeightMin + epsilon, -step_size_depth * i);
+        rp3d::Transform transformOffset(PG::torp3d(offset), DEFQUAT);
+        rp3d::Transform transformWorld = playerBody->getTransform() * transformOffset ;
+        testBody->setTransform(transformWorld);
+
+#if CLIMB_DEBUG_DRAW
+        if (GG::draw != nullptr)
+        {
+            GG::draw->drawBox(box, transformWorld);
+        }
+#endif
+        
+        ClimbOverlapCallback test;
+        PG::world->testOverlap(testBody, test);
+
+        bool found = false;
+        testBody->removeCollider(depthCollider);
+        depthCollider = nullptr;
+        if (!test.hit) continue;
+        
+        rp3d::Collider* playerHeightCollider = testBody->addCollider(playerbox, rp3d::Transform());
+        playerHeightCollider->setIsSimulationCollider(false);
+        playerHeightCollider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+        playerHeightCollider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+
+        for (int j = 0; j < N_HEIGHT; j++)
+        {
+            vec3 offset2 = vec3(0, mix(testHeightMax, 0.0f, (float)j / (float)(N_HEIGHT - 1)) + playerHeight / 2.0f, 0);
+
+            rp3d::Transform transformOffsetHeight(PG::torp3d(offset * vec3(1, 0, 1) + offset2), DEFQUAT);
+            rp3d::Transform transformWorldHeight = playerBody->getTransform() * transformOffsetHeight;
+            testBody->setTransform(transformWorldHeight);
+
+#if CLIMB_DEBUG_DRAW
+            if (GG::draw != nullptr)
+            {
+                GG::draw->drawBox(playerbox, transformWorldHeight, 0.0f, ModelState3D(), "#0000ff"_rgb);
+            }
+#endif
+
+            ClimbOverlapCallback testHeight;
+            PG::world->testOverlap(testBody, testHeight);
+
+            if (!testHeight.hit) continue;
+            
+            rp3d::Transform pointTransform = transformWorldHeight * rp3d::Transform(
+                rp3d::Vector3(
+                    0, 
+                    -1.0f + testHeightMax / N_HEIGHT, 
+                    -offset_in
+                ), DEFQUAT);
+            vec3 newPlayerPos = PG::toglm(pointTransform.getPosition());
+
+            vec3 p1 = newPlayerPos + vec3(0, 2.0, 0);
+            vec3 p2 = newPlayerPos - vec3(0, 0.5, 0);
+            ClimbRaycastCallback cb(p1, p2);
+            rp3d::Ray ray(PG::torp3d(p1), PG::torp3d(p2));
+            PG::world->raycast(ray, &cb);
+
+#if CLIMB_DEBUG_DRAW
+            if (GG::draw != nullptr)
+            {
+                GG::draw->drawLine(p1, p2);
+            }
+#endif
+
+            const float normalDotLow = 1.0;
+            const float normalDotHigh = 0.9;
+
+            float playerHeight = s.position.y;
+            float height = newPlayerPos.y - playerHeight;
+
+            // adjust the normal limit depending on the height, higher means a lower limit
+            // this is to make it so you don't try to climb hills and stuff just because they're steep enough but can still climb small-ish steps
+            float t = height / (testHeightMax - testHeightMin);
+            float normalDotMax = mix(normalDotLow, normalDotHigh, t); 
+
+            float boundsMissEpsilon = 0.1;
+            // Logger::debug(
+            //     "dot(cb.hitNormal, vec3(0, 1, 0)): ", dot(cb.hitNormal, vec3(0, 1, 0)), 
+            //     " height: ", height, 
+            //     " t: ", t, 
+            //     " normalDotMax: ", normalDotMax,
+            //     " cb.hitPoint.y: ", cb.hitPoint.y,
+            //     " bounds limit: ", transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon
+            // );
+
+
+            if (
+                   !cb.hit // raycast missed
+                || dot(cb.hitNormal, vec3(0, 1, 0)) < normalDotMax // normal of hit is too steep
+                || cb.hitPoint.y < transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon // hit is outside the bounds of the test (essentially also a miss)
+            ) break;
+
+            found = true;
+#if CLIMB_DEBUG_DRAW
+            if (GG::draw != nullptr)
+            {
+                GG::draw->drawSphere(cb.hitPoint, 0.1, 0.0f, ModelState3D(), "#00ff00"_rgb);
+            }
+#endif
+
+            ms.climbStartPos = s.position;
+            ms.climbEndPos = newPlayerPos;
+            ms.climbHeight = height;
+            ms.climbStartSpeed = length(PG::toglm(playerBody->getLinearVelocity()));
+            ms.canClimb = true;
+            break;
+        }
+        testBody->removeCollider(playerHeightCollider);
+
+        if (found)
+            break;
+    }
+
+    if (length(ms.wantedMoveDirection) < 0.001 || length(ms.inputVector) < 0.001)
+    {
+        PG::world->destroyRigidBody(testBody);
+        return;
+    }
+
+    size_t colliders_nb = testBody->getNbColliders();
+    for (size_t i = 0; i < colliders_nb; i++)
+    {
+        testBody->removeCollider(testBody->getCollider(0));
+    }
+
+    static rp3d::BoxShape* stepBox = PG::common.createBoxShape(rp3d::Vector3(0.25, 0.15, 0.2));
+    static rp3d::BoxShape* stepBoxObstruct = PG::common.createBoxShape(rp3d::Vector3(0.5, 1.0, 0.5)); // essentially a box the size of the player
+    rp3d::Transform stepTransform(rp3d::Vector3(0, -0.8 + playerHeight / 2.0f, -0.25), DEFQUAT);
+    rp3d::Transform stepTransformObstruct(rp3d::Vector3(0, .35 + playerHeight / 2.0f, -.4), DEFQUAT);
+
+    vec3 wantedRotation = vec3(0, atan(ms.inputVector.x, ms.inputVector.z), 0);
+    rp3d::Transform stepRotationTransform(rp3d::Vector3(0, 0, 0), PG::torp3d(quat(wantedRotation)));
+
+    stepTransform = stepRotationTransform * stepTransform;
+    stepTransformObstruct = stepRotationTransform * stepTransformObstruct;
+
+    rp3d::Collider* stepColliderObstruct = testBody->addCollider(stepBoxObstruct, stepTransformObstruct);
+    stepColliderObstruct->setIsSimulationCollider(false);
+    stepColliderObstruct->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+    stepColliderObstruct->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+
+    
+    // testBody->setTransform(stepTransformObstructWorld);
+    testBody->setTransform(playerBody->getTransform());
+    
+    ClimbOverlapCallback testStepObstruct;
+    PG::world->testOverlap(testBody, testStepObstruct);
+    
+#if STEP_DEBUG_DRAW
+    if (GG::draw != nullptr)
+    {
+        rp3d::Transform stepTransformObstructWorld = playerBody->getTransform() * stepTransformObstruct;
+        GG::draw->drawBox(stepBoxObstruct, stepTransformObstructWorld, 0.0f, ModelState3D(), "#ff00ff"_rgb);
+    }
+#endif
+
+    if (!testStepObstruct.hit)
+    {
+        rp3d::Transform stepTransformWorld = playerBody->getTransform() * stepTransform;
+        // testBody->setTransform(stepTransformWorld);
+
+        testBody->removeCollider(stepColliderObstruct);
+        rp3d::Collider* stepCollider = testBody->addCollider(stepBox, stepTransform);
+        stepCollider->setIsSimulationCollider(false);
+        stepCollider->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
+        stepCollider->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
+
+#if STEP_DEBUG_DRAW
+        if (GG::draw != nullptr)
+        {
+            GG::draw->drawBox(stepBox, stepTransformWorld, 0.0f, ModelState3D(), "#ff00ff"_rgb);
+        }
+#endif
+        
+        ClimbOverlapCallback testStep;
+        PG::world->testOverlap(testBody, testStep);
+        
+        if (testStep.hit)
+        {
+            testBody->removeCollider(stepCollider);
+
+            rp3d::Transform pointTransform = stepTransformWorld * rp3d::Transform(
+                rp3d::Vector3(
+                    0, 
+                    +0.35f, 
+                    -0.1
+                ), DEFQUAT);
+            vec3 newPlayerPos = PG::toglm(pointTransform.getPosition());
+
+            vec3 p1 = newPlayerPos + vec3(0, 0.5, 0);
+            vec3 p2 = newPlayerPos - vec3(0, 0.5, 0);
+            ClimbRaycastCallback cb(p1, p2);
+            rp3d::Ray ray(PG::torp3d(p1), PG::torp3d(p2));
+            PG::world->raycast(ray, &cb);
+
+#if STEP_DEBUG_DRAW
+            if (GG::draw != nullptr)
+            {
+                GG::draw->drawLine(p1, p2);
+            }
+#endif
+
+            const float normalDotMax = 0.99;
+            
+            // Logger::debug(
+            //     "cb.hit: ", cb.hit,
+            //     " dot(cb.hitNormal, vec3(0, 1, 0)): ", dot(cb.hitNormal, vec3(0, 1, 0)),
+            //     " cb.t: ", cb.minDistance
+            // );
+
+            if (cb.hit && dot(cb.hitNormal, vec3(0, 1, 0)) > normalDotMax)
+            {   
+#if STEP_DEBUG_DRAW
+                if (GG::draw != nullptr)
+                {
+                    GG::draw->drawSphere(cb.hitPoint, 0.1);
+                }
+#endif
+                // vec3 wantedMovement = ms.wantedMoveDirection;
+                // vec3 inputDir = ms.inputVector;
+                // inputDir.y = 0;
+                // inputDir = normalize(inputDir);
+                // wantedMovement.y = 0;
+                // wantedMovement = normalize(wantedMovement);
+                // const float forwardMovementLimit = 0.98;
+
+                // if (
+                //     length(inputDir) > 0 && length(wantedMovement) > 0 && 
+                //     dot(wantedMovement, inputDir) >= forwardMovementLimit
+                // )
+                // {
+                //     // Logger::debug(TIMESTAMP_PHYSICS, "step!!");
+                //     playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
+                // }
+
+                playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
+            }
+        }
+    }
+    
+    PG::world->destroyRigidBody(testBody);
+}
+
 void Game::physicsLoop()
 {
     physicsTicks.freq = 100.f;
@@ -106,14 +480,15 @@ void Game::physicsLoop()
         System<MovementState>([](Entity& entity)
         {
             MovementState& ds = entity.comp<MovementState>();
-            if (!ds.grounded) // just landed
-            {
-                ds.landedTime = globals.simulationTime.getElapsedTime();
-            }
             if (ds._grounded)
             {
                 ds.grounded = true;
                 ds.walking  = true;
+
+                if (!ds.grounded) // just landed
+                {
+                    ds.landedTime = globals.simulationTime.getElapsedTime();
+                }
             }
             else {
                 ds.grounded = false;
@@ -181,6 +556,15 @@ void Game::physicsLoop()
 
         // std::cout << "nearbyCells: " << nearbyCells << std::endl;
 
+
+
+        
+        if (GG::playerEntity != nullptr)
+        {
+            TryPlayerClimb();
+        }
+        
+
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
         System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
@@ -221,6 +605,16 @@ void Game::physicsLoop()
 
                     
                     if(!entity.has<MovementState>()) break;
+
+                    vec3 lookDir = s.usequat ? eulerAngles(s.quaternion) : s.lookDirection;
+                    vec3 eulerY = vec3(
+                        0.0f, 
+                        atan(-lookDir.x, -lookDir.z), 
+                        0.0f
+                    );
+
+                    rp3d::Transform transform(b->getTransform().getPosition(), PG::torp3d(quat(eulerY)));
+                    b->setTransform(transform);
 
                     auto &ms = entity.comp<MovementState>();
 
@@ -282,14 +676,14 @@ void Game::physicsLoop()
 
                                 vec3 pos = ms.climbStartPos + vec3(0, 1, 0) * t;
                             
-                                pos = mix(pos, ms.climbVaultPos, t_vault);
+                                pos = mix(pos, ms.climbEndPos, t_vault);
 
                                 // Logger::debug("pos'd: ", pos);
 
                                 rp3d::Transform transform(PG::torp3d(pos), b->getTransform().getOrientation());
                                 b->setTransform(transform);
 
-                                vec3 forward = ms.climbVaultPos - ms.climbStartPos;
+                                vec3 forward = ms.climbEndPos - ms.climbStartPos;
                                 forward.y = 0;
                                 PlayerViewController::setTargetDir(normalize(forward));
                             }
@@ -332,15 +726,17 @@ void Game::physicsLoop()
                         }
                     }
 
+                    /*
                     bool canClimb = false;
                     vec3 handPosLeft, handPosRight;
-                    if (entity.is(*GG::playerEntity) && ms.isAllowedToClimb)
+                    if (GG::playerEntity != nullptr && entity.is(*GG::playerEntity) && ms.isAllowedToClimb)
                     {
                         vec3 angleVector_forward, angleVector_right, angleVector_up;
                         angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);
                         angleVector_forward.y = 0.00001;
                         angleVector_forward = normalize(angleVector_forward);
-                        vec3 vaultWallCheckRoot = angleVector_forward * (length(velocity) < 6.0f ? 0.75f : 1.25f);
+                        const float distanceCheck = 0.75;
+                        vec3 vaultWallCheckRoot = angleVector_forward * (length(velocity) < 6.0f ? distanceCheck : 1.25f);
 
                         vec3 verticalOffset = vec3(0, 0.75, 0);
 
@@ -369,25 +765,26 @@ void Game::physicsLoop()
 
                         if (cb_1.hit && cb_2.hit)
                         {
+                            // Logger::debug(TIMESTAMP_PHYSICS, "Im here");
                             vec3 hit1 = cb_1.hitPoint;
                             vec3 hit2 = cb_2.hitPoint;
                             vec3 hitVector = normalize(hit1 - hit2);
                             float d = dot(hitVector, angleVector_forward);
                             if (abs(d) < 0.15f)
                             {
-                                float offset_in = 0.1;
+                                float offset_in = 0.5;
                                 vec3 hitTest_1 = hit1 + normalize(p2_1 - p1_1) * offset_in;
                                 vec3 hitTest_2 = hit2 + normalize(p2_2 - p1_2) * offset_in;
                                 float testHeightMax = 2.5;
                                 float testHeightMin = 0.5;
                                 
-                                vec3 heightTest_1_start = vec3(hitTest_1.x, testHeightMax, hitTest_1.z);
-                                vec3 heightTest_1_end   = vec3(hitTest_1.x, testHeightMin, hitTest_1.z);
+                                vec3 heightTest_1_start = vec3(hitTest_1.x, s.position.y + testHeightMax, hitTest_1.z);
+                                vec3 heightTest_1_end   = vec3(hitTest_1.x, s.position.y + testHeightMin, hitTest_1.z);
                                 ensureNonZeroVectorComponents(heightTest_1_start);
                                 ensureNonZeroVectorComponents(heightTest_1_end);
 
-                                vec3 heightTest_2_start = vec3(hitTest_2.x, testHeightMax, hitTest_2.z);
-                                vec3 heightTest_2_end   = vec3(hitTest_2.x, testHeightMin, hitTest_2.z);
+                                vec3 heightTest_2_start = vec3(hitTest_2.x, s.position.y + testHeightMax, hitTest_2.z);
+                                vec3 heightTest_2_end   = vec3(hitTest_2.x, s.position.y + testHeightMin, hitTest_2.z);
                                 ensureNonZeroVectorComponents(heightTest_2_start);
                                 ensureNonZeroVectorComponents(heightTest_2_end);
 
@@ -421,21 +818,27 @@ void Game::physicsLoop()
 
                                     handPosLeft = cb_height_1.hitPoint;
                                     handPosRight = cb_height_2.hitPoint;
-                                    // Logger::debug("[",  globals.simulationTime.getElapsedTime(), "] can climb :) height: ", height);
+                                    // Logger::debug(TIMESTAMP_PHYSICS, "can climb :) height: ", height);
                                 }
                                 
                             }
                         }
                     }
+                    */
 
                     // check jump
                     if (ms.isTryingToJump)
                     {
                         ms.grounded = false;
                         ms.isTryingToJump = false;
+
+                        // Logger::debug(TIMESTAMP_PHYSICS, "???");
                         
-                        if (canClimb)
+                        if (ms.canClimb)
                         {
+
+                            // Logger::debug(TIMESTAMP_PHYSICS, "??? 2 electric boogaloo");
+
                             // assuming the entity has an action state cause like it's the player
                             auto &as = entity.comp<ActionState>();
                             as.climbing = true;
@@ -450,13 +853,13 @@ void Game::physicsLoop()
                                 b->getCollider(i)->setIsSimulationCollider(false);
                             }
 
-                            // Logger::debug("[", globals.appTime.getElapsedTime(), "] climb :)");
+                            // Logger::debug(TIMESTAMP_PHYSICS, "climb :)");
                             // Logger::debug("start pos: ", ms.climbStartPos);
                             // Logger::debug("end pos: ", ms.climbEndPos);
                             // Logger::debug("vault pos: ", ms.climbVaultPos);
                         }
-                        else {
-                            // Logger::debug("[", globals.appTime.getElapsedTime(), "] jump");
+                        else if (ms.walking) {
+                            // Logger::debug(TIMESTAMP_PHYSICS, "jump");
                             velocity.y = ms.jumpVelocity; // for nicer instantaneous jumps, try to change to += if it feels weird
                         }
                     }
@@ -532,7 +935,6 @@ void Game::physicsLoop()
                         accelspeed = min(accelspeed, addspeed);
                         velocity += wishdir * accelspeed;
                     }
-                    
 
                     b->setLinearVelocity(PG::torp3d(velocity));
                 }

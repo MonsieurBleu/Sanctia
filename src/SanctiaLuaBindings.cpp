@@ -547,6 +547,12 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
+    VBIND_CLASS_DECLARE(CollideCategory)
+    VBIND_ADD_ENUM(
+        "CollideCategory",
+        ("HITZONE", CollideCategory::HITZONE+1),
+        ("ENVIRONEMENT", CollideCategory::ENVIRONEMENT+1)
+    )
 
     #define CURRENT_CLASS_BINDING StainStatus
     {

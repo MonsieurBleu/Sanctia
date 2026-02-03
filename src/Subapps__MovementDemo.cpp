@@ -47,6 +47,8 @@ void Apps::MovementDemo::init()
         Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
         
         GG::sun->shadowCameraSize = vec2(256, 256);
+
+        GG::draw = std::make_shared<Draw>(appRoot);
     }
 
     physicsMutex.lock();
@@ -57,9 +59,13 @@ void Apps::MovementDemo::init()
 
 void Apps::MovementDemo::update()
 {
-    ComponentModularity::synchronizeChildren(appRoot);
+    GG::draw->update();
+    
+    // GG::draw->drawLine(vec3(-5), vec3(5));
+    // GG::draw->drawSphere(vec3(sin(globals.appTime.getElapsedTime()), 0, 0), 3.0f);
 
-    // std::cout << "Player velocity: " << GG::playerEntity->comp<MovementState>().velocity << std::endl;
+
+    ComponentModularity::synchronizeChildren(appRoot);
 }
 
 
@@ -72,5 +78,7 @@ void Apps::MovementDemo::clean()
     App::setController(nullptr);
 
     GG::sun->shadowCameraSize = vec2(0, 0);
+
+    GG::draw = nullptr;
 }
 

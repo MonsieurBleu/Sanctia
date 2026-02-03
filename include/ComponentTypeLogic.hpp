@@ -61,6 +61,7 @@ struct MovementState
 
     vec3 deplacementDirection = vec3(1, 0, 0);
     vec3 wantedMoveDirection = vec3(0, 0, 0);
+    vec3 inputVector = vec3(0);
 
     bool grounded = false;
     bool _grounded = false;
@@ -82,10 +83,11 @@ struct MovementState
     float groundNormalY = 0.0f;
     float _groundNormalY = 0.0f;
 
-    vec3 climbStartPos, climbEndPos, climbVaultPos;
+    vec3 climbStartPos, climbEndPos;
     float climbStartSpeed;
     float climbHeight;
-    bool isAllowedToClimb = true;
+    bool isAllowedToClimb = true; // is the entity even allowed to try climbing
+    bool canClimb = false; // can the entity try climbing this very frame
 };
 
 

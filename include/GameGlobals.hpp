@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Draw.hpp"
 #include <Graphics/Mesh.hpp>
 #include <Player.hpp>
 #include <GameConditions.hpp>
@@ -17,6 +18,8 @@ namespace GameGlobals
     inline MeshMaterial PBR;
     inline MeshMaterial PBRstencil;
     inline MeshMaterial PBRinstanced;
+
+    inline std::shared_ptr<Draw> draw = nullptr;
 
     /* TODO : remove*/
     inline Player* playerUniqueInfos = nullptr;

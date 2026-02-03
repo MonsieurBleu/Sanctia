@@ -23,6 +23,7 @@
 Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSizeAddr())), defferedBuffer(static_cast<DefferedBuffer *>(renderBuffer)), paintShaderPass(*defferedBuffer)
 {
     // defferedBuffer = static_cast<DefferedBuffer *>(renderBuffer);
+    currentThreadID = 0;
 }
 
 void Game::init(int paramSample)
@@ -248,6 +249,8 @@ void Game::init(int paramSample)
     //     if (!strcmp(ext, ".vEntity"))
     //         Loader<EntityRef>::addInfos(p);
     // }
+
+    Loader<MeshMaterial>::get("basicHelper");
     
     AnimBlueprint::PrepareAnimationsCallbacks();
 

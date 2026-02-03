@@ -10,7 +10,7 @@
 
 #define Y_SPAWN_LEVEL 38
 
-#define PLAYER_SET "(Combats) Player"
+#define PLAYER_SET "(Combats) Player 2"
 
 void spawnPlayer(EntityRef appRoot)
 {
@@ -410,7 +410,7 @@ void Apps::CombatsApp::init()
         , UI_BASE_COMP
         , WidgetBox(vec2(-0.5, 0.5), vec2(-0.9, 0.9))
         , WidgetStyle()
-            .setautomaticTabbing(12)
+            .setautomaticTabbing(16)
     );
     ComponentModularity::addChild(*stageSelectionScreen, buttonsZone);
 
@@ -493,12 +493,12 @@ void Apps::CombatsApp::init()
                 "With good timing, you can also do a perfect pary, that can also counter attack."
                 ;
             {
-                ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(1, 1, 0)));
+                ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(0.05)));
                 text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, 0));
                 tutorialGroup->add(text);
             }
             {
-                ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(1, 1, 0)));
+                ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(0.05)));
                 text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, 0));
                 tutorialGroup->add(text);
             }
@@ -523,12 +523,12 @@ void Apps::CombatsApp::init()
                 "When a kick break the guard of an enemy, you can directlly follow up with an attack.\n"
                 ;
             {
-                ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(1, 1, 0)));
+                ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(0.05)));
                 text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, 4));
                 tutorialGroup->add(text);
             }
             {
-                ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(1, 1, 0)));
+                ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(0.05)));
                 text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, 4));
                 tutorialGroup->add(text);
             }
@@ -541,12 +541,12 @@ void Apps::CombatsApp::init()
                 "Regular attacks are faster to perform and have a longer reach than kicks.\n"
                 ;
             {
-                ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(1, 1, 0)));
+                ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(0.05)));
                 text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, -4));
                 tutorialGroup->add(text);
             }
             {
-                ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(1, 1, 0)));
+                ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(0.05)));
                 text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, -4));
                 tutorialGroup->add(text);
             }
@@ -766,7 +766,7 @@ void Apps::CombatsApp::init()
             e->comp<AgentProfile>() 
                 + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
                 + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Initiative Passive")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
             ;
             ComponentModularity::addChild(*stageNPC, e);
         }
@@ -783,7 +783,7 @@ void Apps::CombatsApp::init()
             e->comp<AgentProfile>() 
                 + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
                 + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Very Aggressive")->comp<AgentProfile>()
             ;
             ComponentModularity::addChild(*stageNPC, e);
         }
@@ -819,14 +819,14 @@ void Apps::CombatsApp::init()
             e->comp<AgentProfile>() 
                 + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
                 + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative Very Aggressive")->comp<AgentProfile>()
             ;
             ComponentModularity::addChild(*stageNPC, e);
         }
     };
 
 
-    addStage("3v4 Easy Battle",
+    addStage("2v2 Battle",
         vec4(0.5, 1.0, 0.5, 1.0),
         [spawnBattle]()
         {
@@ -834,7 +834,23 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("Rigged Battle",
+    addStage("3v4 Battle",
+        vec4(0.5, 1.0, 0.5, 1.0),
+        [spawnBattle]()
+        {
+            spawnBattle(2, 2, 1, 1);
+        }
+    );
+
+    addStage("10v12 Battle",
+        vec4(0.5, 1.0, 0.5, 1.0),
+        [spawnBattle]()
+        {
+            spawnBattle(6, 6, 5, 5);
+        }
+    );
+
+    addStage("War",
         vec4(0.5, 1.0, 0.5, 1.0),
         [spawnBattle]()
         {
@@ -844,14 +860,14 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("War",
-        vec4(0.5, 1.0, 0.5, 1.0),
-        [spawnBattle]()
-        {
-            const float nb = 150;
-            spawnBattle(nb/2, nb/2, nb/2, nb/2);
-        }
-    );
+    // addStage("War",
+    //     vec4(0.5, 1.0, 0.5, 1.0),
+    //     [spawnBattle]()
+    //     {
+    //         const float nb = 150;
+    //         spawnBattle(nb/2, nb/2, nb/2, nb/2);
+    //     }
+    // );
 
 
     // AnimationControllerRef test = AnimBlueprint::bipedMoveset_PREALPHA_2025("(Human) 2H Sword ", GG::playerEntity.get());

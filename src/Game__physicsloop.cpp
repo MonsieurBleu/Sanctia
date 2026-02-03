@@ -66,10 +66,13 @@ public:
 };
 
 #define TIMESTAMP_PHYSICS "[", globals.simulationTime.getElapsedTime(), "] "
-#define CLIMB_DEBUG_DRAW 1
+#define CLIMB_DEBUG_DRAW 0
 #define STEP_DEBUG_DRAW 0
 void TryPlayerClimb()
 {
+    if(!GG::playerEntity->has<state3D>() or !GG::playerEntity->has<RigidBody>())
+        return;
+
     state3D& s = GG::playerEntity->comp<state3D>();
     rp3d::RigidBody* playerBody = GG::playerEntity->comp<RigidBody>();
     MovementState& ms = GG::playerEntity->comp<MovementState>();
@@ -112,10 +115,11 @@ void TryPlayerClimb()
     obstructionCollider_2->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
     obstructionCollider_2->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
 
-    testBody->setTransform(playerBody->getTransform());
+    if(testBody and playerBody)
+        testBody->setTransform(playerBody->getTransform());
 
 #if CLIMB_DEBUG_DRAW
-    if (GG::draw != nullptr)
+    if (GG::draw != nullptr and playerBody)
     {
         // NOTIF_MESSAGE(
         //     PG::toglm(playerBody->getTransform().getPosition())
@@ -126,6 +130,14 @@ void TryPlayerClimb()
 #endif
     
     ClimbOverlapCallback testObstruction;
+    // NOTIF_MESSAGE(
+    //     PG::toglm(playerBody->getTransform().getPosition()), "\n\t",
+    //     PG::toglm(playerBody->getTransform().getOrientation()), "\n\t",
+
+    //     PG::toglm(testBody->getTransform().getPosition()), "\n\t",
+    //     PG::toglm(testBody->getTransform().getOrientation())
+    // );
+
     PG::world->testOverlap(testBody, testObstruction);
 
     if (testObstruction.hit) 
@@ -145,7 +157,7 @@ void TryPlayerClimb()
 
     
     rp3d::Collider* depthCollider = nullptr;
-    for (int i = 0; i < N_DEPTH; i++)
+    for (int i = 0; i < N_DEPTH and playerBody; i++)
     {
         depthCollider = testBody->addCollider(box, rp3d::Transform());
         depthCollider->setIsSimulationCollider(false);
@@ -244,8 +256,7 @@ void TryPlayerClimb()
             //     " bounds limit: ", transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon
             // );
 
-            if(cb.hit)
-                WARNING_MESSAGE(cb.hitNormal.y)
+            // if(cb.hit)WARNING_MESSAGE(cb.hitNormal.y)
 
 
             if (
@@ -255,7 +266,7 @@ void TryPlayerClimb()
                 || cb.hitPoint.y < transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon // hit is outside the bounds of the test (essentially also a miss)
             ) break;
 
-            NOTIF_MESSAGE(cb.hitNormal.y)
+            // NOTIF_MESSAGE(cb.hitNormal.y)
 
             found = true;
 #if CLIMB_DEBUG_DRAW
@@ -309,20 +320,21 @@ void TryPlayerClimb()
 
     
     // testBody->setTransform(stepTransformObstructWorld);
-    testBody->setTransform(playerBody->getTransform());
+    if(testBody and playerBody)
+        testBody->setTransform(playerBody->getTransform());
     
     ClimbOverlapCallback testStepObstruct;
     PG::world->testOverlap(testBody, testStepObstruct);
     
 #if STEP_DEBUG_DRAW
-    if (GG::draw != nullptr)
+    if (GG::draw != nullptr and playerBody)
     {
         rp3d::Transform stepTransformObstructWorld = playerBody->getTransform() * stepTransformObstruct;
         GG::draw->drawBox(stepBoxObstruct, stepTransformObstructWorld, 0.0f, ModelState3D(), "#ff00ff"_rgb);
     }
 #endif
 
-    if (!testStepObstruct.hit)
+    if (!testStepObstruct.hit and playerBody)
     {
         rp3d::Transform stepTransformWorld = playerBody->getTransform() * stepTransform;
         // testBody->setTransform(stepTransformWorld);
@@ -401,7 +413,8 @@ void TryPlayerClimb()
                 //     playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
                 // }
 
-                playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
+                if(playerBody)
+                    playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
             }
         }
     }
@@ -411,6 +424,7 @@ void TryPlayerClimb()
 
 void Game::physicsLoop()
 {
+    currentThreadID = 1;
     physicsTicks.freq = 100.f;
     physicsTicks.activate();
 

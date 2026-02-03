@@ -38,7 +38,7 @@ void Apps::MovementDemo::init()
         globals.simulationTime.resume();
 
         appRoot->set<state3D>(true);
-        GG::playerEntity = spawnEntity("(Combats) Player", vec3(-700, 50, -750));
+        GG::playerEntity = spawnEntity("(Combats) Player", vec3(-700, 50, -750)*1.f);
         ComponentModularity::addChild(*appRoot, GG::playerEntity);
 
         Game::playerControl = PlayerController(globals.currentCamera);

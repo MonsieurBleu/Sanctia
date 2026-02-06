@@ -24,8 +24,12 @@ void Game::initInput()
         "toggle hud", GLFW_KEY_H, 0, GLFW_PRESS, [&]() { hideHUD = !hideHUD; },
         InputManager::Filters::always, false);
         
-    Inputs::quitGame = InputManager::addEventInput(
-        "quit game", GLFW_KEY_ESCAPE, 0, GLFW_PRESS, [&]() { state = quit; },
+    // Inputs::quitGame = InputManager::addEventInput(
+    //     "quit game", GLFW_KEY_ESCAPE, 0, GLFW_PRESS, [&]() { state = quit; },
+    //     InputManager::Filters::always, false);
+
+    Inputs::toggleFreeMouse = InputManager::addEventInput(
+        "toggle free mouse", GLFW_KEY_ESCAPE, 0, GLFW_PRESS, [&]() { globals.currentCamera->toggleMouseFollow(); },
         InputManager::Filters::always, false);
 
     Inputs::toggleSimTime = InputManager::addEventInput(

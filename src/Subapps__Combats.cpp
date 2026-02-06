@@ -8,9 +8,11 @@
 
 #include <Helpers.hpp>
 
-#define Y_SPAWN_LEVEL 38
+#define Y_SPAWN_LEVEL 35
 
-#define PLAYER_SET "(Combats) Player 2"
+std::string PLAYER_SET = "(Combats) Player";
+
+// #define PLAYER_SET "(Combats) Player 2"
 
 void spawnPlayer(EntityRef appRoot)
 {
@@ -63,7 +65,7 @@ void Apps::CombatsApp::addStage(const std::string &name, vec4 newStageColor, std
 
     newStageButton->comp<WidgetStyle>()
         .setbackgroundColor1(newStageColor)
-        .setbackgroundColor2(newStageColor*0.9f)
+        .setbackgroundColor2(newStageColor*1.1f)
         .settextColor1(vec4(0.05, 0.05, 0.05, 0.95))
         .settextColor2(vec4(0.05, 0.05, 0.05, 0.95))
     ;
@@ -354,66 +356,125 @@ void Apps::CombatsApp::init()
     // if(false)
 
     physicsMutex.lock();
-    ComponentModularity::addChild(*appRoot, spawnEntity("Ground_Demo_64xh", vec3(0, Y_SPAWN_LEVEL, 0)));
+    // ComponentModularity::addChild(*appRoot, spawnEntity("Ground_Demo_64xh", vec3(0, Y_SPAWN_LEVEL, 0)));
     ComponentModularity::ReparentChildren(*appRoot);
     physicsMutex.unlock();
-
-    /* Agent Test */
-    for(int i = 0; i < 0; i++)
-    {
-        EntityRef e= spawnEntity("(Combats) Ally", vec3(-8.f, Y_SPAWN_LEVEL, 0));
-        e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
-        e->set<AgentState>(AgentState());
-        e->set<Target>((Target){GG::playerEntity.get()});
-        e->set<Faction>({Faction::PLAYER_ENEMY});
-        ComponentModularity::addChild(*appRoot, e);
-    }
-
-    /* Agent to Agent Combat*/
-    for(int i = 0; i < 0; i ++)
-    {
-        // EntityRef e = spawnEntity("(Combats) Ally");
-        EntityRef e = spawnEntity(PLAYER_SET, vec3(16 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12));
-        e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
-        e->set<AgentState>(AgentState());
-        // e->set<Faction>({Faction::TEST1});
-        e->set<Faction>({Faction::PLAYER});
-        e->set<Target>((Target){});
-        ComponentModularity::addChild(*appRoot, e);
-    }
-
-    for(int i = 0; i < 0; i ++)
-    {
-        EntityRef e2 = spawnEntity("(Combats) Enemy", vec3(- 16 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12));
-
-        e2->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
-        e2->set<AgentState>(AgentState());
-        // e2->set<Faction>({Faction::TEST2});
-        e2->set<Faction>({Faction::PLAYER_ENEMY});
-        e2->set<Target>((Target){});
-        ComponentModularity::addChild(*appRoot, e2);
-    }
-
-
 
     stageSelectionScreen = newEntity("Stage Selection Screen"
         , UI_BASE_COMP
         , WidgetBackground()
         , WidgetStyle()
             .setbackGroundStyle(UiTileType::SQUARE)
-            .setbackgroundColor1(vec4(0.05, 0.05, 0.05, 0.5))
+            .setbackgroundColor1(vec4(0.05, 0.05, 0.05, 1.0))
     );
+
+    ComponentModularity::addChild(*stageSelectionScreen,newEntity("Background"
+        , UI_BASE_COMP
+        , WidgetBox(vec2(-2, 2), vec2(-2, 2))
+        , WidgetSprite("Concept Decor 1")
+    ));
+
     stageSelectionScreen->comp<WidgetBox>().useClassicInterpolation = true;
     ComponentModularity::addChild(*EDITOR::MENUS::GameScreen, stageSelectionScreen);
 
     buttonsZone = newEntity("Stage Selection Buttons Zone"
         , UI_BASE_COMP
-        , WidgetBox(vec2(-0.5, 0.5), vec2(-0.9, 0.9))
+        , WidgetBox(vec2(-0.1, 0.1), vec2(-0.9, 0.9))
         , WidgetStyle()
-            .setautomaticTabbing(16)
+            .setautomaticTabbing(12)
+            .setuseInternalSpacing(true)
     );
     ComponentModularity::addChild(*stageSelectionScreen, buttonsZone);
 
+    ComponentModularity::addChild(*stageSelectionScreen,
+        newEntity("Player Selection Screen"
+        , UI_BASE_COMP
+        , WidgetBox(vec2(0.4, 0.6), vec2(-0.125, 0.125))
+        , WidgetStyle()
+            .setautomaticTabbing(2)
+            .setuseInternalSpacing(true)
+        , EntityGroupInfo({
+            VulpineBlueprintUI::Toggable(
+                "Player use Sword and Shield", "", 
+                [](Entity *e, float f)
+                {PLAYER_SET = "(Combats) Player 2";}, 
+                [](Entity *e){return PLAYER_SET == "(Combats) Player 2" ? 0.f : 1.f;},
+                vec3(58, 155, 184)/255.f
+            ),
+            VulpineBlueprintUI::Toggable(
+                "Player use Zweihander", "", 
+                [](Entity *e, float f)
+                {PLAYER_SET = "(Combats) Player";}, 
+                [](Entity *e){return PLAYER_SET == "(Combats) Player" ? 0.f : 1.f;},
+                vec3(58, 155, 184)/255.f
+            )
+        })
+        )
+    );
+
+    ComponentModularity::addChild(*stageSelectionScreen,
+
+        newEntity("tmp", UI_BASE_COMP, EntityGroupInfo({
+
+        newEntity("Important Notes Group"
+            , UI_BASE_COMP
+            , WidgetBox(vec2(-0.85, -0.25), vec2(-0.9, 0.1))
+            , WidgetStyle().setuseInternalSpacing(true).setautomaticTabbing(2)
+            , EntityGroupInfo({
+
+                newEntity("Important Notes"
+                , UI_BASE_COMP
+                , WidgetBackground()
+                , WidgetStyle()
+                    .setbackGroundStyle(UiTileType::SQUARE)
+                    .setbackgroundColor1(vec4(vec3(0.05), 1.0))
+                    .settextColor1(VulpineColorUI::LightBackgroundColor1)
+                    .setminFontScale(1.5)
+                , WidgetText(
+                    U"[ENG]\n"
+                    U"\n"
+                    U"This is a prototype of a work-in-progress game called \"Sanctia\",\n"
+                    U"focused on testing the current combat mechanics.\n"
+                    U"\n"
+                    U"The main project is meant to be an open-world immersive-sim, focused\n"
+                    U"on an intra-diegetic gaming experience, where the player has to\n"
+                    U"explore, keep track of quests, make notes or research magic only\n"
+                    U"with the tools available inside of the game universe.\n"
+                    U"\n"
+                    U"For now, you can test a sample of the game's swordfights.\n"
+                    U"\n"
+                    U"\n"
+                    U"***Everything here is work-in-progress, so your feedback is really important !***"
+                )),
+
+                newEntity("Important Notes"
+                , UI_BASE_COMP
+                , WidgetBackground()
+                , WidgetStyle()
+                    .setbackGroundStyle(UiTileType::SQUARE)
+                    .setbackgroundColor1(vec4(vec3(0.05), 1.0))
+                    .settextColor1(VulpineColorUI::LightBackgroundColor1)
+                    .setminFontScale(1.5)
+                , WidgetText(
+                    U"[FR]\n"
+                    U"\n"
+                    U"Vous jouez au prototype de combat d'un jeu en cours de développement\n"
+                    U"appelé \"Sanctia\".\n"
+                    U"\n"
+                    U"Le projet principal est de créer un immersive-sim en monde ouvert\n"
+                    U"axé sur une approche intra-diégétique, où le joueur devra explorer,\n"
+                    U"suivre les quêtes, prendre des notes ou étudier la magie en se servant\n"
+                    U"uniquement des outils existants dans l'univers du jeu.\n"
+                    U"\n"
+                    U"Pour le moment, vous allez tester les combats à l'épée.\n"
+                    U"\n"
+                    U"\n"
+                    U"***Tout dans cette démo est en cours de dev., donc vos retours sont précieux !***"
+                ))
+            })
+        )
+        }))
+    );
 
     // EntityRef newStageButton;
     // vec4 newStageColor = vec4(1., 0.5, 0.5, 1.0);
@@ -451,15 +512,33 @@ void Apps::CombatsApp::init()
     //     .settextColor2(vec4(0.05, 0.05, 0.05, 0.95))
     // ;
 
-    addStage("Martial Training Dummies",
-        vec4(1., 0.5, 0.5, 1.0),
+    const float alpha = 1.0;
+
+    static const vec2 normalHour(16, 0);
+    static const vec2 alternateHour(7, 30);
+    static const vec2 sunrise(6, 30); 
+    static const vec2 night(0, 0);
+
+    const vec3 TutorialColor = "#d5dadd"_rgb;
+    const vec3 EasyDuelColor = "#c7b15a"_rgb;
+    const vec3 NormalDuelColor = "#d98632"_rgb;
+    const vec3 HardDuelColor = "#ca3b49"_rgb;
+
+    const vec3 NightEmbuscadeColor = "#9879a8"_rgb;
+
+    const vec3 BattleColor = "#33c85b"_rgb;
+
+    addStage("Tutorial",
+        vec4(TutorialColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(normalHour.x, normalHour.y);
+
             for(float i = -1.f; i <= 1.f; i += 1.f)
             {
                 EntityRef e = spawnEntity("(Combats) Enemy");
                 e->comp<state3D>().useinit = true;
-                e->comp<state3D>().initPosition = vec3(0.f, Y_SPAWN_LEVEL, i*4.f);
+                e->comp<state3D>().initPosition = vec3(8.f, Y_SPAWN_LEVEL, i*4.f);
                 e->comp<Script>().addScript("Action-Dummy Update", ScriptHook::ON_UPDATE);
                 e->set<Faction>({Faction::PLAYER_ENEMY});
                 ComponentModularity::addChild(*stageNPC, e);
@@ -469,7 +548,7 @@ void Apps::CombatsApp::init()
             {
                 EntityRef e = spawnEntity("(Combats) Enemy 2");
                 e->comp<state3D>().useinit = true;
-                e->comp<state3D>().initPosition = vec3(8.f, Y_SPAWN_LEVEL, i*4.f);
+                e->comp<state3D>().initPosition = vec3(0.f, Y_SPAWN_LEVEL, i*4.f);
                 e->comp<Script>().addScript("Action-Dummy Update", ScriptHook::ON_UPDATE);
                 e->set<Faction>({Faction::PLAYER_ENEMY});
                 ComponentModularity::addChild(*stageNPC, e);
@@ -479,27 +558,38 @@ void Apps::CombatsApp::init()
 
             {
                 static std::string str = 
-                    "Zweihander deals a lot of damage, and have a long reach.\n"
-                    "If you get caught by one, you will get **seriously** hurt."
+                    "[ENG]\n"
+                    "Zweihanders deal a lot of damage and have a long reach.\n"
+                    "If you get caught by one, you will get **seriously** hurt.\n"
+                    "\n"
+                    "[FR]\n"
+                    "Les Zweihander font de lourds dégâts et ont une grande portée d'attaque.\n"
+                    "Si vous vous faites toucher, vous aurez **très** mal.\n"
                 ;
                 ValueHelperRef<std::string> text( new ValueHelper(str, U"", vec3(1, 0, 0)));
-                text->state.scaleScalar(4.f).setPosition(vec3(0, 0, 0));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0, 0));
                 tutorialGroup->add(text);
             }
 
             static std::string strAtck = 
-                "Primary attacks can be blocked.\n"
-                "When blocking an attack, you can counter attack if you are quick enough.\n"
-                "With good timing, you can also do a perfect pary, that can also counter attack."
+                // "Primary attacks can be blocked.\n"
+                // "When blocking an attack, you can counter attack if you are quick enough.\n"
+                // "With good timing, you can also do a perfect pary, that can also counter attack."
+
+                "[ENG]\n"
+                "Attacks can be blocked and immediatly countered, if you are quick enough.\n"
+                "\n"
+                "[FR]\n"
+                "Les attaques peuvent être bloqués, et mêmes contrés, si vous êtes assez rapide."
                 ;
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(0.05)));
-                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, 0));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.75, 0));
                 tutorialGroup->add(text);
             }
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(0.05)));
-                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, 0));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.75, 0));
                 tutorialGroup->add(text);
             }
             
@@ -508,28 +598,40 @@ void Apps::CombatsApp::init()
 
             {
                 static std::string str = 
-                    "Shields are very effective for blocking.\n"
-                    "The guard of a shield user can only be broken by depleating their stamina.\n"
-                    "Kicks are the most effective way to do that.\n"
+                    // "Shields are very effective for blocking.\n"
+                    // "The guard of a shield user can only be broken by depleating their stamina.\n"
+                    // "Kicks are the most effective way to do that.\n"
+
+                    "[ENG]\n"
+                    "Shields are very good at blocking attacks.\n"
+                    "\n"
+                    "[FR]\n"
+                    "Les boucliers sont particulièrement forts pour bloquer les attaques."
                 ;
                 ValueHelperRef<std::string> text( new ValueHelper(str, U"", vec3(1, 0, 0)));
-                text->state.scaleScalar(4.f).setPosition(vec3(8, 0, 4));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0, 4));
                 tutorialGroup->add(text);
             }
 
             static std::string strBlock = 
-                "When an enemy is blocking, they can't be hurt unless their guard is broken.\n"
-                "Kicks are the most effective way to do so.\n"
-                "When a kick break the guard of an enemy, you can directlly follow up with an attack.\n"
+                // "When an enemy is blocking, they can't be hurt unless their guard is broken.\n"
+                // "Kicks are the most effective way to do so.\n"
+                // "When a kick break the guard of an enemy, you can directlly follow up with an attack.\n"
+
+                "[ENG]\n"
+                "Try and break their guard.\n"
+                "\n"
+                "[FR]\n"
+                "Essayez de briser sa guarde."
                 ;
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(0.05)));
-                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, 4));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.75, 4));
                 tutorialGroup->add(text);
             }
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strBlock, U"", vec3(0.05)));
-                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, 4));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.75, 4));
                 tutorialGroup->add(text);
             }
 
@@ -537,33 +639,43 @@ void Apps::CombatsApp::init()
 
 
             static std::string strKick = 
-                "A kick can often-times break your guard.\n"
-                "Regular attacks are faster to perform and have a longer reach than kicks.\n"
+                // "A kick can often-times break your guard.\n"
+                // "Regular attacks are faster to perform and have a longer reach than kicks.\n"
+
+                "[ENG]\n"
+                "A simple kick is a good way to break the guard of an enemy.\n"
+                "\n"
+                "[FR]\n"
+                "Un simple coup de pied est la meilleure manière de briser la guarde d'un ennemi."
                 ;
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(0.05)));
-                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.5, -4));
+                text->state.scaleScalar(4.f).setPosition(vec3(0, 0.75, -4));
                 tutorialGroup->add(text);
             }
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(0.05)));
-                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.5, -4));
+                text->state.scaleScalar(4.f).setPosition(vec3(8, 0.75, -4));
                 tutorialGroup->add(text);
             }
 
 
 
-            tutorialGroup->state.setPosition(vec3(0, Y_SPAWN_LEVEL + 2.25, 0));
+            tutorialGroup->state.setPosition(vec3(0, Y_SPAWN_LEVEL + 2.5, 0));
 
 
             ComponentModularity::addChild(*stageNPC, newEntity("Tutorial", tutorialGroup));
         }
     );
 
-    addStage("1v1 Weak Enemy - Zweihander",
-        vec4(1., 0.5, 0.5, 1.0),
+    ComponentModularity::addChild(*buttonsZone, newEntity());
+
+    addStage("Easy Duel 1",
+        vec4(EasyDuelColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(normalHour.x, normalHour.y);
+
             EntityRef e= spawnEntity("(Combats) Ally", vec3(-8.f, Y_SPAWN_LEVEL, 0));
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
@@ -579,10 +691,12 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("1v1 Weak Enemy - Sword And Shield",
-        vec4(1., 0.5, 0.5, 1.0),
+    addStage("Easy Duel 2",
+        vec4(EasyDuelColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(normalHour.x, normalHour.y);
+
             EntityRef e= spawnEntity("(Combats) Ally 2", vec3(-8.f, Y_SPAWN_LEVEL, 0));
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
@@ -598,19 +712,14 @@ void Apps::CombatsApp::init()
         }
     );
 
-    // addStage("1v1 Weak Enemy - Shield",
-    //     vec4(1., 0.5, 0.5, 1.0) * 0.8f,
-    //     [&]()
-    //     {
+    ComponentModularity::addChild(*buttonsZone, newEntity());
 
-    //     }
-    // );
-
-
-    addStage("1v1 Strong Enemy - Zweihander",
-        vec4(1., 0.5, 0.5, 1.0),
+    addStage("Normal Duel 1",
+        vec4(NormalDuelColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(alternateHour.x, alternateHour.y);
+
             EntityRef e= spawnEntity("(Combats) Ally", vec3(-8.f, Y_SPAWN_LEVEL, 0));
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
@@ -626,10 +735,12 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("1v1 Strong Enemy - Sword And Shield",
-        vec4(1., 0.5, 0.5, 1.0),
+    addStage("Normal Duel 2",
+        vec4(NormalDuelColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(alternateHour.x, alternateHour.y);
+
             EntityRef e= spawnEntity("(Combats) Ally 2", vec3(-8.f, Y_SPAWN_LEVEL, 0));
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
@@ -645,10 +756,14 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("1v1 Very Strong Enemy - Zweihander",
-        vec4(1., 0.5, 0.5, 1.0),
+    ComponentModularity::addChild(*buttonsZone, newEntity());
+
+    addStage("Hard Duel 1",
+        vec4(HardDuelColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(sunrise.x, sunrise.y);
+
             EntityRef e= spawnEntity("(Combats) Ally", vec3(-8.f, Y_SPAWN_LEVEL, 0));
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
@@ -664,10 +779,12 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("1v1 Very Strong Enemy - Sword And Shield",
-        vec4(1., 0.5, 0.5, 1.0),
+    addStage("Hard Duel 2",
+        vec4(HardDuelColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(sunrise.x, sunrise.y);
+
             EntityRef e= spawnEntity("(Combats) Ally 2", vec3(-8.f, Y_SPAWN_LEVEL, 0));
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
             e->set<AgentState>(AgentState());
@@ -683,10 +800,12 @@ void Apps::CombatsApp::init()
         }
     );
 
-    addStage("1v2 Weak Enemies",
-        vec4(1., 0.5, 0.5, 1.0),
+    addStage("Rigged Duel",
+        vec4(HardDuelColor, alpha),
         [&]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(normalHour.x, normalHour.y);
+
             {
                 EntityRef e= spawnEntity("(Combats) Ally", vec3(-8.f, Y_SPAWN_LEVEL, 0));
                 e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
@@ -718,43 +837,15 @@ void Apps::CombatsApp::init()
         }
     );
 
-    // addStage("1v1 Strong Enemy - Shield",
-    //     vec4(1., 0.5, 0.5, 1.0) * 0.8f,
-    //     [&]()
-    //     {
-
-    //     }
-    // );
-
-    // addStage("Catalys Training Dummies",
-    //     vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
-    //     [&]()
-    //     {
-
-    //     }
-    // );
-
-    // addStage("1v1 Weak Mage",
-    //     vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
-    //     [&]()
-    //     {
-
-    //     }
-    // );
-
-    // addStage("1v1 String Mage",
-    //     vec4(0.5, 0.5, 1.0, 1.0) * 0.8f,
-    //     [&]()
-    //     {
-
-    //     }
-    // );
-
-
     std::function<void(int, int, int, int)> spawnBattle = [&](int enemyS, int enemyZ, int allyS, int allyZ)
     {
+        const std::string tactitcs = "Trained";
+        // const std::string tactitcs = "God Duelist";
+        const std::string initiative = "Very Aggressive";
+
         for(int i = 0; i < enemyS; i++) // Enemy Shields
         {
+
             vec3 randPos(-8 + rand()%16-8, Y_SPAWN_LEVEL, rand()%24-12);
             EntityRef e= spawnEntity("(Combats) Ally 2", randPos);
             e->comp<Script>().addScript("Agent Update Test", ScriptHook::ON_AGENT_UPDATE);
@@ -765,8 +856,8 @@ void Apps::CombatsApp::init()
             e->set<AgentProfile>(AgentProfile());
             e->comp<AgentProfile>() 
                 + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs " + tactitcs)->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative " + initiative)->comp<AgentProfile>()
             ;
             ComponentModularity::addChild(*stageNPC, e);
         }
@@ -782,8 +873,8 @@ void Apps::CombatsApp::init()
             e->set<AgentProfile>(AgentProfile());
             e->comp<AgentProfile>() 
                 + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Initiative Very Aggressive")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs " + tactitcs)->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative " + initiative)->comp<AgentProfile>()
             ;
             ComponentModularity::addChild(*stageNPC, e);
         }
@@ -801,8 +892,8 @@ void Apps::CombatsApp::init()
             e->set<AgentProfile>(AgentProfile());
             e->comp<AgentProfile>() 
                 + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Initiative Aggressive")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs " + tactitcs)->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative " + initiative)->comp<AgentProfile>()
             ;
             ComponentModularity::addChild(*stageNPC, e);
         }
@@ -818,47 +909,56 @@ void Apps::CombatsApp::init()
             e->set<AgentProfile>(AgentProfile());
             e->comp<AgentProfile>() 
                 + spawnEntity("Combat Profile TEMPLATE")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Tactitcs Trained")->comp<AgentProfile>()
-                + spawnEntity("Combat Profile Initiative Very Aggressive")->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Tactitcs " + tactitcs)->comp<AgentProfile>()
+                + spawnEntity("Combat Profile Initiative " + initiative)->comp<AgentProfile>()
             ;
             ComponentModularity::addChild(*stageNPC, e);
         }
     };
 
+    ComponentModularity::addChild(*buttonsZone, newEntity());
 
-    addStage("2v2 Battle",
-        vec4(0.5, 1.0, 0.5, 1.0),
-        [spawnBattle]()
+    addStage("Double Duel",
+        vec4(NightEmbuscadeColor, alpha),
+        [&, spawnBattle]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(normalHour.x, normalHour.y);
             spawnBattle(2, 2, 1, 1);
         }
     );
 
-    addStage("3v4 Battle",
-        vec4(0.5, 1.0, 0.5, 1.0),
-        [spawnBattle]()
+    addStage("Night Embuscade",
+        vec4(NightEmbuscadeColor, alpha),
+        [&, spawnBattle]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(night.x, night.y);
             spawnBattle(2, 2, 1, 1);
         }
     );
 
-    addStage("10v12 Battle",
-        vec4(0.5, 1.0, 0.5, 1.0),
-        [spawnBattle]()
+    ComponentModularity::addChild(*buttonsZone, newEntity());
+
+    addStage("Battle",
+        vec4(BattleColor, alpha),
+        [&, spawnBattle]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(alternateHour.x, alternateHour.y);
             spawnBattle(6, 6, 5, 5);
         }
     );
 
     addStage("War",
-        vec4(0.5, 1.0, 0.5, 1.0),
-        [spawnBattle]()
+        vec4(BattleColor, alpha),
+        [&, spawnBattle]()
         {
+            GG::timeOfDay = GG::hourToTimeOfDay(sunrise.x, sunrise.y);
             const float nbAlly = 100;
-            const float nbEnemy = 120;
+            const float nbEnemy = 110;
             spawnBattle(nbEnemy/2, nbEnemy/2, nbAlly/2, nbAlly/2);
         }
     );
+
+    buttonsZone->comp<WidgetStyle>().setautomaticTabbing(buttonsZone->comp<EntityGroupInfo>().children.size());
 
     // addStage("War",
     //     vec4(0.5, 1.0, 0.5, 1.0),
@@ -871,6 +971,10 @@ void Apps::CombatsApp::init()
 
 
     // AnimationControllerRef test = AnimBlueprint::bipedMoveset_PREALPHA_2025("(Human) 2H Sword ", GG::playerEntity.get());
+
+
+
+
 }
 
 void Apps::CombatsApp::update()
@@ -906,12 +1010,14 @@ void Apps::CombatsApp::clean()
 
     Faction::clearRelations();
 
+    ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, stageSelectionScreen);
+
     GG::playerEntity = EntityRef();
     stageSelectionScreen = EntityRef();
     buttonsZone = EntityRef();
     stageNPC = EntityRef();
     appRoot = EntityRef();
-    EDITOR::MENUS::GameScreen->comp<EntityGroupInfo>().children.clear();
+    // EDITOR::MENUS::GameScreen->comp<EntityGroupInfo>().children.clear();
     App::setController(nullptr);
 
     physicsMutex.lock();

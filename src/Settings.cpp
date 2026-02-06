@@ -18,6 +18,10 @@ DATA_WRITE_FUNC_INIT(Settings)
     WRITE_NAME(renderScale, out)
     FastTextParser::write<float>(data.renderScale, out->getReadHead());
 
+    out->Entry();
+    WRITE_NAME(devMode, out)
+    FastTextParser::write<bool>(data.devMode, out->getReadHead());
+
     if(data.lastOpenedApp.size())
     {
         out->Entry();
@@ -48,6 +52,9 @@ DATA_READ_FUNC(Settings) {
 
         else IF_MEMBER_READ_VALUE(renderScale)
             Settings::renderScale = FastTextParser::read<float>(value);
+
+        else IF_MEMBER_READ_VALUE(devMode)
+            Settings::devMode = FastTextParser::read<bool>(value);
 
         else IF_MEMBER_READ_VALUE(lastOpenedApp)
             Settings::lastOpenedApp = std::string(value);

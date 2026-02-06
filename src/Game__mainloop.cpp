@@ -162,6 +162,10 @@ void Game::mainloop()
         );
 
     gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
+    
+    editorModeEnable = !Settings::devMode;
+    toggleEditorMode();
+
 
     finalProcessingStage.addUniform(ShaderUniform((vec4 *)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
@@ -1312,6 +1316,7 @@ void Game::mainloop()
 
             float adrenalineMod = 0.5*250.f*stats.adrenaline.cur/stats.adrenaline.max;
             adrenalineMod = max(adrenalineMod, 0.f);
+            // adrenalineMod = 0.f;
 
             stats.stamina.cur = clamp(
                 stats.stamina.cur + globals.simulationTime.getDelta()*(10 - runningMod + adrenalineMod),
@@ -1608,6 +1613,8 @@ void Game::mainloop()
     Settings::ssaoEnabled = SSAO.isPassEnable();
     Settings::renderScale = globals.renderScale();
     Settings::lastOpenedApp = SubApps::getActiveAppName();
+    Settings::devMode = editorModeEnable;
+    Settings::fullscreen = isFullScreen;
 
     // save settings to file
     Settings::save();

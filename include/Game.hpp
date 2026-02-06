@@ -65,6 +65,8 @@ public:
     void mainloop();
     void initInput();
 
+    void toggleEditorMode();
+
 };
 
 namespace Inputs

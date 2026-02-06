@@ -8,6 +8,16 @@ bool Game::userInput(GLFWKeyInfo input)
     return baseInput(input);
 };
 
+void Game::toggleEditorMode()
+{
+    editorModeEnable = editorModeEnable ? false : true;
+
+    if (editorModeEnable)
+        gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1. / 3., +0.4));
+    else
+        gameScreenWidget->comp<WidgetBox>().set(vec2(-1, +1), vec2(-1, +1));
+}
+
 void Game::initInput()
 {
     Inputs::toggleHud = InputManager::addEventInput(
@@ -19,7 +29,11 @@ void Game::initInput()
         InputManager::Filters::always, false);
 
     Inputs::toggleSimTime = InputManager::addEventInput(
-        "toggle sim time", GLFW_KEY_F11, 0, GLFW_PRESS, [&]() { globals.simulationTime.toggle(); },
+        "toggle sim time", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { globals.simulationTime.toggle();},
+        InputManager::Filters::always, false);
+
+    Inputs::toggleSimTime = InputManager::addEventInput(
+        "toggle sim time", GLFW_KEY_F11, 0, GLFW_PRESS, [&]() { setFullScreen(!isFullScreen);},
         InputManager::Filters::always, false);
 
     Inputs::toggleWireframe = InputManager::addEventInput(
@@ -32,12 +46,7 @@ void Game::initInput()
 
     Inputs::toggleEditorMode = InputManager::addEventInput(
         "toggle editor mode", GLFW_KEY_F3, 0, GLFW_PRESS, [&]() {
-            editorModeEnable = editorModeEnable ? false : true;
-
-            if (editorModeEnable)
-                gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1. / 3., +0.4));
-            else
-                gameScreenWidget->comp<WidgetBox>().set(vec2(-1, +1), vec2(-1, +1));
+            toggleEditorMode();
         },
         InputManager::Filters::always, false);
 

@@ -36,6 +36,7 @@ namespace GameGlobals
 
     inline float timeOfDay = 10.0f;
     inline float moonOrbitTime = 0.50; // normalized to [0, 1] cause it's like over 27.3 days otherwise
+    inline float hourToTimeOfDay(float hour, float minutes){return hour + minutes/60.f;};
 
     inline SceneDirectionalLight sun;
     inline SceneDirectionalLight moon;

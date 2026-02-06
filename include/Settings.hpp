@@ -14,6 +14,7 @@ struct Settings
     inline static bool ssaoEnabled = true;
     inline static float renderScale = 1.0f;
     inline static std::string lastOpenedApp = "";
+    inline static bool devMode = false;
 
     static void load();
 

@@ -28,7 +28,7 @@ Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSi
 
 void Game::init(int paramSample)
 {
-    WidgetBox::tabbingSpacingScale = vec2(.5);
+    WidgetBox::tabbingSpacingScale = vec2(2.0);
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
    
     // globals._renderScale = 0.5;
@@ -49,6 +49,8 @@ void Game::init(int paramSample)
     paintShaderPass.enableAO = Settings::ssaoEnabled;
 
     globals._renderScale = Settings::renderScale;
+
+    setFullScreen(Settings::fullscreen);
 
     globals._UI_res_scale = 2.0;
 

@@ -46,3 +46,24 @@ build-release-light :
 
 clean : 
 	@$(MAKE) -C ./Engine clean $(MAKE_FLAGS)
+
+
+
+release-plateforms :
+	rm -rf "Public Release"
+	mkdir "Public Release"
+	cp -R Sanctia-Release "Public Release/Sanctia Windows"
+	cp -R Sanctia-Release "Public Release/Sanctia Linux"
+	find "Public Release/Sanctia Linux" -name "*.exe" -type f -delete
+	find "Public Release/Sanctia Linux" -name "*.dll*" -type f -delete
+	find "Public Release/Sanctia Linux" -name "*3dll*" -type f -delete
+	find "Public Release/Sanctia Linux" -name "*.lib" -type f -delete
+	find "Public Release/Sanctia Linux" -name "*_WIN64.*" -type f -delete
+	find "Public Release/Sanctia Linux" -name ".git*" -type f -delete
+	find "Public Release/Sanctia Windows" -name ".git*" -type f -delete
+	find "Public Release/Sanctia Windows" -name "*_UNIX.*" -type f -delete
+	rm -rf "Public Release/Sanctia Windows/lib"
+	rm -rf "Public Release/Sanctia Windows/Import"
+	rm -rf "Public Release/Sanctia Linux/Import"
+	cd "Public Release" && zip -r "Sanctia Linux.tar.gz" "Sanctia Linux/"
+	cd "Public Release" && zip -r "Sanctia Windows.zip" "Sanctia Windows/"

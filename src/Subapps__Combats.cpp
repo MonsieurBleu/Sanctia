@@ -965,7 +965,8 @@ void Apps::CombatsApp::init()
         {
             Game::state = AppState::quit;
         },
-        [](Entity *e){return 1.f;}
+        [](Entity *e){return 1.f;},
+        vec4(vec3(VulpineColorUI::LightBackgroundColor2), 1.0)
     ));
 
     buttonsZone->comp<WidgetStyle>().setautomaticTabbing(buttonsZone->comp<EntityGroupInfo>().children.size());

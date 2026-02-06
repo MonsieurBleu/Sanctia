@@ -213,8 +213,19 @@ void Game::init(int paramSample)
     globals.fpsLimiter.freq = 144.f;
     // globals.fpsLimiter.freq = 45.f;
 
-    const GLFWvidmode* videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    int refreshRate = videoMode->refreshRate;
+    int refreshRate = 60;
+    GLFWmonitor* monitor = glfwGetWindowMonitor(globals.getWindow());
+    if (monitor == nullptr)
+    {
+        monitor = glfwGetPrimaryMonitor();
+    }
+
+    if (monitor != nullptr)
+    {
+        const GLFWvidmode* videoMode = glfwGetVideoMode(monitor);
+        refreshRate = videoMode->refreshRate;
+    }
+    
     // NOTIF_MESSAGE("Primary monitor Refresh Rate: " ,  refreshRate);
     globals.fpsLimiter.freq = refreshRate;
     

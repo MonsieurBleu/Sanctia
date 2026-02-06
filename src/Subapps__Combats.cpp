@@ -958,6 +958,16 @@ void Apps::CombatsApp::init()
         }
     );
 
+    ComponentModularity::addChild(*buttonsZone, newEntity());
+
+    ComponentModularity::addChild(*buttonsZone, VulpineBlueprintUI::Toggable("Return To Desktop", "", 
+        [](Entity *e, float f)
+        {
+            Game::state = AppState::quit;
+        },
+        [](Entity *e){return 1.f;}
+    ));
+
     buttonsZone->comp<WidgetStyle>().setautomaticTabbing(buttonsZone->comp<EntityGroupInfo>().children.size());
 
     // addStage("War",

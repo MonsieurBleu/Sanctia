@@ -28,6 +28,10 @@ Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSi
 
 void Game::init(int paramSample)
 {
+    Logger::init();
+    NOTIF_MESSAGE("GPU : ", glGetString(GL_RENDERER));
+    NOTIF_MESSAGE("OpenGL version supported : ", glGetString(GL_VERSION));
+    
     WidgetBox::tabbingSpacingScale = vec2(2.0);
     // Shadinclude::shaderDefines += "#define USE_TOON_SHADING\n";
    
@@ -224,7 +228,6 @@ void Game::init(int paramSample)
 
     ambientLight = vec3(0.07);
 
-    Logger::init();
 
 
     dialogueControl.dialogueFont = FUIfont;

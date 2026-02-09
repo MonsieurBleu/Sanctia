@@ -59,10 +59,10 @@ clean2 :
 
 
 build-windows-release : 
-	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="--target=x86_64-pc-windows-gnu -O3 -ffast-math -Os"
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="--target=x86_64-pc-windows-gnu -static-libstdc++ -static-libgcc -O3 -ffast-math -Os"
 
 build-windows-debug : 
-	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-g --target=x86_64-pc-windows-gnu -O3 -ffast-math"
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-g --target=x86_64-pc-windows-gnu -static-libstdc++ -static-libgcc -O3 -ffast-math"
 
 
 

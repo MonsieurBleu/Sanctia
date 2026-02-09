@@ -65,5 +65,5 @@ release-plateforms :
 	rm -rf "Public Release/Sanctia Windows/lib"
 	rm -rf "Public Release/Sanctia Windows/Import"
 	rm -rf "Public Release/Sanctia Linux/Import"
-	cd "Public Release" && zip -r "Sanctia Linux.tar.gz" "Sanctia Linux/"
+	cd "Public Release" && zip -r "Sanctia Linux.zip" "Sanctia Linux/"
 	cd "Public Release" && zip -r "Sanctia Windows.zip" "Sanctia Windows/"

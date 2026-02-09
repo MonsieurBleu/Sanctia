@@ -8,7 +8,7 @@
 
 #include <Helpers.hpp>
 
-#define Y_SPAWN_LEVEL 35
+#define Y_SPAWN_LEVEL 34
 
 std::string PLAYER_SET = "(Combats) Player";
 
@@ -426,8 +426,8 @@ void Apps::CombatsApp::init()
                 , UI_BASE_COMP
                 , WidgetBackground()
                 , WidgetStyle()
-                    .setbackGroundStyle(UiTileType::SQUARE)
-                    .setbackgroundColor1(vec4(vec3(0.05), 1.0))
+                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
                     .settextColor1(VulpineColorUI::LightBackgroundColor1)
                     .setminFontScale(1.5)
                 , WidgetText(
@@ -451,8 +451,8 @@ void Apps::CombatsApp::init()
                 , UI_BASE_COMP
                 , WidgetBackground()
                 , WidgetStyle()
-                    .setbackGroundStyle(UiTileType::SQUARE)
-                    .setbackgroundColor1(vec4(vec3(0.05), 1.0))
+                    .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                    .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
                     .settextColor1(VulpineColorUI::LightBackgroundColor1)
                     .setminFontScale(1.5)
                 , WidgetText(
@@ -462,7 +462,7 @@ void Apps::CombatsApp::init()
                     U"appelé \"Sanctia\".\n"
                     U"\n"
                     U"Le projet principal est de créer un immersive-sim en monde ouvert\n"
-                    U"axé sur une approche intra-diégétique, où le joueur devra explorer,\n"
+                    U"axé sur une approche intradiégétique, où le joueur devra explorer,\n"
                     U"suivre les quêtes, prendre des notes ou étudier la magie en se servant\n"
                     U"uniquement des outils existants dans l'univers du jeu.\n"
                     U"\n"
@@ -475,6 +475,68 @@ void Apps::CombatsApp::init()
         )
         }))
     );
+
+    EntityRef tmp1, tmp2;
+
+    ComponentModularity::addChild(*stageSelectionScreen,
+
+        newEntity("tmp"
+            , UI_BASE_COMP
+            , EntityGroupInfo({
+                newEntity("qr codes"
+                    , UI_BASE_COMP
+                    , WidgetBox(vec2(0.3, 0.8), vec2(-0.9, -0.6))
+                    , WidgetStyle().setuseInternalSpacing(true).setautomaticTabbing(2)
+                    , EntityGroupInfo({
+                        tmp1 = newEntity(""
+                            , UI_BASE_COMP
+                            , WidgetBackground()
+                            , WidgetStyle()
+                                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
+                                .settextColor1(VulpineColorUI::LightBackgroundColor1)
+                                .setminFontScale(1.25)
+                            , WidgetText(U"Want to follow the project ?\n\n**Join Our Discord !**")
+                        ),
+                        newEntity(""
+                            , UI_BASE_COMP
+                            // , WidgetBackground()
+                            , WidgetStyle()
+                                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
+                                .setspriteScale(2.)
+                                .setspritePosition(vec2(-0.5, 0))
+                            , WidgetSprite("qr discord")
+                        ),
+
+
+                        tmp2 = newEntity(""
+                            , UI_BASE_COMP
+                            , WidgetBackground()
+                            , WidgetStyle()
+                                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
+                                .settextColor1(VulpineColorUI::LightBackgroundColor1)
+                                .setminFontScale(1.25)
+                            , WidgetText(U"Want to support us ?\n\n**Give your feedback !**", StringAlignment::CENTERED)
+                        ),
+                        newEntity(""
+                            , UI_BASE_COMP
+                            // , WidgetBackground()
+                            , WidgetStyle()
+                                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
+                                .setspriteScale(2.)
+                                .setspritePosition(vec2(-0.5, 0))
+                            , WidgetSprite("qr form combats")
+                        ),
+
+                        
+                    })
+                )
+        }))
+    );
+
+    tmp1->comp<WidgetText>().mesh->align = StringAlignment::CENTERED;
+    tmp2->comp<WidgetText>().mesh->align = StringAlignment::CENTERED;
 
     // EntityRef newStageButton;
     // vec4 newStageColor = vec4(1., 0.5, 0.5, 1.0);
@@ -577,10 +639,10 @@ void Apps::CombatsApp::init()
                 // "With good timing, you can also do a perfect pary, that can also counter attack."
 
                 "[ENG]\n"
-                "Attacks can be blocked and immediatly countered, if you are quick enough.\n"
+                "Attacks can be blocked and immediately countered, if you are quick enough.\n"
                 "\n"
                 "[FR]\n"
-                "Les attaques peuvent être bloqués, et mêmes contrés, si vous êtes assez rapide."
+                "Les attaques peuvent être bloquées, et même contrées, si vous êtes assez rapide."
                 ;
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strAtck, U"", vec3(0.05)));
@@ -646,7 +708,7 @@ void Apps::CombatsApp::init()
                 "A simple kick is a good way to break the guard of an enemy.\n"
                 "\n"
                 "[FR]\n"
-                "Un simple coup de pied est la meilleure manière de briser la guarde d'un ennemi."
+                "Un simple coup de pied est la meilleure manière de briser la garde d'un ennemi."
                 ;
             {
                 ValueHelperRef<std::string> text( new ValueHelper(strKick, U"", vec3(0.05)));
@@ -661,7 +723,7 @@ void Apps::CombatsApp::init()
 
 
 
-            tutorialGroup->state.setPosition(vec3(0, Y_SPAWN_LEVEL + 2.5, 0));
+            tutorialGroup->state.setPosition(vec3(0, Y_SPAWN_LEVEL + 2.0, 0));
 
 
             ComponentModularity::addChild(*stageNPC, newEntity("Tutorial", tutorialGroup));

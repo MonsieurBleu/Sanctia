@@ -7,7 +7,7 @@ endif
 CC = clang++-20
 
 MAKE_FLAGS = --no-print-directory CC="$(CC)" BUILD_DIR="Sanctia-Release" GEXEC="$(GEXEC)"
-MAKE_FLAGS_WIN = --no-print-directory CC="clang++-20 --target=x86_64-pc-windows-gnu" BUILD_DIR="Sanctia-Release" GEXEC="Sanctia_WIN64.exe"
+MAKE_FLAGS_WIN = --no-print-directory CC="clang++-20 --target=x86_64-w64-windows-gnu" BUILD_DIR="Sanctia-Release" GEXEC="Sanctia_WIN64.exe"
 
 MAKE_PARALLEL = -j8 -k
 MAKE_PARALLEL_LIGHT = -j4 -k
@@ -59,10 +59,10 @@ clean2 :
 
 
 build-windows-release : 
-	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="--target=x86_64-pc-windows-gnu -static-libstdc++ -static-libgcc -O3 -ffast-math -Os"
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-O3 -ffast-math -Os"
 
 build-windows-debug : 
-	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-g --target=x86_64-pc-windows-gnu -static-libstdc++ -static-libgcc -O3 -ffast-math"
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-g -O3 -ffast-math"
 
 
 

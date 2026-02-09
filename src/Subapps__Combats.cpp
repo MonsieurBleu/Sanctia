@@ -395,14 +395,14 @@ void Apps::CombatsApp::init()
             .setuseInternalSpacing(true)
         , EntityGroupInfo({
             VulpineBlueprintUI::Toggable(
-                "Player use Sword and Shield", "", 
+                "Player equip Sword and Shield", "", 
                 [](Entity *e, float f)
                 {PLAYER_SET = "(Combats) Player 2";}, 
                 [](Entity *e){return PLAYER_SET == "(Combats) Player 2" ? 0.f : 1.f;},
                 vec3(58, 155, 184)/255.f
             ),
             VulpineBlueprintUI::Toggable(
-                "Player use Zweihander", "", 
+                "Player equip Zweihander", "", 
                 [](Entity *e, float f)
                 {PLAYER_SET = "(Combats) Player";}, 
                 [](Entity *e){return PLAYER_SET == "(Combats) Player" ? 0.f : 1.f;},
@@ -705,7 +705,7 @@ void Apps::CombatsApp::init()
                 // "Regular attacks are faster to perform and have a longer reach than kicks.\n"
 
                 "[ENG]\n"
-                "A simple kick is a good way to break the guard of an enemy.\n"
+                "A simple kick is a good way to break an enemy's guard.\n"
                 "\n"
                 "[FR]\n"
                 "Un simple coup de pied est la meilleure manière de briser la garde d'un ennemi."

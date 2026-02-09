@@ -189,7 +189,8 @@ void Game::init(int paramSample)
     /* UI */
     FUIfont = FontRef(new FontUFT8);
     FUIfont->readCSV("data/commons/fonts/Roboto/out.csv");
-    FUIfont->setAtlas(Texture2D().loadFromFileKTX("data/commons/fonts/Roboto/out.ktx"));
+    // FUIfont->setAtlas(Texture2D().loadFromFileKTX("data/commons/fonts/Roboto/out.ktx"));
+    FUIfont->setAtlas(Loader<Texture2D>::get("Font Roboto"));
 
     globals.baseFont = FUIfont;
 

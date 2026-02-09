@@ -4,14 +4,18 @@ else
 	GEXEC = Sanctia_UNIX.bin
 endif
 
-CC = clang++
+CC = clang++-20
 
 MAKE_FLAGS = --no-print-directory CC="$(CC)" BUILD_DIR="Sanctia-Release" GEXEC="$(GEXEC)"
+MAKE_FLAGS_WIN = --no-print-directory CC="clang++-20 --target=x86_64-pc-windows-gnu" BUILD_DIR="Sanctia-Release" GEXEC="Sanctia_WIN64.exe"
+
 MAKE_PARALLEL = -j8 -k
 MAKE_PARALLEL_LIGHT = -j4 -k
 
 
-default : build-debug
+default : build-debug 
+
+build-all-plateforms : clean build-windows-release clean2 build-release
 
 run :
 ifeq ($(OS),Windows_NT)
@@ -22,6 +26,9 @@ endif
 
 run-debug :
 	@cd Sanctia-Release && gdb ./$(GEXEC)
+
+run-windows : 
+	cd Sanctia-Release && wine ./Sanctia_WIN64.exe
 
 build-debug : 
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS) $(MAKE_PARALLEL) OPTFLAGS="-g"
@@ -47,9 +54,19 @@ build-release-light :
 clean : 
 	@$(MAKE) -C ./Engine clean $(MAKE_FLAGS)
 
+clean2 : 
+	@$(MAKE) -C ./Engine clean $(MAKE_FLAGS)
 
 
-release-plateforms :
+build-windows-release : 
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="--target=x86_64-pc-windows-gnu -O3 -ffast-math -Os"
+
+build-windows-debug : 
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-g --target=x86_64-pc-windows-gnu -O3 -ffast-math"
+
+
+
+package-all-plateforms :
 	rm -rf "Public Release"
 	mkdir "Public Release"
 	cp -R Sanctia-Release "Public Release/Sanctia Windows"

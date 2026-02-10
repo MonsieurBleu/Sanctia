@@ -4,7 +4,7 @@ else
 	GEXEC = Sanctia_UNIX.bin
 endif
 
-CC = clang++-20
+CC = clang++
 
 MAKE_FLAGS = --no-print-directory CC="$(CC)" BUILD_DIR="Sanctia-Release" GEXEC="$(GEXEC)"
 MAKE_FLAGS_WIN = --no-print-directory CC="clang++-20 --target=x86_64-w64-windows-gnu -femulated-tls" BUILD_DIR="Sanctia-Release" GEXEC="Sanctia_WIN64.exe"

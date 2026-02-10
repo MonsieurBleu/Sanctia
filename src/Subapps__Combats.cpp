@@ -188,7 +188,7 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
             PlayerBlock,
             []() {return globals.currentCamera->getMouseFollow();},
             [&]() {
-                if (InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > -0.95f)
+                if (InputManager::isGamePadUsed() and InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > -0.95f)
                 {
                     PlayerBlock();
                 }

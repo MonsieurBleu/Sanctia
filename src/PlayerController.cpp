@@ -12,11 +12,6 @@ PlayerController::PlayerController(Camera *playerCam) : playerCam(playerCam)
 {
 }
 
-float manageDeadZone(float axis)
-{
-    if(abs(axis) < 0.1) return 0.f;
-    return axis;
-}
 
 void PlayerController::update()
 {
@@ -47,10 +42,10 @@ void PlayerController::update()
         glfwGetCursorPos(window, &x, &y);
 
         auto res = globals.windowSize();
-        x += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_X))*globals.appTime.getDelta();
-        y += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_Y))*globals.appTime.getDelta();
-        x += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X ))*globals.appTime.getDelta();
-        y += res.y*manageDeadZone(InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y ))*globals.appTime.getDelta();
+        x += res.y*InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_X)*globals.appTime.getDelta();
+        y += res.y*InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_RIGHT_Y)*globals.appTime.getDelta();
+        x += res.y*InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X )*globals.appTime.getDelta();
+        y += res.y*InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y )*globals.appTime.getDelta();
 
         glfwSetCursorPos(window, x, y);
 

@@ -107,7 +107,7 @@ void PlayerStun()
     {
         auto &sa = GG::playerEntity->comp<ActionState>();
 
-        if(!sa.isTryingToAttack && !(sa.attacking && sa._stance == ActionState::Stance::SPECIAL))
+        if(!sa.isTryingToAttack && !(sa.attacking && sa._stance == ActionState::Stance::SPECIAL) && (!sa.blocking || sa.hasBlockedAttack))
         {
             sa.isTryingToAttackTime = globals.simulationTime.getElapsedTime();
 

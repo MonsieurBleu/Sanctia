@@ -108,7 +108,7 @@ void PlayerController::update()
         if(length(joystickLookInput) > lookDeadzone)
         {
             float factor = (length(joystickLookInput) - lookDeadzone) / (1.0f - lookDeadzone);
-            joystickLookInput = normalize(joystickLookInput) * factor * 30.0f; // look speed factor
+            joystickLookInput = normalize(joystickLookInput) * factor * 50.0f; // look speed factor
 
             mouseEvent(vec2(
                 globals.windowWidth() * 0.5f + joystickLookInput.x,

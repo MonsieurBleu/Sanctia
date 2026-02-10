@@ -188,7 +188,7 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
             PlayerBlock,
             []() {return globals.currentCamera->getMouseFollow();},
             [&]() {
-                if (InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > 0.1f)
+                if (InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > -0.95f)
                 {
                     PlayerBlock();
                 }
@@ -985,7 +985,7 @@ void Apps::CombatsApp::init()
         [&, spawnBattle]()
         {
             GG::timeOfDay = GG::hourToTimeOfDay(normalHour.x, normalHour.y);
-            spawnBattle(2, 2, 1, 1);
+            spawnBattle(1, 1, 1, 1);
         }
     );
 
@@ -1015,7 +1015,7 @@ void Apps::CombatsApp::init()
         {
             GG::timeOfDay = GG::hourToTimeOfDay(sunrise.x, sunrise.y);
             const float nbAlly = 100;
-            const float nbEnemy = 110;
+            const float nbEnemy = 104;
             spawnBattle(nbEnemy/2, nbEnemy/2, nbAlly/2, nbAlly/2);
         }
     );

@@ -113,6 +113,7 @@ void Game::init(int paramSample)
         myfile.close();
         camera.setState(buff);
     }
+    // return;
     camera.state.FOV = radians(90.0);
     // camera.state.nearPlane = 0.17;
 

@@ -18,6 +18,8 @@
 
 int main()
 {
+    signal(SIGSEGV, handleSegfaultStackTrace);
+
     Game *game = nullptr;
     std::string winname =  "Sanctia - Proof of Concept";
 

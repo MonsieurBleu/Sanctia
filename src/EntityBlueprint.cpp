@@ -14,7 +14,7 @@
 
 EntityRef Blueprint::SpawnMainGameTerrain()
 {
-    return Blueprint::Terrain("Herault_4096", vec3(4096, 512, 4096), vec3(0), cellSize);
+    return Blueprint::Terrain(mapFileName, terrainSize, vec3(0), cellSize);
 }
 
 EntityRef Blueprint::Terrain(
@@ -181,7 +181,7 @@ EntityRef Blueprint::Terrain(
                     )}
             }, {});
 
-        b->getCollider(0)->setIsWorldQueryCollider(false);
+        // b->getCollider(0)->setIsWorldQueryCollider(false);
 
         // GG::entities.push_back(e);
         ComponentModularity::addChild(*terrainRoot, e);

@@ -21,11 +21,18 @@
 
 #include "PlayerUtils.hpp"
 
+// generate a timestamp for logging
 #define TIMESTAMP_PHYSICS "[", globals.simulationTime.getElapsedTime(), "] "
+
+// Draw the final raycast against the world for climbing as well as a sphere if there is a valid hit
 #define CLIMB_DEBUG_DRAW_LINE 0
+// Draw the world quantization boxes that detect if a specific box has a collider inside
 #define CLIMB_DEBUG_DRAW_BOX 0
+// Draw the debug info for stepping (the boxes and ray)
 #define STEP_DEBUG_DRAW 0
 
+// callback that is called for the box overlap tests for climbing and stepping.
+// mostly just checks that whatever we collided with has userdata and doesn't have a MovementState component (to avoid colliding with characters and stuff)
 struct ClimbOverlapCallback : public rp3d::OverlapCallback
 {
     bool hit = false;
@@ -52,6 +59,10 @@ struct ClimbOverlapCallback : public rp3d::OverlapCallback
     }
 };
 
+// Callback that is called for the final raycast test for climbing and stepping.
+// like above this one filters stuff that doesn't have any entities attached or a movement state,
+// but also filters the terrain colliders since their raycast is broken for some reason 
+// inherits from the base vulpine raycast callback class that provides info such as hit point, hit distance and normal
 class ClimbRaycastCallback : public PG::RayCastCallback
 {
 private:
@@ -80,38 +91,67 @@ public:
     ClimbRaycastCallback(vec3 p1, vec3 p2) : PG::RayCastCallback(p1, p2) {};
 };
 
-
+// The function that does all the work for testing if we can climb or step.
+// Very roughly, it uses box querries to get a rough point where there is no terrain and then uses a raycast to find the final point.
+// This function assumes that GG::playerEntity is a valid entity pointer.
 void TryPlayerClimb()
 {
-    if(!GG::playerEntity->has<state3D>() or !GG::playerEntity->has<RigidBody>())
+    // since this depends on the player's position and body we return if it doesn't have the proper components
+    if(!GG::playerEntity->has<state3D>() or !GG::playerEntity->has<RigidBody>() or !GG::playerEntity->has<MovementState>())
         return;
 
+    // get the player components
     state3D& s = GG::playerEntity->comp<state3D>();
     rp3d::RigidBody* playerBody = GG::playerEntity->comp<RigidBody>();
     MovementState& ms = GG::playerEntity->comp<MovementState>();
 
+    // this flag is usually true when we're already climbing but could also be true if we're in an animation for instance.
     if (!ms.isAllowedToClimb) return;
 
+    // this is the flag that communicates to the rest of the code if the climb test was valid or not, 
+    // we try to find if we can find a valid climb spot so it starts out false
     ms.canClimb = false;
 
+    // === climbing constants ===
+    // almost every single one of those is eyeballed
+
+    // the max distance to check for the climbing check relative to the player's position
     const float distanceCheck = 1.5;
+
+    // when we find a hit, we want to move the point a little forward so we're not right on a ledge and fall right back down.
+    // this float is that offset in world units
     const float offset_in = 0.5;
 
+    // the max height we can climb
     const float testHeightMax = 2.5;
+    // the min height we can climb
     const float testHeightMin = 0.75;
+    // the height of the player's collider
     const float playerHeight = 2.0f;
 
+    // resolution of the box querries, they're quite expensive because of the engine we're using so we can't go crazy with the resolution.
+    // we only run height tests if we got a hit when doing a box the height of the total climbing volume for the depth
     constexpr int N_DEPTH = 8;
     constexpr int N_HEIGHT = 8;
 
     const float epsilon = 0.01;
 
+    // half the height of the total climbing volume, used for computing the extents of boxes that are the height of the climbing volume
     const float halfHeight = (testHeightMax - testHeightMin) / 2;
+
+    // the body that will be used to do the queries.
+    // we set it to kinematic but it actually doesn't matter since it will be deleted at the end
     rp3d::RigidBody* testBody = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(.001, .001, .001), DEFQUAT));
     testBody->setType(rp3d::BodyType::KINEMATIC);
 
-    // first test for obstructions to climbing
+    // first we test for obstructions to climbing. Basically just if we can fit the player right above the climbing volume, 
+    // since we test the queries later from the top-down this allows us to quickly determine if a climb is blocked by a ceiling.
+    // we also test if there is a ceiling just above the player, we don't want them phasing through the terrain
+
+    // extent 1 is for testing if there's a ceiling above the player that blocks climbing
     vec3 ObstructionBoxHalfExtents_1 = vec3(0.25f, halfHeight, .25);
+    // extent 2 is for testing if there's a ceiling blocking the climbing test, 
+    // this isn't ideal since that means we can't climb a small ledge if we're too close to the wall but it's probably fine idk
     vec3 ObstructionBoxHalfExtents_2 = vec3(0.25f, playerHeight / 2.0f, distanceCheck / 2.0f);
     static rp3d::BoxShape* ObstructionBox_1 = PG::common.createBoxShape(PG::torp3d(ObstructionBoxHalfExtents_1));
     static rp3d::BoxShape* ObstructionBox_2 = PG::common.createBoxShape(PG::torp3d(ObstructionBoxHalfExtents_2));
@@ -119,6 +159,7 @@ void TryPlayerClimb()
     rp3d::Transform obstructionTransform_2(rp3d::Vector3(0, testHeightMax + halfHeight, -distanceCheck / 2), DEFQUAT);
     rp3d::Collider *obstructionCollider_1 = testBody->addCollider(ObstructionBox_1, obstructionTransform_1);
     rp3d::Collider *obstructionCollider_2 = testBody->addCollider(ObstructionBox_2, obstructionTransform_2);
+    // we explicitely say that the colliders aren't to be simulated cause otherwise it can fuck with the physics even if we delete them later
     obstructionCollider_1->setIsSimulationCollider(false);
     obstructionCollider_2->setIsSimulationCollider(false);
     obstructionCollider_1->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
@@ -126,31 +167,20 @@ void TryPlayerClimb()
     obstructionCollider_2->setCollisionCategoryBits(1<<CollideCategory::ENVIRONEMENT);
     obstructionCollider_2->setCollideWithMaskBits(1<<CollideCategory::ENVIRONEMENT);
 
-    if(testBody and playerBody)
-        testBody->setTransform(playerBody->getTransform());
+    testBody->setTransform(playerBody->getTransform());
 
 #if CLIMB_DEBUG_DRAW_BOX
     if (GG::draw != nullptr and playerBody)
     {
-        // NOTIF_MESSAGE(
-        //     PG::toglm(playerBody->getTransform().getPosition())
-        // )
         GG::draw->drawBox(ObstructionBox_1, playerBody->getTransform() * obstructionTransform_1, 0.0f, ModelState3D(), "#ffffff"_rgb);
         GG::draw->drawBox(ObstructionBox_2, playerBody->getTransform() * obstructionTransform_2, 0.0f, ModelState3D(), "#ffffff"_rgb);
     }
 #endif
     
     ClimbOverlapCallback testObstruction;
-    // NOTIF_MESSAGE(
-    //     PG::toglm(playerBody->getTransform().getPosition()), "\n\t",
-    //     PG::toglm(playerBody->getTransform().getOrientation()), "\n\t",
-
-    //     PG::toglm(testBody->getTransform().getPosition()), "\n\t",
-    //     PG::toglm(testBody->getTransform().getOrientation())
-    // );
-
     PG::world->testOverlap(testBody, testObstruction);
 
+    // if we're obstructed we just exit
     if (testObstruction.hit) 
     {
         PG::world->destroyRigidBody(testBody);
@@ -160,10 +190,13 @@ void TryPlayerClimb()
     testBody->removeCollider(obstructionCollider_1);
     testBody->removeCollider(obstructionCollider_2);
 
+    // now we define the extents for the box queries
+    // this one has the shape of (width of player, total height of the query volume, size of the depth test box)
     vec3 halfExtents = vec3(.25f, halfHeight, distanceCheck / N_DEPTH);
+    // this one has the shape of (width of player, player height, player width)
     vec3 halfPlayerBoxExtents = vec3(.25, playerHeight / 2, .25);
-    static rp3d::BoxShape* playerbox = PG::common.createBoxShape(PG::torp3d(halfPlayerBoxExtents));
 
+    static rp3d::BoxShape* playerbox = PG::common.createBoxShape(PG::torp3d(halfPlayerBoxExtents));
     static rp3d::BoxShape* box = PG::common.createBoxShape(PG::torp3d(halfExtents));
 
     
@@ -195,6 +228,8 @@ void TryPlayerClimb()
         testBody->removeCollider(depthCollider);
         depthCollider = nullptr;
         if (!test.hit) continue;
+
+        // === Climb Test ===
         
         rp3d::Collider* playerHeightCollider = testBody->addCollider(playerbox, rp3d::Transform());
         playerHeightCollider->setIsSimulationCollider(false);
@@ -203,6 +238,7 @@ void TryPlayerClimb()
 
         for (int j = 0; j < N_HEIGHT; j++)
         {
+            // iterate top-down
             vec3 offset2 = vec3(0, mix(testHeightMax, 0.0f, (float)j / (float)(N_HEIGHT - 1)) + playerHeight / 2.0f, 0);
 
             rp3d::Transform transformOffsetHeight(PG::torp3d(offset * vec3(1, 0, 1) + offset2), DEFQUAT);
@@ -227,7 +263,7 @@ void TryPlayerClimb()
 //                 GG::draw->drawSphere(PG::toglm(transformWorldHeight.getPosition()), 0.05f, 0.0f, ModelState3D(), "#ff00ff"_rgb);
 //             }
 // #endif
-            
+            // the actual world point we want to raycast at
             rp3d::Transform pointTransform = transformWorldHeight * rp3d::Transform(
                 rp3d::Vector3(
                     0, 
@@ -240,15 +276,17 @@ void TryPlayerClimb()
                 ), DEFQUAT);
             vec3 newPlayerPos = PG::toglm(pointTransform.getPosition());
 
+            // define the ray that will determine the final climb position and if it's a valid position
             vec3 p1 = newPlayerPos + vec3(0, 2.0, 0);
             vec3 p2 = newPlayerPos - vec3(0, 0.25, 0);
             rp3d::Vector3 _p1 = PG::torp3d(p1);
             rp3d::Vector3 _p2 = PG::torp3d(p2);
+            // ray against the world but not the terrain
             ClimbRaycastCallback cb(p1, p2);
             rp3d::Ray ray(_p1, _p2, 1<<CollideCategory::ENVIRONEMENT);
             PG::world->raycast(ray, &cb);
 
-
+            // fix the raycast not working against the terrain coliders
             bool terrainHit = false;
             rp3d::RaycastInfo info;
             vec3 TerrainNormal = vec3(0, -1, 0);
@@ -258,7 +296,7 @@ void TryPlayerClimb()
 
                 RigidBody b = entity.comp<RigidBody>();
                 
-
+                // define x and z offset rays to compute the partial derivative of the position to get the normal
                 const float offset = 0.05f;
                 rp3d::Vector3 _p1_dx = _p1 + rp3d::Vector3(offset, 0, 0);
                 rp3d::Vector3 _p2_dx = _p2 + rp3d::Vector3(offset, 0, 0);
@@ -280,6 +318,7 @@ void TryPlayerClimb()
                     bool hit_dx = c->raycast(ray_dx, info_dx);
                     bool hit_dy = c->raycast(ray_dy, info_dy);
 
+                    // all 3 rays need to hit
                     if (_hit && hit_dx && hit_dy)
                     {
                         terrainHit = true;
@@ -287,9 +326,10 @@ void TryPlayerClimb()
                         vec3 p_dx = PG::toglm(info_dx.worldPoint);
                         vec3 p_dy = PG::toglm(info_dy.worldPoint);
 
-                        vec3 c = cross(p - p_dy, p - p_dx);
-                        if (length2(c) != 0.0)
-                            TerrainNormal = normalize(c);
+                        // compute the normal
+                        vec3 n = cross(p - p_dy, p - p_dx);
+                        if (length2(n) != 0.0)
+                            TerrainNormal = normalize(n);
 
                         // DEBUG_MESSAGE("normal: ", querryNormal);
                         break;
@@ -297,6 +337,7 @@ void TryPlayerClimb()
                 }
             });
 
+            // try to get the final hit info based on the terrain raycast and world raycast
             vec3 hitPoint = vec3(0);
             vec3 hitNormal = vec3(0, -1, 0);
             bool hit = terrainHit || cb.hit;
@@ -304,30 +345,28 @@ void TryPlayerClimb()
             {
                 if (cb.hitPoint.y > info.worldPoint.y)
                 {
-                    newPlayerPos.y = cb.hitPoint.y;
                     hitPoint = cb.hitPoint;
                     hitNormal = cb.hitNormal;
                 }
                 else 
                 {
-                    newPlayerPos.y = info.worldPoint.y;
                     hitPoint = PG::toglm(info.worldPoint);
                     hitNormal = TerrainNormal;
                 }
             }
             else if (terrainHit)
             {
-                newPlayerPos.y = info.worldPoint.y;
                 hitPoint = PG::toglm(info.worldPoint);
                 hitNormal = TerrainNormal;
             }
             else if (cb.hit)
             {
-                newPlayerPos.y = cb.hitPoint.y;
                 hitPoint = cb.hitPoint;
                 hitNormal = cb.hitNormal;
             }
 
+            // update the final position with the hit point, offset a tiny bit upward to avoid clipping
+            newPlayerPos.y = hitPoint.y + 0.1f;
 
 #if CLIMB_DEBUG_DRAW_LINE
             if (GG::draw != nullptr)
@@ -336,44 +375,33 @@ void TryPlayerClimb()
             }
 #endif
 
+            // to avoid false positive, especially when trying to climb lower surfaces, we can have a normal limit that varies based on the height of the new position.
+            
+            // the normal limit for when the height is low
             const float normalDotLow = 0.99;
+            // the normal limit for when the height is high
             const float normalDotHigh = 0.7;
 
+            // we also add a little offset so it's starts a little higher
             const float heightOffset = 0.1f;
 
             float playerHeight = s.position.y + heightOffset;
             float height = newPlayerPos.y - playerHeight;
 
             const float normalHeightInterpolateMin = testHeightMin;
-            // const float normalHeightInterpolateMax = 1.0;
             const float normalHeightInterpolateMax = testHeightMax;
 
-            // adjust the normal limit depending on the height, higher means a lower limit
-            // this is to make it so you don't try to climb hills and stuff just because they're steep enough but can still climb small-ish steps
             float t = height / (normalHeightInterpolateMax - normalHeightInterpolateMin);
-            // t = clamp(t, 0.0f, 1.0f);
             float normalDotMax = mix(normalDotLow, normalDotHigh, t); 
 
             float boundsMissEpsilon = 0.1;
-            // DEBUG_MESSAGE(
-            //     "querryNormal: ", hitNormal, 
-            //     " height: ", height, 
-            //     " t: ", t, 
-            //     " normalDotMax: ", normalDotMax,
-            //     " hitPoint.y: ", hitPoint.y,
-            //     " bounds limit: ", transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon
-            // );
 
-            // if(cb.hit)WARNING_MESSAGE(cb.hitNormal.y)
-
-
+            // fail raycast if: 
             if (
                    !hit // raycast missed
                 || hitNormal.y < normalDotMax // normal of hit is too steep
                 || hitPoint.y < transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon // hit is outside the bounds of the test (essentially also a miss)
             ) break;
-
-            // NOTIF_MESSAGE(cb.hitNormal.y)
 
             found = true;
 #if CLIMB_DEBUG_DRAW_LINE
@@ -382,10 +410,10 @@ void TryPlayerClimb()
                 GG::draw->drawSphere(hitPoint, 0.1, 0.0f, ModelState3D(), "#00ff00"_rgb);
             }
 #endif
-
+            // if we do have a valid raycast then we're good and we can just set the component values 
             ms.climbStartPos = s.position;
             ms.climbEndPos = newPlayerPos;
-            // ms.climbEndPos = cb.hitPoint + vec3(0,1,0);
+            
             ms.climbHeight = height;
             ms.climbStartSpeed = length(PG::toglm(playerBody->getLinearVelocity()));
             ms.canClimb = true;
@@ -405,12 +433,16 @@ void TryPlayerClimb()
             break;
     }
 
+    // === Step test ===
+
+    // only step if we both are pressing an input and are currently moving
     if (length(ms.wantedMoveDirection) < 0.001 || length(ms.inputVector) < 0.001)
     {
         PG::world->destroyRigidBody(testBody);
         return;
     }
 
+    // clear the colliders that might have been left dangling after the climb test
     size_t colliders_nb = testBody->getNbColliders();
     for (size_t i = 0; i < colliders_nb; i++)
     {
@@ -422,6 +454,7 @@ void TryPlayerClimb()
     rp3d::Transform stepTransform(rp3d::Vector3(0, -0.8 + playerHeight / 2.0f, -0.25), DEFQUAT);
     rp3d::Transform stepTransformObstruct(rp3d::Vector3(0, .35 + playerHeight / 2.0f, -.4), DEFQUAT);
 
+    // transform the direction vector into a rotation vector
     vec3 wantedRotation = vec3(0, atan(ms.inputVector.x, ms.inputVector.z), 0);
     rp3d::Transform stepRotationTransform(rp3d::Vector3(0, 0, 0), PG::torp3d(quat(wantedRotation)));
 
@@ -435,21 +468,20 @@ void TryPlayerClimb()
 
     
     // testBody->setTransform(stepTransformObstructWorld);
-    if(testBody and playerBody)
-        testBody->setTransform(playerBody->getTransform());
+    testBody->setTransform(playerBody->getTransform());
     
     ClimbOverlapCallback testStepObstruct;
     PG::world->testOverlap(testBody, testStepObstruct);
     
 #if STEP_DEBUG_DRAW
-    if (GG::draw != nullptr and playerBody)
+    if (GG::draw != nullptr)
     {
         rp3d::Transform stepTransformObstructWorld = playerBody->getTransform() * stepTransformObstruct;
         GG::draw->drawBox(stepBoxObstruct, stepTransformObstructWorld, 0.0f, ModelState3D(), "#ff00ff"_rgb);
     }
 #endif
 
-    if (!testStepObstruct.hit and playerBody)
+    if (!testStepObstruct.hit)
     {
         rp3d::Transform stepTransformWorld = playerBody->getTransform() * stepTransform;
         // testBody->setTransform(stepTransformWorld);
@@ -495,13 +527,8 @@ void TryPlayerClimb()
             }
 #endif
 
+            // to step we need the surface to be almost completely flat
             const float normalDotMax = 0.99;
-            
-            // Logger::debug(
-            //     "cb.hit: ", cb.hit,
-            //     " dot(cb.hitNormal, vec3(0, 1, 0)): ", dot(cb.hitNormal, vec3(0, 1, 0)),
-            //     " cb.t: ", cb.minDistance
-            // );
 
             if (cb.hit && dot(cb.hitNormal, vec3(0, 1, 0)) > normalDotMax)
             {   
@@ -511,25 +538,8 @@ void TryPlayerClimb()
                     GG::draw->drawSphere(cb.hitPoint, 0.1);
                 }
 #endif
-                // vec3 wantedMovement = ms.wantedMoveDirection;
-                // vec3 inputDir = ms.inputVector;
-                // inputDir.y = 0;
-                // inputDir = normalize(inputDir);
-                // wantedMovement.y = 0;
-                // wantedMovement = normalize(wantedMovement);
-                // const float forwardMovementLimit = 0.98;
-
-                // if (
-                //     length(inputDir) > 0 && length(wantedMovement) > 0 && 
-                //     dot(wantedMovement, inputDir) >= forwardMovementLimit
-                // )
-                // {
-                //     // Logger::debug(TIMESTAMP_PHYSICS, "step!!");
-                //     playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
-                // }
-
-                if(playerBody)
-                    playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
+                // move the player directly to the step point
+                playerBody->setTransform(rp3d::Transform(PG::torp3d(cb.hitPoint), DEFQUAT));
             }
         }
     }

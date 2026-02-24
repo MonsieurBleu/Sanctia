@@ -21,6 +21,10 @@
 
 #include "PlayerUtils.hpp"
 
+#define TIMESTAMP_PHYSICS "[", globals.simulationTime.getElapsedTime(), "] "
+#define CLIMB_DEBUG_DRAW_LINE 0
+#define CLIMB_DEBUG_DRAW_BOX 0
+#define STEP_DEBUG_DRAW 0
 
 struct ClimbOverlapCallback : public rp3d::OverlapCallback
 {
@@ -53,11 +57,22 @@ class ClimbRaycastCallback : public PG::RayCastCallback
 private:
     rp3d::decimal notifyRaycastHit(const rp3d::RaycastInfo& info) override
     {
-        
+// #if CLIMB_DEBUG_DRAW_LINE
+//         if (GG::draw != nullptr)
+//             GG::draw->drawSphere(PG::toglm(info.worldPoint), 0.05f, 0.0f, ModelState3D(), "#00ffff"_rgb);
+// #endif
+
+        // DEBUG_MESSAGE(TIMESTAMP_PHYSICS, "hit! ", PG::toglm(info.worldPoint));
+
         Entity* e = (Entity*)info.body->getUserData();
         if (
-            e != nullptr && e->has<MovementState>()
-        )  return -1.0;
+            (e == nullptr) ||
+            (e->has<MovementState>()) ||
+            (e->has<HeightFieldDummyFlag>()) 
+        )  
+        {
+            return -1.0;
+        }
 
         return PG::RayCastCallback::notifyRaycastHit(info);
     }
@@ -65,9 +80,7 @@ public:
     ClimbRaycastCallback(vec3 p1, vec3 p2) : PG::RayCastCallback(p1, p2) {};
 };
 
-#define TIMESTAMP_PHYSICS "[", globals.simulationTime.getElapsedTime(), "] "
-#define CLIMB_DEBUG_DRAW 0
-#define STEP_DEBUG_DRAW 0
+
 void TryPlayerClimb()
 {
     if(!GG::playerEntity->has<state3D>() or !GG::playerEntity->has<RigidBody>())
@@ -81,19 +94,17 @@ void TryPlayerClimb()
 
     ms.canClimb = false;
 
-    const float distanceCheck = 2.0;
+    const float distanceCheck = 1.5;
     const float offset_in = 0.5;
 
     const float testHeightMax = 2.5;
-    const float testHeightMin = 0.25;
+    const float testHeightMin = 0.75;
     const float playerHeight = 2.0f;
 
     constexpr int N_DEPTH = 8;
     constexpr int N_HEIGHT = 8;
 
     const float epsilon = 0.01;
-
-    
 
     const float halfHeight = (testHeightMax - testHeightMin) / 2;
     rp3d::RigidBody* testBody = PG::world->createRigidBody(rp3d::Transform(rp3d::Vector3(.001, .001, .001), DEFQUAT));
@@ -118,7 +129,7 @@ void TryPlayerClimb()
     if(testBody and playerBody)
         testBody->setTransform(playerBody->getTransform());
 
-#if CLIMB_DEBUG_DRAW
+#if CLIMB_DEBUG_DRAW_BOX
     if (GG::draw != nullptr and playerBody)
     {
         // NOTIF_MESSAGE(
@@ -157,7 +168,7 @@ void TryPlayerClimb()
 
     
     rp3d::Collider* depthCollider = nullptr;
-    for (int i = 0; i < N_DEPTH and playerBody; i++)
+    for (int i = N_DEPTH - 1; i > 0 and playerBody; i--)
     {
         depthCollider = testBody->addCollider(box, rp3d::Transform());
         depthCollider->setIsSimulationCollider(false);
@@ -170,7 +181,7 @@ void TryPlayerClimb()
         rp3d::Transform transformWorld = playerBody->getTransform() * transformOffset ;
         testBody->setTransform(transformWorld);
 
-#if CLIMB_DEBUG_DRAW
+#if CLIMB_DEBUG_DRAW_BOX
         if (GG::draw != nullptr)
         {
             GG::draw->drawBox(box, transformWorld);
@@ -198,7 +209,7 @@ void TryPlayerClimb()
             rp3d::Transform transformWorldHeight = playerBody->getTransform() * transformOffsetHeight;
             testBody->setTransform(transformWorldHeight);
 
-#if CLIMB_DEBUG_DRAW
+#if CLIMB_DEBUG_DRAW_BOX
             if (GG::draw != nullptr)
             {
                 GG::draw->drawBox(playerbox, transformWorldHeight, 0.0f, ModelState3D(), "#0000ff"_rgb);
@@ -209,6 +220,13 @@ void TryPlayerClimb()
             PG::world->testOverlap(testBody, testHeight);
 
             if (!testHeight.hit) continue;
+
+// #if CLIMB_DEBUG_DRAW_LINE
+//             if (GG::draw != nullptr)
+//             {
+//                 GG::draw->drawSphere(PG::toglm(transformWorldHeight.getPosition()), 0.05f, 0.0f, ModelState3D(), "#ff00ff"_rgb);
+//             }
+// #endif
             
             rp3d::Transform pointTransform = transformWorldHeight * rp3d::Transform(
                 rp3d::Vector3(
@@ -223,36 +241,126 @@ void TryPlayerClimb()
             vec3 newPlayerPos = PG::toglm(pointTransform.getPosition());
 
             vec3 p1 = newPlayerPos + vec3(0, 2.0, 0);
-            vec3 p2 = newPlayerPos - vec3(0, 0.5, 0);
+            vec3 p2 = newPlayerPos - vec3(0, 0.25, 0);
+            rp3d::Vector3 _p1 = PG::torp3d(p1);
+            rp3d::Vector3 _p2 = PG::torp3d(p2);
             ClimbRaycastCallback cb(p1, p2);
-            rp3d::Ray ray(PG::torp3d(p1), PG::torp3d(p2));
+            rp3d::Ray ray(_p1, _p2, 1<<CollideCategory::ENVIRONEMENT);
             PG::world->raycast(ray, &cb);
 
-#if CLIMB_DEBUG_DRAW
+
+            bool terrainHit = false;
+            rp3d::RaycastInfo info;
+            vec3 TerrainNormal = vec3(0, -1, 0);
+            System<HeightFieldDummyFlag>([&](Entity &entity)
+            {
+                if (terrainHit) return;
+
+                RigidBody b = entity.comp<RigidBody>();
+                
+
+                const float offset = 0.05f;
+                rp3d::Vector3 _p1_dx = _p1 + rp3d::Vector3(offset, 0, 0);
+                rp3d::Vector3 _p2_dx = _p2 + rp3d::Vector3(offset, 0, 0);
+
+                rp3d::Vector3 _p1_dy = _p1 + rp3d::Vector3(0, 0, offset);
+                rp3d::Vector3 _p2_dy = _p2 + rp3d::Vector3(0, 0, offset);
+
+                const size_t n = b->getNbColliders();
+                for (size_t i = 0; i < n; i++)
+                {
+                    Collider c = b->getCollider(i);
+
+                    rp3d::Ray ray(_p1, _p2);
+                    rp3d::Ray ray_dx(_p1_dx, _p2_dx);
+                    rp3d::Ray ray_dy(_p1_dy, _p2_dy);
+
+                    bool _hit = c->raycast(ray, info);
+                    rp3d::RaycastInfo info_dx, info_dy;
+                    bool hit_dx = c->raycast(ray_dx, info_dx);
+                    bool hit_dy = c->raycast(ray_dy, info_dy);
+
+                    if (_hit && hit_dx && hit_dy)
+                    {
+                        terrainHit = true;
+                        vec3 p    = PG::toglm(   info.worldPoint);
+                        vec3 p_dx = PG::toglm(info_dx.worldPoint);
+                        vec3 p_dy = PG::toglm(info_dy.worldPoint);
+
+                        vec3 c = cross(p - p_dy, p - p_dx);
+                        if (length2(c) != 0.0)
+                            TerrainNormal = normalize(c);
+
+                        // DEBUG_MESSAGE("normal: ", querryNormal);
+                        break;
+                    } 
+                }
+            });
+
+            vec3 hitPoint = vec3(0);
+            vec3 hitNormal = vec3(0, -1, 0);
+            bool hit = terrainHit || cb.hit;
+            if (terrainHit && cb.hit)
+            {
+                if (cb.hitPoint.y > info.worldPoint.y)
+                {
+                    newPlayerPos.y = cb.hitPoint.y;
+                    hitPoint = cb.hitPoint;
+                    hitNormal = cb.hitNormal;
+                }
+                else 
+                {
+                    newPlayerPos.y = info.worldPoint.y;
+                    hitPoint = PG::toglm(info.worldPoint);
+                    hitNormal = TerrainNormal;
+                }
+            }
+            else if (terrainHit)
+            {
+                newPlayerPos.y = info.worldPoint.y;
+                hitPoint = PG::toglm(info.worldPoint);
+                hitNormal = TerrainNormal;
+            }
+            else if (cb.hit)
+            {
+                newPlayerPos.y = cb.hitPoint.y;
+                hitPoint = cb.hitPoint;
+                hitNormal = cb.hitNormal;
+            }
+
+
+#if CLIMB_DEBUG_DRAW_LINE
             if (GG::draw != nullptr)
             {
                 GG::draw->drawLine(p1, p2);
             }
 #endif
 
-            const float normalDotLow = 0.9;
-            const float normalDotHigh = 0.4;
+            const float normalDotLow = 0.99;
+            const float normalDotHigh = 0.7;
 
-            float playerHeight = s.position.y;
+            const float heightOffset = 0.1f;
+
+            float playerHeight = s.position.y + heightOffset;
             float height = newPlayerPos.y - playerHeight;
+
+            const float normalHeightInterpolateMin = testHeightMin;
+            // const float normalHeightInterpolateMax = 1.0;
+            const float normalHeightInterpolateMax = testHeightMax;
 
             // adjust the normal limit depending on the height, higher means a lower limit
             // this is to make it so you don't try to climb hills and stuff just because they're steep enough but can still climb small-ish steps
-            float t = height / (testHeightMax - testHeightMin);
+            float t = height / (normalHeightInterpolateMax - normalHeightInterpolateMin);
+            // t = clamp(t, 0.0f, 1.0f);
             float normalDotMax = mix(normalDotLow, normalDotHigh, t); 
 
             float boundsMissEpsilon = 0.1;
-            // Logger::debug(
-            //     "dot(cb.hitNormal, vec3(0, 1, 0)): ", dot(cb.hitNormal, vec3(0, 1, 0)), 
+            // DEBUG_MESSAGE(
+            //     "querryNormal: ", hitNormal, 
             //     " height: ", height, 
             //     " t: ", t, 
             //     " normalDotMax: ", normalDotMax,
-            //     " cb.hitPoint.y: ", cb.hitPoint.y,
+            //     " hitPoint.y: ", hitPoint.y,
             //     " bounds limit: ", transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon
             // );
 
@@ -260,19 +368,18 @@ void TryPlayerClimb()
 
 
             if (
-                   !cb.hit // raycast missed
-                // || dot(cb.hitNormal, vec3(0, 1, 0)) < normalDotMax // normal of hit is too steep
-                || cb.hitNormal.y < normalDotMax // normal of hit is too steep
-                || cb.hitPoint.y < transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon // hit is outside the bounds of the test (essentially also a miss)
+                   !hit // raycast missed
+                || hitNormal.y < normalDotMax // normal of hit is too steep
+                || hitPoint.y < transformWorldHeight.getPosition().y - playerbox->getHalfExtents().y - boundsMissEpsilon // hit is outside the bounds of the test (essentially also a miss)
             ) break;
 
             // NOTIF_MESSAGE(cb.hitNormal.y)
 
             found = true;
-#if CLIMB_DEBUG_DRAW
+#if CLIMB_DEBUG_DRAW_LINE
             if (GG::draw != nullptr)
             {
-                GG::draw->drawSphere(cb.hitPoint, 0.1, 0.0f, ModelState3D(), "#00ff00"_rgb);
+                GG::draw->drawSphere(hitPoint, 0.1, 0.0f, ModelState3D(), "#00ff00"_rgb);
             }
 #endif
 
@@ -282,6 +389,14 @@ void TryPlayerClimb()
             ms.climbHeight = height;
             ms.climbStartSpeed = length(PG::toglm(playerBody->getLinearVelocity()));
             ms.canClimb = true;
+
+            // DEBUG_MESSAGE(
+            //     "ms.climbStartPos: ", ms.climbStartPos,
+            //     "ms.climbEndPos: ", ms.climbEndPos,
+            //     "ms.climbHeight: ", ms.climbHeight,
+            //     "ms.climbStartSpeed: ", ms.climbStartSpeed
+            // );
+
             break;
         }
         testBody->removeCollider(playerHeightCollider);
@@ -371,7 +486,7 @@ void TryPlayerClimb()
             vec3 p2 = newPlayerPos - vec3(0, 0.5, 0);
             ClimbRaycastCallback cb(p1, p2);
             rp3d::Ray ray(PG::torp3d(p1), PG::torp3d(p2));
-            PG::world->raycast(ray, &cb);
+            PG::world->raycast(ray, &cb, 1<<CollideCategory::ENVIRONEMENT);
 
 #if STEP_DEBUG_DRAW
             if (GG::draw != nullptr)
@@ -656,7 +771,7 @@ void Game::physicsLoop()
                     ms.speed = length(velocity);
 
                     // apply gravity
-                    if (!ms.walking)
+                    if (!ms.grounded)
                     {
                         vec3 v = velocity + vec3(0, -ms.gravity, 0) * dt;
                         
@@ -890,7 +1005,6 @@ void Game::physicsLoop()
                             // Logger::debug("vault pos: ", ms.climbVaultPos);
                         }
                         else if (ms.walking) {
-                            // Logger::debug(TIMESTAMP_PHYSICS, "jump");
                             velocity.y = ms.jumpVelocity; // for nicer instantaneous jumps, try to change to += if it feels weird
                         }
                     }

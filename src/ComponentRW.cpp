@@ -779,6 +779,8 @@ DATA_READ_FUNC_ENTITY(RigidBody)
         data = PG::world->createRigidBody(rp3d::Transform::identity());
     }
 
+    data->setUserData(e);
+
     WHILE_NEW_VALUE
         IF_MEMBER_READ_VALUE(type)
             MAP_SAFE_READ_FC(rp3dBodyTypeMap, buff, data->setType, rp3d::BodyType, value)

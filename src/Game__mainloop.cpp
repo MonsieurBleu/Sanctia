@@ -1605,6 +1605,38 @@ void Game::mainloop()
             }
         });
 
+        System<AudioPlayer>([](Entity& entity)
+        {
+            AudioPlayer& player = entity.comp<AudioPlayer>();
+            for (size_t c = 0; c < player.clipCount; c++)
+            {
+                AudioClip& clip = player.clips[c];
+                clip.source.updateState();
+                if (clip.source.getState() == AL_STOPPED)
+                {
+                    if (player.clipCount - 1 > 0)
+                    {
+                        player.clips[c] = player.clips[player.clipCount - 1];
+                    }
+                    player.clips[player.clipCount - 1] = AudioClip();
+                    player.clipCount--;
+                }
+
+                if (clip.info.followEntity && entity.has<state3D>())
+                {
+                    const vec3& pos = entity.comp<state3D>().position;
+                    clip.info.position = pos;
+                }
+
+                clip.source.loop(clip.info.loop);
+                const vec3& pos = clip.info.position;
+                clip.source.setPosition(vec3(pos.z, pos.y, pos.x));
+                clip.source.setVelocity(clip.info.velocity);
+                clip.source.setGain(clip.info.gain);
+                clip.source.setPitch(clip.info.pitch);
+            }
+        });
+
         /* Main loop End */
         mainloopEndRoutine();
     }
@@ -1637,6 +1669,18 @@ void Game::mainloop()
 
     // Prevent crashed from LuaState being destroyed before scripts
     Loader<ScriptInstance>::loadedAssets.clear(); 
+
+    System<AudioPlayer>([](Entity& entity)
+    {
+        AudioPlayer& player = entity.comp<AudioPlayer>();
+        for (size_t c = 0; c < player.clipCount; c++)
+        {
+            AudioClip& clip = player.clips[c];
+            clip.source.destroy();
+        }
+    });
+
+    Loader<AudioFile>::loadedAssets.clear(); 
 }
 
 

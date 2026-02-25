@@ -46,6 +46,7 @@ EntityRef Apps::LunaTesting::UImenu()
     );
 }
 
+EntityRef myAwesomeEntity = nullptr;
 void Apps::LunaTesting::init()
 {
     /***** Preparing App Settings *****/
@@ -59,7 +60,7 @@ void Apps::LunaTesting::init()
     //     Loader<ScriptInstance>::get("test_ent").run();
     // }
 
-    static auto e = spawnEntity("test_ent");
+    myAwesomeEntity = spawnEntity("test_ent");
 
 
     // appRoot->set<Script>(Script(
@@ -189,6 +190,13 @@ void Apps::LunaTesting::init()
     LogicBlock::parse_string_cstr(&input, len, len+1);
     std::cout << len << "\t" << input << "\n";
 
+    myAwesomeEntity->set<AudioPlayer>(AudioPlayer());
+    myAwesomeEntity->set<state3D>({});
+
+    AudioPlayer& p = myAwesomeEntity->comp<AudioPlayer>();
+
+    p.Play({.clipName = "FootstepsStoneDirt1Mono", .followEntity = true, .loop = true});
+
     // constexpr int N = 1e6;
     // BenchTimer timer("Logic Block Parsing Benchmark");
     // int acctmp = 0;
@@ -246,6 +254,19 @@ void Apps::LunaTesting::update()
     else
         globals.currentCamera->setMouseFollow(true);
 
+    state3D& s = myAwesomeEntity->comp<state3D>();
+
+    float t = globals.appTime.getElapsedTime() * glm::two_pi<float>();
+
+    s.position = vec3(sin(t) * 5.0f, 0.0f, cos(t) * 5.0f);
+
+    
+    // if (globals.appTime.getUpdateCounter() % 60)
+    // {
+    //     AudioPlayer& p = myAwesomeEntity->comp<AudioPlayer>();
+
+    //     p.Play({.clipName = "FootstepsStoneDirt1", .followEntity = true, .loop = true});
+    // }   
 
     // bool b = InputManager::getGamepadButtonValue(VULPINE_GAMEPAD_BUTTON_A);
     // std::cout << "button A is: " << (b ? "Pressed" : "Not Pressed") << std::endl;

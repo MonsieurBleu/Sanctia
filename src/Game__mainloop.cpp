@@ -652,6 +652,9 @@ void Game::mainloop()
     // for (auto &m : Loader<MeshMaterial>::loadingInfos)
     //     Loader<MeshMaterial>::get(m.first);
 
+    // Initialize the C random number generator
+    srand(time(nullptr));
+
 
     /******  Main Loop ******/
     while (state != AppState::quit)

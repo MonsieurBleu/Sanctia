@@ -32,7 +32,7 @@ namespace GameGlobals
 
     inline std::list<EntityRef> entities;
 
-    inline EntityRef playerEntity;
+    inline EntityRef playerEntity = nullptr;
 
     inline float timeOfDay = 10.0f;
     inline float moonOrbitTime = 0.50; // normalized to [0, 1] cause it's like over 27.3 days otherwise

@@ -695,7 +695,9 @@ void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
         e->ids[ComponentCategory::AI]      == NO_ENTITY &&
         e->ids[ComponentCategory::PHYSIC]  == NO_ENTITY &&
         e->ids[ComponentCategory::GRAPHIC] == NO_ENTITY &&
-        e->ids[ComponentCategory::DATA]    == NO_ENTITY
+        e->ids[ComponentCategory::DATA]    == NO_ENTITY &&
+        e->ids[ComponentCategory::SCRIPTING]    == NO_ENTITY &&
+        e->ids[ComponentCategory::SOUND]   == NO_ENTITY
         ;
     
     if(isPureUI)

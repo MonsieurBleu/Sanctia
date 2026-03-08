@@ -17,6 +17,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/random.hpp>
 
 #include <AnimationBlueprint.hpp>
 #include <Graphics/Animation.hpp>
@@ -1608,36 +1609,200 @@ void Game::mainloop()
             }
         });
 
-        System<AudioPlayer>([](Entity& entity)
+        System<AudioScatterer, AudioPlayer>([](Entity& entity, AudioScatterer& scatterer, AudioPlayer& audioPlayer)
         {
-            AudioPlayer& player = entity.comp<AudioPlayer>();
+            float time = globals.appTime.getElapsedTime();
+            if (time < scatterer._lastPlayTime + scatterer._timeBeforeNextPlay) 
+                return;
+
+            scatterer._lastPlayTime = time;
+            auto dist = std::normal_distribution<float>(scatterer.meanTime, scatterer.stddev);
+            scatterer._timeBeforeNextPlay = dist(AudioScatterer::generator);
+
+            if (scatterer.clips.size() == 0)
+            {
+                WARNING_MESSAGE("AudioScatterer tried to play sound clip but has no clips! consider adding one");
+                return;
+            }
+
+            auto dist_clip = std::uniform_int_distribution<size_t>(0, scatterer.clips.size() - 1);
+            std::string& clipName = scatterer.clips[dist_clip(AudioScatterer::generator)];
+
+            vec3 randomPoint = vec3(0);
+
+            constexpr int max_tries = 100; // reduce if lag spike
+            vec3 box_min = scatterer.posOffset - scatterer.halfExtents;
+            vec3 box_max = scatterer.posOffset + scatterer.halfExtents;
+
+            float distance_squared = scatterer.maxDistanceFromPlayer * scatterer.maxDistanceFromPlayer;
+
+            
+            bool hasPlayerEntity = false;
+            vec3 playerPoint;
+            if (GG::playerEntity != nullptr && entity.has<state3D>())
+            {
+                hasPlayerEntity = true;
+                playerPoint = GG::playerEntity->comp<state3D>().position - entity.comp<state3D>().position;
+            }
+
+            if (scatterer.restrictToDistanceFromPlayer && hasPlayerEntity)
+            {
+                vec3 sphere_min = playerPoint - scatterer.maxDistanceFromPlayer;
+                vec3 sphere_max = playerPoint + scatterer.maxDistanceFromPlayer;
+
+                box_min = max(box_min, sphere_min);
+                box_max = min(box_max, sphere_max);
+
+
+                if (
+                       box_min.x > box_max.x
+                    || box_min.y > box_max.y
+                    || box_min.z > box_max.z
+                )
+                {
+                    // no intersection between the bounding box and the sphere
+                    return;
+                }
+            }
+            
+            for (int i = 0; i < max_tries; i++)
+            {
+                vec3 p = glm::linearRand(box_min, box_max);
+                // DEBUG_MESSAGE("p: ", p);
+
+                if (
+                    scatterer.restrictToDistanceFromPlayer &&
+                    hasPlayerEntity &&
+                    distance2(playerPoint, p) > distance_squared
+                ) continue;
+
+                randomPoint = p;
+                break;
+            }
+
+            AudioClipSettings settings = scatterer.defaultClipSettings;
+            settings.position = randomPoint;
+            settings.clipName = clipName.c_str();
+            audioPlayer.Play(settings);
+        });
+
+        System<FootstepsManager, MovementState, AudioPlayer>([](Entity& entity, FootstepsManager& fs, MovementState& ms, AudioPlayer& ap)
+        {
+            // if we just landed (and had enough air time, move the step cycle close to a step point to produce a step)
+            // disabled for now since it didn't quite work 
+            // if (ms.justLanded && ms.lastGroundedTime + 0.1 > globals.simulationTime.getElapsedTime())
+            // {
+            //     fs._stepCycle = 0.20;
+            // }
+
+            if (!ms.grounded)
+            {
+                // DEBUG_MESSAGE("Not walking")
+                fs._stepCycle = 0;
+                return;
+            }
+
+            vec3 vel = ms.deplacementDirection * ms.speed;
+            float xzSpeed = vel.x * vel.x + vel.z * vel.z;
+
+            if (length(ms.wantedMoveDirection) < 0.0001f && xzSpeed < 0.2f)
+            {
+                // DEBUG_MESSAGE("length(ms.wantedMoveDirection): ", length(ms.wantedMoveDirection), " xzSpeed: ", xzSpeed)
+                fs._stepCycle = 0;
+                return;
+            }
+
+            // controls the time between steps.
+            // nonlinear scaling, linear 0-1 when 0 > speed > walk speed,
+            // linear 1-1.5 when walk speed >= speed > sprint speed
+            float speedFact = ms.speed < ms.walkSpeed ? ms.speed / ms.walkSpeed : 1.0f + (ms.speed - ms.walkSpeed) / (ms.sprintSpeed - ms.walkSpeed);
+            // DEBUG_PRINT_VARIABLES(speedFact, ms.speed)
+
+            // change this if you want the steps to generally go faster or slower
+            constexpr float globalStepSpeedModifier = .8f;
+            speedFact *= globalStepSpeedModifier;
+
+            float oldCycle = fs._stepCycle;
+            fs._stepCycle = mod(fs._stepCycle + speedFact * globals.appTime.getDelta(), 1.0f);
+
+            uint8_t stepCycleInt = (uint8_t)(fs._stepCycle * 255.0f);
+            uint8_t oldStepCycleInt = (uint8_t)(oldCycle * 255.0f);
+
+
+            // brancheless edge detection of the 0.25 and 0.75 boundary
+            // stolen from the Q3 arena source code :3
+            if ((((oldStepCycleInt + 64) ^ (stepCycleInt + 64)) & 128) != 0)
+            {
+                fs.Play(ap);
+            }
+        });
+
+        System<AudioPlayer>([](Entity& entity, AudioPlayer& player)
+        {
             for (size_t c = 0; c < player.clipCount; c++)
             {
                 AudioClip& clip = player.clips[c];
                 clip.source.updateState();
                 if (clip.source.getState() == AL_STOPPED)
                 {
+                    // I hecking love swap-and-pop <3
+                    player.clips[c].source.destroy();
                     if (player.clipCount - 1 > 0)
                     {
                         player.clips[c] = player.clips[player.clipCount - 1];
                     }
                     player.clips[player.clipCount - 1] = AudioClip();
                     player.clipCount--;
+                    c--;
+                    continue;
                 }
 
-                if (clip.info.followEntity && entity.has<state3D>())
+
+                vec3 playPosition;
+                if (clip.info.usePosition)
                 {
-                    const vec3& pos = entity.comp<state3D>().position;
-                    clip.info.position = pos;
+                    clip.source.setRelativeToListener(false);
+                    if (clip.info.positionInEntityReferential && entity.has<state3D>())
+                    {
+                        const vec3& pos = entity.comp<state3D>().position;
+                        const quat& rot = entity.comp<state3D>().usequat ? entity.comp<state3D>().quaternion : quatLookAt(entity.comp<state3D>().lookDirection, vec3(0, 1, 0)); 
+                        
+                        playPosition = pos + rot * clip.info.position;
+                    }
+                    else
+                    {
+                        playPosition = clip.info.position;
+                    }
+                }
+                else 
+                {
+                    clip.source.setRelativeToListener(true);
+                    playPosition = vec3(0.0f);
+                }
+
+                vec3 vel = clip.info.velocity; // default value if `updateVelocityBasedOnRigidbody` is false or the entity lacks a rigidbody
+                if (clip.info.updateVelocityBasedOnRigidbody && entity.has<RigidBody>())
+                {
+                    RigidBody rb = entity.comp<RigidBody>();
+                    vel = PG::toglm(rb->getLinearVelocity());
                 }
 
                 clip.source.loop(clip.info.loop);
-                const vec3& pos = clip.info.position;
-                clip.source.setPosition(vec3(pos.z, pos.y, pos.x));
-                clip.source.setVelocity(clip.info.velocity);
+                // DEBUG_MESSAGE("playPosition: ", playPosition);
+                if (GG::draw != nullptr)
+                {
+                    GG::draw->drawSphere(playPosition, 0.1f);
+                }
+                clip.source.setPosition(vec3(-playPosition.x, playPosition.y, -playPosition.z));
+                clip.source.setVelocity(vel);
                 clip.source.setGain(clip.info.gain);
                 clip.source.setPitch(clip.info.pitch);
             }
+        });
+
+        System<MovementState>([](Entity& entity, MovementState& ms)
+        {
+            ms.justLanded = false;
         });
 
         /* Main loop End */

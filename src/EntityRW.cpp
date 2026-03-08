@@ -166,3 +166,7 @@ AUTOGEN_COMPONENT_RWFUNC(AgentState__old)
 
 AUTOGEN_COMPONENT_RWFUNC_E(EntityGroupInfo)
 
+// for some reason this just doesn't work
+// AUTOGEN_COMPONENT_RWFUNC(AudioPlayer)
+
+// AUTOGEN_COMPONENT_RWFUNC(FootstepsManager)

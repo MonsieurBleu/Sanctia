@@ -334,7 +334,6 @@ namespace Apps
     class LunaTesting : public SubApps
     {
         private:
-            OrbitController controller;
 
         public:
         

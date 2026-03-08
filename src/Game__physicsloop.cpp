@@ -283,8 +283,8 @@ void TryPlayerClimb()
             rp3d::Vector3 _p2 = PG::torp3d(p2);
             // ray against the world but not the terrain
             ClimbRaycastCallback cb(p1, p2);
-            rp3d::Ray ray(_p1, _p2, 1<<CollideCategory::ENVIRONEMENT);
-            PG::world->raycast(ray, &cb);
+            rp3d::Ray ray(_p1, _p2);
+            PG::world->raycast(ray, &cb, 1<<CollideCategory::ENVIRONEMENT);
 
             // fix the raycast not working against the terrain coliders
             bool terrainHit = false;
@@ -630,25 +630,28 @@ void Game::physicsLoop()
         PG::world->update(globals.simulationTime.speed / physicsTicks.freq);
         physicsWorldUpdateTimer.stop();
 
-        System<MovementState>([](Entity& entity)
-        {
-            MovementState& ds = entity.comp<MovementState>();
-            if (ds._grounded)
-            {
-                ds.grounded = true;
-                ds.walking  = true;
-
-                if (!ds.grounded) // just landed
-                {
-                    ds.landedTime = globals.simulationTime.getElapsedTime();
-                }
-            }
-            else {
-                ds.grounded = false;
-                ds.walking  = false;
-            }
-            ds.groundNormalY = ds._groundNormalY;
-        });
+        // System<MovementState>([](Entity& entity)
+        // {
+        //     MovementState& ms = entity.comp<MovementState>();
+        //     if (ms.walking)
+        //     {
+        //         if (!ms.grounded) // just landed
+        //         {
+        //             ms.justLanded = true;
+        //             ms.landedTime = globals.simulationTime.getElapsedTime();
+        //         }
+                
+                
+        //         ms.grounded = true;
+        //         ms.walking  = true;
+        //     }
+        //     else
+        //     {
+        //         ms.grounded = false;
+        //         ms.walking  = false;
+        //     }
+        //     ms.groundNormalY = ms._groundNormalY;
+        // });
 
         physicsSystemsTimer.start();
 
@@ -732,378 +735,409 @@ void Game::physicsLoop()
             {
             /* Entities with a dynamic body follows the physic. They can also exert a deplacement force*/
             case rp3d::BodyType::DYNAMIC : 
+            {
+            auto &t = b->getTransform();
+
+            if(!PG::doPhysicInterpolation || s._PhysicTmpPos.x == UNINITIALIZED_FLOAT)
+            {
+                s._PhysicTmpPos = PG::toglm(t.getPosition());
+                s._PhysicTmpQuat = PG::toglm(t.getOrientation());
+            }   
+            else
+            {
+                s._PhysicTmpPos  = s.position;
+                s._PhysicTmpQuat = s.quaternion;
+            }
+
+            s.position = PG::toglm(t.getPosition());
+            s.quaternion = PG::toglm(t.getOrientation());
+
+
+
+            
+            // minPos = min(minPos, s.position);
+            
+
+
+            
+            if(!entity.has<MovementState>()) break;
+            auto &ms = entity.comp<MovementState>();
+            vec3 velocity = PG::toglm(b->getLinearVelocity());
+
+            float heightAboveTerrain;
+            vec3 terrainNormal;
+            // probably should make this into a standalone function cause it's useful and also it would free up this insanely long system
+            // also if you leave the terrain the game will segfault
+            {
+                vec2 field_point = vec2(entity.comp<state3D>().position.x, entity.comp<state3D>().position.z);
+                field_point += vec2(Blueprint::terrainSize.x, Blueprint::terrainSize.z) * 0.5f;
+
+                Texture2D &HeightMap = Loader<Texture2D>::get(Blueprint::mapFileName);
+
+                float *src = ((float *)HeightMap.getPixelSource());
+                ivec2 textureSize = HeightMap.getResolution();
+
+                auto texelFetch = [&src, &textureSize](const ivec2& uv){return src[uv.y * textureSize.x + uv.x] * Blueprint::terrainSize.y;};
+
+                vec2 terrain_uv = field_point / vec2(Blueprint::terrainSize.x, Blueprint::terrainSize.z);
+                vec2 texel_pos = terrain_uv * vec2(textureSize) - 0.5f;
+                // bilinear interpolation
+                ivec2 base = ivec2(floor(texel_pos));
+                vec2 frac  = fract(texel_pos); 
+
+                ivec2 p00 = base + ivec2(0, 0);
+                ivec2 p10 = base + ivec2(1, 0);
+                ivec2 p01 = base + ivec2(0, 1);
+                ivec2 p11 = base + ivec2(1, 1);
+
+                float c00 = texelFetch(p00);
+                float c10 = texelFetch(p10);
+                float c01 = texelFetch(p01);
+                float c11 = texelFetch(p11);
+
+                float wx = frac.x;
+                float wy = frac.y;
+
+                float h =
+                    c00 * (1 - wx) * (1 - wy) +
+                    c10 * wx       * (1 - wy) +
+                    c01 * (1 - wx) * wy +
+                    c11 * wx       * wy;
+
+                heightAboveTerrain = entity.comp<state3D>().position.y - h;
+
+                float dhdx = c00 - c10;
+                float dhdy = c00 - c01;
+
+                terrainNormal = normalize(vec3(dhdx, 1.0, dhdy));
+
+                // DEBUG_MESSAGE("terrainNormal: ", terrainNormal);
+
+                // vec3 p = vec3(entity.comp<state3D>().position.x, h, entity.comp<state3D>().position.z);
+                // GG::draw->drawLine(p, p + terrainNormal, 10.0f);
+            }
+            
+            vec3 p1 = entity.comp<state3D>().position + vec3(0, 0.05, 0);
+            vec3 p2 = entity.comp<state3D>().position - vec3(0, 0.20, 0);
+            rp3d::Vector3 _p1 = PG::torp3d(p1);
+            rp3d::Vector3 _p2 = PG::torp3d(p2);
+            // ray against the world but not the terrain
+            ClimbRaycastCallback cb(p1, p2);
+            rp3d::Ray ray(_p1, _p2);
+            PG::world->raycast(ray, &cb, 1<<CollideCategory::ENVIRONEMENT);
+
+            float floordist = abs(heightAboveTerrain);
+            vec3 floorNormal = terrainNormal;
+            if (cb.hit && cb.minDistance < heightAboveTerrain)
+            {
+                floordist = cb.minDistance;
+                floorNormal = cb.hitNormal;
+            }
+
+            constexpr float groundedCheckRange = 0.25f;
+            if (
+                floordist > groundedCheckRange ||
+                (velocity.y > 0.0f && dot(velocity, floorNormal) > 0.4)
+            )
+            {
+                // if (floordist > groundedCheckRange)
+                // {
+                //     DEBUG_MESSAGE(TIMESTAMP_PHYSICS, "Distance check failed... floordist was: ", floordist);
+
+                //     vec3 p0 = entity.comp<state3D>().position;
+                //     vec3 p1 = p0 + vec3(0, -groundedCheckRange, 0);
+                //     GG::draw->drawSphere(p0, 0.01f, 1000.0, ModelState3D(), "#00ff00"_rgb);
+                //     GG::draw->drawSphere(p1, 0.01f, 1000.0, ModelState3D(), "#00ff00"_rgb);
+                //     GG::draw->drawLine(p0, p1, 1000.0);
+                // }
+                if (ms.grounded)
+                    ms.lastGroundedTime = globals.simulationTime.getElapsedTime();
+
+                ms.grounded = false;
+                ms.walking  = false;
+            }
+            else if (floorNormal.y < 0.7)
+            {
+                if (!ms.grounded)
                 {
-                    auto &t = b->getTransform();
-
-                    if(!PG::doPhysicInterpolation || s._PhysicTmpPos.x == UNINITIALIZED_FLOAT)
-                    {
-                        s._PhysicTmpPos = PG::toglm(t.getPosition());
-                        s._PhysicTmpQuat = PG::toglm(t.getOrientation());
-                    }   
-                    else
-                    {
-                        s._PhysicTmpPos  = s.position;
-                        s._PhysicTmpQuat = s.quaternion;
-                    }
-
-                    s.position = PG::toglm(t.getPosition());
-                    s.quaternion = PG::toglm(t.getOrientation());
-
-
-
-                    
-                    // minPos = min(minPos, s.position);
-                    
-
-
-                    
-                    if(!entity.has<MovementState>()) break;
-
-                    vec3 lookDir = s.usequat ? eulerAngles(s.quaternion) : s.lookDirection;
-                    vec3 eulerY = vec3(
-                        0.0f, 
-                        atan(-lookDir.x, -lookDir.z), 
-                        0.0f
-                    );
-
-                    rp3d::Transform transform(b->getTransform().getPosition(), PG::torp3d(quat(eulerY)));
-                    b->setTransform(transform);
-
-                    auto &ms = entity.comp<MovementState>();
-
-                    const float small_threshold = 0.05f;
-
-                    vec3 velocity = PG::toglm(b->getLinearVelocity());
-
-                    float dt = globals.simulationTime.getDelta();
-
-                    ms.deplacementDirection = normalize(velocity);
-                    ms.speed = length(velocity);
-
-                    // apply gravity
-                    if (!ms.grounded)
-                    {
-                        vec3 v = velocity + vec3(0, -ms.gravity, 0) * dt;
-                        
-                        velocity = (velocity + v) * 0.5f; // smoothing the gravity effect, feels nicer imo
-                    }
-
-
-                    // get input from ActionState if any
-                    if(entity.has<ActionState>())
-                    {
-                        auto &as = entity.comp<ActionState>();
-
-                        // if(as.stun)
-                        //     maxspeed = 0.f;
-                        // else switch (as.lockType)
-                        //     {
-                        //         case ActionState::DIRECTION : dir = as.lockedDirection;
-                        //         case ActionState::SPEED_ONLY :maxspeed = as.lockedMaxSpeed; break;                
-                        //         default: break;
-                        //     }
-
-                        if (as.climbing)
-                        {
-                            const float climbSpeedSlow = 1.0f; // m/s 
-                            const float climbSpeedFast = 4.0f; // m/s 
-                            float climbSpeed = climbSpeedSlow;
-                            const float vaultOffset = 0.2f;
-
-
-                            const float minSpeedForFastVault = 6.0f;
-                            const float maxHeightForFastVault = 1.0;
-                            if (ms.climbStartSpeed >= minSpeedForFastVault && ms.climbHeight <= maxHeightForFastVault)
-                            {
-                                climbSpeed = climbSpeedFast;
-                            }
-
-                            // 0 < t < ms.climbHeight
-                            float t = (globals.simulationTime.getElapsedTime() - as.climbingTime) * climbSpeed;
-                            
-                            // climb anim 
-                            if (t <= ms.climbHeight)
-                            {
-                                if (ms.climbHeight == vaultOffset) ms.climbHeight += 0.0001; // prevent division by 0 error
-
-                                float t_vault = max(t - vaultOffset, 0.0f) / (ms.climbHeight - vaultOffset);
-                                
-                                // Logger::debug("t: ", t, " t vault: ", t_vault);
-
-                                vec3 pos = ms.climbStartPos + vec3(0, 1, 0) * t;
-                            
-                                pos = mix(pos, ms.climbEndPos, t_vault);
-
-                                // Logger::debug("pos'd: ", pos);
-
-                                rp3d::Transform transform(PG::torp3d(pos), b->getTransform().getOrientation());
-                                b->setTransform(transform);
-
-                                vec3 forward = ms.climbEndPos - ms.climbStartPos;
-                                forward.y = 0;
-                                PlayerViewController::setTargetDir(normalize(forward));
-                            }
-                            else // climb anim end
-                            {
-                                as.climbing = false;
-                                ms.isAllowedToClimb = true;
-
-                                size_t collider_n = b->getNbColliders();
-                                for (size_t i = 0; i < collider_n; i++)
-                                {
-                                    b->getCollider(i)->setIsSimulationCollider(true);
-                                }
-
-                                PlayerViewController::setEnabled(false);
-                            }
-
-                            b->setLinearVelocity(rp3d::Vector3(0, 0, 0));
-                            ms.speed = 0.0f;
-                            ms.isTryingToJump = false;
-                            ms.wantedSpeed = 0;
-                        }
-
-                        if (as.stun)
-                        {
-                            ms.wantedSpeed = 0.f;
-                            ms.isTryingToJump = false;
-                        }
-                        else switch (as.lockType)
-                        {
-                            case ActionState::DIRECTION :
-                                ms.wantedMoveDirection = as.lockedDirection;
-                                ms.isTryingToJump = false;
-                                break;
-                            case ActionState::SPEED_ONLY :
-                                ms.wantedSpeed = as.lockedMaxSpeed; 
-                                ms.isTryingToJump = false;
-                                break;
-                            default: break;
-                        }
-                    }
-
-                    /*
-                    bool canClimb = false;
-                    vec3 handPosLeft, handPosRight;
-                    if (GG::playerEntity != nullptr && entity.is(*GG::playerEntity) && ms.isAllowedToClimb)
-                    {
-                        vec3 angleVector_forward, angleVector_right, angleVector_up;
-                        angleVectors(globals.currentCamera->getDirection(), angleVector_forward, angleVector_right, angleVector_up);
-                        angleVector_forward.y = 0.00001;
-                        angleVector_forward = normalize(angleVector_forward);
-                        const float distanceCheck = 0.75;
-                        vec3 vaultWallCheckRoot = angleVector_forward * (length(velocity) < 6.0f ? distanceCheck : 1.25f);
-
-                        vec3 verticalOffset = vec3(0, 0.75, 0);
-
-                        float distanceFromCenter = 0.3;
-                        
-                        vec3 p1 = s.position + verticalOffset;
-                        vec3 p2 = s.position + verticalOffset + vaultWallCheckRoot;
-
-                        vec3 p1_1 = p1 + angleVector_right * distanceFromCenter;
-                        vec3 p1_2 = p1 - angleVector_right * distanceFromCenter;
-
-                        vec3 p2_1 = p2 + angleVector_right * distanceFromCenter;
-                        vec3 p2_2 = p2 - angleVector_right * distanceFromCenter;
-
-                        ensureNonZeroVectorComponents(p1_1);
-                        ensureNonZeroVectorComponents(p2_1);
-                        rp3d::Ray ray_1(PG::torp3d(p1_1), PG::torp3d(p2_1));
-                        PG::RayCastCallback cb_1(p1_1, p2_1);
-                        PG::world->raycast(ray_1, &cb_1, 1<<CollideCategory::ENVIRONEMENT);
-
-                        ensureNonZeroVectorComponents(p1_2);
-                        ensureNonZeroVectorComponents(p2_2);
-                        rp3d::Ray ray_2(PG::torp3d(p1_2), PG::torp3d(p2_2));
-                        PG::RayCastCallback cb_2(p1_2, p2_2);
-                        PG::world->raycast(ray_2, &cb_2, 1<<CollideCategory::ENVIRONEMENT);
-
-                        if (cb_1.hit && cb_2.hit)
-                        {
-                            // Logger::debug(TIMESTAMP_PHYSICS, "Im here");
-                            vec3 hit1 = cb_1.hitPoint;
-                            vec3 hit2 = cb_2.hitPoint;
-                            vec3 hitVector = normalize(hit1 - hit2);
-                            float d = dot(hitVector, angleVector_forward);
-                            if (abs(d) < 0.15f)
-                            {
-                                float offset_in = 0.5;
-                                vec3 hitTest_1 = hit1 + normalize(p2_1 - p1_1) * offset_in;
-                                vec3 hitTest_2 = hit2 + normalize(p2_2 - p1_2) * offset_in;
-                                float testHeightMax = 2.5;
-                                float testHeightMin = 0.5;
-                                
-                                vec3 heightTest_1_start = vec3(hitTest_1.x, s.position.y + testHeightMax, hitTest_1.z);
-                                vec3 heightTest_1_end   = vec3(hitTest_1.x, s.position.y + testHeightMin, hitTest_1.z);
-                                ensureNonZeroVectorComponents(heightTest_1_start);
-                                ensureNonZeroVectorComponents(heightTest_1_end);
-
-                                vec3 heightTest_2_start = vec3(hitTest_2.x, s.position.y + testHeightMax, hitTest_2.z);
-                                vec3 heightTest_2_end   = vec3(hitTest_2.x, s.position.y + testHeightMin, hitTest_2.z);
-                                ensureNonZeroVectorComponents(heightTest_2_start);
-                                ensureNonZeroVectorComponents(heightTest_2_end);
-
-                                rp3d::Ray ray_height_1(PG::torp3d(heightTest_1_start), PG::torp3d(heightTest_1_end));
-                                PG::RayCastCallback cb_height_1(heightTest_1_start, heightTest_1_end);
-                                PG::world->raycast(ray_height_1, &cb_height_1, 1<<CollideCategory::ENVIRONEMENT);
-
-                                rp3d::Ray ray_height_2(PG::torp3d(heightTest_2_start), PG::torp3d(heightTest_2_end));
-                                PG::RayCastCallback cb_height_2(heightTest_2_start, heightTest_2_end);
-                                PG::world->raycast(ray_height_2, &cb_height_2, 1<<CollideCategory::ENVIRONEMENT);
-
-                                float maxHeightDifference = 0.05;
-                                if (
-                                    cb_height_1.hit && cb_height_2.hit
-                                    && cb_height_1.minDistance - cb_height_2.minDistance < maxHeightDifference
-                                )
-                                {
-                                    float avgDist = (cb_height_1.minDistance + cb_height_2.minDistance) / 2.0f;
-                                    float height = testHeightMax - avgDist;
-                                    canClimb = true;
-                                    ms.climbStartPos = s.position;
-                                    ms.climbEndPos = s.position;
-                                    ms.climbEndPos.y += height;
-                                    ms.climbVaultPos =    ms.climbEndPos 
-                                                        + angleVector_forward * cb_1.minDistance 
-                                                        + angleVector_forward * offset_in * 2.0f;
-                                    ms.climbHeight = height;
-                                    ms.climbStartSpeed = length(velocity);
-
-                                    // Logger::debug(cb_1.minDistance, " ", angleVector_forward * cb_1.minDistance, " ", angleVector_forward * offset_in * 2.0f);
-
-                                    handPosLeft = cb_height_1.hitPoint;
-                                    handPosRight = cb_height_2.hitPoint;
-                                    // Logger::debug(TIMESTAMP_PHYSICS, "can climb :) height: ", height);
-                                }
-                                
-                            }
-                        }
-                    }
-                    */
-
-                    // check jump
-                    if (ms.isTryingToJump)
-                    {
-                        ms.grounded = false;
-                        ms.isTryingToJump = false;
-
-                        // Logger::debug(TIMESTAMP_PHYSICS, "???");
-                        
-                        if (ms.canClimb)
-                        {
-
-                            // Logger::debug(TIMESTAMP_PHYSICS, "??? 2 electric boogaloo");
-
-                            // assuming the entity has an action state cause like it's the player
-                            auto &as = entity.comp<ActionState>();
-                            as.climbing = true;
-                            as.climbingTime = globals.simulationTime.getElapsedTime();
-                            // TODO check if the entity is the player 
-                            PlayerViewController::setEnabled(true);
-                            ms.isAllowedToClimb = false;
-                            
-                            size_t collider_n = b->getNbColliders();
-                            for (size_t i = 0; i < collider_n; i++)
-                            {
-                                b->getCollider(i)->setIsSimulationCollider(false);
-                            }
-
-                            // Logger::debug(TIMESTAMP_PHYSICS, "climb :)");
-                            // Logger::debug("start pos: ", ms.climbStartPos);
-                            // Logger::debug("end pos: ", ms.climbEndPos);
-                            // Logger::debug("vault pos: ", ms.climbVaultPos);
-                        }
-                        else if (ms.walking) {
-                            velocity.y = ms.jumpVelocity; // for nicer instantaneous jumps, try to change to += if it feels weird
-                        }
-                    }
-
-                    // get acceleration depending on state
-                    float accel;
-                    if (ms.walking)
-                    {
-                        // accel = ds.ground_accelerate;
-
-                        // try to slow the player down if they're on a slope
-                        // kinda magic values, they give a nicer feel imo
-                        const float scaling = 4.0f;
-                        const float accelZeroAtThisNormal = 0.6f;
-                        // normalize t to be between accelZeroAtThisNormal and 1
-                        float t = (ms.groundNormalY - accelZeroAtThisNormal) / (1.0f - accelZeroAtThisNormal);
-                        // function from https://easings.net/#easeInExpo with modified scaling
-                        float normalDistanceFromUp = t == 0.0f ? 0 : pow(2.0f, t * scaling - scaling);
-
-                        normalDistanceFromUp = clamp(normalDistanceFromUp, 0.0f, 1.0f);
-
-                        // interpolate between air accelerate and ground accelerate depending on the slope's angle
-                        accel = mix(ms.air_accelerate, ms.ground_accelerate, normalDistanceFromUp); 
-                    }
-                    else
-                    {
-                        accel = ms.air_accelerate;
-                    }
-                    
-                    // apply friction
-                    float speed = length(velocity);
-                    if (speed < small_threshold) // if too slow, stop (to prevent sliding)
-                    {
-                        velocity.x = 0;
-                        velocity.z = 0;
-                    }
-                    else
-                    {
-                        float drop = 0.0f;
-                        if (ms.walking)
-                        {
-                            float control = speed < ms.stopspeed ? ms.stopspeed : speed;
-                            drop = control * ms.friction * dt;
-                        }
-
-                        float new_speed = speed - drop;
-                        new_speed = max(new_speed, 0.0f);
-                        new_speed /= speed;
-                        velocity *= new_speed;
-                    }
-
-                    // do movement
-                    vec3 wishdir = ms.wantedMoveDirection;
-                    float wishspeed = ms.wantedSpeed;
-
-                    if(entity.has<EntityStats>())
-                        wishspeed = mix(
-                            ms.wantedSpeed,
-                            min(ms.wantedSpeed, ms.walkSpeed),
-                            smoothstep(
-                                25.f,
-                                10.f,
-                                entity.comp<EntityStats>().stamina.cur
-                            )
-                        );
-
-                    float current_speed = dot(velocity, wishdir);
-                    float addspeed = wishspeed - current_speed;
-                    // std::cout << "ds.wantedSpeed: " << ds.wantedSpeed << "\n";
-                    if (addspeed > 0)
-                    {
-                        float accelspeed = accel * dt * wishspeed;
-                        accelspeed = min(accelspeed, addspeed);
-                        velocity += wishdir * accelspeed;
-                    }
-
-                    b->setLinearVelocity(PG::torp3d(velocity));
+                    ms.justLanded = true;
+                    ms.landedTime = globals.simulationTime.getElapsedTime();
                 }
-                break;
+
+                ms.grounded = true;
+                ms.walking  = false;
+            }
+            else
+            {
+                if (!ms.grounded)
+                {
+                    ms.justLanded = true;
+                    ms.landedTime = globals.simulationTime.getElapsedTime();
+                }
+
+                ms.grounded = true;
+                ms.walking = true;
+            }
+
+            ms.groundNormalY = floorNormal.y;
+
+            vec3 lookDir = s.usequat ? eulerAngles(s.quaternion) : s.lookDirection;
+            vec3 eulerY = vec3(
+                0.0f, 
+                atan(-lookDir.x, -lookDir.z), 
+                0.0f
+            );
+
+            rp3d::Transform transform(b->getTransform().getPosition(), PG::torp3d(quat(eulerY)));
+            b->setTransform(transform);
+
+            
+
+            const float small_threshold = 0.05f;
+
+            float dt = globals.simulationTime.getDelta();
+
+            ms.deplacementDirection = normalize(velocity);
+            ms.speed = length(velocity);
+
+            if (ms.walking)
+            {
+                for (int i = 0; i < b->getNbColliders(); i++)
+                {
+                    b->getCollider(i)->getMaterial().setFrictionCoefficient(1.0f);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < b->getNbColliders(); i++)
+                {
+                    b->getCollider(i)->getMaterial().setFrictionCoefficient(0.0f);
+                }
+            }
+
+            // apply gravity
+
+            vec3 v = velocity + vec3(0, -ms.gravity, 0) * dt;
+            
+            velocity = (velocity + v) * 0.5f; // smoothing the gravity effect, feels nicer imo
+            
+
+
+            // get input from ActionState if any
+            if(entity.has<ActionState>())
+            {
+                auto &as = entity.comp<ActionState>();
+
+                // if(as.stun)
+                //     maxspeed = 0.f;
+                // else switch (as.lockType)
+                //     {
+                //         case ActionState::DIRECTION : dir = as.lockedDirection;
+                //         case ActionState::SPEED_ONLY :maxspeed = as.lockedMaxSpeed; break;                
+                //         default: break;
+                //     }
+
+                if (as.climbing)
+                {
+                    const float climbSpeedSlow = 1.0f; // m/s 
+                    const float climbSpeedFast = 4.0f; // m/s 
+                    float climbSpeed = climbSpeedSlow;
+                    const float vaultOffset = 0.2f;
+
+
+                    const float minSpeedForFastVault = 6.0f;
+                    const float maxHeightForFastVault = 1.0;
+                    if (ms.climbStartSpeed >= minSpeedForFastVault && ms.climbHeight <= maxHeightForFastVault)
+                    {
+                        climbSpeed = climbSpeedFast;
+                    }
+
+                    // 0 < t < ms.climbHeight
+                    float t = (globals.simulationTime.getElapsedTime() - as.climbingTime) * climbSpeed;
+                    
+                    // climb anim 
+                    if (t <= ms.climbHeight)
+                    {
+                        if (ms.climbHeight == vaultOffset) ms.climbHeight += 0.0001; // prevent division by 0 error
+
+                        float t_vault = max(t - vaultOffset, 0.0f) / (ms.climbHeight - vaultOffset);
+                        
+                        // Logger::debug("t: ", t, " t vault: ", t_vault);
+
+                        vec3 pos = ms.climbStartPos + vec3(0, 1, 0) * t;
+                    
+                        pos = mix(pos, ms.climbEndPos, t_vault);
+
+                        // Logger::debug("pos'd: ", pos);
+
+                        rp3d::Transform transform(PG::torp3d(pos), b->getTransform().getOrientation());
+                        b->setTransform(transform);
+
+                        vec3 forward = ms.climbEndPos - ms.climbStartPos;
+                        forward.y = 0;
+                        PlayerViewController::setTargetDir(normalize(forward));
+                    }
+                    else // climb anim end
+                    {
+                        as.climbing = false;
+                        ms.isAllowedToClimb = true;
+
+                        size_t collider_n = b->getNbColliders();
+                        for (size_t i = 0; i < collider_n; i++)
+                        {
+                            b->getCollider(i)->setIsSimulationCollider(true);
+                        }
+
+                        PlayerViewController::setEnabled(false);
+                    }
+
+                    b->setLinearVelocity(rp3d::Vector3(0, 0, 0));
+                    ms.speed = 0.0f;
+                    ms.isTryingToJump = false;
+                    ms.wantedSpeed = 0;
+                }
+
+                if (as.stun)
+                {
+                    ms.wantedSpeed = 0.f;
+                    ms.isTryingToJump = false;
+                }
+                else switch (as.lockType)
+                {
+                    case ActionState::DIRECTION :
+                        ms.wantedMoveDirection = as.lockedDirection;
+                        ms.isTryingToJump = false;
+                        break;
+                    case ActionState::SPEED_ONLY :
+                        ms.wantedSpeed = as.lockedMaxSpeed; 
+                        ms.isTryingToJump = false;
+                        break;
+                    default: break;
+                }
+            }
+
+            // check jump
+            if (ms.isTryingToJump)
+            {
+                ms.grounded = false;
+                ms.isTryingToJump = false;
+
+                // Logger::debug(TIMESTAMP_PHYSICS, "???");
+                
+                if (ms.canClimb)
+                {
+
+                    // Logger::debug(TIMESTAMP_PHYSICS, "??? 2 electric boogaloo");
+
+                    // assuming the entity has an action state cause like it's the player
+                    auto &as = entity.comp<ActionState>();
+                    as.climbing = true;
+                    as.climbingTime = globals.simulationTime.getElapsedTime();
+                    // TODO check if the entity is the player 
+                    PlayerViewController::setEnabled(true);
+                    ms.isAllowedToClimb = false;
+                    
+                    size_t collider_n = b->getNbColliders();
+                    for (size_t i = 0; i < collider_n; i++)
+                    {
+                        b->getCollider(i)->setIsSimulationCollider(false);
+                    }
+
+                    // Logger::debug(TIMESTAMP_PHYSICS, "climb :)");
+                    // Logger::debug("start pos: ", ms.climbStartPos);
+                    // Logger::debug("end pos: ", ms.climbEndPos);
+                    // Logger::debug("vault pos: ", ms.climbVaultPos);
+                } // add a tiny bit of coyote frames for feel and also to fix the fact that the physics engine is kinda broken
+                else if (ms.walking || (ms.lastGroundedTime < globals.simulationTime.getElapsedTime() + 0.05f)) {
+                    velocity.y = ms.jumpVelocity; // for nicer instantaneous jumps, try to change to += if it feels weird
+                }
+            }
+
+            // get acceleration depending on state
+            float accel;
+            if (ms.walking)
+            {
+                accel = ms.ground_accelerate;
+
+                // // try to slow the player down if they're on a slope
+                // // kinda magic values, they give a nicer feel imo
+                // const float scaling = 1.0f;
+                // const float accelZeroAtThisNormal = 0.4f;
+                // // normalize t to be between accelZeroAtThisNormal and 1
+                // float t = (ms.groundNormalY - accelZeroAtThisNormal) / (1.0f - accelZeroAtThisNormal);
+                // // function from https://easings.net/#easeInExpo with modified scaling
+                // float normalDistanceFromUp = t == 0.0f ? 0 : pow(2.0f, t * scaling - scaling);
+
+                // normalDistanceFromUp = clamp(normalDistanceFromUp, 0.0f, 1.0f);
+
+                // // interpolate between air accelerate and ground accelerate depending on the slope's angle
+                // accel = mix(ms.air_accelerate, ms.ground_accelerate, normalDistanceFromUp); 
+            }
+            else
+            {
+                accel = ms.air_accelerate;
+            }
+            
+            // apply friction
+            float speed = length(velocity);
+            if (speed < small_threshold) // if too slow, stop (to prevent sliding)
+            {
+                velocity.x = 0;
+                velocity.z = 0;
+            }
+            else
+            {
+                float drop = 0.0f;
+                if (ms.walking)
+                {
+                    float control = speed < ms.stopspeed ? ms.stopspeed : speed;
+                    drop = control * ms.friction * dt;
+                }
+
+                float new_speed = speed - drop;
+                new_speed = max(new_speed, 0.0f);
+                new_speed /= speed;
+                velocity *= new_speed;
+            }
+
+            // do movement
+            vec3 wishdir = ms.wantedMoveDirection;
+            float wishspeed = ms.wantedSpeed;
+
+            if(entity.has<EntityStats>())
+                wishspeed = mix(
+                    ms.wantedSpeed,
+                    min(ms.wantedSpeed, ms.walkSpeed),
+                    smoothstep(
+                        25.f,
+                        10.f,
+                        entity.comp<EntityStats>().stamina.cur
+                    )
+                );
+
+            float current_speed = dot(velocity, wishdir);
+            float addspeed = wishspeed - current_speed;
+            // std::cout << "ds.wantedSpeed: " << ds.wantedSpeed << "\n";
+            if (addspeed > 0)
+            {
+                float accelspeed = accel * dt * wishspeed;
+                accelspeed = min(accelspeed, addspeed);
+                velocity += wishdir * accelspeed;
+            }
+
+            b->setLinearVelocity(PG::torp3d(velocity));
+            }
+            break;
             
             /* Entities with a kinematic body are stucked :(. The body follows the entity state.
                The game assumes that another system is using the entity and dealing with his deplacement.*/
             case rp3d::BodyType::KINEMATIC :
-                {
-                    /* TODO : maybe fix one day for entities who are not using quaternion*/
-                    rp3d::Transform t(PG::torp3d(s.position), s.usequat ? PG::torp3d(s.quaternion) : rp3d::Quaternion::identity());
-                    b->setTransform(t);
-                }
-                break;
+            {
+            /* TODO : maybe fix one day for entities who are not using quaternion*/
+            rp3d::Transform t(PG::torp3d(s.position), s.usequat ? PG::torp3d(s.quaternion) : rp3d::Quaternion::identity());
+            b->setTransform(t);
+            }
+            break;
 
             default: break;
             }

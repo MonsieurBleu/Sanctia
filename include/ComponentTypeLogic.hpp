@@ -63,9 +63,11 @@ struct MovementState
     vec3 wantedMoveDirection = vec3(0, 0, 0);
     vec3 inputVector = vec3(0);
 
-    bool grounded = false;
+    bool grounded = false; // true if the player is touching the ground
     bool _grounded = false;
-    bool walking = false;
+    bool justLanded = false;
+    float lastGroundedTime = 0.0f;
+    bool walking = false; // true if the player is on a walkable surface (for now terrain that is not too steep)
     bool isTryingToJump = false;
 
     float walkSpeed = 2.f;

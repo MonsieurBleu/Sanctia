@@ -24,7 +24,6 @@ namespace Blueprint
     inline const vec3 terrainSize = vec3(4096, 512, 4096);
     inline constexpr const char* mapFileName = "Herault_4096";
     inline constexpr int cellSize = 128;
-    inline float terrainHeightOffset = 0.0f;
     EntityRef Terrain(
         const char *mapName, 
         vec3 terrainSize,

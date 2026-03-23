@@ -292,11 +292,11 @@ void PaintShaderPass::render(Camera &camera)
     {
         Texture2D &EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
 
-        FBO.resizeAll(globals.windowSize());
-        FBO_Bloom.resizeAll(globals.windowSize()/2);
-        FBO_Clouds.resizeAll(globals.windowSize()/2);
+        FBO.resizeAll(globals.renderSize());
+        FBO_Bloom.resizeAll(globals.renderSize()/2);
+        FBO_Clouds.resizeAll(globals.renderSize()/2);
         FBO_CopyAndDeform.resizeAll(defferedBuffer.getTexture(0).getResolution());
-        FBO_AO.resizeAll(globals.windowSize()/4);
+        FBO_AO.resizeAll(globals.renderSize()/4);
 
 
         glEnable(GL_FRAMEBUFFER_SRGB);

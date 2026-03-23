@@ -227,6 +227,7 @@ struct LevelOfDetailsInfos
     vec3 aabbmax;
 
     int level = 0;
+    bool isUpdated = false;
 
     struct ChildrenLoadInfo
     {

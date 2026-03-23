@@ -342,7 +342,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 rp3d::Transform transform;
                 entity->set<RigidBody>(PG::world->createRigidBody(transform));
                 entity->comp<RigidBody>()->setIsActive(false);
-                if(entity->has<staticEntityFlag>()) entity->comp<staticEntityFlag>().shoudBeActive = entity->comp<RigidBody>()->isActive();
+                if(entity->has<PhysicsInfos>()) entity->comp<PhysicsInfos>().shoudBeActive = entity->comp<RigidBody>()->isActive();
 
                 if(STR_CASE_STR(component->mName.C_Str(), "kinematic"))
                     entity->comp<RigidBody>()->setType(rp3d::BodyType::KINEMATIC);
@@ -711,7 +711,7 @@ EntityRef Apps::AssetListViewer::UImenu()
 
 void Apps::AssetListViewer::init()
 {
-    appRoot = newEntity("AppRoot");
+    appRoot = newEntity("AppRoot", state3D(true));
     GG::skyboxType = 2;
 
     globals.clearDropInput();
@@ -954,7 +954,7 @@ void Apps::AssetListViewer::init()
 
 void Apps::AssetListViewer::update()
 {
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
     GG::ManageEntityGarbage();
 
     if(globals.getDropInput().size())

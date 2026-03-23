@@ -45,7 +45,7 @@ void Apps::__TEMPLATE__App::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot");
+        appRoot = newEntity("AppRoot", state3D(true));
         App::setController(&orbitController);
     }
 
@@ -53,7 +53,7 @@ void Apps::__TEMPLATE__App::init()
 
 void Apps::__TEMPLATE__App::update()
 {
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
 
     /* 
         UPDATING ORBIT CONTROLLER ACTIVATION 

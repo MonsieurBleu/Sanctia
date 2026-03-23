@@ -33,7 +33,7 @@ void Apps::MovementDemo::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot");
+        appRoot = newEntity("AppRoot", state3D(true));
         globals.currentCamera->getState().FOV = radians(100.f);
         globals.simulationTime.resume();
 
@@ -69,7 +69,7 @@ void Apps::MovementDemo::update()
     // GG::draw->drawSphere(vec3(sin(globals.appTime.getElapsedTime()), 0, 0), 3.0f);
 
 
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
 }
 
 

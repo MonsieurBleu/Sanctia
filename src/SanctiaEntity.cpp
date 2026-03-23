@@ -102,7 +102,7 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
         auto cbtype = childBody->getType();
         
         childBody->setIsActive(false);
-        if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = childBody->isActive();
+        if(child->has<PhysicsInfos>()) child->comp<PhysicsInfos>().shoudBeActive = childBody->isActive();
         childBody->setType(rp3d::BodyType::KINEMATIC);
         
         childBody->setTransform(
@@ -113,7 +113,7 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
         
         childBody->setType(cbtype);
         childBody->setIsActive(true);
-        if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = childBody->isActive();
+        if(child->has<PhysicsInfos>()) child->comp<PhysicsInfos>().shoudBeActive = childBody->isActive();
     }
 
     // child->set<RigidBody>(childBody);
@@ -121,6 +121,8 @@ COMPONENT_DEFINE_REPARENT(RigidBody)
 
 COMPONENT_DEFINE_REPARENT(state3D)
 {
+    // NOTIF_MESSAGE(child->toStr())
+
     auto &cs = child->comp<state3D>();
 
     if(!cs.usequat && child->has<EntityModel>() && child->comp<EntityModel>())
@@ -150,7 +152,7 @@ COMPONENT_DEFINE_REPARENT(state3D)
         if(b->getType() != rp3d::BodyType::STATIC)
         {
             b->setIsActive(false);
-            if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = b->isActive();
+            if(child->has<PhysicsInfos>()) child->comp<PhysicsInfos>().shoudBeActive = b->isActive();
             auto childBodyType = b->getType();
             b->setType(rp3d::BodyType::KINEMATIC);
 
@@ -165,12 +167,86 @@ COMPONENT_DEFINE_REPARENT(state3D)
             child->set<RigidBody>(b);
 
             b->setIsActive(true);
-            if(child->has<staticEntityFlag>()) child->comp<staticEntityFlag>().shoudBeActive = b->isActive();
+            if(child->has<PhysicsInfos>()) child->comp<PhysicsInfos>().shoudBeActive = b->isActive();
         }
 
     }
 
+    if(child->has<EntityModel>())
+    {        
+        auto &model = child->comp<EntityModel>();
 
+        // if(!child->has<HeightFieldDummyFlag>() and child->has<PhysicsInfos>() and !child->comp<PhysicsInfos>().isDYnamic)
+        // if(model.inScene)
+        // {
+        //     globals.getScene()->remove(model);
+        //     model.inScene = false;
+        // }
+
+        if(distance(model->state.position, cs.position) > 0.0)
+        {
+            globals.getScene()->remove(model);
+            model.inScene = false;
+        }
+        
+        model->state.setPosition(cs.position);
+        
+        if(cs.usequat)
+            model->state.setQuaternion(cs.quaternion);
+
+        model->update(true);
+        // model->getMeshesBoundingBox();
+
+        if(!model.inScene)
+        {
+            if(
+                !child->has<HeightFieldDummyFlag>() and (child->has<PhysicsInfos>() and !child->comp<PhysicsInfos>().isDYnamic)
+            )
+            {
+                // NOTIF_MESSAGE("YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+                globals.getScene()->add(model, true, true);
+                model.inScene = true;
+            }
+            else
+            {
+                globals.getScene()->add(model, true, false);
+                model.inScene = true;
+            }
+        }
+
+        model->propagateHideStatus();
+
+        if(!child->has<LevelOfDetailsInfos>())
+        {
+            child->set<LevelOfDetailsInfos>(LevelOfDetailsInfos());
+            child->comp<LevelOfDetailsInfos>().computeEntityAABB(child.get());
+        }
+    }
+    // NOTIF_MESSAGE(child->toStr(), "\n\t",
+    //     cs.position
+    // )  
+}
+
+COMPONENT_DEFINE_REPARENT(EntityModel)
+{
+    /* 
+        State3D has a whole reparent logic to add models to the scene
+        in different ways depending on entity informations.
+
+        If the entity has no state3D, we simply add the model to the 
+        scene following the default parameters.
+    */
+    if(!child->has<state3D>() || !child->has<RigidBody>())
+    {
+        auto &model = child->comp<EntityModel>();
+
+        if(model)
+        {
+            // globals.getScene()->add(model, true, false);
+            globals.getScene()->add(model, true, true);
+            model.inScene = true;
+        }
+    }
 }
 
 COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)
@@ -287,10 +363,10 @@ COMPONENT_DEFINE_MERGE(RigidBody)
 
 void setEntityModelStaticFlagUniform(Entity *e)
 {
-    if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<staticEntityFlag>())
+    if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<PhysicsInfos>())
     {
         auto &m = e->comp<EntityModel>();
-        auto &f = e->comp<staticEntityFlag>();
+        auto &f = e->comp<PhysicsInfos>();
 
         m->iterateOnAllMesh_Recursive([&](ModelRef mesh)
         {
@@ -306,10 +382,33 @@ template<> void Component<EntityModel>::ComponentElem::init()
     if(data.get())
     {
         // std::cout << "NON EMPTY ENTITY MODEL !!!!!\n";
-        globals.getScene()->remove(data);
+        // globals.getScene()->remove(data);
     }
 
-    globals.getScene()->add(data);
+    // if(entity->has<state3D>())
+
+    data->state.externCullPtr = data.culled;
+
+    data->propagateHideStatus();
+    data->update(true);
+
+    // ERROR_MESSAGE(
+    //     entity->toStr(), "\n\t",
+    //     data->state.rotationMatrix
+    // )
+
+    // data->iterateOnAllMesh_Recursive([](ModelRef m)
+    //     {
+    //         WARNING_MESSAGE(m->state.rotationMatrix)
+    //     });
+
+    // if(entity->has<PhysicsInfos>() and !entity->comp<PhysicsInfos>().isDYnamic)
+    //     globals.getScene()->add(data, false, true);
+    // else
+    //     globals.getScene()->add(data, false, false);
+
+    // globals.getScene()->add(data, true, false);
+    // data.inScene = true;
 
     entity->set<StainStatus>(StainStatus());
     setEntityStainStatusUniform(entity);
@@ -317,10 +416,12 @@ template<> void Component<EntityModel>::ComponentElem::init()
 
 template<> void Component<EntityModel>::ComponentElem::clean()
 {
-    if(data.get())
+    // NOTIF_MESSAGE("Removing model ", entity->toStr())
+
+    if(data.get() and data.inScene)
         globals.getScene()->remove(data);
-    else
-        WARNING_MESSAGE("Trying to clean null component from entity " ,  entity->ids[ENTITY_LIST] ,  " named " ,  entity->comp<EntityInfos>().name)
+    // else
+    //     WARNING_MESSAGE("Trying to clean null component from entity " ,  entity->ids[ENTITY_LIST] ,  " named " ,  entity->comp<EntityInfos>().name)
 };
 
 template<> void Component<SkeletonAnimationState>::ComponentElem::init()
@@ -672,11 +773,13 @@ template<> void Component<RigidBody>::ComponentElem::init()
         s._PhysicTmpPos = s.position;
         s.usequat = true;
 
-        entity->set<staticEntityFlag>({false});
+        entity->set<PhysicsInfos>({false});
     }
     else
     {
-        entity->set<staticEntityFlag>({true});
+        entity->set<PhysicsInfos>({true});
+
+        entity->set<NonStaticBodyDummyFlag>(NonStaticBodyDummyFlag());
     }
     setEntityModelStaticFlagUniform(entity);
 }
@@ -725,19 +828,19 @@ void LevelOfDetailsInfos::computeEntityAABB(Entity *e)
         aabbmax = max(aabbmax, aabb.second);
     }
     // else 
-    if(hasRigidBody)
-    {
-        auto &b = e->comp<RigidBody>();
+    // if(hasRigidBody)
+    // {
+    //     auto &b = e->comp<RigidBody>();
 
-        if(b->isActive())
-        {
-            auto aabb = b->getAABB();
+    //     if(b->isActive())
+    //     {
+    //         auto aabb = b->getAABB();
 
-            aabbmin = min(aabbmin, PG::toglm(aabb.getMin()));
-            aabbmax = max(aabbmax, PG::toglm(aabb.getMax()));
-        }
+    //         aabbmin = min(aabbmin, PG::toglm(aabb.getMin()));
+    //         aabbmax = max(aabbmax, PG::toglm(aabb.getMax()));
+    //     }
 
-    }
+    // }
     // else 
     if(hasChildren)
     {
@@ -809,7 +912,9 @@ template<> void Component<LevelOfDetailsInfos>::ComponentElem::init()
 COMPONENT_DEFINE_REPARENT(LevelOfDetailsInfos)
 {
     child->comp<LevelOfDetailsInfos>().computeEntityAABB(child.get());
-    parent.comp<LevelOfDetailsInfos>().computeEntityAABB(&parent);
+
+    if(parent.has<LevelOfDetailsInfos>())
+        parent.comp<LevelOfDetailsInfos>().computeEntityAABB(&parent);
 }
 
 COMPONENT_DEFINE_MERGE(LevelOfDetailsInfos)
@@ -827,7 +932,7 @@ COMPONENT_DEFINE_MERGE(LevelOfDetailsInfos)
     }
 }
 
-COMPONENT_DEFINE_SYNCH(LevelOfDetailsInfos)
+COMPONENT_DEFINE_SYNCH(LevelOfDetailsInfos) //// unused ????
 {
     if(&parent != child.get()) return;
 
@@ -865,13 +970,13 @@ template<> void Component<StainStatus>::ComponentElem::clean()
 //     removeEntityStainStatusUniform(child)
 // }
 
-EntityRef spawnEntity(const std::string &name, vec3 spawnPoint)
+EntityRef spawnEntity(const std::string &name, vec3 spawnPoint, quat rotation)
 {
     auto it = Loader<EntityRef>::loadingInfos.find(name);
 
     if(it == Loader<EntityRef>::loadingInfos.end())
     {
-        FILE_ERROR_MESSAGE(name, "Entity not found.");
+        FILE_ERROR_MESSAGE("\'", name, "' Entity not found.");
         return newEntity();
     }
 
@@ -883,6 +988,9 @@ EntityRef spawnEntity(const std::string &name, vec3 spawnPoint)
     {
         e->comp<state3D>().useinit = true;
         e->comp<state3D>().initPosition = spawnPoint;
+
+        if(e->comp<state3D>().usequat and rotation != quat(0, 0, 0, 0))
+            e->comp<state3D>().initQuat = rotation;
     }
 
     return e;

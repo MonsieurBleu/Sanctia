@@ -471,8 +471,8 @@ void Game::physicsLoop()
             {
                 body->setIsActive(false);
 
-                if(GG::playerEntity->has<staticEntityFlag>())
-                    GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = false;
+                if(GG::playerEntity->has<PhysicsInfos>())
+                    GG::playerEntity->comp<PhysicsInfos>().shoudBeActive = false;
             }
         }
         
@@ -488,7 +488,7 @@ void Game::physicsLoop()
             Note ; isnan isn't working, the glm one AND the rp3d version. But the same check can be make by checking low infinity bound.
             This is probablly caused by the fastmath compiler argument.
         */
-        System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
+        System<NonStaticBodyDummyFlag, RigidBody, state3D, PhysicsInfos>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
             vec3 p = PG::toglm(b->getTransform().getPosition());
             const float lowinf = 1e6;
@@ -529,9 +529,9 @@ void Game::physicsLoop()
 
 
 
-        System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
+        System<NonStaticBodyDummyFlag, RigidBody, state3D, PhysicsInfos>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
-            auto &f = entity.comp<staticEntityFlag>();
+            auto &f = entity.comp<PhysicsInfos>();
 
             f.isActive = b->isActive();
             
@@ -594,7 +594,7 @@ void Game::physicsLoop()
         
 
     /***** UPDATING RIGID BODY AND ENTITY STATE RELATIVE TO THE BODY TYPE *****/
-        System<RigidBody, state3D, staticEntityFlag>([](Entity &entity){
+        System<NonStaticBodyDummyFlag, RigidBody, state3D, PhysicsInfos>([](Entity &entity){
             auto &b = entity.comp<RigidBody>();
             auto &s = entity.comp<state3D>();
             

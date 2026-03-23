@@ -2,6 +2,8 @@
 #include <fstream>
 #include <thread>
 
+#include <bit>
+
 #include <Utils.hpp>
 #include <Game.hpp>
 #include <Globals.hpp>
@@ -33,6 +35,8 @@
 
 
 #include <FenceGPU.hpp>
+
+#include <cmath>
 
 void Game::mainloop()
 {
@@ -78,8 +82,9 @@ void Game::mainloop()
 
     GG::sun = sunLight;
 
-    GG::sun->cameraResolution = vec2(8192);
-    GG::sun->shadowCameraSize = vec2(0, 0);
+    GG::sun->cameraResolution = vec2(2048);
+    // GG::sun->cameraResolution = vec2(4096);
+    GG::sun->shadowCameraSize = vec2(64);
     GG::sun->activateShadows();
     scene.add(sunLight);
 
@@ -87,7 +92,7 @@ void Game::mainloop()
         .setColor(0.25f*vec3(0.6, 0.9, 1.0)));
     // scene.add(GG::moon);
 
-    GG::moon->cameraResolution = vec2(8192);
+    GG::moon->cameraResolution = vec2(2048);
     GG::moon->shadowCameraSize = vec2(256);
     // GG::moon->activateShadows();
 
@@ -95,6 +100,21 @@ void Game::mainloop()
     glEnable(GL_DEPTH_TEST);
     glLineWidth(1.0);
 
+
+    // for(int i = 0; i < 2; i++)
+    // {
+    //     SceneDirectionalLight tmpLight = newDirectionLight(DirectionLight()
+    //                                                     // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
+    //                                                     .setColor(vec3(1))
+    //                                                     .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
+    //                                                     .setIntensity(1.0));
+
+    //     tmpLight->cameraResolution = vec2(2048);
+    //     tmpLight->shadowCameraSize = vec2(256 * (1<<(i+1)));
+    //     WARNING_MESSAGE(256 * (1<<(i+1))*0.75);
+    //     tmpLight->activateShadows();
+    //     scene.add(tmpLight);
+    // }
 
     GlobalComponentToggler<LevelOfDetailsInfos>::activated = true;
 
@@ -232,17 +252,18 @@ void Game::mainloop()
         "Global Benchmark", "icon_chrono"
     );
 
+    VulpineBlueprintUI::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab, 
+        Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen(),
+        "Systems Benchmark", ""
+    );
+
+
     // VulpineBlueprintUI::AddToSelectionMenu(
     //     GlobalInfosTitleTab, GlobalInfosSubTab, 
     //     Blueprint::EDITOR_ENTITY::INO::DebugConsole(),
     //     "Debug Console", ""
     // );
-
-    VulpineBlueprintUI::AddToSelectionMenu(
-        GlobalInfosTitleTab, GlobalInfosSubTab, 
-        Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
-        "Ambient Controls", ""
-    );
 
     VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab,
@@ -254,6 +275,12 @@ void Game::mainloop()
         GlobalInfosTitleTab, GlobalInfosSubTab,
         VulpineBlueprintUI::SceneInfos(scene2D),
         "2D Scene Infos", ""
+    );
+
+    VulpineBlueprintUI::AddToSelectionMenu(
+        GlobalInfosTitleTab, GlobalInfosSubTab, 
+        Blueprint::EDITOR_ENTITY::INO::AmbientControls(),
+        "Ambient Controls", ""
     );
 
     std::unordered_map<std::string, EntityRef> activeInputsList;
@@ -578,6 +605,8 @@ void Game::mainloop()
     Apps::AssetListViewer assetView;
     Apps::MaterialViewerApp materialView;
     
+    Apps::ForestApp forestApp;
+
     Apps::CombatsApp combatsApps;
     Apps::AnimationApp animationViewer;
     
@@ -652,10 +681,16 @@ void Game::mainloop()
     // for (auto &m : Loader<MeshMaterial>::loadingInfos)
     //     Loader<MeshMaterial>::get(m.first);
 
+    NAMED_TIMER(tmp_Timer)
+
 
     /******  Main Loop ******/
     while (state != AppState::quit)
     {
+        // system("clear");
+        
+        // std::cout << "========================================\n";
+        
         // PG::doPhysicInterpolation = false;
 
         mainloopStartRoutine();
@@ -680,12 +715,15 @@ void Game::mainloop()
 
             // FenceGPU::list["Scene 2D Draw"] = FenceGPU();
 
-            scene2D.draw();
+            scene2D.draw(0);
             
-            glFlush();
+            // glFlush();
             // FenceGPU::list["Scene 2D Draw End"] = FenceGPU();
         }
         screenBuffer2D.deactivate();
+
+        // tmp_Timer.start();
+        
 
         /* 3D Pre-Render */
         glDisable(GL_FRAMEBUFFER_SRGB);
@@ -695,10 +733,15 @@ void Game::mainloop()
         
         // FenceGPU::list["Scene 3D Preparation"] = FenceGPU();
 
+
         scene.generateShadowMaps();
         globals.currentCamera = &camera;
+
+        
         defferedBuffer->activate();
-        scene.cull();
+        // scene.cull();
+
+        // occlusionPass.render(*globals.currentCamera);
 
         if (wireframe)
         {
@@ -712,16 +755,22 @@ void Game::mainloop()
         }
 
         /* 3D Early Depth Testing */
-        scene.depthOnlyDraw(*globals.currentCamera, true);
-        glDepthFunc(GL_EQUAL);
+        // scene.depthOnlyDraw(0, *globals.currentCamera, true);
+        // glDepthFunc(GL_EQUAL);
+
+        // tmp_Timer.stop();
 
         /* 3D Render */
         EnvironementMap.bind(4);
 
         scene.genLightBuffer();
         // FenceGPU::list["Scene 3D Draw"] = FenceGPU();
-        scene.draw();
+        scene.cull();
+        scene.draw(0);
         // FenceGPU::list["Scene 3D Draw End"] = FenceGPU();
+
+        // occlusionPass.render(*globals.currentCamera);
+
         defferedBuffer->deactivate();
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -739,7 +788,9 @@ void Game::mainloop()
         /* Final Screen Composition */
         glViewport(0, 0, globals.windowWidth(), globals.windowHeight());
         finalProcessingStage.activate();
-        GG::sun->shadowMap.bindTexture(0, 6);
+
+        if(GG::sun->shadowMap.getNBtextures())
+            GG::sun->shadowMap.bindTexture(0, 6);
         // GG::moon->shadowMap.bindTexture(0, 6);
         screenBuffer2D.bindTexture(0, 7);
         paintShaderPass.getFBO().bindTexture(2, 8);
@@ -750,7 +801,8 @@ void Game::mainloop()
         glFlush();
         
         
-
+        
+        // tmp_Timer.start();
         
         
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
@@ -1071,15 +1123,20 @@ void Game::mainloop()
 
         // for(int i = 0; i < 512; i++) WARNING_MESSAGE("Yooo");
 
-        SubApps::UpdateApps();
+        SubApps::UpdateApps(); 
         
+        // tmp_Timer.start();
+
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
-
+        
         /* TODO : remove */
         // ComponentModularity::synchronizeChildren(first);
         ComponentModularity::synchronizeChildren(gameScreenWidget);
         updateWidgetsStyle();
+
+        // tmp_Timer.stop(); // 1ms
+        
 
         // float maxSlow = player1.getStats().reflexMaxSlowFactor;
         // float reflex = player1.getInfos().state.reflex;
@@ -1091,10 +1148,292 @@ void Game::mainloop()
         //     preflex = clamp(preflex + scroll * 5.f, 0.f, 100.f);
         // globals.clearMouseScroll();
 
-        effects.update();
+        // effects.update();
 
         if (GG::playerEntity && GG::playerEntity->comp<EntityStats>().alive)
             GG::playerEntity->comp<state3D>().lookDirection = camera.getDirection();
+
+
+        /*****
+            UPDATING LOD LEVEL
+        */
+
+        int elementsCNT[QUADTREE_ITERATION] = {0};
+
+        int fullyVisibleElements = 0;
+        int partiallyVisibleElements = 0;
+
+        int occludedElement;
+        
+        // scene.tree.root.recusriveCall([&](StaticSceneOctree::Node &n){
+        //     if(n.drawElements[0])
+        //         fullyVisibleElements += n.elements.size();
+
+        //     if(!n.drawElements[0] )
+        // });
+
+        if(false)
+        {
+            scene.tree.root.recusriveCall([&](StaticSceneOctree::Node &n){
+                // GG::draw->drawBox(
+                //     n.middle-n.size*0.5f,
+                //     n.middle+n.size*0.5f,
+                //     0.f,
+                //     ModelState3D(),
+                //     hsv2rgb(vec3((float)(n.nodeDepth)/QUADTREE_ITERATION, 1.0, 1.0))
+                // );
+    
+                // GG::draw->drawBoxFromHalfExtents(
+                //     n.middle,
+                //     n.size*0.5f,
+                //     0.f,
+                //     ModelState3D(),
+                //     hsv2rgb(vec3((float)(n.nodeDepth)/QUADTREE_ITERATION, 1.0, 1.0))
+                // );
+            
+                vec3 color = vec3(0, 1, 0);
+    
+                // if(n.status[2] == StaticSceneOctree::Node::CullingStatus::NotVisible)
+                //     color = vec3(1, 0, 0);
+    
+                // if(n.status[2] == StaticSceneOctree::Node::CullingStatus::Undefined)
+                //     color = vec3(1);
+    
+                // if(n.status[2] == StaticSceneOctree::Node::CullingStatus::PartiallyVisible)
+                // {
+                //     partiallyVisibleElements += n.elements.size();
+                //     color = vec3(0, 1, 1);
+                // }
+    
+                // if(n.status[2] == StaticSceneOctree::Node::CullingStatus::FullyVisible)
+                // {
+                //     fullyVisibleElements += n.elements.size();
+                // }
+    
+                // if(color.r == 1.0) return;
+                // // if(n.elements.empty()) return;
+    
+                // if(n.query)
+                // {
+                //     // n.query->getQueryResults();
+    
+                //     n.query->retreiveQueryResults();
+    
+                //     if(!n.query->getQueryResult())
+                //         color = vec3(1, 0.5, 0);
+    
+                //     // ERROR_MESSAGE(n.query->getQueryResult());
+                // }
+    
+                // elementsCNT[n.nodeDepth] += n.elements.size();
+    
+                float cnt = 1.0-min(n.elements.size()/1.f, 1.f);
+                color = hsv2rgb(vec3(cnt*0.3, 1.0, 1.0));
+                
+                // color = hsv2rgb(vec3(n.nodeDepth*0.125, 1.0, 1.0));
+    
+                GG::draw->drawBoxFromHalfExtents(
+                    n.middle,
+                    n.size*0.5f,
+                    0.f,
+                    ModelState3D(),
+                    color
+                );
+    
+                // for(auto &i : n.childs)
+                // {
+                //     if(i and i->recursiveElementCounter == 0 and i->elements.empty())
+                //         i = std::shared_ptr<StaticSceneOctree::Node>();
+                // }
+    
+            });
+    
+            // tmp_Timer.stop();
+    
+            // NOTIF_MESSAGE("Octree elements repartition stats : ")
+            // for(int i = 0; i < QUADTREE_ITERATION; i++)
+            // {
+            //     // std::cout << "depth " << i << " : " << elementsCNT[i] << "\n";
+    
+            //     std::cout << "depth " << i << " : ";
+                
+            //     int cnt = elementsCNT[i]/32 + 1;
+            //     for(int j = 0; j < cnt; j++) std::cout << "#";
+    
+            //     std::cout << "\n";
+            // }
+            // std::cout << TERMINAL_TIMER << "\n\t" << "Fully Visible     : " << fullyVisibleElements;
+            // std::cout << TERMINAL_TIMER << "\n\t" << "Partially Visible : " << partiallyVisibleElements;
+            // std::cout << "\n\n";
+        }
+        // system("clear");
+        // std::cout << "\n\n\n\n\n\n";
+        // scene.tree.root.cull();
+
+        // NOTIF_MESSAGE(scene.tree.toStr())
+
+        // static NAMED_TIMER(LOOD_calcul)
+        // LOOD_calcul.start();
+        // System<EntityModel, LevelOfDetailsInfos, state3D>([&](Entity &entity)
+        // if(false)
+        const int frameDelay = 32;
+        System<EntityModel, LevelOfDetailsInfos, state3D>([&](Entity &entity)
+        {
+            // NOTIF_MESSAGE(entity.toStr())
+
+            // const int frameDelay = 32;
+            // if(globals.appTime.getUpdateCounter()%frameDelay != entity.ids[1]%frameDelay)
+            //     return;
+
+            auto &model = entity.comp<EntityModel>();
+            LevelOfDetailsInfos &lod = entity.comp<LevelOfDetailsInfos>();
+
+            if(!model) return;
+
+            if(!model->getChildren().size()) return;
+
+            if(lod.isUpdated)
+            {
+                if(!model->isCulled()) return;
+            }
+
+            lod.isUpdated = true;
+
+            // lod.computeEntityAABB(&entity);
+            // lod.aabbmin = model->getMeshesBoundingBox().first;
+            // lod.aabbmax = model->getMeshesBoundingBox().second;
+
+            
+            int level = 0;
+            
+            vec3 middle = 0.5f*(lod.aabbmin+lod.aabbmax);
+            vec3 extents = (lod.aabbmax-lod.aabbmin);
+            float maxRadius = max(extents.x, max(extents.y, extents.z));
+
+            /* LOD LEVEL CALCULATION */
+            // vec3 camToMiddle = globals.currentCamera->getPosition() - middle;
+            // float d = sqrt(dot(camToMiddle, camToMiddle));
+
+            // d = max(0.f, d-maxRadius);
+
+            // d /= maxRadius;
+
+            // float dlevel = d*d;
+
+            // level = round(dlevel / 4096.f);
+
+            float d = distance(globals.currentCamera->getPosition(), middle);
+            const int firstLevelRadius = 96;
+
+            // d = log2(max(0.f, d/firstLevelRadius) + 1);
+            
+            const float power = 2;
+            d = log2(max(0.f, (power-1.f)*d/(firstLevelRadius)) + 1) / log2(power);
+
+            level = floor(d);
+
+            // int id = floor(d);
+            // level = std::log<power>(max(0, id/(firstLevelRadius*(power-1))) + 1);
+            // level = log(id)/log(power);
+            
+
+            auto &c = model->getChildren();
+            // level = min(level, (int)c.size()-1);
+            int cnt = 0;
+
+            for(auto i : c)
+            {
+                if(cnt == level)
+                {
+                    if(i->state.hide != ModelStatus::SHOW)
+                    {
+                        i->state.setHideStatus(ModelStatus::SHOW);
+                        i->propagateHideStatus();
+                    }
+                }
+                else if(i->state.hide != ModelStatus::HIDE)
+                {
+                    i->state.setHideStatus(ModelStatus::HIDE);
+                    i->propagateHideStatus();
+                }
+
+                cnt ++;
+            }
+
+            /*
+            mat4 matrix = globals.currentCamera->getProjectionViewMatrix();
+
+            vec3 corner[8] = 
+            {
+                lod.aabbmin,
+                
+                vec3(lod.aabbmin.x, lod.aabbmin.y, lod.aabbmax.z),
+                vec3(lod.aabbmin.x, lod.aabbmax.y, lod.aabbmin.z),
+                vec3(lod.aabbmin.x, lod.aabbmax.y, lod.aabbmax.z),
+                
+                vec3(lod.aabbmax.x, lod.aabbmin.y, lod.aabbmin.z),
+                vec3(lod.aabbmax.x, lod.aabbmin.y, lod.aabbmax.z),
+                vec3(lod.aabbmax.x, lod.aabbmax.y, lod.aabbmin.z),
+                
+                lod.aabbmax
+            };
+
+            vec2 proj[8];
+            for(int i = 0; i < 8; i++)
+            {
+                vec4 tmp = matrix * vec4(corner[i], 1.0);
+                proj[i] = vec3(tmp)/tmp.w;
+            }
+
+            vec2 maxProj = proj[0];
+            vec2 minProj = proj[0];
+
+            for(int i = 1; i < 8; i++)
+            {
+                maxProj = max(maxProj, proj[i]);
+                minProj = min(minProj, proj[i]);
+            }
+
+            vec2 size = (maxProj-minProj)*vec2(globals.windowSize());
+            uint pixelSize = sqrt(size.x*size.y);
+
+            int level = 0;
+            level =  std::bit_width(32u) + 1 - std::bit_width(pixelSize);
+            level = max(level, 0);
+            auto &c = model->getChildren();
+
+            int cnt = 0;
+            level = min(level, (int)c.size()-1);
+
+            // level = 2;            
+
+            for(auto i : c)
+            {
+                if(cnt == level)
+                {
+                    if(i->state.hide != ModelStatus::SHOW)
+                        i->state.setHideStatus(ModelStatus::SHOW);
+                }
+                else if(i->state.hide != ModelStatus::HIDE)
+                    i->state.setHideStatus(ModelStatus::HIDE);
+
+                cnt ++;
+            }
+
+            model->propagateHideStatus();
+            */
+        }, 
+        frameDelay,
+        globals.appTime.getUpdateCounter()%frameDelay
+        );
+
+        // NOTIF_MESSAGE(scene.tree)
+
+        // LOOD_calcul.stop();
+        // NOTIF_MESSAGE(LOOD_calcul)
+
+        
+        // tmp_Timer.start();
 
         /*****
             UPDATING VISUAL FATIGUE LEVEL
@@ -1103,6 +1442,8 @@ void Game::mainloop()
             auto &stats = entity.comp<EntityStats>();
             entity.comp<StainStatus>().fatigue = 1.0 - stats.stamina.cur/stats.stamina.max;
         });
+
+        // tmp_Timer.stop(); // 0.11 ms
 
         /*****
             Executing scripts on update
@@ -1139,7 +1480,7 @@ void Game::mainloop()
 
         /***** DEMO DEPLACEMENT SYSTEM
         *****/
-        System<state3D, MovementState, DeplacementBehaviour>([&, this](Entity &entity) {
+        System<MovementState, DeplacementBehaviour, state3D>([&, this](Entity &entity) {
             auto &s = entity.comp<state3D>();
             auto &ds = entity.comp<MovementState>();
 
@@ -1182,24 +1523,30 @@ void Game::mainloop()
             clamp((PG::PG::physicInterpolationTick.timeSinceLastTick() * physicsTicks.freq), 0.f, 1.f);
         PG::physicInterpolationMutex.unlock();
 
-        System<EntityModel, state3D>([&, this](Entity &entity) {
+        // tmp_Timer.start();
+
+        System<NonStaticBodyDummyFlag, PhysicsInfos, EntityModel, state3D>
+        // System<EntityModel, state3D, NonStaticBodyDummyFlag, PhysicsInfos>
+        ([&, this](Entity &entity) {
+
+            // WARNING_MESSAGE(entity.toStr());
+
+            if(!entity.comp<PhysicsInfos>().isDYnamic) return;
+
             auto &s = entity.comp<state3D>();
             EntityModel &model = entity.comp<EntityModel>();
 
-            if (s.usequat && s.position == model->state.position && s.quaternion == model->state.quaternion)
+            // if (s.usequat && s.position == model->state.position && s.quaternion == model->state.quaternion)
+            if (s.usequat && s.position == model->state.position && abs(dot(s.quaternion, model->state.quaternion)) > 0.99)
                 return;
+
+            // WARNING_MESSAGE(entity.toStr(), "\n", dot(s.quaternion, model->state.quaternion))
+
 
             vec3 dir = s.lookDirection;
 
             float physicInterpolationValue2 = entity.has<EntityStats>() and !entity.comp<EntityStats>().alive ? 1.f : physicInterpolationValue;
             // physicInterpolationValue2 = 1.f;
-
-            auto n = entity.comp<AnimationControllerInfos>().c_str();
-            const bool isSwordAndShield = !strcmp(n, "(Human) Sword And Shield ");
-            if(isSwordAndShield)
-            {
-                dir = normalize(dir - 0.25f*cross(dir, vec3(0, 1, 0)));
-            }
 
             if (s.usequat)
             {
@@ -1210,7 +1557,14 @@ void Game::mainloop()
             }
             else if (dir.x != 0.f || dir.z != 0.f)
             {
-                
+                auto n = entity.comp<AnimationControllerInfos>().c_str();
+                const bool isSwordAndShield = !strcmp(n, "(Human) Sword And Shield ");
+                if(isSwordAndShield)
+                {
+                    dir = normalize(dir - 0.25f*cross(dir, vec3(0, 1, 0)));
+                }
+
+
                 quat wantQuat = quatLookAt(normalize(dir * vec3(-1, 0, -1)), vec3(0, 1, 0));
                 quat currQuat = quat(model->state.rotation);
                 float a = min(1.f, globals.simulationTime.getDelta() * 5.f);
@@ -1245,6 +1599,8 @@ void Game::mainloop()
                 this->camera.setPosition(vec3(model->state.modelMatrix * animPos) + vec3(0, 0.2, 0));
             }
         });
+
+        // tmp_Timer.stop(); // 0.5 ms
 
         /***** UPDATING PHYSICS HELPER *****/
 #ifdef SANCTIA_DEBUG_PHYSIC_HELPER
@@ -1360,9 +1716,11 @@ void Game::mainloop()
 
         });
 
+        // tmp_Timer.start();
         GG::ManageEntityGarbage();
+        // tmp_Timer.stop(); // 0.4ms
 
-
+        // tmp_Timer.start();
         if(GlobalComponentToggler<PhysicsHelpers>::needUpdate() || GlobalComponentToggler<InfosStatsHelpers>::needUpdate())
         {
             physicsMutex.lock();
@@ -1370,14 +1728,22 @@ void Game::mainloop()
             GlobalComponentToggler<InfosStatsHelpers>::updateALL();
             physicsMutex.unlock();
         }
-
-        if(GlobalComponentToggler<LevelOfDetailsInfos>::needUpdate())
-        {
-            GlobalComponentToggler<LevelOfDetailsInfos>::updateALL();
-        }
-
+        
+        // if(GlobalComponentToggler<LevelOfDetailsInfos>::needUpdate())
+        // {
+        //     GlobalComponentToggler<LevelOfDetailsInfos>::updateALL();
+        // }
+        // tmp_Timer.stop(); // 0.0ms
+        
         scene2D.updateAllObjects();
+
+        static NAMED_TIMER(scene_update)
+        scene_update.start();
+
         scene.updateAllObjects();
+
+        scene_update.stop(); // 0.03 ms
+        // NOTIF_MESSAGE(scene_update)
 
         /***** Items follow the skeleton
         *****/
@@ -1604,6 +1970,31 @@ void Game::mainloop()
                 }
             }
         });
+
+        
+        // system("clear"); 
+        // NOTIF_MESSAGE(tmp_Timer.getLastAvg())
+        
+        
+        
+        // systemTimer.stop();
+        // NOTIF_MESSAGE(systemTimer.getLastAvg().count())
+
+        // float sum = 0.f;
+
+        /* Updating all systems timer */
+        for(auto &i : systemsPreciseTimer)
+        {
+            i.second.stop();
+        }
+
+
+
+        // std::cout << TERMINAL_TIMER << "SUM : " << sum << "\n" << TERMINAL_RESET;
+
+        // std::cout << MAX_COMP << "\n";
+
+       
 
         /* Main loop End */
         mainloopEndRoutine();

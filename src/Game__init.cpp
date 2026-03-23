@@ -63,6 +63,8 @@ void Game::init(int paramSample)
     // activateMainSceneBindlessTextures();
     activateMainSceneClusteredLighting(ivec3(16, 9, 24), 256);
 
+    setPlanetSize(8192 * 2);
+
 
     finalProcessingStage = ShaderProgram(
         "game shader/final composing.frag",
@@ -101,7 +103,7 @@ void Game::init(int paramSample)
 
     ambientLight = vec3(0.1);
 
-    camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E4f);
+    camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E5f);
     // camera.setMouseFollow(false);
     // camera.setPosition(vec3(0, 1, 0));
     // camera.setDirection(vec3(1, 0, 0));
@@ -177,6 +179,10 @@ void Game::init(int paramSample)
     GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
     GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;
     scene.depthOnlyMaterial = depthOnlyMaterial;
+
+    // scene.tree.bonusSpace = 64.f/4096;
+    scene.tree.bonusSpace = 16.f/4096;
+    // scene.tree.bonusSpace = 0.f;
 
     /* Physics */
     rp3d::PhysicsWorld::WorldSettings settings;
@@ -276,4 +282,5 @@ void Game::init(int paramSample)
     initInput();
 
     paintShaderPass.setup();
+    occlusionPass.setup();
 }

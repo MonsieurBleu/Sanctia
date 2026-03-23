@@ -7,7 +7,62 @@
 
 #include <Scripting/ScriptInstance.hpp>
 
+EntityRef Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen()
+{
+    static std::unordered_map<std::string, EntityRef> systemTimersMap;
 
+    EntityRef systemTimerScreen = VulpineBlueprintUI::StringListSelectionMenu(
+        "Precise Benchmark Screen - System Timer Screen", 
+        systemTimersMap,
+        [](Entity *e, float f){}, 
+        [](Entity *e)
+        {
+            auto parent = e->comp<EntityGroupInfo>().parent;
+
+            if(parent->comp<EntityGroupInfo>().children.size() <= 1)
+            {
+                ComponentModularity::addChild(*parent,
+                    VulpineBlueprintUI::ColoredConstEntry(
+                        "Last 500ms Avg",
+                        [e](){return ftou32str(systemsPreciseTimer[e->comp<EntityInfos>().name].getLastAvg().count()) + U" ms";},
+                        VulpineColorUI::HightlightColor1
+                    )
+                );
+
+                ComponentModularity::addChild(*parent,
+                    VulpineBlueprintUI::ColoredConstEntry(
+                        "Update Counter",
+                        [e](){return ftou32str(systemsPreciseTimer[e->comp<EntityInfos>().name].getUpdateCounter(), 6);},
+                        VulpineColorUI::HightlightColor2
+                    )
+                );
+            }
+
+            return 0.f;
+        }, 
+        -1.f
+    );
+    
+    EntityRef mainscreen = newEntity("Precise Benchmark Screen - Main Screen"
+        , UI_BASE_COMP
+        , WidgetBox([&](Entity *parent, Entity *child){
+
+            for(auto i : systemsPreciseTimer)
+            {
+                auto elem = systemTimersMap.find(i.first);
+
+                if(elem == systemTimersMap.end())
+                    systemTimersMap[i.first] = EntityRef();
+            }
+        })
+        , WidgetStyle().setautomaticTabbing(1)
+        , EntityGroupInfo({
+            systemTimerScreen
+        })
+    );
+
+    return mainscreen;
+}
 
 EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 {

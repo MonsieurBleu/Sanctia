@@ -401,7 +401,7 @@ DATA_READ_FUNC(EntityModel)
     int cnt = 0;
     while(*(ptr = buff->read()) != ';')
     {
-        ObjectGroupRef lodn = Loader<ObjectGroup>::get(std::string(ptr)).copy();
+        ObjectGroupRef lodn = Loader<ObjectGroup>::get(std::string(ptr)).copy(data.culled);
         if(cnt)
         {
             lodn->state.setHideStatus(ModelStatus::HIDE);
@@ -778,6 +778,8 @@ DATA_READ_FUNC_ENTITY(RigidBody)
             )
         data = PG::world->createRigidBody(rp3d::Transform::identity());
     }
+
+    data->setUserData(e);
 
     WHILE_NEW_VALUE
         IF_MEMBER_READ_VALUE(type)

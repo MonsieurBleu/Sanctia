@@ -50,7 +50,7 @@ void Apps::LunaTesting::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot");
+        appRoot = newEntity("AppRoot", state3D(true));
         App::setController(&controller);
     }
 
@@ -230,7 +230,7 @@ void Apps::LunaTesting::init()
 
 void Apps::LunaTesting::update()
 {
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
 
     /* 
         UPDATING ORBIT CONTROLLER ACTIVATION 

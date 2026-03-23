@@ -60,7 +60,7 @@ void Apps::SceneMergeApp::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot");
+        appRoot = newEntity("AppRoot", state3D(true));
         App::setController(&orbitController);
 
         globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
@@ -191,7 +191,7 @@ void Apps::SceneMergeApp::init()
 
 void Apps::SceneMergeApp::update()
 {
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
 
 
     vec2 screenPos = globals.mousePosition();

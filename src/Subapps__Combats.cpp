@@ -47,7 +47,7 @@ void Apps::CombatsApp::addStage(const std::string &name, vec4 newStageColor, std
                 std::vector<EntityRef> garbage;
                 for(auto i : appRoot->comp<EntityGroupInfo>().children)
                 {
-                    if(i->has<staticEntityFlag>() and i->comp<staticEntityFlag>().isDYnamic)
+                    if(i->has<PhysicsInfos>() and i->comp<PhysicsInfos>().isDYnamic)
                         garbage.push_back(i);
                 }
 
@@ -242,7 +242,7 @@ Apps::CombatsApp::CombatsApp() : SubApps("Combats")
                     if (body)
                     {
                         body->setIsActive(true);
-                        if(GG::playerEntity->has<staticEntityFlag>()) GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = body->isActive();
+                        if(GG::playerEntity->has<PhysicsInfos>()) GG::playerEntity->comp<PhysicsInfos>().shoudBeActive = body->isActive();
                         body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 5, 0)),
                                                            rp3d::Quaternion::identity()));
                     }
@@ -303,7 +303,7 @@ void Apps::CombatsApp::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot");
+        appRoot = newEntity("AppRoot", state3D(true));
         globals.currentCamera->getState().FOV = radians(85.f);
         globals.simulationTime.resume();
 
@@ -1055,7 +1055,7 @@ void Apps::CombatsApp::update()
     if(!GG::playerEntity->has<AgentProfile>())
         GG::playerEntity->set<AgentProfile>(AgentProfile());
 
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
 
     /* 
         UPDATING ORBIT CONTROLLER ACTIVATION 

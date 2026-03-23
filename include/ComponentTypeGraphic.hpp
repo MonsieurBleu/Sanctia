@@ -5,6 +5,9 @@ struct EntityModel : public ObjectGroupRef
 {
     EntityModel(){};
     EntityModel(ObjectGroupRef obj) : ObjectGroupRef(obj){};
+
+    bool inScene = false;
+    bool culled[4] = {false};
 };
 
 struct AnimationControllerInfos : std::string

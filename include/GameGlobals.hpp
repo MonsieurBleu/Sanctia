@@ -61,6 +61,11 @@ namespace GameGlobals
         ManageGarbage<EntityModel>();
         ManageGarbage<PhysicsHelpers>();
 
+        // ManageGarbage<WidgetStyle>();
+        // ManageGarbage<LevelOfDetailsInfos>();
+        // ManageGarbage<WidgetBox>();
+
+        // ManageGarbage<NonStaticBodyDummyFlag>();
     };
 
     inline void ManageEntityGarbage__WithPhysics()

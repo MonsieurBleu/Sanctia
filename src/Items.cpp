@@ -13,12 +13,12 @@ void Items::equip(EntityRef usr, EntityRef item, EquipementSlots slot, int id)
     {
         item->comp<Effect>().usr = usr.get();
     }
-    if(item->has<RigidBody>() and item->has<staticEntityFlag>())
+    if(item->has<RigidBody>() and item->has<PhysicsInfos>())
     {
         auto &b = item->comp<RigidBody>();
 
         b->setIsActive(false);
-        item->comp<staticEntityFlag>().shoudBeActive = false;
+        item->comp<PhysicsInfos>().shoudBeActive = false;
         b->setType(rp3d::BodyType::KINEMATIC);
         
         int size = b->getNbColliders();
@@ -53,7 +53,7 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
     {
         item->comp<Effect>().usr = nullptr;
     }
-    if(item->has<RigidBody>() and item->has<staticEntityFlag>())
+    if(item->has<RigidBody>() and item->has<PhysicsInfos>())
     {
         physicsMutex.lock();
 
@@ -81,7 +81,7 @@ void Items::unequip(Entity &usr, EquipementSlots slot)
         }
 
         b->setIsActive(true);
-        item->comp<staticEntityFlag>().shoudBeActive = true;
+        item->comp<PhysicsInfos>().shoudBeActive = true;
 
         physicsMutex.unlock();
     }

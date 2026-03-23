@@ -2,7 +2,7 @@
 
 #include <PhysicsGlobals.hpp>
 
-struct staticEntityFlag 
+struct PhysicsInfos 
 {
     bool isDYnamic = false;
     // Stencil used to fill up empty space, because you can't bind anything less than 32 bit as shader uniform
@@ -16,4 +16,7 @@ struct staticEntityFlag
 
 // dummy component to apply system only to height fields
 struct HeightFieldDummyFlag {
+};
+
+struct NonStaticBodyDummyFlag {
 };

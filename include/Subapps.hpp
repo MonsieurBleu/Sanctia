@@ -391,4 +391,25 @@ namespace Apps
 
             virtual void clean() override;
     };
+
+    class ForestApp : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+            SpectatorController spectator;
+
+        public : 
+
+            ForestApp();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
 }

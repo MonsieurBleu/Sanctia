@@ -359,7 +359,7 @@ Apps::EntityCreator::EntityCreator() : SubApps("Level Editor")
                         if (body)
                         {
                             body->setIsActive(true);
-                            if(GG::playerEntity->has<staticEntityFlag>()) GG::playerEntity->comp<staticEntityFlag>().shoudBeActive = body->isActive();
+                            if(GG::playerEntity->has<PhysicsInfos>()) GG::playerEntity->comp<PhysicsInfos>().shoudBeActive = body->isActive();
                             body->setTransform(rp3d::Transform(PG::torp3d(globals.currentCamera->getPosition() + vec3(0, 5, 0)),
                                                                rp3d::Quaternion::identity()));
                         }
@@ -1289,7 +1289,7 @@ void Apps::EntityCreator::init()
     
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot");
+        appRoot = newEntity("AppRoot", state3D(true));
         App::setController(&orbitController);
 
         globals.currentCamera->setPosition(normalize(vec3(-0.5, 0.5, 0)));
@@ -1314,10 +1314,10 @@ void Apps::EntityCreator::init()
 
         EDITOR::gridPositionScale.w = 0.5f;
 
-        GG::sun->shadowCameraSize = vec2(256, 256);
+        GG::sun->shadowCameraSize = vec2(32);
         GG::sun->activateShadows();
 
-        glLineWidth(5);
+        glLineWidth(2.0);
     }
 
     // for(int cnt = 0; cnt < 128; cnt++)
@@ -1376,12 +1376,17 @@ void Apps::EntityCreator::init()
                 gizmoArrows[i]->state.rotation[2] = radians(90.f);
             }
         }
-
+        
         ComponentModularity::addChild(*appRoot, 
             gizmo = newEntity("Gizmo Helper"
                 , model
+                // , state3D(true)
             )
         );
+
+        globals.getScene()->add(gizmo->comp<EntityModel>());
+        gizmo->comp<EntityModel>().inScene = true;
+
     }
 
     /****** Creating World Grid Helper ******/
@@ -1453,7 +1458,7 @@ void Apps::EntityCreator::init()
 void Apps::EntityCreator::update()
 {
     // if(!PG::world->isGravityEnabled())
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
 
     // activeFilters["test"] = filterLightSources;
 
@@ -1625,6 +1630,12 @@ void Apps::EntityCreator::update()
         {
             for(auto c : currentEntity.ref->comp<EntityGroupInfo>().children)
             {
+                if(!c->has<LevelOfDetailsInfos>())
+                {
+                    c->set<LevelOfDetailsInfos>(LevelOfDetailsInfos());
+                    c->comp<LevelOfDetailsInfos>().computeEntityAABB(c.get());
+                }
+
                 auto &lodi = c->comp<LevelOfDetailsInfos>();
 
                 rp3d::AABB aabb(
@@ -1727,6 +1738,8 @@ void Apps::EntityCreator::update()
             gizmo->comp<EntityModel>()->getMeshes()[1]->state.scaleScalar(scale);
             gizmo->comp<EntityModel>()->getMeshes()[2]->state.scaleScalar(scale);
             gizmo->comp<EntityModel>()->getMeshes()[3]->state.scaleScalar(scale);
+
+            
 
             gizmoColors[0] = gizmoColorsBase[0];
             gizmoColors[1] = gizmoColorsBase[1];
@@ -1882,6 +1895,9 @@ void Apps::EntityCreator::update()
         ComponentModularity::ReparentChildren(*currentEntity.ref);
         physicsMutex.unlock();
     }
+
+    // gizmo->comp<EntityModel>()->update(true);
+    // gizmo->comp<EntityModel>()->propagateHideStatus();
 }
 
 

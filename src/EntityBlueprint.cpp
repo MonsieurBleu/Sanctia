@@ -28,7 +28,7 @@ EntityRef Blueprint::Terrain(
     NAMED_TIMER(TerrainEntityCreation)
 
 
-    EntityRef terrainRoot = newEntity("Terrain Root");
+    EntityRef terrainRoot = newEntity("Terrain Root", state3D(true));
 
     // Texture2D HeightMap = Texture2D()
     //     .loadFromFileHDR(mapPath)
@@ -70,7 +70,7 @@ EntityRef Blueprint::Terrain(
 
 
     HeightMap_loading.stop();
-    std::cout << HeightMap_loading;
+    // std::cout << HeightMap_loading;
 
     for(auto i : PG::heightFields)
     {
@@ -170,8 +170,11 @@ EntityRef Blueprint::Terrain(
 
         PG::heightFields.push_back({field, shape});
 
+        state3D state(true);
+        state.initPosition = cellPos;
+
         /* Creating terrain cell entity */
-        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state3D(), b, model, HeightFieldDummyFlag());
+        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state, b, HeightFieldDummyFlag());
         Blueprint::Assembly::AddEntityBodies(b, e.get(), 
             {
                 {   shape
@@ -182,15 +185,30 @@ EntityRef Blueprint::Terrain(
             }, {});
 
         b->getCollider(0)->setIsWorldQueryCollider(false);
+        
+        model->update();
+        model->updateMeshesBoundingBox();
 
+        model->setStaticAABB(
+            vec3(cellPos + model->getMeshesBoundingBox().first) *vec3(1, 0, 1) + vec3(0, minv*terrainSize.y, 0), 
+            vec3(cellPos + model->getMeshesBoundingBox().second)*vec3(1, 0, 1) + vec3(0, maxv*terrainSize.y, 0)
+        );
+
+        
+        e->set<EntityModel>(model);
+        
         // GG::entities.push_back(e);
         ComponentModularity::addChild(*terrainRoot, e);
+        
+        
+        // GG::draw->drawBox(model->getMeshesBoundingBox().first, model->getMeshesBoundingBox().second, 1e6f, ModelState3D(), vec3(0, 1, 1));
+        
     }
 
     // HeightMap.freeSource();
 
     TerrainEntityCreation.stop();
-    std::cout << TerrainEntityCreation;
+    // std::cout << TerrainEntityCreation;
 
     return terrainRoot;
 }

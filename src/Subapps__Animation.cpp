@@ -123,7 +123,7 @@ void Apps::AnimationApp::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot");
+        appRoot = newEntity("AppRoot", state3D(true));
         App::setController(&orbitController);
 
         globals.currentCamera->setPosition(vec3(0.5, 1.5, 0.5));
@@ -303,7 +303,7 @@ void Apps::AnimationApp::init()
 
 void Apps::AnimationApp::update()
 {
-    ComponentModularity::synchronizeChildren(appRoot);
+    // ComponentModularity::synchronizeChildren(appRoot);
 
     // if(!globals.simulationTime.isPaused())
     float deltaAnim = globals.simulationTime.isPaused() ? 0.f : globals.simulationTime.getDelta();

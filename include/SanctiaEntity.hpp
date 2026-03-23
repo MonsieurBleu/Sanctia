@@ -2,7 +2,7 @@
 
 #define MAX_COMP    64
 // #define MAX_ENTITY  0x8000
-#define MAX_ENTITY  (1<<15)
+#define MAX_ENTITY  (1<<17)
 
 
 #include <GlobalOptions.hpp>
@@ -29,7 +29,7 @@
 #define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
 
-EntityRef spawnEntity(const std::string &name, vec3 spawnPoint = vec3(0));
+EntityRef spawnEntity(const std::string &name, vec3 spawnPoint = vec3(0), quat rotation = quat(0, 0, 0, 0));
 
 bool isVisible(Entity &a, Entity &b);
 
@@ -38,7 +38,12 @@ Entity* getClosestVisibleEnemy(Entity &e);
 Entity* getClosestVisibleAlly(Entity &e);
 
 /***************** SCRIPTING COMPONENTS *****************/
+
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY SCRIPTING
+
     Component_Compatible(Script)
+
 
 /***************** GAMEPLAY ATTRIBUTS *****************/
 
@@ -47,6 +52,16 @@ Entity* getClosestVisibleAlly(Entity &e);
 
     Component_Init_Compatible(state3D)
     template<> void Component<state3D>::ComponentElem::clean();
+
+    Component(StainStatus)
+    template<> void Component<StainStatus>::ComponentElem::init();
+    template<> void Component<StainStatus>::ComponentElem::clean();
+
+
+/***************** DYNAMIC GAMEPLAY ATTRIBUTS *****************/
+
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY DATA_DYNAMIC
 
     Component(MovementState)
 
@@ -60,12 +75,6 @@ Entity* getClosestVisibleAlly(Entity &e);
 
     Component(Faction)
 
-    Component_Init_Synch_Merge(LevelOfDetailsInfos)
-    template<> void Component<LevelOfDetailsInfos>::ComponentElem::init();
-
-    Component(StainStatus)
-    template<> void Component<StainStatus>::ComponentElem::init();
-    template<> void Component<StainStatus>::ComponentElem::clean();
 
 /***************** ITEMS *****************/
 
@@ -82,16 +91,12 @@ Entity* getClosestVisibleAlly(Entity &e);
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY GRAPHIC
 
-    Component_Merge(EntityModel)
+    Component_Init_Merge(EntityModel)
     template<> void Component<EntityModel>::ComponentElem::init();
     template<> void Component<EntityModel>::ComponentElem::clean();
 
-    Component(SkeletonAnimationState)
-    template<> void Component<SkeletonAnimationState>::ComponentElem::init();
-
-    Component(AnimationControllerRef)
-
-    Component(AnimationControllerInfos)
+    Component_Init_Merge(LevelOfDetailsInfos)
+    template<> void Component<LevelOfDetailsInfos>::ComponentElem::init();
 
 
 /***************** HELPERS *****************/
@@ -104,19 +109,43 @@ Entity* getClosestVisibleAlly(Entity &e);
     template<> void Component<InfosStatsHelpers>::ComponentElem::init();
     template<> void Component<InfosStatsHelpers>::ComponentElem::clean();
 
+
+/***************** GRAPHICS DYNAMIC *****************/
+
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY GRAPHIC_DYNAMIC
+
+    Component(SkeletonAnimationState)
+    template<> void Component<SkeletonAnimationState>::ComponentElem::init();
+
+    Component(AnimationControllerRef)
+
+    Component(AnimationControllerInfos)
+
+
 /***************** PHYSICS *****************/
 
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY PHYSIC
-
-    Component(Effect)
     
     Component_Init_Merge_Compatible(RigidBody)
     template<> void Component<RigidBody>::ComponentElem::init();
     template<> void Component<RigidBody>::ComponentElem::clean();
 
-    Component(staticEntityFlag)
     Component(HeightFieldDummyFlag)
+
+    Component(PhysicsInfos)
+
+
+/***************** PHYSICS DYNAMIC *****************/
+
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY PHYSIC_DYNAMIC
+
+    Component(Effect)
+
+    Component(NonStaticBodyDummyFlag)
+
 
 /***************** IA *****************/
 

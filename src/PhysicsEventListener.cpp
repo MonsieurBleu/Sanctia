@@ -207,9 +207,9 @@ void PhysicsEventListener::onTrigger(const rp3d::OverlapCallback::CallbackData& 
         }
 
         if(
-            (e1->has<staticEntityFlag>() and !e1->comp<staticEntityFlag>().shoudBeActive)
+            (e1->has<PhysicsInfos>() and !e1->comp<PhysicsInfos>().shoudBeActive)
             or
-            (e2->has<staticEntityFlag>() and !e2->comp<staticEntityFlag>().shoudBeActive)
+            (e2->has<PhysicsInfos>() and !e2->comp<PhysicsInfos>().shoudBeActive)
         )
             continue;
 

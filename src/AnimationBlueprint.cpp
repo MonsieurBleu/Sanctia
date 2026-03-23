@@ -357,12 +357,12 @@ float AnimBlueprint::weaponAttackCallback(
                     i.item 
                     and i.item->has<RigidBody>() 
                     and i.item->comp<RigidBody>() 
-                    and i.item->has<staticEntityFlag>()
-                    and i.item->comp<staticEntityFlag>().isActive
+                    and i.item->has<PhysicsInfos>()
+                    and i.item->comp<PhysicsInfos>().isActive
                 )
                 {
                     // i.item->comp<RigidBody>()->setIsActive(false);
-                    i.item->comp<staticEntityFlag>().shoudBeActive = false;
+                    i.item->comp<PhysicsInfos>().shoudBeActive = false;
                 }
             // physicsMutex.unlock();
         }
@@ -398,18 +398,18 @@ float AnimBlueprint::weaponAttackCallback(
 
     
     /* Disable effect componment and mark it for removal */
-    if( prct >= end and w->has<staticEntityFlag>() and w->comp<staticEntityFlag>().isActive)
+    if( prct >= end and w->has<PhysicsInfos>() and w->comp<PhysicsInfos>().isActive)
     {
         // physicsMutex.lock();
         // b->setIsActive(false);
         // physicsMutex.unlock();
-        w->comp<staticEntityFlag>().shoudBeActive = false;
+        w->comp<PhysicsInfos>().shoudBeActive = false;
     }
 
     if(prct >= begin && prct < end
         // && !b->isActive()
-        and w->has<staticEntityFlag>()
-        and !w->comp<staticEntityFlag>().isActive
+        and w->has<PhysicsInfos>()
+        and !w->comp<PhysicsInfos>().isActive
         and w->comp<Effect>().affectedEntities.empty()
     )
     {
@@ -434,7 +434,7 @@ float AnimBlueprint::weaponAttackCallback(
         // std::cout << " with effect type" << EffectTypeReverseMap[w->comp<Effect>().type] << "\n" << TERMINAL_RESET;
 
         // b->setIsActive(true);
-        w->comp<staticEntityFlag>().shoudBeActive = true;
+        w->comp<PhysicsInfos>().shoudBeActive = true;
         // physicsMutex.unlock();
     }
 

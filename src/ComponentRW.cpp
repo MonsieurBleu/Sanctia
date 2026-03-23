@@ -135,6 +135,8 @@ AUTOGEN_DATA_RW_FUNC(MovementState
     , jumpVelocity
     )
 
+
+
 /* statBars aren't special nor complexe, it's prettier for them to be anonymous when written */
 AUTOGEN_DATA_RW_FUNC_AN(statBar, min, max, cur)
 
@@ -931,3 +933,30 @@ Script DataLoader<Script>::read(VulpineTextBuffRef buff)
 
     return data;
 }
+
+// AUTOGEN_DATA_RW_FUNC(FootstepsManager
+//     , halfHeight
+//     )
+
+
+// template <>
+// VulpineTextOutputRef DataLoader<AudioPlayer>::write(const AudioPlayer &data,
+//                                                     VulpineTextOutputRef out) {
+//   out->Entry();
+//   out->write("AudioPlayer"
+//              " ",
+//              sizeof("AudioPlayer"
+//                     " ") -
+//                  1);
+//   ;
+//   out->Break();
+//   return out;
+//   ;
+// }
+
+// template <> AudioPlayer DataLoader<AudioPlayer>::read(VulpineTextBuffRef buff) {
+//   return AudioPlayer();
+// }
+
+
+// TODO write a custom rw func for AudioScatterer since it's non-standard

@@ -21,7 +21,9 @@ namespace Blueprint
 
     EntityRef SpawnMainGameTerrain();
 
-    inline constexpr int cellSize = 128 / 2;
+    inline const vec3 terrainSize = vec3(4096, 512, 4096);
+    inline constexpr const char* mapFileName = "Herault_4096";
+    inline constexpr int cellSize = 128;
     EntityRef Terrain(
         const char *mapName, 
         vec3 terrainSize,

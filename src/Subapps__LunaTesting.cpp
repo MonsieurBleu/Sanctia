@@ -6,19 +6,21 @@
 #include "Scripting/ScriptInstance.hpp"
 #include "Timer.hpp"
 #include <AssetManager.hpp>
+#include <EntityBlueprint.hpp>
+#include "Game.hpp"
 
 
 #include <Blueprint/EngineBlueprintUI.hpp>
 
 Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 {
-    inputs.push_back(&
-        InputManager::addEventInput(
-            "execute script", GLFW_KEY_R, 0, GLFW_PRESS, [&]() {    
-                appRoot->comp<Script>().setInitialized(false);
-            },
-            InputManager::Filters::always, false)
-    );
+    // inputs.push_back(&
+    //     InputManager::addEventInput(
+    //         "execute script", GLFW_KEY_R, 0, GLFW_PRESS, [&]() {    
+    //             appRoot->comp<Script>().setInitialized(false);
+    //         },
+    //         InputManager::Filters::always, false)
+    // );
 
     inputs.push_back(&
         InputManager::addEventInput(
@@ -46,20 +48,46 @@ EntityRef Apps::LunaTesting::UImenu()
     );
 }
 
+EntityRef myAwesomeEntity = nullptr;
 void Apps::LunaTesting::init()
 {
+    const vec3 playerSpawnPoint = vec3(-700, 30, -750)*1.f;
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot", state3D(true));
-        App::setController(&controller);
+        appRoot = newEntity("AppRoot");
+        globals.currentCamera->getState().FOV = radians(100.f);
+        globals.simulationTime.resume();
+
+        appRoot->set<state3D>(true);
+        
+        GG::playerEntity = spawnEntity("(Combats) Player", playerSpawnPoint);
+        ComponentModularity::addChild(*appRoot, GG::playerEntity);
+
+        Game::playerControl = PlayerController(globals.currentCamera);
+        App::setController(&Game::playerControl);
+
+        Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
+        Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
+        Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
+        
+        GG::sun->shadowCameraSize = vec2(256, 256);
+
+        
     }
+
+    ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
+
+    physicsMutex.lock();
+    ComponentModularity::addChild(*appRoot, spawnEntity("movement demo terrain"));
+    myAwesomeEntity = std::make_shared<Entity>("myAwesomeEntity");
+    ComponentModularity::addChild(*appRoot, myAwesomeEntity);
+    ComponentModularity::ReparentChildren(*appRoot);
+    physicsMutex.unlock();
 
     // if (Loader<ScriptInstance>::loadingInfos.find("test_ent") != Loader<ScriptInstance>::loadingInfos.end())
     // {
     //     Loader<ScriptInstance>::get("test_ent").run();
     // }
-
-    static auto e = spawnEntity("test_ent");
 
 
     // appRoot->set<Script>(Script(
@@ -189,6 +217,30 @@ void Apps::LunaTesting::init()
     LogicBlock::parse_string_cstr(&input, len, len+1);
     std::cout << len << "\t" << input << "\n";
 
+    myAwesomeEntity->set<AudioPlayer>({});
+    // AudioPlayer& p = myAwesomeEntity->comp<AudioPlayer>();
+
+    // AudioClip& c = p.Play({.clipName = "FootstepsStoneDirt1Mono", .position = vec3(2, 0, 0), .positionInEntityReferential = true, .loop = true});
+
+    myAwesomeEntity->set<state3D>(state3D(playerSpawnPoint));
+    myAwesomeEntity->set<EntityModel>(EntityModel{Loader<ObjectGroup>::get("chaise").copy()});
+
+    myAwesomeEntity->set<AudioScatterer>({
+        .clips = {
+            "zapsplat_animals_budgies_x2_chirping_happy_001_75540",
+            "zapsplat_animals_bird_ringneck_parakeet_kisses_x5_109602",
+            "zapsplat_animals_bird_peewee_call_australia_003_11999",
+            "glitched_tones_urban_farm_jumbo_quail_and_background_birds_01_366",
+            // "audio_hero_BirdBlackThroatedDiver_DIGIC10-11"
+        }, 
+        .meanTime = 3.0f,
+        .posOffset = vec3(0, 5.5, 0), 
+        .halfExtents = vec3(30, 1, 30), 
+    });
+
+    GG::playerEntity->set<AudioPlayer>({});
+    GG::playerEntity->set<FootstepsManager>({});
+
     // constexpr int N = 1e6;
     // BenchTimer timer("Logic Block Parsing Benchmark");
     // int acctmp = 0;
@@ -232,20 +284,18 @@ void Apps::LunaTesting::update()
 {
     // ComponentModularity::synchronizeChildren(appRoot);
 
-    /* 
-        UPDATING ORBIT CONTROLLER ACTIVATION 
-    */
-    vec2 screenPos = globals.mousePosition();
-    screenPos = (screenPos/vec2(globals.windowSize()))*2.f - 1.f;
 
-    auto &box = EDITOR::MENUS::GameScreen->comp<WidgetBox>();
-    vec2 cursor = ((screenPos-box.min)/(box.max - box.min));
+    
+    // float t = globals.appTime.getElapsedTime() * glm::two_pi<float>() * 0.05f;
+    // myAwesomeEntity->comp<state3D>().position.x = -700 + sin(t) * 2.0f;
+    // myAwesomeEntity->comp<state3D>().lookDirection = vec3(sin(t), 0, cos(t));
+    
+    // if (globals.appTime.getUpdateCounter() % 60)
+    // {
+        // AudioPlayer& p = myAwesomeEntity->comp<AudioPlayer>();
 
-    if(cursor.x < 0 || cursor.y < 0 || cursor.x > 1 || cursor.y > 1)
-        globals.currentCamera->setMouseFollow(false);
-    else
-        globals.currentCamera->setMouseFollow(true);
-
+        // p.Play({.clipName = "FootstepsStoneDirt1", .loop = true});
+    // }   
 
     // bool b = InputManager::getGamepadButtonValue(VULPINE_GAMEPAD_BUTTON_A);
     // std::cout << "button A is: " << (b ? "Pressed" : "Not Pressed") << std::endl;

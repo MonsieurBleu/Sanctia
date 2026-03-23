@@ -23,6 +23,7 @@
 #include <ComponentTypeGraphic.hpp>
 #include <ComponentTypePhysic.hpp>
 #include <ComponentTypeAI.hpp>
+#include <ComponentTypeAudio.hpp>
 #include <ECS/ComponentTypeScripting.hpp>
 
 #undef CURRENT_MAX_COMP_USAGE
@@ -165,4 +166,9 @@ Entity* getClosestVisibleAlly(Entity &e);
 
 
 
+/***************** AUDIO *****************/
 
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY DATA
+
+    Component(FootstepsManager)

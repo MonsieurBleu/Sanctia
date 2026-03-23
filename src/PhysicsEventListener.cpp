@@ -152,7 +152,7 @@ void PhysicsEventListener::onContact(const rp3d::CollisionCallback::CallbackData
             MovementState& ds = dynamicEntity->comp<MovementState>();
             
             // check if ground is flat enough to walk
-            const float Y_THRESHOLD = 0.80; // threshold for grounded
+            const float Y_THRESHOLD = 0.60; // threshold for grounded
             uint32 nbContacts = pair.getNbContactPoints();
             // std::cout ,  "nbContacts: " ,  nbContacts ,  std::endl;
             float maxY = -1.0f;
@@ -165,7 +165,6 @@ void PhysicsEventListener::onContact(const rp3d::CollisionCallback::CallbackData
                 // the normal direction depends on which entity is the dynamic one so we may need to invert it 
                 float n = e1Deplacement ? -normal.y : normal.y; 
 
-                // std::cout ,  "[" ,  std::fixed ,  std::setprecision(4) ,  globals.simulationTime.getElapsedTime() ,  "] Debug :3 normal.y is : " ,  n ,  std::endl;
                 maxY = max(n, maxY);
                 if (n > Y_THRESHOLD) 
                 {

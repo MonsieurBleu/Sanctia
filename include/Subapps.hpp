@@ -398,9 +398,48 @@ namespace Apps
             OrbitController orbitController;
             SpectatorController spectator;
 
+            EntityRef biomeHelper;
+            EntityRef biome;
+
+            std::unordered_map<std::string, EntityRef> localEntityList;
+            std::unordered_map<std::string, EntityRef> entityList;
+
+            std::unordered_map<std::string, EntityRef> entityScattererList;
+            std::unordered_map<std::string, EntityRef> spawnInfosListInsideCurrentScatterer;
+            std::unordered_map<std::string, EntityRef> spawnInfosList;
+
+
+            std::string currentBiome;
+
+            EntityRef BiomeDataModifier();
+
+            void createBiomeHelper();
+            void destroyBiomeHelper();
+
         public : 
 
             ForestApp();
+
+            virtual EntityRef UImenu() override;
+
+            virtual EntityRef UIcontrols() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
+    class EnviroApp : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+        public : 
+
+            EnviroApp();
 
             virtual EntityRef UImenu() override;
 
@@ -410,5 +449,4 @@ namespace Apps
 
             virtual void clean() override;
     };
-
 }

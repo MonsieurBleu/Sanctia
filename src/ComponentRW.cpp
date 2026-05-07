@@ -597,7 +597,7 @@ DATA_READ_FUNC(ConvexMeshShape)
         IF_MEMBER_READ_VALUE(vertex)
             vertexBuffer.push_back(FastTextParser::read<vec3>(value));
     WHILE_NEW_VALUE_END 
-    
+
     std::vector<rp3d::Message> error;
     data = PG::common.createConvexMeshShape(
         PG::common.createConvexMesh(
@@ -847,6 +847,8 @@ DATA_READ_FUNC_ENTITY(RigidBody)
                     DataLoader<Collider>::read(buff);
                 }
             }
+
+            // WARNING_MESSAGE(data->getNbColliders())
 
             data->updateLocalCenterOfMassFromColliders();
             data->updateLocalInertiaTensorFromColliders();

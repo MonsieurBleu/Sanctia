@@ -216,6 +216,20 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         // std::filesystem::create_directory(dirNameEntity);
         char lodcnt = '0';
 
+        bool instanceMode = false;
+
+        for(int j = 0; j < collection->mNumChildren; j++)
+        {
+            aiNode *component = collection->mChildren[j];
+
+            if(
+                STR_CASE_STR(component->mName.C_Str(), "physic") &&
+                ! STR_CASE_STR(component->mName.C_Str(), "kinematic") &&
+                ! STR_CASE_STR(component->mName.C_Str(), "dynamic")
+            )
+                instanceMode = true;
+        }
+
         for(int j = 0; j < collection->mNumChildren; j++)
         {
             aiNode *component = collection->mChildren[j];
@@ -223,7 +237,12 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             VulpineTextOutputRef outModel(new VulpineTextOutput(1<<16));
             outModel->write(CONST_CSTRING_SIZED("~"));
             outModel->Entry();
-            WRITE_NAME(meshes, outModel)
+
+            if(instanceMode)
+                WRITE_NAME(instances, outModel)
+            else
+                WRITE_NAME(meshes, outModel)
+
             outModel->Tabulate();
 
             std::cout << collection->mName.C_Str() << "\t" << component->mName.C_Str() << "\n";
@@ -238,13 +257,27 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
                 entity->comp<EntityModel>()->add(newObjectGroup(getFileNameFromPath(dirNameLOD.c_str())));
 
+                std::unordered_map<std::string, int> meshNamesMap;
+
                 for(int k = 0; k < component->mNumChildren; k++)
                 {
                     aiNode *mesh = component->mChildren[k];
 
-                    std::cout << mesh->mName.C_Str() << "\t" << mesh->mNumMeshes << "\t" << mesh->mNumChildren << "\n";
+                    // std::cout << mesh->mName.C_Str() << "\t" << mesh->mNumMeshes << "\t" << mesh->mNumChildren << "\n";
 
-                    std::string dirNameMesh = dirNameLOD + "  ";
+                    std::string dirNameMesh = dirNameLOD + " " + mesh->mName.C_Str();
+                    if(dirNameMesh[dirNameMesh.size()-4] == '.') for(int i = 0; i < 4; i++) dirNameMesh.pop_back();
+
+                    auto element = meshNamesMap.find(dirNameMesh);
+                    if(element == meshNamesMap.end())
+                        meshNamesMap[dirNameMesh] = 1;
+                    else
+                    {
+                        dirNameMesh += " " + std::to_string(++element->second);
+                    }
+
+                    std::cout << dirNameMesh << ".vMesh\n";
+
                     std::string fileName = vulpineImportFlags & 1<<VEAC::SceneConvertOption::RETARGET_SKELETON && skeletonTarget.size() ?
                         VEAC::saveAsVulpineMesh(
                             *scene->mMeshes[mesh->mMeshes[0]], 
@@ -284,7 +317,28 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         }
                         else
                         {
-                            outModel->write(CONST_CSTRING_SIZED("packingPaint"));
+                            std::string customMaterial = "";
+                            if(STR_CASE_STR(mesh->mName.C_Str(), "leaves"))
+                            {
+                                switch (lodcnt-1) 
+                                {
+                                    case '0' :
+                                        outModel->write(CONST_CSTRING_SIZED("\"Painted Leaves LOD0\""));
+                                        outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("backface t"));
+                                        outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("patchmode t"));
+                                        break;
+
+                                    default :
+                                        outModel->write(CONST_CSTRING_SIZED("\"Painted Leaves LOD1\""));
+                                        break;
+                                }
+
+                            }
+                            else 
+                            if(instanceMode)
+                                outModel->write(CONST_CSTRING_SIZED("packingPaintInstanced"));
+                            else
+                                outModel->write(CONST_CSTRING_SIZED("packingPaint"));
                         }
 
                         outModel->Entry();

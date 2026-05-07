@@ -57,6 +57,8 @@ void Apps::MovementDemo::init()
 
     physicsMutex.lock();
     ComponentModularity::addChild(*appRoot, spawnEntity("movement demo terrain"));
+
+    ComponentModularity::addChild(*appRoot, spawnEntity("[DEMO] Climbing Test"));
     ComponentModularity::ReparentChildren(*appRoot);
     physicsMutex.unlock();
 }

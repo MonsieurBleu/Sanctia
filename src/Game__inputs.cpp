@@ -85,9 +85,9 @@ void Game::initInput()
             finalProcessingStage.reset();
             Bloom.getShader().reset();
             SSAO.getShader().reset();
-            depthOnlyMaterial->reset();
-            GG::PBR->reset();
-            GG::PBRstencil->reset();
+            // depthOnlyMaterial->reset();
+            // GG::PBR->reset();
+            // GG::PBRstencil->reset();
             skyboxMaterial->reset();
             for (auto &m : Loader<MeshMaterial>::loadedAssets)
                 m.second->reset();

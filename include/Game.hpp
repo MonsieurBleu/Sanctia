@@ -15,9 +15,9 @@ class Game final : public App
 private:
     /* 3D Materials */
     MeshMaterial skyboxMaterial;
-    MeshMaterial depthOnlyMaterial;
-    MeshMaterial depthOnlyStencilMaterial;
-    MeshMaterial depthOnlyInstancedMaterial;
+    // MeshMaterial depthOnlyMaterial;
+    // MeshMaterial depthOnlyStencilMaterial;
+    // MeshMaterial depthOnlyInstancedMaterial;
 
     /* Fast-UI */
     FontRef FUIfont;    

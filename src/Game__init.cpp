@@ -120,44 +120,46 @@ void Game::init(int paramSample)
     // camera.state.nearPlane = 0.17;
 
     /* Loading 3D Materials */
-    depthOnlyMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/depthOnly.frag",
-            "shader/foward/basic.vert",
-            ""));
+    // depthOnlyMaterial = MeshMaterial(
+    //     new ShaderProgram(
+    //         "shader/depthOnly.frag",
+    //         "shader/foward/basic.vert",
+    //         ""));
 
-    depthOnlyStencilMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/depthOnlyStencil.frag",
-            "shader/foward/basic.vert",
-            ""));
+    // depthOnlyStencilMaterial = MeshMaterial(
+    //     new ShaderProgram(
+    //         "shader/depthOnlyStencil.frag",
+    //         "shader/foward/basic.vert",
+    //         ""));
 
-    depthOnlyInstancedMaterial = MeshMaterial(
-        new ShaderProgram(
-            "shader/depthOnlyStencil.frag",
-            "shader/foward/basicInstance.vert",
-            ""));
+    // depthOnlyInstancedMaterial = MeshMaterial(
+    //     new ShaderProgram(
+    //         "shader/depthOnlyStencil.frag",
+    //         "shader/foward/basicInstance.vert",
+    //         globals.standartShaderUniform3D(),
+    //         "#define USING_VERTEX_TEXTURE_UV"
+    //     ));
 
-    GG::PBR = MeshMaterial(
-        new ShaderProgram(
-            "shader/foward/PBR.frag",
-            "shader/foward/basic.vert",
-            "",
-            globals.standartShaderUniform3D()));
+    // GG::PBR = MeshMaterial(
+    //     new ShaderProgram(
+    //         "shader/foward/PBR.frag",
+    //         "shader/foward/basic.vert",
+    //         "",
+    //         globals.standartShaderUniform3D(), "#define USING_VERTEX_TEXTURE_UV"));
 
-    GG::PBRstencil = MeshMaterial(
-        new ShaderProgram(
-            "shader/foward/PBR.frag",
-            "shader/foward/basic.vert",
-            "",
-            globals.standartShaderUniform3D()));
+    // GG::PBRstencil = MeshMaterial(
+    //     new ShaderProgram(
+    //         "shader/foward/PBR.frag",
+    //         "shader/foward/basic.vert",
+    //         "",
+    //         globals.standartShaderUniform3D(), "#define USING_VERTEX_TEXTURE_UV"));
 
-    GG::PBRinstanced = MeshMaterial(
-        new ShaderProgram(
-            "shader/foward/PBR.frag",
-            "shader/foward/basicInstance.vert",
-            "",
-            globals.standartShaderUniform3D()));
+    // GG::PBRinstanced = MeshMaterial(
+    //     new ShaderProgram(
+    //         "shader/foward/PBR.frag",
+    //         "shader/foward/basicInstance.vert",
+    //         "",
+    //         globals.standartShaderUniform3D()));
 
     skyboxMaterial = MeshMaterial(
         new ShaderProgram(
@@ -176,9 +178,9 @@ void Game::init(int paramSample)
         )
     );
 
-    GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
-    GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;
-    scene.depthOnlyMaterial = depthOnlyMaterial;
+    // GG::PBRstencil.depthOnly = depthOnlyStencilMaterial;
+    // GG::PBRinstanced.depthOnly = depthOnlyInstancedMaterial;
+    // scene.depthOnlyMaterial = depthOnlyMaterial;
 
     // scene.tree.bonusSpace = 64.f/4096;
     scene.tree.bonusSpace = 16.f/4096;

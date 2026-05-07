@@ -15,9 +15,9 @@
 
 namespace GameGlobals
 {
-    inline MeshMaterial PBR;
-    inline MeshMaterial PBRstencil;
-    inline MeshMaterial PBRinstanced;
+    // inline MeshMaterial PBR;
+    // inline MeshMaterial PBRstencil;
+    // inline MeshMaterial PBRinstanced;
 
     inline std::shared_ptr<Draw> draw = nullptr;
 

@@ -51,6 +51,7 @@ void Game::mainloop()
         sol::lib::math,
         sol::lib::jit
     );
+
     // threadState.set_exception_handler(&my_exception_handler);
 
     SanctiaLuaBindings::bindAll(threadState);
@@ -74,12 +75,14 @@ void Game::mainloop()
     // Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI004_4K-TONEMAPPED");
     Texture2D EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
     
+    // DirectionLight test;
+    // std::cout << test.getAttribAddr() << "\n";
 
-    SceneDirectionalLight sunLight = newDirectionLight(DirectionLight()
-                                                      // .setColor(vec3(0xFF, 0xBF, 0x7F) / vec3(255))
-                                                      .setColor(vec3(1))
-                                                      .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
-                                                      .setIntensity(1.0));
+    SceneDirectionalLight sunLight(new DirectionLight);
+
+    sunLight-> setColor(vec3(1))
+                .setDirection(normalize(vec3(-1.0, -1.0, 0.0)))
+                .setIntensity(1.0);
 
     GG::sun = sunLight;
 
@@ -89,9 +92,9 @@ void Game::mainloop()
     GG::sun->activateShadows();
     scene.add(sunLight);
 
-    GG::moon = newDirectionLight(DirectionLight()
-        .setColor(0.25f*vec3(0.6, 0.9, 1.0)));
-    // scene.add(GG::moon);
+    GG::moon = newDirectionLight();
+
+    GG::moon->setColor(0.25f*vec3(0.6, 0.9, 1.0));
 
     GG::moon->cameraResolution = vec2(2048);
     GG::moon->shadowCameraSize = vec2(256);
@@ -100,7 +103,6 @@ void Game::mainloop()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glLineWidth(1.0);
-
 
     // for(int i = 0; i < 2; i++)
     // {
@@ -182,11 +184,11 @@ void Game::mainloop()
             )
         );
 
+
     gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
     
     editorModeEnable = !Settings::devMode;
     toggleEditorMode();
-
 
     finalProcessingStage.addUniform(ShaderUniform((vec4 *)&gameScreenWidget->comp<WidgetBox>().displayMin, 12));
 
@@ -600,6 +602,7 @@ void Game::mainloop()
         )
     );
 
+
     
     // Apps::MainGameApp testsubapps1;
     Apps::EntityCreator entityCreator;
@@ -616,6 +619,7 @@ void Game::mainloop()
     Apps::LunaTesting lunaTest;
     Apps::MovementDemo movementDemo;
 
+    Apps::EnviroApp enviro;
 
     // SubApps::switchTo(materialView);
 
@@ -848,7 +852,7 @@ void Game::mainloop()
                 finalProcessingStage.reset();
                 Bloom.getShader().reset();
                 SSAO.getShader().reset();
-                depthOnlyMaterial->reset();
+                // depthOnlyMaterial->reset();
                 skyboxMaterial->reset();
                 skyboxMaterial.depthOnly->reset();
 
@@ -1279,10 +1283,15 @@ void Game::mainloop()
         // LOOD_calcul.start();
         // System<EntityModel, LevelOfDetailsInfos, state3D>([&](Entity &entity)
         // if(false)
+        
+        // NOTIF_MESSAGE(ComponentGlobals::maxID[Component<HeightFieldDummyFlag>::category]);
+
         const int frameDelay = 32;
         System<EntityModel, LevelOfDetailsInfos, state3D>([&](Entity &entity)
         {
             // NOTIF_MESSAGE(entity.toStr())
+
+            
 
             // const int frameDelay = 32;
             // if(globals.appTime.getUpdateCounter()%frameDelay != entity.ids[1]%frameDelay)
@@ -1326,7 +1335,8 @@ void Game::mainloop()
             // level = round(dlevel / 4096.f);
 
             float d = distance(globals.currentCamera->getPosition(), middle);
-            const int firstLevelRadius = 96;
+            // const int firstLevelRadius = 96;
+            const int firstLevelRadius = 128-16;
 
             // d = log2(max(0.f, d/firstLevelRadius) + 1);
             
@@ -1341,7 +1351,9 @@ void Game::mainloop()
             
 
             auto &c = model->getChildren();
-            // level = min(level, (int)c.size()-1);
+
+            // if(c.size() >= 3)level = min(level, (int)c.size()-1);
+
             int cnt = 0;
 
             for(auto i : c)

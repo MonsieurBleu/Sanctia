@@ -772,49 +772,53 @@ void Game::physicsLoop()
                 vec2 field_point = vec2(entity.comp<state3D>().position.x, entity.comp<state3D>().position.z);
                 field_point += vec2(Blueprint::terrainSize.x, Blueprint::terrainSize.z) * 0.5f;
 
-                Texture2D &HeightMap = Loader<Texture2D>::get(Blueprint::mapFileName);
+                Texture2D *HeightMap = Loader<Texture2D>::getIfExist(Blueprint::mapFileName);
 
-                float *src = ((float *)HeightMap.getPixelSource());
-                ivec2 textureSize = HeightMap.getResolution();
+                if(HeightMap)
+                {
+                    float *src = ((float *)HeightMap->getPixelSource());
+                    ivec2 textureSize = HeightMap->getResolution();
+    
+                    auto texelFetch = [&src, &textureSize](const ivec2& uv){return src[uv.y * textureSize.x + uv.x] * Blueprint::terrainSize.y;};
+    
+                    vec2 terrain_uv = field_point / vec2(Blueprint::terrainSize.x, Blueprint::terrainSize.z);
+                    vec2 texel_pos = terrain_uv * vec2(textureSize) - 0.5f;
+                    // bilinear interpolation
+                    ivec2 base = ivec2(floor(texel_pos));
+                    vec2 frac  = fract(texel_pos); 
+    
+                    ivec2 p00 = base + ivec2(0, 0);
+                    ivec2 p10 = base + ivec2(1, 0);
+                    ivec2 p01 = base + ivec2(0, 1);
+                    ivec2 p11 = base + ivec2(1, 1);
+    
+                    float c00 = texelFetch(p00);
+                    float c10 = texelFetch(p10);
+                    float c01 = texelFetch(p01);
+                    float c11 = texelFetch(p11);
+    
+                    float wx = frac.x;
+                    float wy = frac.y;
+    
+                    float h =
+                        c00 * (1 - wx) * (1 - wy) +
+                        c10 * wx       * (1 - wy) +
+                        c01 * (1 - wx) * wy +
+                        c11 * wx       * wy;
+    
+                    heightAboveTerrain = entity.comp<state3D>().position.y - h;
+    
+                    float dhdx = c00 - c10;
+                    float dhdy = c00 - c01;
+    
+                    terrainNormal = normalize(vec3(dhdx, 1.0, dhdy));
+    
+                    // DEBUG_MESSAGE("terrainNormal: ", terrainNormal);
+    
+                    // vec3 p = vec3(entity.comp<state3D>().position.x, h, entity.comp<state3D>().position.z);
+                    // GG::draw->drawLine(p, p + terrainNormal, 10.0f);
+                }
 
-                auto texelFetch = [&src, &textureSize](const ivec2& uv){return src[uv.y * textureSize.x + uv.x] * Blueprint::terrainSize.y;};
-
-                vec2 terrain_uv = field_point / vec2(Blueprint::terrainSize.x, Blueprint::terrainSize.z);
-                vec2 texel_pos = terrain_uv * vec2(textureSize) - 0.5f;
-                // bilinear interpolation
-                ivec2 base = ivec2(floor(texel_pos));
-                vec2 frac  = fract(texel_pos); 
-
-                ivec2 p00 = base + ivec2(0, 0);
-                ivec2 p10 = base + ivec2(1, 0);
-                ivec2 p01 = base + ivec2(0, 1);
-                ivec2 p11 = base + ivec2(1, 1);
-
-                float c00 = texelFetch(p00);
-                float c10 = texelFetch(p10);
-                float c01 = texelFetch(p01);
-                float c11 = texelFetch(p11);
-
-                float wx = frac.x;
-                float wy = frac.y;
-
-                float h =
-                    c00 * (1 - wx) * (1 - wy) +
-                    c10 * wx       * (1 - wy) +
-                    c01 * (1 - wx) * wy +
-                    c11 * wx       * wy;
-
-                heightAboveTerrain = entity.comp<state3D>().position.y - h;
-
-                float dhdx = c00 - c10;
-                float dhdy = c00 - c01;
-
-                terrainNormal = normalize(vec3(dhdx, 1.0, dhdy));
-
-                // DEBUG_MESSAGE("terrainNormal: ", terrainNormal);
-
-                // vec3 p = vec3(entity.comp<state3D>().position.x, h, entity.comp<state3D>().position.z);
-                // GG::draw->drawLine(p, p + terrainNormal, 10.0f);
             }
             
             vec3 p1 = entity.comp<state3D>().position + vec3(0, 0.05, 0);

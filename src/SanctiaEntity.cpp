@@ -974,6 +974,10 @@ template<> void Component<StainStatus>::ComponentElem::clean()
 
 EntityRef spawnEntity(const std::string &name, vec3 spawnPoint, quat rotation)
 {
+    // WARNING_MESSAGE("'", name, "'  ", spawnPoint, "  ", rotation)
+    // static BenchTimer test("Time To Spawn Entity");
+    // test.start();
+
     auto it = Loader<EntityRef>::loadingInfos.find(name);
 
     if(it == Loader<EntityRef>::loadingInfos.end())
@@ -994,6 +998,16 @@ EntityRef spawnEntity(const std::string &name, vec3 spawnPoint, quat rotation)
         if(e->comp<state3D>().usequat and rotation != quat(0, 0, 0, 0))
             e->comp<state3D>().initQuat = rotation;
     }
+    else if(e->has<EntityModel>())
+    {
+        e->comp<EntityModel>()->state.setPosition(spawnPoint);
+
+        if(e->comp<state3D>().usequat and rotation != quat(0, 0, 0, 0))
+            e->comp<EntityModel>()->state.setQuaternion(rotation);
+    }
+
+    // test.stop();
+    // WARNING_MESSAGE("Time To Spawn Entity '", name, "' : ", test.getDeltaMS(), " ms,  Average : ", test.getElapsedTime()*1000.f/(float)test.getUpdateCounter())
 
     return e;
 }

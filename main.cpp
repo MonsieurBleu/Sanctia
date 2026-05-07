@@ -18,10 +18,12 @@
 
 int main()
 {
-    signal(SIGSEGV, handleSegfaultStackTrace);
-    signal(SIGKILL, handleSegfaultStackTrace);
-    signal(SIGBUS, handleSegfaultStackTrace);
-    signal(SIGABRT, handleSegfaultStackTrace);
+    #ifndef _WIN32
+        signal(SIGSEGV, handleSegfaultStackTrace);
+        signal(SIGKILL, handleSegfaultStackTrace);
+        signal(SIGBUS, handleSegfaultStackTrace);
+        signal(SIGABRT, handleSegfaultStackTrace);
+    #endif
 
     Game *game = nullptr;
     std::string winname =  "Sanctia - Proof of Concept";

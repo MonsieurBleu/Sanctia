@@ -97,6 +97,7 @@ EntityRef Blueprint::Terrain(
     terrain->noBackFaceCulling = false;
     terrain->defaultMode = GL_PATCHES;
     terrain->setMap(HeightMap, 2);
+    terrain->setMap(Loader<Texture2D>::get("Grassyness"), 3);
 
     vec3 aabmin = terrain->getVao()->getAABBMin();
     vec3 aabmax = terrain->getVao()->getAABBMax();

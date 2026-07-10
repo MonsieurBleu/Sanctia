@@ -31,6 +31,8 @@ private:
     // B_PhysicsScene physics;
     void physicsLoop();
 
+    void physicsLoop2();
+
 
     EffectHandler effects;
 
@@ -54,6 +56,7 @@ public:
     static inline PlayerController playerControl = PlayerController(nullptr);
     static inline DialogueController dialogueControl;
 
+    /* TODO : remove */
     static inline LimitTimer physicsTicks;
     static inline BenchTimer physicsTimer = BenchTimer("Physics Timer");
     static inline BenchTimer physicsWorldUpdateTimer = BenchTimer("Physics World");

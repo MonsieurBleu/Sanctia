@@ -1,7 +1,8 @@
 #include <SanctiaEntity.hpp>
 #include <Scripting/ScriptInstance.hpp>
 
-
+thread_local std::string threadStateName;
+thread_local sol::state threadState;
 
 Script::Script()
 {

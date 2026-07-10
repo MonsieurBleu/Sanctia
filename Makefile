@@ -62,7 +62,8 @@ clean2 :
 
 
 build-windows-release : 
-	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-O3 -ffast-math -s -Os"
+# 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-O3 -ffast-math -s -Os -Oz -ffunction-sections -fdata-sections"
+	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-O3 -ffast-math -s -Os -Oz -ffunction-sections -fdata-sections"
 
 build-windows-debug : 
 	@$(MAKE) -C ./Engine game $(MAKE_FLAGS_WIN) $(MAKE_PARALLEL) OPTFLAGS="-g"

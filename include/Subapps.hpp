@@ -391,7 +391,7 @@ namespace Apps
             virtual void clean() override;
     };
 
-    class ForestApp : public SubApps
+    class BiomeApp : public SubApps
     {
         private :
 
@@ -400,6 +400,8 @@ namespace Apps
 
             EntityRef biomeHelper;
             EntityRef biome;
+
+            EntityRef saveButton;
 
             std::unordered_map<std::string, EntityRef> localEntityList;
             std::unordered_map<std::string, EntityRef> entityList;
@@ -416,9 +418,11 @@ namespace Apps
             void createBiomeHelper();
             void destroyBiomeHelper();
 
+            bool save();
+
         public : 
 
-            ForestApp();
+            BiomeApp();
 
             virtual EntityRef UImenu() override;
 
@@ -440,6 +444,25 @@ namespace Apps
         public : 
 
             EnviroApp();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
+
+    class PhysicsTestingApp : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+        public : 
+
+            PhysicsTestingApp();
 
             virtual EntityRef UImenu() override;
 

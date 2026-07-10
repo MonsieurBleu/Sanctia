@@ -13,7 +13,7 @@ void Game::toggleEditorMode()
     editorModeEnable = editorModeEnable ? false : true;
 
     if (editorModeEnable)
-        gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1. / 3., +0.4));
+        gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1./3., +0.4));
     else
         gameScreenWidget->comp<WidgetBox>().set(vec2(-1, +1), vec2(-1, +1));
 }
@@ -56,12 +56,15 @@ void Game::initInput()
 
     Inputs::toggleEditorMode = InputManager::addEventInput(
         "toggle editor mode", VULPINE_GAMEPAD_BUTTON_BACK, 0, GLFW_PRESS, [&]() {
-            editorModeEnable = editorModeEnable ? false : true;
 
-            if (editorModeEnable)
-                gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1. / 3., +0.4));
-            else
-                gameScreenWidget->comp<WidgetBox>().set(vec2(-1, +1), vec2(-1, +1));
+            toggleEditorMode();
+
+            // editorModeEnable = editorModeEnable ? false : true;
+
+            // if (editorModeEnable)
+            //     gameScreenWidget->comp<WidgetBox>().set(vec2(-1. / 3., +1), vec2(-0.6 - 1. / 3., +0.4));
+            // else
+            //     gameScreenWidget->comp<WidgetBox>().set(vec2(-1, +1), vec2(-1, +1));
         },
         InputManager::Filters::always, false);
 
@@ -106,12 +109,6 @@ void Game::initInput()
         "toggle info stat helper", GLFW_KEY_9, 0, GLFW_PRESS, [&]() {
             GlobalComponentToggler<InfosStatsHelpers>::activated =
                 !GlobalComponentToggler<InfosStatsHelpers>::activated;
-        },
-        InputManager::Filters::always, false);
-
-    Inputs::togglePhysicsHelper = InputManager::addEventInput(
-        "toggle physics helper", GLFW_KEY_0, 0, GLFW_PRESS, [&]() {
-            GlobalComponentToggler<PhysicsHelpers>::activated = !GlobalComponentToggler<PhysicsHelpers>::activated;
         },
         InputManager::Filters::always, false);
 

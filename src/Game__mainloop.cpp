@@ -5,6 +5,7 @@
 #include <bit>
 
 #include <Utils.hpp>
+#include <MathsUtils.hpp>
 #include <Game.hpp>
 #include <Globals.hpp>
 // #include <GameObject.hpp>
@@ -25,6 +26,8 @@
 #include <Graphics/Animation.hpp>
 #include <Graphics/Skeleton.hpp>
 
+#include <JoltIntegration/PhysicsDebugRenderer.hpp>
+
 #include <PhysicsGlobals.hpp>
 #include <Subapps.hpp>
 #include <Settings.hpp>
@@ -38,6 +41,8 @@
 #include <FenceGPU.hpp>
 
 #include <cmath>
+
+
 
 void Game::mainloop()
 {
@@ -53,9 +58,12 @@ void Game::mainloop()
     );
 
     // threadState.set_exception_handler(&my_exception_handler);
-
+    globals.enablePhysics = false;
+    
     SanctiaLuaBindings::bindAll(threadState);
     std::thread physicsThreads(&Game::physicsLoop, this);
+
+    std::thread physicsThreads2(&Game::physicsLoop2, this);
 
     /****** Loading Models and setting up the scene ******/
     globals.simulationTime.pause();
@@ -185,7 +193,7 @@ void Game::mainloop()
         );
 
 
-    gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.933333, 0.40)));
+    // gameScreenWidget->set<WidgetBox>(WidgetBox(vec2(-0.33333, 1), vec2(-0.90, 0.40)));
     
     editorModeEnable = !Settings::devMode;
     toggleEditorMode();
@@ -446,7 +454,10 @@ void Game::mainloop()
 //     ComponentModularity::addChild(*EDITOR::MENUS::AppMenu, first);
 
     // EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
-    EDITOR::MENUS::AppChoice->comp<WidgetStyle>().setautomaticTabbing(1);
+    EDITOR::MENUS::AppChoice->comp<WidgetStyle>()
+        .setautomaticTabbing(1)
+        .setuseInternalSpacing(true)
+    ;
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
@@ -499,12 +510,15 @@ void Game::mainloop()
             "icon_hitbox",
             [&](Entity *e, float v)
             {
-                GlobalComponentToggler<PhysicsHelpers>::activated =
-                    !GlobalComponentToggler<PhysicsHelpers>::activated;
+                JoltVulpine::debugRendererActive = !JoltVulpine::debugRendererActive;
+
+                if(!JoltVulpine::debugRendererActive)
+                    for(auto m : JoltVulpine::debugRenderer->models)
+                        m->resetInstances();
             },
             [&](Entity *e)
             {
-                return GlobalComponentToggler<PhysicsHelpers>::activated  ? 0.f : 1.f;
+                return JoltVulpine::debugRendererActive  ? 0.f : 1.f;
             }
         )
     );
@@ -609,7 +623,8 @@ void Game::mainloop()
     Apps::AssetListViewer assetView;
     Apps::MaterialViewerApp materialView;
     
-    Apps::ForestApp forestApp;
+    Apps::BiomeApp BiomeApp;
+    Apps::PhysicsTestingApp physicsTesting;
 
     Apps::CombatsApp combatsApps;
     Apps::AnimationApp animationViewer;
@@ -620,6 +635,7 @@ void Game::mainloop()
     Apps::MovementDemo movementDemo;
 
     Apps::EnviroApp enviro;
+
 
     // SubApps::switchTo(materialView);
 
@@ -1128,7 +1144,29 @@ void Game::mainloop()
             GG::moon->setIntensity(0.25 * (1.0 - sunIntensity));
         }
 
-        // for(int i = 0; i < 512; i++) WARNING_MESSAGE("Yooo");
+        /****** 
+            Updating Physics Debug Renderer
+        ******/    
+        if(JoltVulpine::debugRendererActive and JoltVulpine::jPhysicsSystem)
+        {
+            
+            if(!JoltVulpine::debugRenderer)
+                JoltVulpine::debugRenderer = new JoltVulpine::DebugRenderer();
+        
+            for(auto m : JoltVulpine::debugRenderer->models)
+                m->resetInstances();
+
+            JoltVulpine::debugRendererSettings.mDrawShapeColor = JPH::BodyManager::EShapeColor::MotionTypeColor;
+            // JoltVulpine::debugRendererSettings.mDrawShapeWireframe = false;
+
+            JoltVulpine::physicsMutex.lock();
+            JoltVulpine::jPhysicsSystem->DrawBodies(
+                JoltVulpine::debugRendererSettings,
+                JoltVulpine::debugRenderer,
+                nullptr
+            );
+            JoltVulpine::physicsMutex.unlock();
+        }
 
         SubApps::UpdateApps(); 
         
@@ -1531,7 +1569,105 @@ void Game::mainloop()
             }
         });
 
-        /***** ATTACH THE MODEL TO THE ENTITY STATE *****/
+
+        /***** ATTACH THE MODEL TO THE ENTITY STATE (NEW (BETTER)) *****/
+
+        /*
+            Entities with dyamic main bodies update their model using physic interpolation
+        */
+        
+        JoltVulpine::physicInterpolationMutex.lock();
+        float physicInterpValue = clamp((JoltVulpine::physicInterpolationTick.timeSinceLastTick() * JoltVulpine::physicsTicks.freq), 0.f, 1.f);
+
+        System<DynamicState3D, EntityModel, State3D>([&](Entity &e, DynamicState3D &ds, EntityModel &m, State3D &s)
+        {
+            s.position = mix(ds.last.position, ds.next.position, physicInterpValue);
+            s.rotation = slerp(ds.last.rotation, ds.next.rotation, physicInterpValue);
+            
+            m->state.setPosition(s.position);
+
+            if(e.has<Deplacement>())
+            {
+                // vec2 dir(e.comp<Deplacement>().look.current.x, e.comp<Deplacement>().look.current.z);
+
+                vec2 dir(e.comp<Deplacement>().direction.current.x, e.comp<Deplacement>().direction.current.z);
+
+                vec2 lookDir(e.comp<Deplacement>().look.current.x, e.comp<Deplacement>().look.current.z);
+
+                // dir = normalize(dir);
+                lookDir = normalize(lookDir);
+
+                dir *= sign(dot(dir, lookDir) + 0.5f);
+
+                float angle = radians(90.f)-atan2f(dir.y, dir.x);
+                quat q = vec3(0, angle, 0);
+
+                if(e.comp<Deplacement>().speed.current < 0.1f)
+                {
+                    // m->state.setQuaternion(q);
+                }
+                else
+                {
+                    float closenessFactor = 2.f + 10.f*(2.f - distance(angle, eulerAngles(m->state.quaternion).y)/PI);
+    
+                    float a = 0.5*clamp(globals.simulationTime.getDelta()*closenessFactor, 0.f, 1.f);
+                    m->state.setQuaternion(slerp(m->state.quaternion, q, a));
+                }
+            }
+            else
+            {
+                m->state.setQuaternion(slerp(ds.last.rotation, ds.next.rotation, physicInterpValue));
+            }
+
+            m->update();
+        });
+        
+        JoltVulpine::physicInterpolationMutex.unlock();
+
+        /*
+            Entities with kynematic main bodies update their model using State3D
+        */
+        System<KynematicFlag, State3D, EntityModel>([&](Entity &e, KynematicFlag &k, State3D &s, EntityModel &m)
+        {
+            if(k)
+            {
+                m->state.setPosition(s.position).setQuaternion(s.rotation);
+                m->update();
+            }
+        });
+
+
+        /***** LOGIC BASED SYSTEMS *****/
+        System<Gauges, Deplacement>([&](Entity &e, Gauges &g, Deplacement &depl)
+        {
+            const float delta = globals.simulationTime.getDelta();
+
+            // const float jogWalkFactor = linearstep(depl.walkSpeed, depl.jogSpeed, depl.speed.current);
+            const float jogWalkFactor = 
+                linearstep(0.f, depl.speedSteps-1.f, depl.currentSpeedStep)
+                *linearstep(0.f, 0.1f, depl.speed.current)
+                ;
+
+            const float passiveStaminaRegen = 10.f;
+            const float jogStaminaConsumption = mix(-passiveStaminaRegen, 5.f, jogWalkFactor);
+            const float sprintStaminaConsuption = 2.f;
+            float deplStaminaConsuption = depl.grounded.get() ? delta * (depl.sprint.getCurrent() ? sprintStaminaConsuption : jogStaminaConsumption) : 0.f;
+
+            g.fatigue += max(deplStaminaConsuption/32.f, 0.f); 
+
+            g.stamina.max = g.fatigue.max - g.fatigue.current;
+            g.stamina -= deplStaminaConsuption;
+            // g.stamina += delta * passiveStaminaRegen;
+
+            // NOTIF_MESSAGE(
+            //     PRINTVAR(g.fatigue.current),
+            //     PRINTVAR(g.stamina.max)
+            // )
+
+        });
+
+
+        /***** ATTACH THE MODEL TO THE ENTITY STATE (OLD (CACA)) *****/
 
         PG::physicInterpolationMutex.lock();
         float physicInterpolationValue =
@@ -2202,18 +2338,20 @@ void Game::mainloop()
             ms.justLanded = false;
         });
 
+        systemsPreciseTimerMutex.lock();
         /* Updating all systems timer */
         for(auto &i : systemsPreciseTimer)
         {
             i.second.stop();
         }
+        systemsPreciseTimerMutex.unlock();
 
         /* Main loop End */
         mainloopEndRoutine();
     }
 
-    Settings::bloomEnabled = Bloom.isPassEnable();
-    Settings::ssaoEnabled = SSAO.isPassEnable();
+    Settings::bloomEnabled = paintShaderPass.enableBloom;
+    Settings::ssaoEnabled = paintShaderPass.enableAO;
     Settings::renderScale = globals.renderScale();
     Settings::lastOpenedApp = SubApps::getActiveAppName();
     Settings::devMode = editorModeEnable;
@@ -2223,6 +2361,7 @@ void Game::mainloop()
     Settings::save();
 
     physicsThreads.join();
+    physicsThreads2.join();
     
     cursorHelp = 
     gameScreenWidget = 

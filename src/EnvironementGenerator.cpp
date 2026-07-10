@@ -1,5 +1,6 @@
 #include <EnvironementGenerator.hpp>
 #include <AssetManagerUtils.hpp>
+#include <MathsUtils.hpp>
 
 AUTOGEN_DATA_RW_FUNC_AN(BiomeInfos,
     Grassyness,
@@ -92,7 +93,7 @@ EntityScatterer& Loader<EntityScatterer>::loadFromInfos()
 
 void BiomeInfos::writeToFile(std::string filename)
 {
-    std::string fileName(filename + ".sBiomeInfos");
+    std::string fileName(filename);
     NOTIF_MESSAGE("Creating file : " ,  fileName)
     auto out  = VulpineTextOutputRef(new VulpineTextOutput(1<<16));
     out->write("~", 1);
@@ -102,14 +103,21 @@ void BiomeInfos::writeToFile(std::string filename)
 
 void EntityScatterer::writeToFile(std::string filename)
 {
-    std::string fileName(filename + ".sEntityScatterer");
+    std::string fileName(filename);
     NOTIF_MESSAGE("Creating file : " ,  fileName)
     auto out  = VulpineTextOutputRef(new VulpineTextOutput(1<<16));
     out->write("~", 1);
     DataLoader<EntityScatterer>::write(*this, out)->saveAs(fileName.c_str());
 }
 
-
+void EntityScatterer::SpawnInfo::writeToFile(std::string filename)
+{
+    std::string fileName(filename);
+    NOTIF_MESSAGE("Creating file : " ,  fileName)
+    auto out  = VulpineTextOutputRef(new VulpineTextOutput(1<<16));
+    out->write("~", 1);
+    DataLoader<EntityScatterer::SpawnInfo>::write(*this, out)->saveAs(fileName.c_str());
+}
 
 
 EntityScatterer::EntityScatterer(){};
@@ -263,7 +271,8 @@ void EntityScatterer::generateFrame(float timeAllowed)
             BiomeInfos local = getLocalInfos(genCurrentCell);
 
 
-            std::default_random_engine generator(genCurrentCell.x + genCurrentCell.y*0.25f + genCurrentCell.x*genCurrentCell.y*0.5f);
+            // std::default_random_engine generator(genCurrentCell.x + genCurrentCell.y*0.25f + genCurrentCell.x*genCurrentCell.y*0.5f);
+            std::default_random_engine generator(512.f*random01Vec2(genCurrentCell*0.01f));
 
             std::normal_distribution<float> posx(-1.f, +1.f);
             std::normal_distribution<float> posy(-1.f, +1.f);
@@ -284,9 +293,22 @@ void EntityScatterer::generateFrame(float timeAllowed)
                 std::uniform_real_distribution<float> radialy(-spawn.radialRange.y, spawn.radialRange.y);
                 std::uniform_real_distribution<float> radialz(-spawn.radialRange.z, spawn.radialRange.z);
 
-                int numberToSpawn = round(spawn.densityPerCell*density);
+                // std::normal_distribution<float> 
+                std::uniform_real_distribution<float>
+                    spawnChanceDecimal(0.f, 1.f);
 
-                // if(numberToSpawn) ERROR_MESSAGE(spawn.densityPerCell*density)
+                spawnChanceDecimal(generator); /* Call one time the generator to not have result close to 0 almost all the time*/
+                float decimalSpawn = spawnChanceDecimal(generator);
+                int numberToSpawn = round(spawn.densityPerCell*density) + (abs(decimalSpawn) < fract(spawn.densityPerCell)*density ? 1 : 0);
+
+                // if(numberToSpawn) 
+                    // ERROR_MESSAGE(
+                    //     numberToSpawn, "   ",
+                    //     decimalSpawn, "   ",
+                    //     fract(spawn.densityPerCell*density), "   ",
+                    //     round(spawn.densityPerCell*density), "   ",
+                    //     (decimalSpawn < fract(spawn.densityPerCell*density) ? 1 : 0)
+                    // )
 
                 for(int j = 0; j < numberToSpawn; j++)
                 {
@@ -323,6 +345,15 @@ void EntityScatterer::generateFrame(float timeAllowed)
                         quat(radians(vec3(radialx(generator),radialy(generator),radialz(generator))))
                     );
 
+
+                    float modelScale = scale(generator);
+                    // WARNING_MESSAGE(modelScale);
+                    if(e->has<EntityModel>())
+                    {
+                        e->comp<EntityModel>()->state.scaleScalar(modelScale);
+                        e->comp<EntityModel>()->update();
+                    }
+
                     // test.start();
 
                     ComponentModularity::addChild(*genParent, e);
@@ -331,8 +362,7 @@ void EntityScatterer::generateFrame(float timeAllowed)
                     
                     // test.stop();
 
-                    if(e->has<EntityModel>())
-                        e->comp<EntityModel>()->state.scaleScalar(scale(generator)).update();
+
 
                     // WARNING_MESSAGE("Time To Spawn Entity '", name, "' : ", test.getDeltaMS(), " ms,  Average : ", test.getElapsedTime()*1000.f/(float)test.getUpdateCounter())
                 }

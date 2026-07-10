@@ -3,6 +3,7 @@
 #include <AssetManagerUtils.hpp>
 #include <MappedEnum.hpp>
 #include <AnimationBlueprint.hpp>
+#include <AnimationBlueprint2.hpp>
 
 #include <GameGlobals.hpp>
 
@@ -109,6 +110,10 @@ DATA_READ_FUNC(EntityRef) {
                 data->set<AnimationControllerRef>(AnimBlueprint::bipedMoveset_PREALPHA_2025(a, data.get()));
             break;
 
+            case AnimationControllerInfos::Parkour : 
+                data->set<AnimationControllerRef>(AnimBlueprint::Human::ParkourMoveset(a, data.get()));
+            break;
+
             default : break;
         }
     }
@@ -141,6 +146,11 @@ EntityRef& Loader<EntityRef>::loadFromInfos()
     EXIT_ROUTINE_AND_RETURN
 }
 
+AUTOGEN_COMPONENT_RWFUNC(State3D)
+AUTOGEN_COMPONENT_RWFUNC(Deplacement)
+AUTOGEN_COMPONENT_RWFUNC(ComplexMovements)
+AUTOGEN_COMPONENT_RWFUNC(Gauges)
+
 AUTOGEN_COMPONENT_RWFUNC(Script)
 AUTOGEN_COMPONENT_RWFUNC(AgentProfile)
 AUTOGEN_COMPONENT_RWFUNC(state3D)
@@ -161,10 +171,14 @@ AUTOGEN_COMPONENT_RWFUNC(AnimationControllerInfos)
 AUTOGEN_COMPONENT_RWFUNC(Effect)
 AUTOGEN_COMPONENT_RWFUNC_E(RigidBody)
 
+AUTOGEN_COMPONENT_RWFUNC_E(JoltBody)
+
 AUTOGEN_COMPONENT_RWFUNC(DeplacementBehaviour)
 AUTOGEN_COMPONENT_RWFUNC(AgentState__old)
 
 AUTOGEN_COMPONENT_RWFUNC_E(EntityGroupInfo)
+
+
 
 // for some reason this just doesn't work
 // AUTOGEN_COMPONENT_RWFUNC(AudioPlayer)

@@ -29,6 +29,19 @@
 
 #include <filesystem>
 
+#include <JoltIntegration/JoltIntegration.hpp>
+#include <JoltIntegration/PhysicsCommons.hpp>
+
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+
 bool doFileProcessingTmpDebug = false;
 
 vec2 gridScale = vec2(2);
@@ -105,6 +118,8 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
     physicsMutex.lock();
 
+    int sensorCount = 0;
+
     // if (scene->mNumMeshes)
     // {
     //     for (unsigned int i = 0; i < scene->mNumMeshes; i++)
@@ -173,7 +188,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY))
             WARNING_MESSAGE("Exporting SCENE_AS_ENTITY without OBJECT_AS_ENTITY isn't supported. The scene entity will not be created.")
         else 
-            sceneEntity = newEntity("[TMP SCENE] " + getNameOnlyFromPath(path.c_str()) + ".vEntity", state3D(true));
+            sceneEntity = newEntity("[TMP SCENE] " + getNameOnlyFromPath(path.c_str()) + ".vEntity", State3D());
     }
 
     if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY) && !(vulpineImportFlags & 1<<VEAC::SceneConvertOption::IGNORE_MESH))
@@ -210,7 +225,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         colPos *= vec3(1, 0, 1);
         colPos = vec3(0);
 
-        EntityRef entity = newEntity(collection->mName.C_Str(), state3D(true));
+        EntityRef entity = newEntity(collection->mName.C_Str(), State3D());
 
         std::string dirNameEntity = dirName + collection->mName.C_Str();
         // std::filesystem::create_directory(dirNameEntity);
@@ -223,11 +238,13 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             aiNode *component = collection->mChildren[j];
 
             if(
-                STR_CASE_STR(component->mName.C_Str(), "physic") &&
-                ! STR_CASE_STR(component->mName.C_Str(), "kinematic") &&
-                ! STR_CASE_STR(component->mName.C_Str(), "dynamic")
+                STR_CASE_STR(component->mName.C_Str(), "physic") and
+                !STR_CASE_STR(component->mName.C_Str(), "kinematic") and
+                !STR_CASE_STR(component->mName.C_Str(), "dynamic")
             )
+            {
                 instanceMode = true;
+            }
         }
 
         for(int j = 0; j < collection->mNumChildren; j++)
@@ -312,7 +329,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         if(scene->mMeshes[mesh->mMeshes[0]]->HasBones())
                         {
                             outModel->write(CONST_CSTRING_SIZED("\"Animated Packing Paint\""));
-                            entity->comp<state3D>().usequat = false;
+                            // entity->comp<state3D>().usequat = false;
                             entity->set<SkeletonAnimationState>(SkeletonAnimationState(Loader<SkeletonRef>::get(skeletonTarget)));
                         }
                         else
@@ -348,39 +365,39 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                             // WRITE_FUNC_RESULT(posiiton, toVulpine(mesh->mTransformation).initPosition)
                             // WRITE_FUNC_RESULT(quaternion, toVulpine(mesh->mTransformation).initQuat)
 
-                            auto state3D = VEAC::toModelState(mesh->mTransformation);
-                            state3D.position -= colPos;
+                            auto modelState = VEAC::toModelState(mesh->mTransformation);
+                            modelState.position -= colPos;
 
                             outModel->Entry();
                             WRITE_NAME(position, outModel);
                             outModel->write("\"", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.position.x)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.position.x)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.position.y)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.position.y)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.position.z)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.position.z)));
                             outModel->write("\"", 1);
 
                             outModel->Entry();
                             WRITE_NAME(quaternion, outModel);
                             outModel->write("\"", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.w)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.quaternion.w)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.x)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.quaternion.x)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.y)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.quaternion.y)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.quaternion.z)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.quaternion.z)));
                             outModel->write("\"", 1);
 
                             outModel->Entry();
                             WRITE_NAME(scalev3, outModel);
                             outModel->write("\"", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.scale.x)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.x)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.scale.y)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.y)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(state3D.scale.z)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.z)));
                             outModel->write("\"", 1);
 
                             outModel->Break();
@@ -392,6 +409,140 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
             }
             else 
             if(STR_CASE_STR(component->mName.C_Str(), "physic"))
+            {
+                if(!entity->has<JoltBody>())
+                    entity->set<JoltBody>(JoltBody());
+
+                JPH::BodyCreationSettings settings;
+                bool sensorMode = false;
+
+                if(STR_CASE_STR(component->mName.C_Str(), "sensor"))
+                {
+                    sensorMode = true;
+                    settings.mIsSensor = true;
+                }
+
+                if(STR_CASE_STR(component->mName.C_Str(), "kinematic"))
+                {
+                    settings.mMotionType = JPH::EMotionType::Kinematic;
+                }
+                else
+                if(STR_CASE_STR(component->mName.C_Str(), "dynamic"))
+                {
+                    settings.mMotionType = JPH::EMotionType::Dynamic;
+                }
+                else
+                {
+                    settings.mMotionType = sensorMode ? JPH::EMotionType::Kinematic : JPH::EMotionType::Static;
+                }
+
+                if(STR_CASE_STR(component->mName.C_Str(), "mass:"))
+                {
+                    settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+                    const char *n = STR_CASE_STR(component->mName.C_Str(), "mass:");
+                    float mass = fromStr<float>(n + sizeof("mass:")-1);
+                    settings.mMassPropertiesOverride.mMass = mass;
+                }
+
+                JPH::StaticCompoundShapeSettings shapes;
+
+                for(int k = 0; k < component->mNumChildren; k++)
+                {
+                    aiNode *collider = component->mChildren[k];
+
+                    if(collider->mNumMeshes != 1) {COMPONENT_NOT_RECOGNIZED; continue;}
+                    auto mesh = scene->mMeshes[collider->mMeshes[0]];
+                    vec3 aabbmin = toGLM(mesh->mAABB.mMin);
+                    vec3 aabbmax = toGLM(mesh->mAABB.mMax);
+                    vec3 extent = aabbmax - aabbmin;
+                    vec3 center = .5f*(aabbmax + aabbmin);
+                    
+                    ModelState3D modelState = VEAC::toModelState(collider->mTransformation);
+
+                    JPH::CompoundShapeSettings::SubShapeSettings jcollider;
+                    jcollider.mPosition = Vvec3(modelState.position + modelState.quaternion*center);
+                    jcollider.mRotation = Vquat(modelState.quaternion);
+                    
+                    if(STR_CASE_STR(collider->mName.C_Str(), "capsule"))
+                    {
+                        auto capsule = new JPH::CapsuleShapeSettings();
+                        capsule->mRadius = min(extent.x, min(extent.y, extent.z))*.5f;
+                        capsule->mHalfHeightOfCylinder = .5f*(max(extent.x, max(extent.y, extent.z))-capsule->mRadius*2.f);
+                        jcollider.mShape = capsule;
+                    }
+                    else
+                    if(STR_CASE_STR(collider->mName.C_Str(), "cylinder"))
+                    {
+                        auto cylinder = new JPH::CylinderShapeSettings();
+                        cylinder->mRadius = min(extent.x, min(extent.y, extent.z))*.5f;
+                        cylinder->mHalfHeight = max(extent.x, max(extent.y, extent.z))*.5f;
+                        jcollider.mShape = cylinder;
+                    }
+                    else
+                    if(STR_CASE_STR(collider->mName.C_Str(), "cube"))
+                    {
+                        auto box = new JPH::BoxShapeSettings();
+                        box->mHalfExtent = Vvec3(extent*0.5f);
+                        jcollider.mShape = box;
+                    }
+                    else
+                    if(STR_CASE_STR(collider->mName.C_Str(), "sphere"))
+                    {
+                        auto sphere = new JPH::SphereShapeSettings();
+                        sphere->mRadius= extent.x*0.5f;
+                        jcollider.mShape = sphere;
+                    }
+                    else  
+                    if(STR_CASE_STR(collider->mName.C_Str(), "mesh"))
+                    {
+                        if(collider->mNumMeshes != 1)
+                        {
+                            FILE_ERROR_MESSAGE(
+                                (path + ":" + collider->mName.C_Str()), 
+                                "The import system for mesh colliders only support 1 mesh per collider, this one has " ,  collider->mNumMeshes
+                            )
+                        }
+
+                        auto hull = new JPH::ConvexHullShapeSettings;
+                        auto &mesh = scene->mMeshes[collider->mMeshes[0]];
+
+                        hull->mPoints.reserve(mesh->mNumVertices);
+
+                        for(int i = 0; i < mesh->mNumVertices; i++)
+                            hull->mPoints.push_back(Vvec3(vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z) - center));
+                        
+                        jcollider.mShape = hull;
+                    }
+                    else {
+                        FILE_ERROR_MESSAGE(
+                            (path + ":" + collection->mName.C_Str()), 
+                            "Entity physic body '" ,  collider->mName.C_Str() ,  "' not recognized. "
+                            ,  "Either something is wrong with the scene layout, or the VEAC entity export option was used by mistake."
+                        )
+                    }
+
+                    shapes.mSubShapes.push_back(jcollider);
+                }
+                /* Create body ...... */
+                JPH::Shape::ShapeResult result = shapes.Create();
+				if(result.IsValid())
+					settings.SetShape(result.Get());
+				else
+				{
+					ERROR_MESSAGE("Non-valid shape ", result.GetError())
+				}
+
+                settings.mObjectLayer = JPH::ObjectLayerPairFilterMask::sGetObjectLayer(1<<JoltVulpine::Layers::ENVIRONEMENT, 1<<JoltVulpine::Layers::ENVIRONEMENT);
+
+                JPH::Body *body = JoltVulpine::jPhysicsSystem->GetBodyInterface().CreateBody(settings);
+
+                if(sensorMode) 
+                    entity->comp<JoltBody>().sensors[sensorCount++] = body->GetID();
+                else
+                    *(JPH::BodyID*)&entity->comp<JoltBody>() = body->GetID();
+            }
+            else
+            if(STR_CASE_STR(component->mName.C_Str(), "physic_old"))
             {
                 rp3d::Transform transform;
                 entity->set<RigidBody>(PG::world->createRigidBody(transform));
@@ -533,7 +684,8 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
         if(sceneEntity)
             ComponentModularity::addChild(*sceneEntity, 
                 newEntity(entity->comp<EntityInfos>().name + " [000]"
-                    , state3D(true, vec3(7.5*(i%5), 0, 7.5*(i/5)))
+                    // , state3D(true, vec3(7.5*(i%5), 0, 7.5*(i/5)))
+                    , State3D({vec3(7.5*(i%5), 0, 7.5*(i/5))})
                     , EntityGroupInfo({entity})
                 )
             );

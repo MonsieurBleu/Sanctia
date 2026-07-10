@@ -21,9 +21,23 @@
     VBIND_ADD_METHOD_ALIAS(type, comp<type>, ()) \
     VBIND_ADD_METHOD_ALIAS(has_##type, has<type>, ()) \
     VBIND_ADD_METHOD_ALIAS(set_##type, set<type>, ()) \
-    VBIND_ADD_METHOD_ALIAS(remove_##type, remove<type>, ())
+    VBIND_ADD_METHOD_ALIAS(remove_##type, remove<type>, ()) \
+    VBIND_ADD_METHOD_ALIAS(system_##type, LuaSystem<type>, ())
 
 #define VBIND_ADD_ENTITY_COMPONENTS(...) MAPGEN_FOR_EACH(VBIND_ADD_ENTITY_COMPONENT, __VA_ARGS__)
+
+std::string to_string(const SoftGoal<vec3> &s)
+{
+    return "";
+}
+
+bool operator<=(const EntityModel & a, const EntityModel &b)
+{
+    return false;
+}
+
+// template<>
+// bool sol::meta::supports_op_less<EntityModel>::value {false};
 
 void VulpineLuaBindings::Entities(sol::state &lua)
 {
@@ -263,87 +277,97 @@ void VulpineLuaBindings::Entities(sol::state &lua)
                     << "---@param parent Entity\n"
                     << "function entityReadFromFile(asset_name, parent) end\n";
     }
-    // MARK: Modularity
+
+// Mark : Compnenet Type 3D
+
+    // VBIND_CLASS_DECLARE(ComplexMovements)
+    // VBIND_CLASS_DECLARE(Gauges)
+    // VBIND_CLASS_DECLARE(Actions)
     
-    /*
-        ATTENTION : Never, EVER, use make_shared like that. It will absolutly broke every thing with the ECS !!!
-    */
-    // {
-    //     sol::table componentModularityTable = lua.create_table();
-    //     componentModularityTable.set_function(
-    //         "addChild",
-    //         [](Entity &parent, Entity& child)
-    //         {
-    //             ComponentModularity::addChild(parent, std::make_shared<Entity>(child));
-    //         }
-    //     );
+    
+    
+    
+    VBIND_CLASS_DECLARE(State3D)
+    #define CURRENT_CLASS_BINDING State3D
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(position, rotation)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-    //     componentModularityTable.set_function(
-    //         "removeChild",
-    //         [](Entity &parent, Entity& child)
-    //         {
-    //             ComponentModularity::removeChild(parent, &child);
-    //         }
-    //     );
+    VBIND_CLASS_DECLARE(DynamicState3D)
+    #define CURRENT_CLASS_BINDING DynamicState3D
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(last, next)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-    //     componentModularityTable.set_function(
-    //         "synchronizeChildren",
-    //         [](Entity& parent)
-    //         {
-    //             ComponentModularity::synchronizeChildren(std::make_shared<Entity>(parent));
-    //         }
-    //     );
 
-    //     componentModularityTable.set_function(
-    //         "reparent",
-    //         [](Entity& oldParent, Entity& child, Entity& newParent)
-    //         {
-    //             ComponentModularity::Reparent(oldParent, std::make_shared<Entity>(child), newParent);
-    //         }
-    //     );
+    VBIND_CLASS_DECLARE_ALIAS(SoftGoal<vec3>, SoftGoal_vec3)
+    #define CURRENT_CLASS_BINDING SoftGoal<vec3>
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(current, goal)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-    //     componentModularityTable.set_function(
-    //         "reparentChildren",
-    //         [](Entity& parent)
-    //         {
-    //             ComponentModularity::ReparentChildren(parent);
-    //         }
-    //     );
+    VBIND_CLASS_DECLARE_ALIAS(SoftGoal<float>, SoftGoal_number)
+    #define CURRENT_CLASS_BINDING SoftGoal<float>
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(current, goal)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-    //     componentModularityTable.set_function(
-    //         "canMerge",
-    //         [](Entity& parent, Entity& child) -> bool
-    //         {
-    //             return ComponentModularity::canMerge(parent, std::make_shared<Entity>(child));
-    //         }
-    //     );
+    VBIND_CLASS_DECLARE_ALIAS(TimedValue<bool>, TimedValue_boolean)
+    #define CURRENT_CLASS_BINDING TimedValue<bool>
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS(((const bool &)), (("default")))
+        VBIND_ADD_METHODS(get, set, timeSinceChange, previousTimeSinceChange)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-    //     componentModularityTable.set_function(
-    //         "mergeChild",
-    //         [](Entity& parent, Entity& child) -> bool
-    //         {
-    //             if(ComponentModularity::canMerge(parent, std::make_shared<Entity>(child)))
-    //             {
-    //                 for(auto &i : ComponentModularity::MergeFuncs)
-    //                     if(parent.state[i.ComponentID] && child.state[i.ComponentID])
-    //                         i.element(parent, std::make_shared<Entity>(child));
-                    
-    //                 ComponentModularity::removeChild(parent, &child);
-    //                 return true;
-    //             }
-    //             return false;
-    //         }
-    //     );
+    VBIND_CLASS_DECLARE_ALIAS(HardGoal<bool>, HardGoal_boolean)
+    #define CURRENT_CLASS_BINDING HardGoal<bool>
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS(((const bool &)), (("default")))
+        VBIND_ADD_METHODS(setGoal, acceptGoal, overrideCurrent, timeSinceGoalChange, timeSinceGoalMet, isGoalMet, getGoal, getCurrent)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
-    //     componentModularityTable.set_function(
-    //         "mergeChildren",
-    //         [](Entity& parent)
-    //         {
-    //             ComponentModularity::mergeChildren(parent);
-    //         }
-    //     );
-    //     lua["ComponentModularity"] = componentModularityTable;
-    // }
+    VBIND_CLASS_DECLARE(Deplacement)
+    #define CURRENT_CLASS_BINDING Deplacement
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(look, direction, speed, grounded, walkSpeed, jogSpeed, sprintSpeed, speedSteps, currentSpeedStep, sprint)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    VBIND_CLASS_DECLARE(ComplexMovements)
+    #define CURRENT_CLASS_BINDING ComplexMovements
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(closestSurface, closestWall, animationInitialPosition, lastWallJumpDirection, climb, jump, wallJump)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
 }
 
 
@@ -364,6 +388,9 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_INIT_HEADER_CATEGORY("GAME ENTITY")
 
     VBIND_CLASS_DECLARE_ALIAS(std::string_view, string)
+
+    VBIND_CLASS_DECLARE_ALIAS(std::vector<std::string>, string[])
+    VBIND_CLASS_DECLARE_ALIAS(std::vector<Entity>, Entity[])
 
     VBIND_CLASS_DECLARE(Entity)
     VBIND_CLASS_DECLARE(state3D)
@@ -610,6 +637,17 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
+    VBIND_CLASS_DECLARE(EntityModel)
+    #define CURRENT_CLASS_BINDING EntityModel
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_METHODS(get)
+        VBIND_ADD_MEMBERS(inScene)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
     #define CURRENT_CLASS_BINDING Entity
     {
         VBIND_CREATE_CLASS
@@ -636,7 +674,13 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
                 StainStatus,
                 ItemInfos,
                 AgentProfile,
-                Items
+                Items,
+                State3D,
+                DynamicState3D,
+                Deplacement,
+                ComplexMovements,
+                SkeletonAnimationState,
+                EntityModel
         )
     }
     VBIND_CLASS_END

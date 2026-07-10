@@ -65,6 +65,8 @@ class EntityScatterer
 
             float scaleRangeMin = 1.f;
             float scaleRangeMax = 1.f;
+        
+            void writeToFile(std::string filename);
         };
 
         vec2 rangeMin = vec2(2);

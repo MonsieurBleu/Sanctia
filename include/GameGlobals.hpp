@@ -74,6 +74,8 @@ namespace GameGlobals
 
         ManageGarbage<RigidBody>();
         ManageGarbage<Target>();
+
+        ManageGarbage<JoltBody>();
     };
 };
 

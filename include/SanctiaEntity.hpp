@@ -3,7 +3,7 @@
 #define MAX_COMP    64
 // #define MAX_ENTITY  0x8000
 #define MAX_ENTITY  (1<<18)
-
+#define ECS_JOLT_PHYSICS_INTEGRATION
 
 #include <GlobalOptions.hpp>
 
@@ -30,7 +30,7 @@
 #define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
 
-EntityRef spawnEntity(const std::string &name, vec3 spawnPoint = vec3(0), quat rotation = quat(0, 0, 0, 0));
+EntityRef spawnEntity(const std::string &name, vec3 spawnPoint = vec3(0), quat rotation = quat(1, 0, 0, 0));
 
 bool isVisible(Entity &a, Entity &b);
 

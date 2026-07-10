@@ -275,6 +275,7 @@ void Game::init(int paramSample)
     // }
 
     Loader<MeshMaterial>::get("basicHelper");
+    Loader<MeshMaterial>::get("basicHelperInstanced");
     
     AnimBlueprint::PrepareAnimationsCallbacks();
 

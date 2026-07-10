@@ -14,6 +14,8 @@
 
 #include <algorithm>
 
+#include <JoltIntegration/PhysicsCommons.hpp>
+
 Entity *entityHelper1 = nullptr;
 
 void Apps::AnimationApp::setTopDownView()
@@ -109,11 +111,41 @@ Apps::AnimationApp::AnimationApp() : SubApps("Animations")
         i->activated = false;
 };
 
+std::unordered_map<std::string, EntityRef> animationList;
+std::string actorSqueleton = "(Human)";
+EntityRef actor;
+
+std::vector<std::string> animationsToPlay;
+std::vector<std::string> animationsToPlayTmp;
+
 EntityRef Apps::AnimationApp::UImenu()
 {
+    EntityRef animSelectionScreen = VulpineBlueprintUI::StringListSelectionMenu(
+        "Animation Selection", 
+        animationList, 
+        [](Entity *e, float f)
+        {
+            animationsToPlayTmp.clear();
+            animationsToPlayTmp.push_back(e->comp<EntityInfos>().name);
+        },
+        [&](Entity *e){
+            if(e->comp<WidgetState>().status != ModelStatus::HIDE)
+            {
+                // animationsToPlayTmp.push_back(e->comp<EntityInfos>().name);
+                return actor->comp<AnimationControllerRef>()->getCurrentAnimation()->getName() == e->comp<EntityInfos>().name ? 0.f : 1.f;
+            }
+
+            return 1.f;
+        }
+    );
+
+
     return newEntity("Animation APP MENU"
         , UI_BASE_COMP
         , WidgetBox()
+        , EntityGroupInfo({
+            animSelectionScreen
+        })
     );
 }
 SkeletonAnimationState tmp;
@@ -123,7 +155,7 @@ void Apps::AnimationApp::init()
 {
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot", state3D(true));
+        appRoot = newEntity("AppRoot", State3D());
         App::setController(&orbitController);
 
         globals.currentCamera->setPosition(vec3(0.5, 1.5, 0.5));
@@ -131,6 +163,8 @@ void Apps::AnimationApp::init()
 
         orbitController.position = vec3(0, 1.0, 0.0);
 
+        JoltVulpine::enablePhysics = true;
+        globals.enablePhysics = false;
         globals.simulationTime.resume();
 
         GG::skyboxType = 2;
@@ -141,10 +175,12 @@ void Apps::AnimationApp::init()
 
     }   
 
-    physicsMutex.lock();
-    ComponentModularity::addChild(*appRoot, spawnEntity("Ground_Demo_64xh", vec3(0)));
-    ComponentModularity::ReparentChildren(*appRoot);
-    physicsMutex.unlock();
+    // physicsMutex.lock();
+    // ComponentModularity::addChild(*appRoot, spawnEntity("Ground_Demo_64xh", vec3(0)));
+    // ComponentModularity::ReparentChildren(*appRoot);
+    // physicsMutex.unlock();
+
+    ComponentModularity::addChild(*appRoot, spawnEntity("Jolt Test Scene", vec3(0)));
 
     // setTopDownView();
     
@@ -190,20 +226,22 @@ void Apps::AnimationApp::init()
     
     // );
 
-    animation2 = Loader<AnimationRef>::get(
-        // "_mixamo.com"
+    // animation2 = Loader<AnimationRef>::get(
+    //     // "_mixamo.com"
 
-        // "(Human) dance-graceful-378939"
+    //     // "(Human) dance-graceful-378939"
 
 
-        // "catwalk-loop-378982.vAnimation__Retargeted__"
+    //     // "catwalk-loop-378982.vAnimation__Retargeted__"
 
-        // "walk-2loop-379004.vAnimation__Retargeted__"
+    //     // "walk-2loop-379004.vAnimation__Retargeted__"
 
-        // "0_T-Pose"
+    //     // "0_T-Pose"
 
-        "(Human) 2H Sword Walk_L"
-    );
+    //     // "(Human) 2H Sword Walk_L"
+
+    //     "(Human) Walk Female 01"
+    // );
 
     // animController = AnimationController({
     //     // AnimationControllerTransition(animation, animation, COND_ANIMATION_FINISHED, 0.2, TransitionType::TRANSITION_SMOOTH)
@@ -221,8 +259,13 @@ void Apps::AnimationApp::init()
 
     for(auto &i : Loader<AnimationRef>::loadingInfos)
     {
-        if(STR_CASE_STR(i.first.c_str(), "(Human) Sword And Shield"))
+        // if(STR_CASE_STR(i.first.c_str(), "(Human) Sword And Shield"))
+        // if(STR_CASE_STR(i.first.c_str(), "(Human) Walk Female 01"))
+        if(animList.empty())
             animList.push_back(Loader<AnimationRef>::get(i.first));
+
+        if(STR_CASE_STR(i.first.c_str(), actorSqueleton.c_str()))
+            animationList[i.first] = EntityRef();
     }
 
     std::sort(animList.begin(), animList.end(),
@@ -250,23 +293,23 @@ void Apps::AnimationApp::init()
 
     // animation.skeleton-
 
-    // ComponentModularity::addChild(
-    //     *appRoot,
-    //     newEntity("Skeleton Helper 1",
-    //         state3D(vec3(0, 0, 2)),
-    //         helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState)))
-    //     )
-    // );
+    ComponentModularity::addChild(
+        *appRoot,
+        newEntity("Skeleton Helper 1",
+            state3D(vec3(0, 0, 2)),
+            helper1 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState)))
+        )
+    );
 
     // entityHelper1 = appRoot->comp<EntityGroupInfo>().children.back().get();
 
-    ComponentModularity::addChild(
-        *appRoot,
-        newEntity("Skeleton Helper 2",
-            state3D(vec3(0, 0, -2)),
-            helper2 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState2)))
-        )
-    );
+    // ComponentModularity::addChild(
+    //     *appRoot,
+    //     newEntity("Skeleton Helper 2",
+    //         State3D(vec3(0, 0, -2)),
+    //         helper2 = EntityModel(SkeletonHelperRef(new SkeletonHelper(skeletonState2)))
+    //     )
+    // );
 
     // tmp = SkeletonAnimationState(skeleton);
     tmp2 = SkeletonAnimationState(skeleton2);
@@ -282,7 +325,7 @@ void Apps::AnimationApp::init()
     ComponentModularity::addChild(
         *appRoot,
         newEntity("Skeleton Helper 2",
-            state3D(vec3(0, 3, -2)),
+            State3D(vec3(0, 3, -2)),
             helper2 = EntityModel(SkeletonHelperRef(new SkeletonHelper(tmp2)))
         )
     );
@@ -291,19 +334,57 @@ void Apps::AnimationApp::init()
 
     // EntityRef player = spawnEntity("Player");
     // EntityRef player = spawnEntity("(Human) Mannequin Blue");
-    EntityRef player = spawnEntity("(Combats) Player 2");
 
-    player->set<AnimationControllerRef>(AnimationControllerRef(new AnimationController(animController2)));
+    actor = spawnEntity("Jolt Player");
+    actor->set<AnimationControllerRef>(AnimationControllerRef(new AnimationController(animController2)));
 
-    ComponentModularity::addChild(*appRoot, player);
+    ComponentModularity::addChild(*appRoot, actor);
 
     // EDITOR::gridPositionScale.w = 0.5;
+
 
 }
 
 void Apps::AnimationApp::update()
 {
     // ComponentModularity::synchronizeChildren(appRoot);
+
+    /*
+        UPDATING ANIMATION LIST
+    */
+
+    // std::sort(
+    //     animationsToPlayTmp.begin(), 
+    //     animationsToPlayTmp.end(),
+    //     [](const std::string & a, const std::string & b){return strcmp(a.c_str(), b.c_str()) > 0;}
+    // );
+
+    if(animationsToPlay != animationsToPlayTmp)
+    {
+        std::vector<AnimationControllerTransition> cond;
+
+        animationsToPlay.clear();
+        animationsToPlay = animationsToPlayTmp;
+
+        for(int i = 0; i < animationsToPlay.size(); i++)
+        {
+            cond.push_back(AnimationControllerTransition(
+                Loader<AnimationRef>::get(animationsToPlay[i]), 
+                Loader<AnimationRef>::get(animationsToPlay[(i+1)%animationsToPlay.size()]), 
+                COND_ANIMATION_FINISHED, 
+                0.f, 
+                TransitionType::TRANSITION_SMOOTH
+                )
+            );
+        }
+
+        // animController2 = AnimationController(cond, Loader<AnimationRef>::get(animationsToPlay.front()));
+        // actor->set<AnimationControllerRef>(AnimationControllerRef(new AnimationController(animController2)));
+
+        actor->comp<AnimationControllerRef>() = AnimationControllerRef(new AnimationController(cond, Loader<AnimationRef>::get(animationsToPlay.front())));
+    }
+
+    // animationsToPlayTmp.clear();
 
     // if(!globals.simulationTime.isPaused())
     float deltaAnim = globals.simulationTime.isPaused() ? 0.f : globals.simulationTime.getDelta();
@@ -315,8 +396,8 @@ void Apps::AnimationApp::update()
         // skeletonState.update();
 
         
-        animController2.update(deltaAnim);
-        animController2.applyKeyframes(skeletonState2);
+        // actor->comp<AnimationControllerRef>()->update(deltaAnim);
+        // actor->comp<AnimationControllerRef>()->applyKeyframes(skeletonState2);
     
         skeletonState2.skeleton->applyGraph(skeletonState2);
         skeletonState2.update();
@@ -335,6 +416,7 @@ void Apps::AnimationApp::update()
         globals.currentCamera->setMouseFollow(false);
     else
         globals.currentCamera->setMouseFollow(true);
+
 }
 
 
@@ -350,6 +432,8 @@ void Apps::AnimationApp::clean()
     globals.currentCamera->setMouseFollow(false);
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
+
+    animationList.clear();
 
     EDITOR::gridPositionScale.w = 0.f;
 

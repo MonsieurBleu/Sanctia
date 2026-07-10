@@ -12,6 +12,11 @@
 #include <GameGlobals.hpp>
 #include <reactphysics3d/collision/shapes/HeightFieldShape.h>
 
+#include <JoltIntegration/PhysicsCommons.hpp>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Collision/Shape/Shape.h>
+#include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
+
 EntityRef Blueprint::SpawnMainGameTerrain()
 {
     return Blueprint::Terrain(mapFileName, terrainSize, vec3(0), cellSize);
@@ -133,73 +138,124 @@ EntityRef Blueprint::Terrain(
         /* Physic cell component */
         vec3 cellPos = terrainPosition + vec3(terrainSize.x*uvhalf.x, 0, terrainSize.z*uvhalf.y);
         
-        RigidBody b = PG::world->createRigidBody(rp3d::Transform(
-            rp3d::Vector3(PG::torp3d(cellPos)), 
-            rp3d::Quaternion::identity()));
+        // RigidBody b = PG::world->createRigidBody(rp3d::Transform(
+        //     rp3d::Vector3(PG::torp3d(cellPos)), 
+        //     rp3d::Quaternion::identity()));
 
-        b->setType(rp3d::BodyType::STATIC);
+        // b->setType(rp3d::BodyType::STATIC);
 
         ivec2 iuvmin = round(uvmin*vec2(textureSize));
         ivec2 iuvmax = round(uvmax*vec2(textureSize));
         int dsize = max(iuvmax.x - iuvmin.x, iuvmax.y - iuvmin.y);
         std::vector<float> heightData(dsize*dsize);
 
+        float minV = 1e6;
+        float maxV = -1e6;
+
         for(int i = 0; i < dsize; i++)
         for(int j = 0; j < dsize; j++)
         {
-            heightData[i * dsize + j] = src[((i + iuvmin.y)*textureSize.x + j + iuvmin.x)];
+            int id = i * dsize + j;
+            heightData[id] = src[((i + iuvmin.y)*textureSize.x + j + iuvmin.x)];
+
+            minV = heightData[id];
+            maxV = heightData[id];
 
             // std::cout << heightData[i*dsize + j] << "\n";
         }
 
-        std::vector<rp3d::Message> messages;
-        auto field = PG::common.createHeightField(
-            dsize, dsize, heightData.data(),
-            reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
-            messages);
+        float halfHeight = (-(maxV - minV)*0.5 - minV) + 0.5;
+
+        // std::vector<rp3d::Message> messages;
+        // auto field = PG::common.createHeightField(
+        //     dsize, dsize, heightData.data(),
+        //     reactphysics3d::HeightField::HeightDataType::HEIGHT_FLOAT_TYPE,
+        //     messages);
 
         // std::cout << "dsize * dsize = " << dsize * dsize << std::endl;
         
-        for(auto &i : messages)
-            ERROR_MESSAGE(i.text);
+        // for(auto &i : messages)
+        //     ERROR_MESSAGE(i.text);
 
-        float maxv = field->getMaxHeight();
-        float minv = field->getMinHeight();
-        float halfHeight = (-(maxv - minv)*0.5 - minv) + 0.5;
+        // rp3d::HeightFieldShape *shape = PG::common.createHeightFieldShape(field, rp3d::Vector3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1)));
 
-        rp3d::HeightFieldShape *shape = PG::common.createHeightFieldShape(field, rp3d::Vector3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1)));
-
-        PG::heightFields.push_back({field, shape});
+        // PG::heightFields.push_back({field, shape});
 
         state3D state(true);
         state.initPosition = cellPos;
 
         /* Creating terrain cell entity */
-        EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state, b, HeightFieldDummyFlag());
-        Blueprint::Assembly::AddEntityBodies(b, e.get(), 
-            {
-                {   shape
-                    ,rp3d::Transform(
-                        rp3d::Vector3(0, (0.5-halfHeight)*terrainSize.y, 0),
-                        rp3d::Quaternion::identity()
-                    )}
-            }, {});
+        // EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state, b, HeightFieldDummyFlag());
+        // Blueprint::Assembly::AddEntityBodies(b, e.get(), 
+        //     {
+        //         {   shape
+        //             ,rp3d::Transform(
+        //                 rp3d::Vector3(0, (0.5-halfHeight)*terrainSize.y, 0),
+        //                 rp3d::Quaternion::identity()
+        //             )}
+        //     }, {});
 
-        b->getCollider(0)->setIsWorldQueryCollider(false);
-        
+        // b->getCollider(0)->setIsWorldQueryCollider(false);
+
+        vec3 pos = Vvec3(terrainPosition + vec3(terrainSize.x*uvhalf.x, 0, terrainSize.z*uvhalf.y));
+
+        EntityRef chunk = newEntity(
+            "Terrain cell" + std::to_string(i) + "x" + std::to_string(j), 
+            HeightFieldDummyFlag(),
+            State3D({pos})
+        );
+
+
         model->update();
         model->updateMeshesBoundingBox();
 
         model->setStaticAABB(
-            vec3(cellPos + model->getMeshesBoundingBox().first) *vec3(1, 0, 1) + vec3(0, minv*terrainSize.y, 0), 
-            vec3(cellPos + model->getMeshesBoundingBox().second)*vec3(1, 0, 1) + vec3(0, maxv*terrainSize.y, 0)
+            vec3(cellPos + model->getMeshesBoundingBox().first) *vec3(1, 0, 1) + vec3(0, minV*terrainSize.y, 0), 
+            vec3(cellPos + model->getMeshesBoundingBox().second)*vec3(1, 0, 1) + vec3(0, maxV*terrainSize.y, 0)
         );
 
         
-        e->set<EntityModel>(model);
+        chunk->set<EntityModel>(model);
         
+
+
+        /*........ Adding Jolt Body ........*/
+        JPH::BodyCreationSettings settings;
+        JPH::HeightFieldShapeSettings jshape(
+            heightData.data(),
+            Vvec3(-cellSize/2.f, 0, -cellSize/2.f),
+            Vvec3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1)),
+            dsize
+        );
+
+        JPH::Shape::ShapeResult result = jshape.Create();
+        if(result.IsValid())
+            settings.SetShape(result.Get());
+        else
+            ERROR_MESSAGE("Non-valid shape ", result.GetError())
+
+        settings.mMotionType = JPH::EMotionType::Static;
+        // settings.mPosition = Vvec3(terrainPosition + vec3(terrainSize.x*uvhalf.x, 0, terrainSize.z*uvhalf.y));
+        settings.mRotation = JPH::Quat::sIdentity();
+        settings.mRestitution = 0;
+        settings.mFriction = 1.0;
+        settings.mObjectLayer = JPH::ObjectLayerPairFilterMask::sGetObjectLayer(1<<JoltVulpine::Layers::ENVIRONEMENT, 1<<JoltVulpine::Layers::ENVIRONEMENT);
+
+        JPH::Body *body = JoltVulpine::jPhysicsSystem->GetBodyInterface().CreateBody(settings);
+
+		JoltVulpine::bodiesToAddMutex.lock();
+		JoltVulpine::bodiesToAdd.push_back(body->GetID());
+		JoltVulpine::bodiesToAddMutex.unlock();
+
+        chunk->set<JoltBody>({body->GetID()});
+
+        ComponentModularity::addChild(*terrainRoot, chunk);
+
+        // jshape.mHeightSamples.resize(heightData.size());
+        // memcpy(jshape.mHeightSamples.data(), heightData.data(), heightData.size()*sizeof(float));
+        // jshape.mScale = Vvec3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1));
+
         // GG::entities.push_back(e);
-        ComponentModularity::addChild(*terrainRoot, e);
         
         
         // GG::draw->drawBox(model->getMeshesBoundingBox().first, model->getMeshesBoundingBox().second, 1e6f, ModelState3D(), vec3(0, 1, 1));

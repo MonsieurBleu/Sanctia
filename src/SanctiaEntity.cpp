@@ -6,8 +6,143 @@
 #include <MathsUtils.hpp>
 #include <GameGlobals.hpp>
 
+#include <JoltIntegration/PhysicsCommons.hpp>
+
 #include <glm/gtx/string_cast.hpp>
 #include <reactphysics3d/mathematics/Vector3.h>
+
+void setEntityModelStaticFlagUniform(Entity *e)
+{
+    // if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<PhysicsInfos>())
+    if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<JoltBody>())
+    {
+        auto &m = e->comp<EntityModel>();
+        // auto &f = e->comp<PhysicsInfos>();
+
+        // bool isDynamic = JoltVulpine::jPhysicsSystem->GetBodyInterface().GetMotionType(e->comp<JoltBody>()) != JPH::EMotionType::Static;
+        bool isDynamic = e->has<DynamicState3D>();
+        
+        // if(isDynamic)
+        // WARNING_MESSAGE(isDynamic, "         ", e->toStr());
+
+        m->iterateOnAllMesh_Recursive([&](ModelRef mesh)
+        {
+            // mesh->uniforms.add(ShaderUniform((int *)&f.isDYnamic, 24));
+            // mesh->uniforms.add(ShaderUniform((int)e->has<DynamicState3D>(), 24));
+
+            bool arleadyExist = false;
+
+            // bool isDynamic = JoltVulpine::jPhysicsSystem->GetBodyInterface().GetMotionType(e->comp<JoltBody>()) != JPH::EMotionType::Static;
+
+            for(auto &i : mesh->uniforms.uniforms)
+            {
+                if((arleadyExist = i.getLocation() == 24))
+                {
+                    i = ShaderUniform((int)isDynamic, 24);
+                    break;
+                }
+            }
+
+            if(!arleadyExist)
+                 mesh->uniforms.add(ShaderUniform((int)isDynamic, 24));
+        });
+
+        // NOTIF_MESSAGE(f.isDYnamic ,  "  " ,  e->toStr());
+    }
+}
+
+COMPONENT_DEFINE_REPARENT(State3D)
+{
+    // return;
+
+    auto &s = child->comp<State3D>();
+
+    if(newParent.has<State3D>())
+    {
+        /*
+            Converting entity state from world to local.
+        */
+        if(parent.has<State3D>())
+        {
+            auto &ps = parent.comp<State3D>();
+            s.position = (s.position - ps.position)*inverse(ps.rotation);
+            s.rotation = inverse(ps.rotation) * s.rotation;
+        }
+
+        /*
+            Appplying new parent transform
+        */
+        auto &ps = newParent.comp<State3D>();
+        s.position = ps.position + (ps.rotation * s.position);
+        s.rotation = ps.rotation * s.rotation;
+    }
+
+    /*
+        Adding model to scene
+    */
+    bool isStatic = 
+        // !child->has<HeightFieldDummyFlag>() && // Terrain are too big for the static scene optimization
+        !child->has<DynamicState3D>() && 
+        !(child->has<KynematicFlag>() && child->comp<KynematicFlag>());
+
+    // NOTIF_MESSAGE(isStatic, "   ", child->toStr(), "\n\t", s.position, "\n\t", s.rotation);
+
+    if(child->has<EntityModel>())
+    {
+        auto &model = child->comp<EntityModel>();
+
+        if(isStatic && model.inScene)
+        {
+            globals.getScene()->remove(model);
+            model.inScene = false;
+        }
+        
+        model->state.setPosition(s.position).setQuaternion(s.rotation);
+
+        model->update();
+
+        if(!model.inScene)
+        {
+            globals.getScene()->add(model, true, isStatic);
+            model.inScene = true;
+
+            model->propagateHideStatus();
+        }
+
+        setEntityModelStaticFlagUniform(child.get());
+    }
+
+    if(child->has<DynamicState3D>())
+    {
+        child->set<DynamicState3D>({s, s});
+    }
+
+    if(child->has<JoltBody>())
+    {
+        auto &body = child->comp<JoltBody>();
+
+        auto &interface = JoltVulpine::jPhysicsSystem->GetBodyInterface();
+
+        JPH::BodyID *bodies = &body;
+
+        for(int i = 0; i < JOLT_VULPINE_MAX_ENTITY_SENSORS+1; i++)
+        {
+            if(!bodies[i].IsInvalid())
+            {
+                interface.SetPositionAndRotation(
+                    bodies[i], 
+                    Vvec3(s.position), 
+                    Vquat(s.rotation), 
+                    JPH::EActivation::DontActivate
+                );
+
+                // interface.AddBody(bodies[i], JPH::EActivation::Activate);
+            }
+        }
+
+    }
+}
+
 
 COMPONENT_DEFINE_SYNCH(state3D) /**************** UNUSED TODO: remove*****************/
 {
@@ -236,14 +371,15 @@ COMPONENT_DEFINE_REPARENT(EntityModel)
         If the entity has no state3D, we simply add the model to the 
         scene following the default parameters.
     */
-    if(!child->has<state3D>() || !child->has<RigidBody>())
+    // if(!child->has<state3D>() || !child->has<RigidBody>())
+    if(!child->has<State3D>())
     {
         auto &model = child->comp<EntityModel>();
 
         if(model)
         {
             // globals.getScene()->add(model, true, false);
-            globals.getScene()->add(model, true, true);
+            globals.getScene()->add(model, true, false);
             model.inScene = true;
         }
     }
@@ -361,21 +497,7 @@ COMPONENT_DEFINE_MERGE(RigidBody)
     parentBody->updateLocalCenterOfMassFromColliders();
 }
 
-void setEntityModelStaticFlagUniform(Entity *e)
-{
-    if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<PhysicsInfos>())
-    {
-        auto &m = e->comp<EntityModel>();
-        auto &f = e->comp<PhysicsInfos>();
 
-        m->iterateOnAllMesh_Recursive([&](ModelRef mesh)
-        {
-            mesh->uniforms.add(ShaderUniform((int *)&f.isDYnamic, 24));
-        });
-
-        // NOTIF_MESSAGE(f.isDYnamic ,  "  " ,  e->toStr());
-    }
-}
 
 template<> void Component<EntityModel>::ComponentElem::init()
 {
@@ -410,13 +532,16 @@ template<> void Component<EntityModel>::ComponentElem::init()
     // globals.getScene()->add(data, true, false);
     // data.inScene = true;
 
-    entity->set<StainStatus>(StainStatus());
-    setEntityStainStatusUniform(entity);
+    // entity->set<StainStatus>(StainStatus());
+    // setEntityStainStatusUniform(entity);
 };
 
 template<> void Component<EntityModel>::ComponentElem::clean()
 {
     // NOTIF_MESSAGE("Removing model ", entity->toStr())
+
+    data->state.setHideStatus(ModelStatus::HIDE);
+    data->propagateHideStatus();
 
     if(data.get() and data.inScene)
         globals.getScene()->remove(data);
@@ -781,7 +906,7 @@ template<> void Component<RigidBody>::ComponentElem::init()
 
         entity->set<NonStaticBodyDummyFlag>(NonStaticBodyDummyFlag());
     }
-    setEntityModelStaticFlagUniform(entity);
+    // setEntityModelStaticFlagUniform(entity);
 }
 
 template<> void Component<RigidBody>::ComponentElem::clean()
@@ -990,7 +1115,17 @@ EntityRef spawnEntity(const std::string &name, vec3 spawnPoint, quat rotation)
 
     auto e = DataLoader<EntityRef>::read(file);
 
-    if(e->has<state3D>())
+    if(e->has<State3D>())
+    {
+        auto &s = e->comp<State3D>();
+        s.position = spawnPoint;
+        s.rotation = rotation;
+    }
+
+    /*
+        OLD CODE (CACA)
+    */
+    else if(e->has<state3D>())
     {
         e->comp<state3D>().useinit = true;
         e->comp<state3D>().initPosition = spawnPoint;
@@ -998,6 +1133,7 @@ EntityRef spawnEntity(const std::string &name, vec3 spawnPoint, quat rotation)
         if(e->comp<state3D>().usequat and rotation != quat(0, 0, 0, 0))
             e->comp<state3D>().initQuat = rotation;
     }
+
     else if(e->has<EntityModel>())
     {
         e->comp<EntityModel>()->state.setPosition(spawnPoint);

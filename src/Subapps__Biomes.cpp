@@ -19,7 +19,7 @@ FrustumHelperRef ShadowCamhelper3;
 EntityScatterer *currentScatterer = nullptr;
 EntityScatterer::SpawnInfo tmpSpawnInfo;
 
-Apps::ForestApp::ForestApp() : SubApps("Forest")
+Apps::BiomeApp::BiomeApp() : SubApps("Biome Editor")
 {
     inputs.push_back(&
         InputManager::addEventInput(
@@ -151,6 +151,18 @@ Apps::ForestApp::ForestApp() : SubApps("Forest")
         })
     );
 
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "save all biomes & scatterers", GLFW_KEY_S, GLFW_MOD_CONTROL, GLFW_PRESS, [&]() { 
+            if(save())
+            {
+                saveButton->comp<WidgetStyle>().setbackgroundColor1(VulpineColorUI::HightlightColor6);
+            }
+        })
+    );
+
+
+
     // inputs.push_back(&
     //     InputManager::addEventInput(
     //     "frustum helper", GLFW_KEY_E, 0, GLFW_PRESS, [&]() { 
@@ -248,7 +260,7 @@ EntityRef BiomeInfosValueModifier(float &center, float &range, std::string name)
                 if(box.isUnderCursor)
                 {
                     vec2 off = globals.mouseScrollOffset();
-                    range = clamp(range+sign(off.y)*0.1f, 0.f, 1.f);
+                    range = clamp(range+sign(off.y)*0.025f, 0.f, 1.f);
                     globals.clearMouseScroll();
                 }
                 return center;
@@ -313,7 +325,7 @@ EntityRef BiomeInfosModifier(BiomeInfos &center, BiomeInfos &range)
     );
 };
 
-EntityRef Apps::ForestApp::BiomeDataModifier()
+EntityRef Apps::BiomeApp::BiomeDataModifier()
 {
     auto selectedEntitySpawn = VulpineBlueprintUI::StringListSelectionMenu(
         "Spawn List", 
@@ -368,7 +380,7 @@ EntityRef Apps::ForestApp::BiomeDataModifier()
     );
 };
 
-EntityRef Apps::ForestApp::UImenu()
+EntityRef Apps::BiomeApp::UImenu()
 {
     // auto &testBiome = Loader<EntityScatterer>::get("Biomes").spawns_old[0];
 
@@ -460,6 +472,36 @@ EntityRef Apps::ForestApp::UImenu()
                 },
                 [&](Entity *e)
                 {
+                    auto parent = e->comp<EntityGroupInfo>().parent;
+
+                    if(parent and parent->comp<EntityGroupInfo>().children.size() != 2)
+                    {
+                        auto name = e->comp<EntityInfos>().name;
+
+                        auto delButton = VulpineBlueprintUI::Toggable("X", "",
+                            [&](Entity *e, float f)
+                            {
+                                if(currentScatterer)
+                                {
+                                    for(auto i = currentScatterer->spawnsNames.begin(); i != currentScatterer->spawnsNames.end(); i++)
+                                        if(*i == name)
+                                        {
+                                            currentScatterer->spawnsNames.erase(i);
+                                            return;
+                                        }
+                                }
+                            },
+                            [](Entity *e){return 0.f;}, 
+                            VulpineColorUI::HightlightColor7
+                        );
+
+                        ComponentModularity::addChild(*parent, delButton);
+
+                        delButton->comp<WidgetBox>().set(vec2(-1.0, -0.75), vec2(-1, 1));
+                        e->comp<WidgetBox>().set(vec2(-0.75, 1.0), vec2(-1, 1));
+                        parent->comp<WidgetStyle>().setautomaticTabbing(0);
+                    }
+
                     return currentBiome == e->comp<EntityInfos>().name ? 0.f : 1.f;
                 },
                 -1.0,
@@ -468,7 +510,19 @@ EntityRef Apps::ForestApp::UImenu()
             ),
 
             VulpineBlueprintUI::StringListSelectionMenu("Biomes To Add", spawnInfosList, 
-                [](Entity *e, float f){},
+                [&](Entity *e, float f)
+                {
+                    if(currentScatterer)
+                    {
+                        auto name = e->comp<EntityInfos>().name;
+
+                        for(auto &i : currentScatterer->spawnsNames)
+                            if(i == name)
+                                return;
+
+                        currentScatterer->spawnsNames.push_back(name);
+                    }
+                },
                 [](Entity *e){return 0.f;},
                 -1.0,
                 VulpineColorUI::HightlightColor4,
@@ -490,7 +544,7 @@ EntityRef Apps::ForestApp::UImenu()
     );
 }
 
-EntityRef Apps::ForestApp::UIcontrols()
+EntityRef Apps::BiomeApp::UIcontrols()
 {
     auto toggleBiomeHelper = VulpineBlueprintUI::Toggable("Biome Helper", "", 
         [&](Entity *e, float f)
@@ -531,6 +585,37 @@ EntityRef Apps::ForestApp::UIcontrols()
         []()
         {
             return currentScatterer ? ftou32str(currentScatterer->generateGetProgress()*100.f) + U"%" : U"-";
+        }, VulpineColorUI::HightlightColor6
+    );
+
+    auto entityCounter = VulpineBlueprintUI::ColoredConstEntry("Entity Count", 
+        [&]()
+        {
+            return biome ? ftou32str((float)biome->comp<EntityGroupInfo>().children.size(), 5): U"-";
+        }, VulpineColorUI::HightlightColor1
+    );
+
+    saveButton = VulpineBlueprintUI::Toggable("Save Everything", "",
+        [&](Entity *e, float f)
+        {
+            if(save())
+            {
+                e->comp<WidgetStyle>().setbackgroundColor1(VulpineColorUI::HightlightColor6);
+            }
+        },
+        [&](Entity *e)
+        {
+            auto color = e->comp<WidgetStyle>().backgroundColor1;
+
+            e->comp<WidgetStyle>().setbackgroundColor1(
+                mix(
+                    color, 
+                    VulpineColorUI::HightlightColor7, 
+                    globals.appTime.getDelta()*0.125f
+                )
+            );
+
+            return 0.f;
         }
     );
 
@@ -542,13 +627,30 @@ EntityRef Apps::ForestApp::UIcontrols()
             toggleBiomeHelper,
             toggleBiomeGen,
             biomeGenProgress,
-            newEntity()
+            saveButton,
+            entityCounter
         })
     );
 }
 
+bool Apps::BiomeApp::save()
+{
+    for(auto &i : Loader<EntityScatterer>::loadedAssets)
+    {
+        std::string source = Loader<EntityScatterer>::loadingInfos[i.first]->buff->getSource();
+        i.second.writeToFile(source);
+    }
 
-void Apps::ForestApp::init()
+    for(auto &i : Loader<EntityScatterer::SpawnInfo>::loadedAssets)
+    {
+        std::string source = Loader<EntityScatterer::SpawnInfo>::loadingInfos[i.first]->buff->getSource();
+        i.second.writeToFile(source);
+    }
+
+    return true;
+}
+
+void Apps::BiomeApp::init()
 {
     physicsMutex.lock();
     
@@ -817,7 +919,7 @@ void Apps::ForestApp::init()
     // globals.simulationTime.resume();
 }
 
-void Apps::ForestApp::update()
+void Apps::BiomeApp::update()
 {
     // ComponentModularity::synchronizeChildren(appRoot);
 
@@ -845,8 +947,9 @@ void Apps::ForestApp::update()
                 float alpha = currentScatterer->evaluateDensity(tmpSpawnInfo, local);
 
                 vec3 color = getHeatmapColor(alpha);
-
-                m->state.setScale(vec3(currentScatterer->rangeMax.x, 32.f, currentScatterer->rangeMax.y) + color/10.f);
+                if(m->getChildren()[0]->getInstances()[0].instance)
+                    m->getChildren()[0]->getInstances()[0].instance->userData = uvec4(uvec3(color*256.f), 0);
+                // m->state.setScale(vec3(currentScatterer->rangeMax.x, 32.f, currentScatterer->rangeMax.y) + color/10.f);
                 m->update();
             }, 
             32, globals.appTime.getUpdateCounter()%32
@@ -951,7 +1054,7 @@ void Apps::ForestApp::update()
     }
 }
 
-void Apps::ForestApp::createBiomeHelper()
+void Apps::BiomeApp::createBiomeHelper()
 {
     biomeHelper = newEntity("Biome Helper");
 
@@ -968,13 +1071,13 @@ void Apps::ForestApp::createBiomeHelper()
     }
 }
 
-void Apps::ForestApp::destroyBiomeHelper()
+void Apps::BiomeApp::destroyBiomeHelper()
 {
     biomeHelper = EntityRef();
     GG::ManageEntityGarbage();
 }
 
-void Apps::ForestApp::clean()
+void Apps::BiomeApp::clean()
 {
     globals.simulationTime.pause();
 
@@ -984,6 +1087,14 @@ void Apps::ForestApp::clean()
 
     biomeHelper = EntityRef();
     biome = EntityRef();
+
+    localEntityList.clear();
+    entityList.clear();
+    entityScattererList.clear();
+    spawnInfosListInsideCurrentScatterer.clear();
+    spawnInfosList.clear();
+
+    saveButton = EntityRef();
 
     appRoot = EntityRef();
     GG::playerEntity = EntityRef();

@@ -7,6 +7,8 @@
 
 #include <Scripting/ScriptInstance.hpp>
 
+#include <JoltIntegration/PhysicsCommons.hpp>
+
 EntityRef Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen()
 {
     static std::unordered_map<std::string, EntityRef> systemTimersMap;
@@ -24,7 +26,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen()
                 ComponentModularity::addChild(*parent,
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Last 500ms Avg",
-                        [e](){return ftou32str(systemsPreciseTimer[e->comp<EntityInfos>().name].getLastAvg().count()) + U" ms";},
+                        [e](){return ftou32str(getSystemPreciseTimer(e->comp<EntityInfos>().name).getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor1
                     )
                 );
@@ -32,7 +34,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen()
                 ComponentModularity::addChild(*parent,
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Update Counter",
-                        [e](){return ftou32str(systemsPreciseTimer[e->comp<EntityInfos>().name].getUpdateCounter(), 6);},
+                        [e](){return ftou32str(getSystemPreciseTimer(e->comp<EntityInfos>().name).getUpdateCounter(), 6);},
                         VulpineColorUI::HightlightColor2
                     )
                 );
@@ -46,14 +48,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen()
     EntityRef mainscreen = newEntity("Precise Benchmark Screen - Main Screen"
         , UI_BASE_COMP
         , WidgetBox([&](Entity *parent, Entity *child){
-
-            for(auto i : systemsPreciseTimer)
+            systemsPreciseTimerMutex.lock();
+            for(auto &i : systemsPreciseTimer)
             {
+                if(!i.first.data()) continue;
+
                 auto elem = systemTimersMap.find(i.first);
 
                 if(elem == systemTimersMap.end())
                     systemTimersMap[i.first] = EntityRef();
             }
+            systemsPreciseTimerMutex.unlock();
         })
         , WidgetStyle().setautomaticTabbing(1)
         , EntityGroupInfo({
@@ -79,13 +84,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
 
     std::function<vec2(PlottingHelper*)> getMinmaxPhysicThread = [](PlottingHelper* p)
     {
-        float _max = 1000.f/Game::physicsTicks.freq;
-        // float max = Game::physicsTimer.getMax().count();
-        // float max = Game::physicsWorldUpdateTimer.getMax().count();
-
-        // _max = *std::max_element(p->getValues().begin(), p->getValues().end());
-
-        // _max = ceil(_max*100.f)/100.f;
+        float _max = 1000.f/JoltVulpine::physicsTicks.freq;
 
         return vec2(0, max(_max, 1e-3f));
     };
@@ -138,7 +137,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                 , WidgetBox()
                 , EntityGroupInfo({
                     VulpineBlueprintUI::TimerPlot(
-                        Game::physicsWorldUpdateTimer, 
+                        JoltVulpine::physicsWorldUpdateTimer, 
                         VulpineColorUI::HightlightColor5,
                         getMinmaxPhysicThread),
                     // TimerPlot(
@@ -146,11 +145,11 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     //     VulpineColorUI::HightlightColor4,
                     //     getMinmaxPhysicThread),
                     VulpineBlueprintUI::TimerPlot(
-                        Game::physicsSystemsTimer, 
+                        JoltVulpine::physicsSystemsTimer, 
                         VulpineColorUI::HightlightColor4,
                         getMinmaxPhysicThread),
                     VulpineBlueprintUI::TimerPlot(
-                        ScriptInstance::globalTimers["Physics Thread"], 
+                        ScriptInstance::globalTimers["JoltVulpine"], 
                         VulpineColorUI::HightlightColor5,
                         getMinmaxPhysicThread)
                 })
@@ -193,12 +192,12 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         VulpineColorUI::HightlightColor2
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "GPU",
+                        "GPU Wait",
                         [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor1
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "LUA",
+                        "Lua",
                         [](){return ftou32str(ScriptInstance::globalTimers["Main Thread"].getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor5
                     ),
@@ -229,23 +228,23 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     .setautomaticTabbing(3)
                 , EntityGroupInfo({
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "RP3D",
-                        [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
+                        "Jolt",
+                        [](){return ftou32str(JoltVulpine::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor6
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "SYSTEMS",
-                        [](){return ftou32str(Game::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
+                        "Systems",
+                        [](){return ftou32str(JoltVulpine::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor4
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "LUA",
-                        [](){return ftou32str(ScriptInstance::globalTimers["Physics Thread"].getLastAvg().count()) + U" ms";},
+                        "Lua",
+                        [](){return ftou32str(ScriptInstance::globalTimers["Jolt Thread"].getLastAvg().count()) + U" ms";},
                         VulpineColorUI::HightlightColor5
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
-                        "FPS",
-                        [](){return ftou32str(Game::physicsTicks.freq);},
+                        "TPS",
+                        [](){return ftou32str(JoltVulpine::physicsTicks.freq);},
                         VulpineColorUI::LightBackgroundColor1
                     )
                 })
@@ -335,7 +334,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                         , UI_BASE_COMP
                         , WidgetBox(vec2(-1, +1), vec2(-1, -0.6))
                         , WidgetBackground()
-                        , WidgetText(U"Thread 2")
+                        , WidgetText(U"Jolt Physics Thread")
                         , WidgetStyle()
                             .setbackgroundColor1(VulpineColorUI::LightBackgroundColor1)
                             .settextColor1(VulpineColorUI::DarkBackgroundColor1)

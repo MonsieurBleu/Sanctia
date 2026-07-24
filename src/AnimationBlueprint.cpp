@@ -865,6 +865,34 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
     {   AnimationRef a = Loader<AnimationRef>::get("(Human) Sword And Shield Idle");
         a->onEnterAnimation = AnimBlueprint::idleEnter;
     }
+
+
+
+    {
+        AnimationRef a = Loader<AnimationRef>::get("(Human) Parkour 01 Climb");
+        for(auto &i : (*a)[0])
+        {
+            i.translation -= vec3(0, 2.2f, 0.2);
+        }
+    }
+
+    {
+        AnimationRef a = Loader<AnimationRef>::get("(Human) Parkour 01 ClimbPlatform");
+        for(auto &i : (*a)[0])
+        {
+            i.translation -= vec3(0, 2.3f, 0.0);
+        }
+    }
+
+    {
+        AnimationRef a = Loader<AnimationRef>::get("(Human) Parkour 01 ClimbLow");
+        for(auto &i : (*a)[0])
+        {
+            // i.translation -= vec3(0, 2.3f, 0.0);
+            // i.translation = vec3(0, 1.0, 0.f);
+            i.translation -= vec3(0, 1.0, 2.5);
+        }
+    }
 }
 
 #define LOAD_ANIM_FROM_PREFIX(name) AnimationRef name = Loader<AnimationRef>::get(prefix + #name);

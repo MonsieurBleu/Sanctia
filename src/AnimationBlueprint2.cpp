@@ -35,27 +35,66 @@ ANIMATION_SWITCH_ENTITY(switchIdle,
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
     if(!isEntityViable(e)) return false;
-    // float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.goal);
-    float speed = e->comp<Deplacement>().speed.current;
+    float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.current);
+    // float speed = e->comp<Deplacement>().speed.current;
     auto &dep = e->comp<Deplacement>();
     return speed > 0.01f and speed <= mix(dep.walkSpeed, dep.jogSpeed, 0.6f);
 )
 
 ANIMATION_SWITCH_ENTITY(switchJog, 
     if(!isEntityViable(e)) return false;
-    // float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.goal);
-    float speed = e->comp<Deplacement>().speed.current;
+    float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.current);
+    // float speed = e->comp<Deplacement>().speed.current;
     auto &dep = e->comp<Deplacement>();
     return speed > mix(dep.walkSpeed, dep.jogSpeed, 0.6f) and speed <= e->comp<Deplacement>().sprintSpeed*0.9f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchRun, 
     if(!isEntityViable(e)) return false;
-    // float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.goal);
-    float speed = e->comp<Deplacement>().speed.current;
+    float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.current);
+    // float speed = e->comp<Deplacement>().speed.current;
     return speed >= e->comp<Deplacement>().sprintSpeed*0.9f;
 )
 
+ANIMATION_SWITCH_ENTITY(switchClimb, 
+    if(!isEntityViable(e)) return false;
+    return e->comp<ComplexMovements>().climb.getCurrent();
+)
+
+ANIMATION_SWITCH_ENTITY(switchClimbHigh, 
+    if(!isEntityViable(e)) return false;
+    return e->comp<ComplexMovements>().climbType == ComplexMovements::ClimbTypeEnum::High;
+)
+
+ANIMATION_SWITCH_ENTITY(switchClimbLow, 
+    if(!isEntityViable(e)) return false;
+    return e->comp<ComplexMovements>().climbType == ComplexMovements::ClimbTypeEnum::Low;
+)
+
+ANIMATION_SWITCH_ENTITY(switchClimbPlatform, 
+    if(!isEntityViable(e)) return false;
+    return e->comp<ComplexMovements>().climbType == ComplexMovements::ClimbTypeEnum::Platform;
+)
+
+ANIMATION_SWITCH_ENTITY(switchJump, 
+    if(!isEntityViable(e)) return false;
+    return e->comp<ComplexMovements>().jump.getCurrent() and e->comp<ComplexMovements>().jump.timeSinceGoalMet() < 0.1;
+)
+
+ANIMATION_SWITCH_ENTITY(switchFalling, 
+    if(!isEntityViable(e)) return false;
+    return !e->comp<Deplacement>().grounded.get() and e->comp<Deplacement>().grounded.timeSinceChange() > 0.1;
+)
+
+ANIMATION_SWITCH_ENTITY(switchLand, 
+    if(!isEntityViable(e)) return false;
+    return e->comp<Deplacement>().grounded.get() and e->comp<Deplacement>().grounded.previousTimeSinceChange() > 0.75;
+)
+
+ANIMATION_SWITCH_ENTITY(switchLandEnd, 
+    if(!isEntityViable(e)) return false;
+    return e->comp<Deplacement>().grounded.get() and e->comp<Deplacement>().grounded.timeSinceChange() > 1.0;
+)
 
 AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & prefix, Entity *e)
 {
@@ -63,8 +102,16 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
     LOAD_ANIM_FROM_PREFIX(Walk)
     LOAD_ANIM_FROM_PREFIX(Jog)
     LOAD_ANIM_FROM_PREFIX(Run)
+    LOAD_ANIM_FROM_PREFIX(Climb)
+    LOAD_ANIM_FROM_PREFIX(ClimbLow)
+    LOAD_ANIM_FROM_PREFIX(ClimbPlatform)
+
+    LOAD_ANIM_FROM_PREFIX(Jump)
+    LOAD_ANIM_FROM_PREFIX(Falling)
+    LOAD_ANIM_FROM_PREFIX(Land)
 
     float deplacementTT = 0.25;
+    float stuntTT = 0.25;
 
     auto walkCallback = [](float f, void *usr)
     {
@@ -129,27 +176,147 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
     Run->speedCallback = RunCallback;
     Run->repeat = true;
 
+    {
+        float l = Climb->getLength();
+        Climb->speedCallback = [l](float f, void *usr)
+        {
+            Entity *e = (Entity*)usr;
+            if(!e or !e->has<ComplexMovements>()) return l/2.5f;
+            return e->comp<ComplexMovements>().climbAnimSpeed * l/2.5f;
+        };
+        Climb->repeat = false;
+    }
+
+    {
+        float l = ClimbLow->getLength();
+        ClimbLow->speedCallback = [l](float f, void *usr)
+        {
+            Entity *e = (Entity*)usr;
+            if(!e or !e->has<ComplexMovements>()) return l/1.f;
+            return e->comp<ComplexMovements>().climbAnimSpeed * l/1.f;
+        };
+        ClimbLow->repeat = false;
+    }
+
+    {
+        float l = ClimbPlatform->getLength();
+        ClimbPlatform->speedCallback = [l](float f, void *usr)
+        {
+            Entity *e = (Entity*)usr;
+            if(!e or !e->has<ComplexMovements>()) return l/2.5f;
+            return e->comp<ComplexMovements>().climbAnimSpeed * l/2.5f;
+        };
+        ClimbPlatform->repeat = false;
+    }
+    
+    {
+        float l = Jump->getLength();
+        Jump->speedCallback = [l](float f, void *usr)
+        {
+            Entity *e = (Entity*)usr;
+            if(!e or !e->has<ComplexMovements>()) return l/0.5f;
+            return e->comp<ComplexMovements>().climbAnimSpeed * l/0.5f;
+        };
+        Jump->repeat = false;
+    }
+    
+    {
+        float l = Land->getLength();
+        Land->speedCallback = [l](float f, void *usr)
+        {
+            Entity *e = (Entity*)usr;
+            if(!e or !e->has<ComplexMovements>()) return l/1.0f;
+            return e->comp<ComplexMovements>().climbAnimSpeed * l/1.0f;
+        };
+        Land->repeat = false;
+    }
+    
+
+
     std::vector<AnimationControllerTransition> graph
     {
         /* FROM IDLE */
         ACT(Idle, Walk, deplacementTT, switchWalk),
         ACT(Idle, Jog, deplacementTT, switchJog),
         ACT(Idle, Run, deplacementTT, switchRun),
+        ACT(Idle, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(Idle, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(Idle, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        // ACT(Idle, Jump, stuntTT, switchJump),
+        ACT(Idle, Falling, stuntTT, switchFalling),
 
         /* FROM WALK */
         ACT(Walk, Idle, deplacementTT, switchIdle),
         ACT(Walk, Jog, deplacementTT, switchJog),
         ACT(Walk, Run, deplacementTT, switchRun),
+        ACT(Walk, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(Walk, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(Walk, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        // ACT(Walk, Jump, stuntTT, switchJump),
+        ACT(Walk, Falling, stuntTT, switchFalling),
 
         /* FROM JOG */
         ACT(Jog, Idle, deplacementTT, switchIdle),
         ACT(Jog, Walk, deplacementTT, switchWalk),
         ACT(Jog, Run, deplacementTT, switchRun),
+        ACT(Jog, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(Jog, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(Jog, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        // ACT(Jog, Jump, stuntTT, switchJump),
+        ACT(Jog, Falling, stuntTT, switchFalling),
 
         /* FROM RUN */
         ACT(Run, Idle, deplacementTT, switchIdle),
         ACT(Run, Walk, deplacementTT, switchWalk),
         ACT(Run, Jog, deplacementTT, switchJog),
+        ACT(Run, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(Run, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(Run, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        // ACT(Run, Jump, stuntTT, switchJump),
+        ACT(Run, Falling, stuntTT, switchFalling),
+
+        /* FROM CLIMB */
+        ACT(Climb, Idle, stuntTT, AND_ANIMATION_SWITCH(switchIdle, INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(Climb, Walk, stuntTT, AND_ANIMATION_SWITCH(switchWalk, INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(Climb, Jog, stuntTT,  AND_ANIMATION_SWITCH(switchJog,  INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(Climb, Run, stuntTT,  AND_ANIMATION_SWITCH(switchRun,  INV_ANIMATION_SWITCH(switchClimb))),
+
+        /* FROM CLIMB LOW */
+        ACT(ClimbLow, Idle, stuntTT, AND_ANIMATION_SWITCH(switchIdle, INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(ClimbLow, Walk, stuntTT, AND_ANIMATION_SWITCH(switchWalk, INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(ClimbLow, Jog,  stuntTT,  AND_ANIMATION_SWITCH(switchJog,  INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(ClimbLow, Run,  stuntTT,  AND_ANIMATION_SWITCH(switchRun,  INV_ANIMATION_SWITCH(switchClimb))),
+
+        /* FROM CLIMB PLATFORM */
+        ACT(ClimbPlatform, Idle, stuntTT, AND_ANIMATION_SWITCH(switchIdle, INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(ClimbPlatform, Walk, stuntTT, AND_ANIMATION_SWITCH(switchWalk, INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(ClimbPlatform, Jog, stuntTT,  AND_ANIMATION_SWITCH(switchJog,  INV_ANIMATION_SWITCH(switchClimb))),
+        ACT(ClimbPlatform, Run, stuntTT,  AND_ANIMATION_SWITCH(switchRun,  INV_ANIMATION_SWITCH(switchClimb))),
+
+
+        /* FROM JUMP */
+        // AnimationControllerTransition(Jump, Falling, COND_ANIMATION_FINISHED, stuntTT),
+
+        /* FROM FALLING */
+        ACT(Falling, Land, stuntTT, AND_ANIMATION_SWITCH(switchLand, INV_ANIMATION_SWITCH(switchFalling))),
+        ACT(Falling, Idle, stuntTT, AND_ANIMATION_SWITCH(switchIdle, INV_ANIMATION_SWITCH(switchFalling))),
+        ACT(Falling, Run,  stuntTT, AND_ANIMATION_SWITCH(switchRun,  INV_ANIMATION_SWITCH(switchFalling))),
+        ACT(Falling, Jog,  stuntTT, AND_ANIMATION_SWITCH(switchJog,  INV_ANIMATION_SWITCH(switchFalling))),
+        ACT(Falling, Walk, stuntTT, AND_ANIMATION_SWITCH(switchWalk, INV_ANIMATION_SWITCH(switchFalling))),
+        ACT(Falling, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(Falling, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(Falling, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        // ACT(Falling, Jump, stuntTT, AND_ANIMATION_SWITCH(switchJump, INV_ANIMATION_SWITCH(switchFalling))),
+
+        /* FROM LAND*/
+        ACT(Land, Idle, stuntTT, AND_ANIMATION_SWITCH(switchIdle, switchLandEnd)),
+        ACT(Land, Run,  stuntTT, AND_ANIMATION_SWITCH(switchRun,  switchLandEnd)),
+        ACT(Land, Jog,  stuntTT, AND_ANIMATION_SWITCH(switchJog,  switchLandEnd)),
+        ACT(Land, Walk, stuntTT, AND_ANIMATION_SWITCH(switchWalk, switchLandEnd)),
+        ACT(Land, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(Land, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(Land, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        // ACT(Land, Jump, stuntTT, AND_ANIMATION_SWITCH(switchJump, switchLandEnd)),
     };
 
     return AnimationControllerRef(new AnimationController(graph, Idle, e));

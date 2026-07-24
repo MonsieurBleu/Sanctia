@@ -146,25 +146,26 @@ EntityRef Blueprint::Terrain(
 
         ivec2 iuvmin = round(uvmin*vec2(textureSize));
         ivec2 iuvmax = round(uvmax*vec2(textureSize));
-        int dsize = max(iuvmax.x - iuvmin.x, iuvmax.y - iuvmin.y);
+        int dsize = max(iuvmax.x - iuvmin.x, iuvmax.y - iuvmin.y) + 1;
+        // NOTIF_MESSAGE(PRINTVAR(dsize), PRINTVAR(iuvmin), PRINTVAR(iuvmax))
         std::vector<float> heightData(dsize*dsize);
 
         float minV = 1e6;
         float maxV = -1e6;
 
-        for(int i = 0; i < dsize; i++)
         for(int j = 0; j < dsize; j++)
+        for(int i = 0; i < dsize; i++)
         {
             int id = i * dsize + j;
             heightData[id] = src[((i + iuvmin.y)*textureSize.x + j + iuvmin.x)];
 
-            minV = heightData[id];
-            maxV = heightData[id];
+            minV = min(heightData[id], minV);
+            maxV = max(heightData[id], maxV);
 
             // std::cout << heightData[i*dsize + j] << "\n";
         }
 
-        float halfHeight = (-(maxV - minV)*0.5 - minV) + 0.5;
+        // float halfHeight = (-(maxV - minV)*0.5 - minV) + 0.5;
 
         // std::vector<rp3d::Message> messages;
         // auto field = PG::common.createHeightField(
@@ -181,8 +182,8 @@ EntityRef Blueprint::Terrain(
 
         // PG::heightFields.push_back({field, shape});
 
-        state3D state(true);
-        state.initPosition = cellPos;
+        // state3D state(true);
+        // state.initPosition = cellPos;
 
         /* Creating terrain cell entity */
         // EntityRef e = newEntity("Terrain cell" + std::to_string(i) + "x" + std::to_string(j), state, b, HeightFieldDummyFlag());
@@ -218,21 +219,30 @@ EntityRef Blueprint::Terrain(
         chunk->set<EntityModel>(model);
         
 
-
         /*........ Adding Jolt Body ........*/
         JPH::BodyCreationSettings settings;
         JPH::HeightFieldShapeSettings jshape(
             heightData.data(),
             Vvec3(-cellSize/2.f, 0, -cellSize/2.f),
-            Vvec3(cellHscale/(float)(dsize-1), terrainSize.y, cellHscale/(float)(dsize-1)),
+            // Vvec3(cellHscale/(float)(dsize-1.f), terrainSize.y, cellHscale/(float)(dsize-1.f)),
+            Vvec3(cellHscale/(float)(dsize-1.f), terrainSize.y, cellHscale/(float)(dsize-1.f)),
             dsize
         );
+        float a, b, c = 1.0;
+        jshape.mBitsPerSample = 16;
+        jshape.mBlockSize = 8;
+        jshape.DetermineMinAndMaxSample(a, b, c);
+        jshape.mMaxHeightValue = maxV;
+        jshape.mMinHeightValue = minV;
+        // ERROR_MESSAGE(jshape.CalculateBitsPerSampleForError(1))
 
         JPH::Shape::ShapeResult result = jshape.Create();
         if(result.IsValid())
             settings.SetShape(result.Get());
         else
             ERROR_MESSAGE("Non-valid shape ", result.GetError())
+
+        // WARNING_MESSAGE(PRINTVAR(jshape.mMinHeightValue), PRINTVAR(jshape.mMaxHeightValue), PRINTVAR(minV), PRINTVAR(maxV), PRINTVAR(a), PRINTVAR(b), PRINTVAR(c))
 
         settings.mMotionType = JPH::EMotionType::Static;
         // settings.mPosition = Vvec3(terrainPosition + vec3(terrainSize.x*uvhalf.x, 0, terrainSize.z*uvhalf.y));

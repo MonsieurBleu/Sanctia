@@ -1159,11 +1159,28 @@ void Game::mainloop()
             JoltVulpine::debugRendererSettings.mDrawShapeColor = JPH::BodyManager::EShapeColor::MotionTypeColor;
             // JoltVulpine::debugRendererSettings.mDrawShapeWireframe = false;
 
+            class PhysicsDebugFilter : public JPH::BodyDrawFilter
+            {
+                public : 
+                virtual bool ShouldDraw(const JPH::Body & inBody) const override
+                {
+                    Vvec3 pos(inBody.GetCenterOfMassPosition());
+                    vec3 cpos(globals.currentCamera->getPosition());
+                    vec3 cdir(globals.currentCamera->getDirection());
+
+                    float d = distance(pos, cpos);
+
+                    return d < 128.f;
+                };
+            };
+
+            static PhysicsDebugFilter filter;
+
             JoltVulpine::physicsMutex.lock();
             JoltVulpine::jPhysicsSystem->DrawBodies(
                 JoltVulpine::debugRendererSettings,
                 JoltVulpine::debugRenderer,
-                nullptr
+                &filter
             );
             JoltVulpine::physicsMutex.unlock();
         }
@@ -1602,7 +1619,52 @@ void Game::mainloop()
                 float angle = radians(90.f)-atan2f(dir.y, dir.x);
                 quat q = vec3(0, angle, 0);
 
-                if(e.comp<Deplacement>().speed.current < 0.1f)
+
+                if(e.has<ComplexMovements>() and e.comp<ComplexMovements>().climb.getCurrent())
+                {   
+                    auto &move = e.comp<ComplexMovements>();
+                    // float smoothMovementInterp = smoothstep(0.f, 0.25f, e.comp<ComplexMovements>().climb.timeSinceGoalMet());
+                    float animDur = move.climbAnimSpeed;
+                    switch(move.climbType)
+                    {
+                        case ComplexMovements::ClimbTypeEnum::High :
+                        case ComplexMovements::ClimbTypeEnum::Platform :
+                            animDur *= 2.5;
+                            break;
+                        default : break;
+                    }
+                    float animTime = move.climb.timeSinceGoalMet()/animDur;
+
+                    float posDropIn = linearstep(0.0f, 0.1f, animTime);
+                    float posDropOff = linearstep(0.65f, 1.0, animTime);
+
+                    float dirDropIn = linearstep(0.0f, 0.1f, animTime);                    
+                    float dirDropOff = linearstep(0.65f, 0.5f, animTime);
+
+                    if(move.climbType == ComplexMovements::ClimbTypeEnum::Low)
+                    {
+                        posDropIn = smoothstep(0.0f, 0.25f, animTime);
+                        posDropOff = smoothstep(0.25f, 0.5f, animTime);
+
+                        dirDropIn = smoothstep(0.0f, 0.25f, animTime);                    
+                        dirDropOff = smoothstep(0.25f, 0.5f, animTime);
+                    }
+
+                    vec3 pos = mix(move.animationInitialPosition, move.closestEdge, posDropIn);
+                    pos = mix(pos, move.closestSurface, posDropOff);
+                    m->state.setPosition(pos);
+                    
+                    vec3 dir = normalize(move.closestEdgeNormal*vec3(1, dirDropOff, 1));
+                    m->state.setQuaternion(
+                        slerp(m->state.quaternion, directionToQuat(dir), dirDropIn)
+                    );
+                }
+                else
+                if(
+                    e.comp<Deplacement>().speed.current < 0.1f
+                    // or
+                    // (e.has<ComplexMovements>() and (e.comp<ComplexMovements>().climb.getCurrent() or e.comp<ComplexMovements>().wallJump.getCurrent()))
+                )
                 {
                     // m->state.setQuaternion(q);
                 }

@@ -363,7 +363,7 @@ void VulpineLuaBindings::Entities(sol::state &lua)
     {
         VBIND_CREATE_CLASS        
         VBIND_ADD_CONSTRUCTORS((), ())
-        VBIND_ADD_MEMBERS(closestSurface, closestWall, animationInitialPosition, lastWallJumpDirection, climb, jump, wallJump)
+        VBIND_ADD_MEMBERS(closestSurface, closestWall, closestEdge, animationInitialPosition, lastWallJumpDirection, climb, jump, wallJump)
     }
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING

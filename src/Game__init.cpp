@@ -117,7 +117,7 @@ void Game::init(int paramSample)
     }
     // return;
     camera.state.FOV = radians(90.0);
-    // camera.state.nearPlane = 0.17;
+    camera.state.nearPlane = 0.01;
 
     /* Loading 3D Materials */
     // depthOnlyMaterial = MeshMaterial(

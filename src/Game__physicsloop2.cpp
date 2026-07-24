@@ -110,6 +110,7 @@ void Game::physicsLoop2()
             {
                 // return 0.25f;
                 return max(inBody1.GetFriction(), inBody2.GetFriction());
+                // return 0.f;
             }
             else
             {
@@ -143,58 +144,58 @@ void Game::physicsLoop2()
 
     JoltVulpine::physicsMutex.unlock();
 
-    WARNING_MESSAGE(
-        objectLayerPairFilter.ShouldCollide(
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
-            ),
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT | 1<<JoltVulpine::Layers::Categories::HIT_ZONE
-            )
-        )
-    )
+    // WARNING_MESSAGE(
+    //     objectLayerPairFilter.ShouldCollide(
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
+    //         ),
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT | 1<<JoltVulpine::Layers::Categories::HIT_ZONE
+    //         )
+    //     )
+    // )
         
-    WARNING_MESSAGE(
-        objectLayerPairFilter.ShouldCollide(
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::HIT_ZONE, 
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
-            ),
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
-                1<<JoltVulpine::Layers::Categories::HIT_ZONE
-            )
-        )
-    )
+    // WARNING_MESSAGE(
+    //     objectLayerPairFilter.ShouldCollide(
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::HIT_ZONE, 
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
+    //         ),
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
+    //             1<<JoltVulpine::Layers::Categories::HIT_ZONE
+    //         )
+    //     )
+    // )
         
 
-    WARNING_MESSAGE(
-        objectLayerPairFilter.ShouldCollide(
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::PICK_UP, 
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
-            ),
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
-            )
-        )
-    )
+    // WARNING_MESSAGE(
+    //     objectLayerPairFilter.ShouldCollide(
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::PICK_UP, 
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
+    //         ),
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
+    //         )
+    //     )
+    // )
 
-    WARNING_MESSAGE(
-        objectLayerPairFilter.ShouldCollide(
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
-            ),
-            JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
-                1<<JoltVulpine::Layers::Categories::PICK_UP, 
-                1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
-            )
-        )
-    )
+    // WARNING_MESSAGE(
+    //     objectLayerPairFilter.ShouldCollide(
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT, 
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
+    //         ),
+    //         JPH::ObjectLayerPairFilterMask::sGetObjectLayer(
+    //             1<<JoltVulpine::Layers::Categories::PICK_UP, 
+    //             1<<JoltVulpine::Layers::Categories::ENVIRONEMENT
+    //         )
+    //     )
+    // )
 
 
     
@@ -239,7 +240,8 @@ void Game::physicsLoop2()
 
 		const int cCollisionSteps = 2;
 		JoltVulpine::physicsWorldUpdateTimer.start();
-        JoltVulpine::jPhysicsSystem->Update(1.f/JoltVulpine::physicsTicks.freq, cCollisionSteps, &temp_allocator, &job_system);
+        float accSpeedFactor = 1.f/(60.f * globals.simulationTime.speed/JoltVulpine::physicsTicks.freq);
+        JoltVulpine::jPhysicsSystem->Update(globals.simulationTime.speed/JoltVulpine::physicsTicks.freq, cCollisionSteps, &temp_allocator, &job_system);
         JoltVulpine::physicsWorldUpdateTimer.stop();
         
         /* ........ POST PHYSIC UPDATE SYSTEMS ........ */
@@ -302,7 +304,7 @@ void Game::physicsLoop2()
         /*
             Manage complex movement like climbing
         */
-        System<ComplexMovements, Deplacement, JoltBody, State3D>([](Entity &e, ComplexMovements &move, Deplacement &depl, JoltBody &body, State3D &state)
+        System<ComplexMovements, Deplacement, JoltBody, State3D>([&](Entity &e, ComplexMovements &move, Deplacement &depl, JoltBody &body, State3D &state)
         {
             auto &interface = JoltVulpine::jPhysicsSystem->GetBodyInterface();
 
@@ -313,7 +315,7 @@ void Game::physicsLoop2()
             {
                 move.jump.acceptGoal();
                 move.jump.setGoal(false);
-                interface.AddForce(body, Vvec3(0, 1e6, 0));
+                interface.AddForce(body, Vvec3(0, 1e6f * accSpeedFactor, 0));
             }
             /*
                 reseting jump
@@ -336,7 +338,7 @@ void Game::physicsLoop2()
                 {
                     move.wallJump.acceptGoal();
                     move.wallJump.setGoal(false);
-                    interface.AddForce(body, 1e6f*dir);
+                    interface.AddForce(body, 1e6f*dir*accSpeedFactor);
                     move.lastWallJumpDirection = dir;
                 }
             }
@@ -356,11 +358,12 @@ void Game::physicsLoop2()
             /*
                 initialazing climn
             */
-            if(move.climb.getGoal() and move.climb.timeSinceGoalChange() < 0.1f)
+            if(!move.climb.getCurrent() and move.climb.getGoal() and move.climb.timeSinceGoalChange() < 0.1f)
             {
                 move.climb.acceptGoal();
                 move.climb.setGoal(false);
                 move.animationInitialPosition = state.position;
+                JoltVulpine::jPhysicsSystem->GetBodyInterface().SetMotionType(body, JPH::EMotionType::Kinematic, JPH::EActivation::Activate);
             }
 
             /*
@@ -369,7 +372,16 @@ void Game::physicsLoop2()
             */
             if(move.climb.getCurrent())
             {
-                constexpr float animationTime = 0.5;
+                float animationTime = move.climbAnimSpeed;
+                switch(move.climbType)
+                {
+                    case ComplexMovements::ClimbTypeEnum::High :
+                    case ComplexMovements::ClimbTypeEnum::Platform :
+                        animationTime *= 2.5;
+                        break;
+                    default : break;
+                }
+
                 float a = linearstep(0.f, animationTime, move.climb.timeSinceGoalMet());
                 JoltVulpine::jPhysicsSystem->GetBodyInterface().SetPosition(
                     body, 
@@ -380,6 +392,7 @@ void Game::physicsLoop2()
                 if(a >= 1.f)
                 {
                     move.climb.overrideCurrent(false);
+                    JoltVulpine::jPhysicsSystem->GetBodyInterface().SetMotionType(body, JPH::EMotionType::Dynamic, JPH::EActivation::Activate);
                 }
 
                 return;
@@ -432,7 +445,7 @@ void Game::physicsLoop2()
             collector.playerBody = body;
             Vvec3 direction = Vvec3(0, -3, 0);
 
-            Vvec3 extents = Vvec3(1.0, 0.25, 0.25);
+            Vvec3 extents = Vvec3(1.0*0.75, 0.25, 0.25);
             static auto box = JPH::RotatedTranslatedShapeSettings(
                 Vvec3(-extents*vec3(1, 1, 0)),
 
@@ -554,7 +567,9 @@ void Game::physicsLoop2()
                 diag, diag*Vvec3(-1, 0, 1), diag*Vvec3(1, 0, -1), diag*Vvec3(-1, 0, -1)  
             };
             Vvec3 closestWall = state.position;
+            Vvec3 closestEdge = move.closestSurface;
             float closestWallDistance = 1e6;
+            // bool frontFacing = true;
 
             for(auto &i : directions)
             {
@@ -586,11 +601,95 @@ void Game::physicsLoop2()
                     {
                         closestWallDistance = result.mFraction;
                         closestWall = ray.mOrigin + result.mFraction*ray.mDirection;
+
+                        // if(frontFacing) closestEdge = closestWall;
                     }
+                }
+
+                // frontFacing = false;
+            }
+
+            /*
+                Determining precise climbing positions, normal and type
+            */
+            move.closestWall = state.position;
+
+            Vvec3 edgeNormal = vec3(0);
+            float cnt = 0.f;
+            float plateformThickness = 0.f;
+
+            if(move.closestSurface != state.position)
+            {
+                const uint wallEdgeSteps = 8;
+                const float wallEdgeMaxOffset = 0.5f;
+                for(uint i = 0; i < wallEdgeSteps; i++)
+                {
+                    float a = wallEdgeMaxOffset*(1.f - (float)i/(float)(wallEdgeSteps-1));
+                    JPH::RRayCast ray;
+                    JPH::RayCastResult result;
+    
+                    ray.mOrigin = Vvec3(move.closestSurface - dir2D - vec3(0, a, 0));
+                    ray.mDirection = Vvec3(dir2D);
+
+                    bool hit = JoltVulpine::jPhysicsSystem->GetNarrowPhaseQuery().CastRay(
+                        ray, 
+                        result,
+                        JPH::BroadPhaseLayerFilter(),
+                        JoltVulpine::EnvironementCollideFilter(),
+                        JoltVulpine::BodyExcludeFilter(body)
+                    );
+
+                    if(hit && !result.mBodyID.IsInvalid())
+                    {
+                        JPH::Body *bodyptr = nullptr;
+                        while (!bodyptr) 
+                            bodyptr = JoltVulpine::jPhysicsSystem->GetBodyLockInterface().TryGetBody(result.mBodyID);
+
+                        const Vvec3 normal = bodyptr->GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
+                        const Vvec3 position = ray.mOrigin + result.mFraction*ray.mDirection;
+
+                        plateformThickness = max(plateformThickness, move.closestSurface.y - position.y);
+
+                        if(normal.y < cos(radians(35.f)))
+                        {
+                            const Vvec3 color = hsv2rgb(vec3(0.1 + a*0.5, 1, 1));
+                            GG::draw->drawSphere(position, 0.05, 0.1f, ModelState3D(), color);
+                            GG::draw->drawLine(position, position+normal*0.4f, 0.1f, ModelState3D(), color);
+
+                            closestEdge = position;
+                            cnt ++;
+                            edgeNormal = edgeNormal + normal;
+                        }
+
+                        if(!i and cnt == 0.f)
+                        {
+                            closestEdge = position;
+                            edgeNormal = normal;
+                            cnt ++;
+                        }
+                    }
+                }
+
+                move.closestEdge = closestEdge;
+                float edgeHeight = distance(move.closestSurface.y, state.position.y);
+                if(depl.grounded.get() and edgeHeight <= 1.5f)
+                {
+                    move.climbType = ComplexMovements::ClimbTypeEnum::Low;
+                    move.closestEdgeNormal = normalize(vec3(1,0,1)*(state.position-move.closestEdge));
+                }
+                else if(plateformThickness >= 0.4f)
+                {
+                    move.climbType = ComplexMovements::ClimbTypeEnum::High;
+                    move.closestEdgeNormal = cnt > 0.f ? normalize(edgeNormal/cnt) : normalize(vec3(1,0,1)*(state.position-move.closestEdge));
+                }
+                else
+                {
+                    move.climbType = ComplexMovements::ClimbTypeEnum::Platform;
+                    move.closestEdgeNormal = cnt > 0.f ? normalize(edgeNormal/cnt) : normalize(vec3(1,0,1)*(state.position-move.closestEdge));
                 }
             }
 
-            move.closestWall = closestWall;
+
             // NOTIF_MESSAGE(closestWall)
 
             // static auto cylinder = JPH::CylinderShapeSettings(0.5, 2.f).Create().Get();
@@ -643,7 +742,7 @@ void Game::physicsLoop2()
             // );
         });
 
-        System<Deplacement, JoltBody>([](Entity &e, Deplacement &depl, JoltBody &body)
+        System<Deplacement, JoltBody>([&](Entity &e, Deplacement &depl, JoltBody &body)
         {
             if(!body.IsInvalid())
             {
@@ -756,7 +855,7 @@ void Game::physicsLoop2()
                     }
                     else
                     {
-                        interface.AddForce(body, Vvec3(depl.direction.goal * 1.f * 5e5f * smoothstep(0.f, 0.5f, depl.grounded.timeSinceChange())));
+                        interface.AddForce(body, Vvec3(accSpeedFactor * depl.direction.goal * 1.f * 5e5f * smoothstep(0.f, 0.5f, depl.grounded.timeSinceChange())));
                         interface.SetMaxLinearVelocity(body, speed);
                     }
                 }
@@ -766,7 +865,7 @@ void Game::physicsLoop2()
                     // dir.y = depl.direction.current.y;
                     // interface.SetLinearVelocity(body, dir);
 
-                    interface.AddForce(body, Vvec3(depl.direction.goal * 1e6f * smoothstep(depl.walkSpeed, 0.f, depl.speed.current)));
+                    interface.AddForce(body, Vvec3(accSpeedFactor * depl.direction.goal * 1e6f * smoothstep(depl.walkSpeed, 0.f, depl.speed.current)));
 
                     interface.SetMaxLinearVelocity(body, 1e3f);
                 }

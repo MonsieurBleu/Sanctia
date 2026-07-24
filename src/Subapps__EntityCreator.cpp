@@ -1300,7 +1300,8 @@ void Apps::EntityCreator::init()
         // orbitController.distance = 200;
 
         // GG::sun->cameraResolution = vec2(8192);
-        // GG::sun->shadowCameraSize = vec2(256, 256);
+        // GG::sun->shadowCameraSize = vec2(32);
+        
 
         // GG::skybox->state.setHideStatus(ModelStatus::HIDE);
 
@@ -1314,8 +1315,8 @@ void Apps::EntityCreator::init()
 
         EDITOR::gridPositionScale.w = 0.5f;
 
-        GG::sun->shadowCameraSize = vec2(32);
-        GG::sun->activateShadows();
+        // GG::sun->shadowCameraSize = vec2(32);
+        // GG::sun->activateShadows();
 
         glLineWidth(2.0);
     }

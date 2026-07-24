@@ -42,6 +42,25 @@ Apps::PhysicsTestingApp::PhysicsTestingApp() : SubApps("Physics Testing")
             InputManager::Filters::always, false)
     );    
 
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "input exemple", GLFW_KEY_KP_SUBTRACT, 0, GLFW_PRESS, [&]() {
+                if(!globals.simulationTime.isPaused())
+                    globals.simulationTime.speed /= 2.f;
+            },
+            InputManager::Filters::always, false)
+    );    
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "input exemple", GLFW_KEY_KP_ADD, 0, GLFW_PRESS, [&]() {
+                if(!globals.simulationTime.isPaused())
+                    globals.simulationTime.speed *= 2.f;
+            },
+            InputManager::Filters::always, false)
+    );    
+
+
     for(auto &i : inputs)
         i->activated = false;
 };
@@ -56,6 +75,8 @@ EntityRef Apps::PhysicsTestingApp::UImenu()
 
 void Apps::PhysicsTestingApp::init()
 {
+    const vec3 origin(-675, 37, -624);
+
     /***** Preparing App Settings *****/
     {
         appRoot = newEntity("AppRoot", state3D(true));
@@ -66,7 +87,7 @@ void Apps::PhysicsTestingApp::init()
         GG::sun->shadowCameraSize = vec2(2048);
         ComponentModularity::addChild(
             *appRoot,
-            GG::playerEntity = spawnEntity("Jolt Player", vec3(0, 50, 0))
+            GG::playerEntity = spawnEntity("Jolt Player", origin + vec3(0, 8, 0))
         );
         
         // orbitController.position = vec3(0, 40, 0);
@@ -78,19 +99,19 @@ void Apps::PhysicsTestingApp::init()
         for(int y = 0; y < 4; y++)
         {
                 ComponentModularity::addChild(*appRoot, 
-                    spawnEntity("Jolt Test Ball", vec3(0, 38 + 8 + x, y) + (rand()%8)/8.f)
+                    spawnEntity("Jolt Test Ball", origin + vec3(0, 8 + x, y) + (rand()%8)/8.f)
                 );
         
                 ComponentModularity::addChild(*appRoot, 
-                    spawnEntity("Jolt Test Suzanne", vec3(4 + rand()%2, 38 + 8 + x, y) + (rand()%8)/8.f)
+                    spawnEntity("Jolt Test Suzanne", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
                 );
 
                 // ComponentModularity::addChild(*appRoot, 
-                //     spawnEntity("Jolt Player Alt", vec3(4 + rand()%2, 38 + 8 + x, y) + (rand()%8)/8.f)
+                //     spawnEntity("Jolt Player Alt", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
                 // );
             }
         
-    ComponentModularity::addChild(*appRoot, spawnEntity("Jolt Test Scene", vec3(0, 38, 0)));
+    ComponentModularity::addChild(*appRoot, spawnEntity("Jolt Test Scene", origin));
     
     ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
     
@@ -123,8 +144,9 @@ void Apps::PhysicsTestingApp::update()
     // NOTIF_MESSAGE(globals.currentCamera->getPosition())
     // NOTIF_MESSAGE(GG::playerEntity->comp<state3D>().position)
 
-    // GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestSurface, 0.20);
-    // GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestWall, 0.20, 0.f, ModelState3D(), vec3(0, 0, 1));
+    GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestSurface, 0.20);
+    // GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestWall, 0.20, 0.f, ModelState3D(), vec3(1, 1, 0));
+    GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestEdge, 0.20, 0.f, ModelState3D(), vec3(1, 0.5, 0));
 
     // NOTIF_MESSAGE(
     //     GG::playerEntity->comp<AnimationControllerRef>()->getCurrentAnimation()->getName()
@@ -135,6 +157,7 @@ void Apps::PhysicsTestingApp::update()
 void Apps::PhysicsTestingApp::clean()
 {
     globals.simulationTime.pause();
+    globals.simulationTime.speed = 1.f;
     JoltVulpine::enablePhysics = false;
 
     globals.currentCamera->setMouseFollow(false);

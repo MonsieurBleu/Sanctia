@@ -893,6 +893,22 @@ void AnimBlueprint::PrepareAnimationsCallbacks()
             i.translation -= vec3(0, 1.0, 2.5);
         }
     }
+
+    {
+        AnimationRef a = Loader<AnimationRef>::get("(Human) Parkour 01 JumpF");
+        for(auto &i : (*a)[0])
+        {
+            i.translation = vec3(0, 1.75/2.0, 0);
+        }
+    }
+
+    {
+        AnimationRef a = Loader<AnimationRef>::get("(Human) Parkour 01 Falling");
+        for(auto &i : (*a)[0])
+        {
+            i.translation -= vec3(0, 0.25, 0);
+        }
+    }
 }
 
 #define LOAD_ANIM_FROM_PREFIX(name) AnimationRef name = Loader<AnimationRef>::get(prefix + #name);

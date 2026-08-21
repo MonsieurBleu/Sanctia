@@ -211,7 +211,7 @@ class Faction
     
 };
 
-GENERATE_ENUM_FAST_REVERSE(DeplacementBehaviour
+GENERATE_ENUM_FAST_REVERSE(MovementBehaviour
     , STAND_STILL 
     , DEMO
     , FOLLOW_WANTED_DIR

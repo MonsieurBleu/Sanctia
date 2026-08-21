@@ -141,14 +141,14 @@ void PhysicsEventListener::onContact(const rp3d::CollisionCallback::CallbackData
         bool isStart = pair.getEventType() == _ContactPair::EventType::ContactStart;
         bool isStay = pair.getEventType() == _ContactPair::EventType::ContactStay;
 
-        bool e1Deplacement = e1->has<MovementState>();
-        bool e2Deplacement = e2->has<MovementState>();
+        bool e1Movement = e1->has<MovementState>();
+        bool e2Movement = e2->has<MovementState>();
         if (
-               ((e1Deplacement || e2Deplacement) && !(e1Deplacement && e2Deplacement))  // e1 or e2 are dynamic but not both
+               ((e1Movement || e2Movement) && !(e1Movement && e2Movement))  // e1 or e2 are dynamic but not both
         && (isStart || isStay)                                                          // we are entering or staying in collision
         )
         {
-            Entity* dynamicEntity = e1Deplacement ? e1 : e2;
+            Entity* dynamicEntity = e1Movement ? e1 : e2;
             MovementState& ds = dynamicEntity->comp<MovementState>();
             
             // check if ground is flat enough to walk
@@ -163,7 +163,7 @@ void PhysicsEventListener::onContact(const rp3d::CollisionCallback::CallbackData
                 rp3d::Vector3 normal = contactPoint.getWorldNormal();
 
                 // the normal direction depends on which entity is the dynamic one so we may need to invert it 
-                float n = e1Deplacement ? -normal.y : normal.y; 
+                float n = e1Movement ? -normal.y : normal.y; 
 
                 maxY = max(n, maxY);
                 if (n > Y_THRESHOLD) 

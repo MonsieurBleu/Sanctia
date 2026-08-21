@@ -630,11 +630,12 @@ void Game::mainloop()
     Apps::AnimationApp animationViewer;
     
     // Apps::EventGraphApp eventGraph;
-    Apps::SceneMergeApp sceneMerge;
-    Apps::LunaTesting lunaTest;
-    Apps::MovementDemo movementDemo;
+    // Apps::SceneMergeApp sceneMerge;
+    // Apps::LunaTesting lunaTest;
+    // Apps::MovementDemo movementDemo;
 
     Apps::EnviroApp enviro;
+    Apps::WorldEditorApp worldEditor;
 
 
     // SubApps::switchTo(materialView);
@@ -1342,22 +1343,16 @@ void Game::mainloop()
         // NOTIF_MESSAGE(ComponentGlobals::maxID[Component<HeightFieldDummyFlag>::category]);
 
         const int frameDelay = 32;
-        System<EntityModel, LevelOfDetailsInfos, state3D>([&](Entity &entity)
+        System<EntityModel>([&](Entity &entity)
         {
-            // NOTIF_MESSAGE(entity.toStr())
-
-            
-
-            // const int frameDelay = 32;
-            // if(globals.appTime.getUpdateCounter()%frameDelay != entity.ids[1]%frameDelay)
-            //     return;
-
             auto &model = entity.comp<EntityModel>();
-            LevelOfDetailsInfos &lod = entity.comp<LevelOfDetailsInfos>();
-
             if(!model) return;
 
-            if(!model->getChildren().size()) return;
+            if(model->getChildren().size() || model->state.hide == ModelStatus::HIDE) return;
+
+            if(!entity.has<LevelOfDetailsInfos>()) entity.set<LevelOfDetailsInfos>(LevelOfDetailsInfos());
+            
+            LevelOfDetailsInfos &lod = entity.comp<LevelOfDetailsInfos>();
 
             if(lod.isUpdated)
             {
@@ -1365,11 +1360,6 @@ void Game::mainloop()
             }
 
             lod.isUpdated = true;
-
-            // lod.computeEntityAABB(&entity);
-            // lod.aabbmin = model->getMeshesBoundingBox().first;
-            // lod.aabbmax = model->getMeshesBoundingBox().second;
-
             
             int level = 0;
             
@@ -1377,38 +1367,17 @@ void Game::mainloop()
             vec3 extents = (lod.aabbmax-lod.aabbmin);
             float maxRadius = max(extents.x, max(extents.y, extents.z));
 
-            /* LOD LEVEL CALCULATION */
-            // vec3 camToMiddle = globals.currentCamera->getPosition() - middle;
-            // float d = sqrt(dot(camToMiddle, camToMiddle));
-
-            // d = max(0.f, d-maxRadius);
-
-            // d /= maxRadius;
-
-            // float dlevel = d*d;
-
-            // level = round(dlevel / 4096.f);
 
             float d = distance(globals.currentCamera->getPosition(), middle);
-            // const int firstLevelRadius = 96;
             const int firstLevelRadius = 128-16;
-
-            // d = log2(max(0.f, d/firstLevelRadius) + 1);
             
             const float power = 2;
             d = log2(max(0.f, (power-1.f)*d/(firstLevelRadius)) + 1) / log2(power);
 
             level = floor(d);
-
-            // int id = floor(d);
-            // level = std::log<power>(max(0, id/(firstLevelRadius*(power-1))) + 1);
-            // level = log(id)/log(power);
             
 
             auto &c = model->getChildren();
-
-            // if(c.size() >= 3)level = min(level, (int)c.size()-1);
-
             int cnt = 0;
 
             for(auto i : c)
@@ -1429,69 +1398,6 @@ void Game::mainloop()
 
                 cnt ++;
             }
-
-            /*
-            mat4 matrix = globals.currentCamera->getProjectionViewMatrix();
-
-            vec3 corner[8] = 
-            {
-                lod.aabbmin,
-                
-                vec3(lod.aabbmin.x, lod.aabbmin.y, lod.aabbmax.z),
-                vec3(lod.aabbmin.x, lod.aabbmax.y, lod.aabbmin.z),
-                vec3(lod.aabbmin.x, lod.aabbmax.y, lod.aabbmax.z),
-                
-                vec3(lod.aabbmax.x, lod.aabbmin.y, lod.aabbmin.z),
-                vec3(lod.aabbmax.x, lod.aabbmin.y, lod.aabbmax.z),
-                vec3(lod.aabbmax.x, lod.aabbmax.y, lod.aabbmin.z),
-                
-                lod.aabbmax
-            };
-
-            vec2 proj[8];
-            for(int i = 0; i < 8; i++)
-            {
-                vec4 tmp = matrix * vec4(corner[i], 1.0);
-                proj[i] = vec3(tmp)/tmp.w;
-            }
-
-            vec2 maxProj = proj[0];
-            vec2 minProj = proj[0];
-
-            for(int i = 1; i < 8; i++)
-            {
-                maxProj = max(maxProj, proj[i]);
-                minProj = min(minProj, proj[i]);
-            }
-
-            vec2 size = (maxProj-minProj)*vec2(globals.windowSize());
-            uint pixelSize = sqrt(size.x*size.y);
-
-            int level = 0;
-            level =  std::bit_width(32u) + 1 - std::bit_width(pixelSize);
-            level = max(level, 0);
-            auto &c = model->getChildren();
-
-            int cnt = 0;
-            level = min(level, (int)c.size()-1);
-
-            // level = 2;            
-
-            for(auto i : c)
-            {
-                if(cnt == level)
-                {
-                    if(i->state.hide != ModelStatus::SHOW)
-                        i->state.setHideStatus(ModelStatus::SHOW);
-                }
-                else if(i->state.hide != ModelStatus::HIDE)
-                    i->state.setHideStatus(ModelStatus::HIDE);
-
-                cnt ++;
-            }
-
-            model->propagateHideStatus();
-            */
         }, 
         frameDelay,
         globals.appTime.getUpdateCounter()%frameDelay
@@ -1550,7 +1456,7 @@ void Game::mainloop()
 
         /***** DEMO DEPLACEMENT SYSTEM
         *****/
-        System<MovementState, DeplacementBehaviour, state3D>([&, this](Entity &entity) {
+        System<MovementState, MovementBehaviour, state3D>([&, this](Entity &entity) {
             auto &s = entity.comp<state3D>();
             auto &ds = entity.comp<MovementState>();
 
@@ -1563,9 +1469,9 @@ void Game::mainloop()
                 return;
             }
 
-            switch (entity.comp<DeplacementBehaviour>())
+            switch (entity.comp<MovementBehaviour>())
             {
-            case DeplacementBehaviour::DEMO: {
+            case MovementBehaviour::DEMO: {
                 float time = globals.simulationTime.getElapsedTime();
                 float angle =
                     PI * 2.f *
@@ -1577,7 +1483,7 @@ void Game::mainloop()
             }
             break;
 
-            case DeplacementBehaviour::STAND_STILL:
+            case MovementBehaviour::STAND_STILL:
                 ds.speed = 0;
                 break;
 
@@ -1602,14 +1508,15 @@ void Game::mainloop()
             s.rotation = slerp(ds.last.rotation, ds.next.rotation, physicInterpValue);
             
             m->state.setPosition(s.position);
+            m->state.setScale(s.scale);
 
-            if(e.has<Deplacement>())
+            if(e.has<Movement>())
             {
-                // vec2 dir(e.comp<Deplacement>().look.current.x, e.comp<Deplacement>().look.current.z);
+                // vec2 dir(e.comp<Movement>().look.current.x, e.comp<Movement>().look.current.z);
 
-                vec2 dir(e.comp<Deplacement>().direction.current.x, e.comp<Deplacement>().direction.current.z);
+                vec2 dir(e.comp<Movement>().direction.current.x, e.comp<Movement>().direction.current.z);
 
-                vec2 lookDir(e.comp<Deplacement>().look.current.x, e.comp<Deplacement>().look.current.z);
+                vec2 lookDir(e.comp<Movement>().look.current.x, e.comp<Movement>().look.current.z);
 
                 // dir = normalize(dir);
                 lookDir = normalize(lookDir);
@@ -1661,7 +1568,7 @@ void Game::mainloop()
                 }
                 else
                 if(
-                    e.comp<Deplacement>().speed.current < 0.1f
+                    e.comp<Movement>().speed.current < 0.1f
                     // or
                     // (e.has<ComplexMovements>() and (e.comp<ComplexMovements>().climb.getCurrent() or e.comp<ComplexMovements>().wallJump.getCurrent()))
                 )
@@ -1693,14 +1600,14 @@ void Game::mainloop()
         {
             if(k)
             {
-                m->state.setPosition(s.position).setQuaternion(s.rotation);
+                m->state.setPosition(s.position).setQuaternion(s.rotation).setScale(s.scale);
                 m->update();
             }
         });
 
 
         /***** LOGIC BASED SYSTEMS *****/
-        System<Gauges, Deplacement>([&](Entity &e, Gauges &g, Deplacement &depl)
+        System<Gauges, Movement>([&](Entity &e, Gauges &g, Movement &depl)
         {
             const float delta = globals.simulationTime.getDelta();
 
@@ -1919,7 +1826,7 @@ void Game::mainloop()
 
                 // physicsMutex.unlock();
 
-                entity.remove<DeplacementBehaviour>();
+                entity.remove<MovementBehaviour>();
                 entity.comp<ActionState>().lockType = ActionState::LockedMovement::SPEED_ONLY;
                 entity.comp<ActionState>().lockedMaxSpeed = 0;
                 entity.comp<MovementState>().speed = 0;

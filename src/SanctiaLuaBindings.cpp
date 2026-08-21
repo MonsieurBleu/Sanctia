@@ -15,6 +15,10 @@
 
 #include <Scripting/LuaBindingUtils.hpp>
 
+
+#include <JoltIntegration/PhysicsCommons.hpp>
+
+
 #undef CURRENT_CLASS_BINDING
 
 #define VBIND_ADD_ENTITY_COMPONENT(type) \
@@ -292,7 +296,7 @@ void VulpineLuaBindings::Entities(sol::state &lua)
     {
         VBIND_CREATE_CLASS        
         VBIND_ADD_CONSTRUCTORS((), ())
-        VBIND_ADD_MEMBERS(position, rotation)
+        VBIND_ADD_MEMBERS(position, rotation, scale, isActive)
     }
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
@@ -307,6 +311,28 @@ void VulpineLuaBindings::Entities(sol::state &lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
+    VBIND_CLASS_DECLARE_ALIAS(HierarchyState3D::SynchType, "HS3D_SynchType")
+    VBIND_ADD_ENUM(
+        "HS3D_SynchType",
+        ("NOTHING",         HierarchyState3D::NOTHING       ),
+        ("POS_ONLY",        HierarchyState3D::POS_ONLY      ),
+        ("ROT_ONLY",        HierarchyState3D::ROT_ONLY      ),
+        ("POS_AND_ROT",     HierarchyState3D::POS_AND_ROT   ),
+        ("SCALE_ONLY",      HierarchyState3D::SCALE_ONLY    ),
+        ("SCALE_AND_POS",   HierarchyState3D::SCALE_AND_POS ),
+        ("SCALE_AND_ROT",   HierarchyState3D::SCALE_AND_ROT ),
+        ("ALL",             HierarchyState3D::ALL           ),
+    )
+
+    VBIND_CLASS_DECLARE(HierarchyState3D)
+    #define CURRENT_CLASS_BINDING HierarchyState3D
+    {
+        VBIND_CREATE_CLASS        
+        VBIND_ADD_CONSTRUCTORS((), ())
+        VBIND_ADD_MEMBERS(position, rotation, scale, isActive)
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
     VBIND_CLASS_DECLARE_ALIAS(SoftGoal<vec3>, SoftGoal_vec3)
     #define CURRENT_CLASS_BINDING SoftGoal<vec3>
@@ -348,8 +374,8 @@ void VulpineLuaBindings::Entities(sol::state &lua)
     VBIND_CLASS_END
     #undef CURRENT_CLASS_BINDING
 
-    VBIND_CLASS_DECLARE(Deplacement)
-    #define CURRENT_CLASS_BINDING Deplacement
+    VBIND_CLASS_DECLARE(Movement)
+    #define CURRENT_CLASS_BINDING Movement
     {
         VBIND_CREATE_CLASS        
         VBIND_ADD_CONSTRUCTORS((), ())
@@ -677,7 +703,8 @@ void SanctiaLuaBindings::Entities(sol::state& lua)
                 Items,
                 State3D,
                 DynamicState3D,
-                Deplacement,
+                HierarchyState3D,
+                Movement,
                 ComplexMovements,
                 SkeletonAnimationState,
                 EntityModel
@@ -713,6 +740,31 @@ void SanctiaLuaBindings::Utils(sol::state &lua)
         (getClosestVisibleAlly, ()),
         (getClosestVisibleEnemy, ())
     );
+
+    VBIND_CLASS_DECLARE_ALIAS(JoltVulpine::Layers::Categories, PhysicLayer)
+    VBIND_ADD_ENUM(
+        "PhysicLayer",
+        ("ENVIRONEMENT", JoltVulpine::Layers::Categories::ENVIRONEMENT),
+        ("HIT_ZONE", JoltVulpine::Layers::Categories::HIT_ZONE),
+        ("PICK_UP", JoltVulpine::Layers::Categories::PICK_UP),
+        ("EDITOR1", JoltVulpine::Layers::Categories::EDITOR1),
+        ("EDITOR2", JoltVulpine::Layers::Categories::EDITOR2)
+    )
+
+    VBIND_CLASS_DECLARE_ALIAS(JoltVulpine::RaycastResult, RaycastResult)
+    #define CURRENT_CLASS_BINDING JoltVulpine::RaycastResult
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+
+        VBIND_ADD_MEMBERS(
+            hit, entity, point
+        )
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
+
+    VBIND_ADD_FUNCTION_ALIAS(simpleRayCast, JoltVulpine::simplRayCast, ("origin", "direction", "category"));
 }
 
 // TODO: make macro to automate this if necessary (might not be cause like how many globals do we even need?)

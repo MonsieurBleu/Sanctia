@@ -472,4 +472,23 @@ namespace Apps
 
             virtual void clean() override;
     };
+
+    class WorldEditorApp : public SubApps
+    {
+        private :
+
+            OrbitController orbitController;
+
+        public : 
+
+            WorldEditorApp();
+
+            virtual EntityRef UImenu() override;
+
+            virtual void init() override;
+
+            virtual void update() override;
+
+            virtual void clean() override;
+    };
 }

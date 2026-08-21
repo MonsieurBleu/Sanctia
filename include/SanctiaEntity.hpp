@@ -29,7 +29,6 @@
 #undef CURRENT_MAX_COMP_USAGE
 #define CURRENT_MAX_COMP_USAGE MAX_ENTITY
 
-
 EntityRef spawnEntity(const std::string &name, vec3 spawnPoint = vec3(0), quat rotation = quat(1, 0, 0, 0));
 
 bool isVisible(Entity &a, Entity &b);
@@ -153,7 +152,7 @@ Entity* getClosestVisibleAlly(Entity &e);
     #undef CURRENT_CATEGORY
     #define CURRENT_CATEGORY AI
 
-    Component(DeplacementBehaviour)
+    Component(MovementBehaviour)
 
     Component(AgentState__old)
 

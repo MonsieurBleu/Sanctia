@@ -861,16 +861,16 @@ DATA_READ_FUNC_ENTITY(RigidBody)
 }
 
 /******* IA COMPONENT *******/
-DATA_WRITE_FUNC_INIT(DeplacementBehaviour)
-    out->write(CONST_STRING_SIZED(DeplacementBehaviourReverseMap[data]));
+DATA_WRITE_FUNC_INIT(MovementBehaviour)
+    out->write(CONST_STRING_SIZED(MovementBehaviourReverseMap[data]));
 DATA_WRITE_END_FUNC
 
-DATA_READ_FUNC(DeplacementBehaviour)
+DATA_READ_FUNC(MovementBehaviour)
 { 
-    DATA_READ_INIT(DeplacementBehaviour)
-    data = DeplacementBehaviour::STAND_STILL;
+    DATA_READ_INIT(MovementBehaviour)
+    data = MovementBehaviour::STAND_STILL;
     const char *value = buff->read();
-    MAP_SAFE_READ(DeplacementBehaviourMap, buff, data, value)
+    MAP_SAFE_READ(MovementBehaviourMap, buff, data, value)
     buff->read();
     DATA_READ_END
 }

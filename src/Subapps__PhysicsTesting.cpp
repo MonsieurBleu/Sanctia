@@ -2,9 +2,10 @@
 #include <Subapps.hpp>
 #include <EntityBlueprint.hpp>
 
-#include <JoltIntegration/PhysicsDebugRenderer.hpp>
 
+#include <JoltIntegration/PhysicsDebugRenderer.hpp>
 #include <PlayerController2.hpp>
+#include <EnvironementGenerator.hpp>
 
 PlayerController2 playerControl;
 
@@ -20,9 +21,9 @@ Apps::PhysicsTestingApp::PhysicsTestingApp() : SubApps("Physics Testing")
             InputManager::Filters::always, false)
     );    
 
-    JoltVulpine::useVelocityBasedDeplacement = true;
+    JoltVulpine::useVelocityBasedMovement = true;
 
-    if(JoltVulpine::useVelocityBasedDeplacement)
+    if(JoltVulpine::useVelocityBasedMovement)
         NOTIF_MESSAGE("Using VERSION 2 deplacement")
     else 
         NOTIF_MESSAGE("Using VERSION 1 deplacement")
@@ -31,9 +32,9 @@ Apps::PhysicsTestingApp::PhysicsTestingApp() : SubApps("Physics Testing")
         InputManager::addEventInput(
             "input exemple", GLFW_KEY_F, 0, GLFW_PRESS, [&]() {
                 
-                JoltVulpine::useVelocityBasedDeplacement = !JoltVulpine::useVelocityBasedDeplacement;
+                JoltVulpine::useVelocityBasedMovement = !JoltVulpine::useVelocityBasedMovement;
 
-                if(JoltVulpine::useVelocityBasedDeplacement)
+                if(JoltVulpine::useVelocityBasedMovement)
                     NOTIF_MESSAGE("Using VERSION 2 deplacement")
                 else 
                     NOTIF_MESSAGE("Using VERSION 1 deplacement")
@@ -115,6 +116,35 @@ void Apps::PhysicsTestingApp::init()
     
     ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
     
+
+    bool spawnGrass = true;
+
+    if(spawnGrass)
+    {
+        const float areaSize = (4096-512);
+
+        // const float grassPatchSize = areaSize/sqrt(grassPatchCNT);
+        // const float grassPatchSize = 22;
+        const float grassPatchSize = 16;
+
+        for(float i = -areaSize*0.5; i <= areaSize*0.5; i+=grassPatchSize)
+        for(float j = -areaSize*0.5; j <= areaSize*0.5; j+=grassPatchSize)
+        {
+            vec2 pos = vec2(i, j);
+            float h0 = getTerrainHeight(pos);
+
+            ComponentModularity::addChild(*appRoot, spawnEntity(
+                // "Grass Patch 2",
+                "Grass Patch 4",
+                // "Grass Patch 5",
+                vec3(pos.y, h0, pos.x)
+            ));
+        }
+
+        // ComponentModularity::ReparentChildren(*appRoot);
+    }
+
+    
     // JoltVulpine::jPhysicsSystem->OptimizeBroadPhase();
 
     JoltVulpine::enablePhysics = true;
@@ -144,9 +174,9 @@ void Apps::PhysicsTestingApp::update()
     // NOTIF_MESSAGE(globals.currentCamera->getPosition())
     // NOTIF_MESSAGE(GG::playerEntity->comp<state3D>().position)
 
-    GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestSurface, 0.20);
+    // GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestSurface, 0.20);
     // GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestWall, 0.20, 0.f, ModelState3D(), vec3(1, 1, 0));
-    GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestEdge, 0.20, 0.f, ModelState3D(), vec3(1, 0.5, 0));
+    // GG::draw->drawSphere(GG::playerEntity->comp<ComplexMovements>().closestEdge, 0.20, 0.f, ModelState3D(), vec3(1, 0.5, 0));
 
     // NOTIF_MESSAGE(
     //     GG::playerEntity->comp<AnimationControllerRef>()->getCurrentAnimation()->getName()

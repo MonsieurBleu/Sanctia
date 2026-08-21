@@ -193,11 +193,14 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
     if(!(vulpineImportFlags & 1<<VEAC::SceneConvertOption::OBJECT_AS_ENTITY) && !(vulpineImportFlags & 1<<VEAC::SceneConvertOption::IGNORE_MESH))
     {
+        float meshQuantisizeScale = 1.0;
+
         for(int i = 0; i < scene->mNumMeshes; i++)
         {
             std::string fileName = VEAC::saveAsVulpineMesh(
                 *scene->mMeshes[i], 
                 bonesInfosMap, 
+                scale,
                 dirName, 
                 VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
             );
@@ -295,10 +298,13 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
 
                     std::cout << dirNameMesh << ".vMesh\n";
 
+                    float meshQuantisizeScale = 1.0;
+
                     std::string fileName = vulpineImportFlags & 1<<VEAC::SceneConvertOption::RETARGET_SKELETON && skeletonTarget.size() ?
                         VEAC::saveAsVulpineMesh(
                             *scene->mMeshes[mesh->mMeshes[0]], 
                             Loader<SkeletonRef>::get(skeletonTarget), 
+                            meshQuantisizeScale,
                             dirNameMesh, 
                             VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
                         )
@@ -306,6 +312,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         VEAC::saveAsVulpineMesh(
                             *scene->mMeshes[mesh->mMeshes[0]], 
                             bonesInfosMap, 
+                            meshQuantisizeScale,
                             dirNameMesh, 
                             VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
                         )
@@ -393,11 +400,11 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                             outModel->Entry();
                             WRITE_NAME(scalev3, outModel);
                             outModel->write("\"", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.x)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.x/meshQuantisizeScale)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.y)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.y/meshQuantisizeScale)));
                             outModel->write(" ", 1);
-                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.z)));
+                            outModel->write(CONST_STRING_SIZED(std::to_string(modelState.scale.z/meshQuantisizeScale)));
                             outModel->write("\"", 1);
 
                             outModel->Break();

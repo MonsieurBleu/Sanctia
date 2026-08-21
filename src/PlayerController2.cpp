@@ -25,7 +25,7 @@ bool isControllerActive()
         globals.currentCamera->getMouseFollow() and
         GG::playerEntity and
         GG::playerEntity->has<JoltBody>() and
-        GG::playerEntity->has<Deplacement>() and
+        GG::playerEntity->has<Movement>() and
         GG::playerEntity->has<State3D>() and
         GG::playerEntity->has<ComplexMovements>()
     ;
@@ -234,7 +234,7 @@ void PlayerController2::init()
         InputManager::addEventInput(
             "climb", GLFW_KEY_SPACE, 0, GLFW_PRESS, [&]() {
                 auto &move = GG::playerEntity->comp<ComplexMovements>();
-                auto &depl = GG::playerEntity->comp<Deplacement>();
+                auto &depl = GG::playerEntity->comp<Movement>();
                 auto &state = GG::playerEntity->comp<State3D>();
 
                 if(distance(move.closestSurface.y, state.position.y) > 0.5f)
@@ -282,7 +282,7 @@ void PlayerController2::update()
         !globals.currentCamera ||
         !GG::playerEntity ||
         !GG::playerEntity->has<JoltBody>() ||
-        !GG::playerEntity->has<Deplacement>() || 
+        !GG::playerEntity->has<Movement>() || 
         !GG::playerEntity->has<State3D>() ||
         !GG::playerEntity->has<SkeletonAnimationState>()
     ) 
@@ -290,7 +290,7 @@ void PlayerController2::update()
 
 
     auto &body  = GG::playerEntity->comp<JoltBody>();
-    auto &depl  = GG::playerEntity->comp<Deplacement>();
+    auto &depl  = GG::playerEntity->comp<Movement>();
     auto &state = GG::playerEntity->comp<State3D>();
     auto &ds = GG::playerEntity->comp<DynamicState3D>();
 
@@ -394,7 +394,7 @@ void PlayerController2::mouseEvent(vec2 dir, GLFWwindow* window)
         !globals.currentCamera ||
         !GG::playerEntity ||
         !GG::playerEntity->has<JoltBody>() ||
-        !GG::playerEntity->has<Deplacement>() || 
+        !GG::playerEntity->has<Movement>() || 
         !GG::playerEntity->has<State3D>()
     ) 
         return;
@@ -420,7 +420,7 @@ void PlayerController2::mouseEvent(vec2 dir, GLFWwindow* window)
         front.y = clamp(front.y, -0.8f, 0.8f);
 
 
-        GG::playerEntity->comp<Deplacement>().look.current = front;
+        GG::playerEntity->comp<Movement>().look.current = front;
 
 
         glfwSetCursorPos(window, center.x, center.y);

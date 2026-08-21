@@ -11,6 +11,94 @@
 #include <glm/gtx/string_cast.hpp>
 #include <reactphysics3d/mathematics/Vector3.h>
 
+#include <JoltIntegration/PhysicsCommons.hpp>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
+
+/*
+    TODO : move this code to engine, when all EntityModel code is moved
+*/
+void setEntityTransform(Entity &e, State3D s)
+{
+    if(!e.has<State3D>())
+        return; // bro is trying to update transform with no entity transform
+
+    if(e.has<State3D>()) e.comp<State3D>() = s;
+
+    bool isStatic = false;
+
+    // Updating physics body
+    #ifdef ECS_JOLT_PHYSICS_INTEGRATION
+    if(e.has<JoltBody>())
+    {
+        // setting up useful variables
+        auto isBodyActive = s.isActive == ModelStatus::HIDE ? JPH::EActivation::DontActivate : JPH::EActivation::Activate;
+        auto &interface = JoltVulpine::jPhysicsSystem->GetBodyInterface();
+        auto &b = e.comp<JoltBody>();
+        auto motionType = interface.GetMotionType(b);
+        isStatic = motionType == JPH::EMotionType::Static;
+
+        if(isBodyActive == JPH::EActivation::Activate and !interface.IsAdded(b))
+        {
+            interface.AddBody(b, JPH::EActivation::Activate);
+            // JoltVulpine::bodiesToAddMutex.lock();
+            // JoltVulpine::bodiesToAdd.push_back(b);
+            // JoltVulpine::bodiesToAddMutex.unlock();
+        }
+        
+        if(isBodyActive == JPH::EActivation::DontActivate and interface.IsAdded(b))
+        {
+            interface.RemoveBody(b);
+
+            // interface.DeactivateBody(b);
+            // ERROR_MESSAGE(e.comp<EntityInfos>().name)
+        }
+
+        // Updating the scale
+        auto shape = interface.GetShape(b);
+        if(shape->GetSubType() == JPH::EShapeSubType::Scaled)
+        {
+            shape = ((JPH::ScaledShape *)shape.GetPtr())->GetInnerShape();
+        }
+        shape = shape->ScaleShape(Vvec3(s.scale)).Get();
+        interface.SetShape(b, shape, true, isBodyActive);
+
+        // Updating pos and rot
+        // Note : we skip kinematic bodies because they are arleady synched each physic frame
+        if(motionType != JPH::EMotionType::Kinematic)
+            interface.SetPositionAndRotationWhenChanged(b, Vvec3(s.position), Vquat(s.rotation), isBodyActive);
+    }
+    #endif
+
+    // Updating 3D Model
+    if(e.has<EntityModel>())
+    {
+        auto m = e.comp<EntityModel>();
+
+        // Always Update hide status
+        if(m->state.hide != s.isActive)
+        {
+            m->state.setHideStatus(s.isActive);
+            m->propagateHideStatus();
+        }
+
+        // Update pos and rot
+        // Note : we are only doing it for static entities because of 2 reasons
+        // - Kynematic and Dynamic entities have game specific update code that runs each frame arleady
+        // - Static scene object need a special treament, because they are inserted inside the static scene octree.
+        //   For optimization reasons, the only way to move them is by removing them from the scene and re-adding them.
+        if(isStatic)
+        {
+            // if(m.inScene) globals.getScene()->remove(m);
+            
+            m->state.setPosition(s.position).setQuaternion(s.rotation).setScale(s.scale);
+            m->update();
+
+            // globals.getScene()->add(m, false, true);
+            // m.inScene = true;
+        }
+    }
+}
+
 void setEntityModelStaticFlagUniform(Entity *e)
 {
     // if(e->has<EntityModel>() and e->comp<EntityModel>() and e->has<PhysicsInfos>())
@@ -97,7 +185,7 @@ COMPONENT_DEFINE_REPARENT(State3D)
             model.inScene = false;
         }
         
-        model->state.setPosition(s.position).setQuaternion(s.rotation);
+        model->state.setPosition(s.position).setQuaternion(s.rotation).setScale(s.scale);
 
         model->update();
 

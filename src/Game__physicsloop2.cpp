@@ -102,21 +102,21 @@ void Game::physicsLoop2()
         Entity *e1 = (Entity*)inBody1.GetUserData();
         Entity *e2 = (Entity*)inBody1.GetUserData();
 
-        Entity *e = e1 && e1->has<Deplacement>() ? e1 : (e2 && e2->has<Deplacement>() ? e2 : nullptr);
+        Entity *e = e1 && e1->has<Movement>() ? e1 : (e2 && e2->has<Movement>() ? e2 : nullptr);
 
-        if(e and e->comp<Deplacement>().grounded.get())
+        if(e and e->comp<Movement>().grounded.get())
         {
-            if(JoltVulpine::useVelocityBasedDeplacement)
+            if(JoltVulpine::useVelocityBasedMovement)
             {
                 // return 0.25f;
-                return max(inBody1.GetFriction(), inBody2.GetFriction());
-                // return 0.f;
+                // return max(inBody1.GetFriction(), inBody2.GetFriction());
+                return 0.f;
             }
             else
             {
-                // return 1.f - dot(e->comp<Deplacement>().direction.current, e->comp<Deplacement>().direction.goal);
+                // return 1.f - dot(e->comp<Movement>().direction.current, e->comp<Movement>().direction.goal);
     
-                auto &depl = e->comp<Deplacement>();
+                auto &depl = e->comp<Movement>();
     
                 float d = max(0.f, dot(depl.direction.current, depl.direction.goal));
                 d = smoothstep(0.5f, 1.f, d);
@@ -221,7 +221,7 @@ void Game::physicsLoop2()
 		JoltVulpine::bodiesToAddMutex.lock();
         if(JoltVulpine::bodiesToAdd.size())
         {
-            NOTIF_MESSAGE("Adding ", JoltVulpine::bodiesToAdd.size(), " new bodies to the simulation.")
+            // NOTIF_MESSAGE("Adding ", JoltVulpine::bodiesToAdd.size(), " new bodies to the simulation.")
             auto btaInfo = JoltVulpine::jPhysicsSystem->GetBodyInterface().AddBodiesPrepare(
                 JoltVulpine::bodiesToAdd.data(),
                 JoltVulpine::bodiesToAdd.size()
@@ -245,7 +245,7 @@ void Game::physicsLoop2()
         JoltVulpine::physicsWorldUpdateTimer.stop();
         
         /* ........ POST PHYSIC UPDATE SYSTEMS ........ */
-        
+
         JoltVulpine::physicsSystemsTimer.start();
         System<KynematicFlag, JoltBody, State3D>([](Entity &e, KynematicFlag &k, JoltBody &b, State3D &s)
         {
@@ -254,6 +254,8 @@ void Game::physicsLoop2()
             */
             if(k)
             {
+                // NOTIF_MESSAGE(e.toStr(), "\n\t", s.position)
+                s.position = s.position + vec3(0.0, 0, 0);
                 JoltVulpine::jPhysicsSystem->GetBodyInterface().SetPositionAndRotation(
                     b, Vvec3(s.position), Vquat(s.rotation), JPH::EActivation::Activate
                 );
@@ -304,7 +306,7 @@ void Game::physicsLoop2()
         /*
             Manage complex movement like climbing
         */
-        System<ComplexMovements, Deplacement, JoltBody, State3D>([&](Entity &e, ComplexMovements &move, Deplacement &depl, JoltBody &body, State3D &state)
+        System<ComplexMovements, Movement, JoltBody, State3D>([&](Entity &e, ComplexMovements &move, Movement &depl, JoltBody &body, State3D &state)
         {
             auto &interface = JoltVulpine::jPhysicsSystem->GetBodyInterface();
 
@@ -445,7 +447,7 @@ void Game::physicsLoop2()
             collector.playerBody = body;
             Vvec3 direction = Vvec3(0, -3, 0);
 
-            Vvec3 extents = Vvec3(1.0*0.75, 0.25, 0.25);
+            Vvec3 extents = Vvec3(1.0, 0.25, 0.25);
             static auto box = JPH::RotatedTranslatedShapeSettings(
                 Vvec3(-extents*vec3(1, 1, 0)),
 
@@ -653,8 +655,8 @@ void Game::physicsLoop2()
                         if(normal.y < cos(radians(35.f)))
                         {
                             const Vvec3 color = hsv2rgb(vec3(0.1 + a*0.5, 1, 1));
-                            GG::draw->drawSphere(position, 0.05, 0.1f, ModelState3D(), color);
-                            GG::draw->drawLine(position, position+normal*0.4f, 0.1f, ModelState3D(), color);
+                            // GG::draw->drawSphere(position, 0.05, 0.1f, ModelState3D(), color);
+                            // GG::draw->drawLine(position, position+normal*0.4f, 0.1f, ModelState3D(), color);
 
                             closestEdge = position;
                             cnt ++;
@@ -742,13 +744,13 @@ void Game::physicsLoop2()
             // );
         });
 
-        System<Deplacement, JoltBody>([&](Entity &e, Deplacement &depl, JoltBody &body)
+        System<Movement, JoltBody>([&](Entity &e, Movement &depl, JoltBody &body)
         {
             if(!body.IsInvalid())
             {
                 Vvec3 vel = JoltVulpine::jPhysicsSystem->GetBodyInterface().GetLinearVelocity(body);
                 
-                auto &depl = e.comp<Deplacement>();
+                auto &depl = e.comp<Movement>();
 
                 depl.speed.current = glm::length(vec3(vel));
 
@@ -841,7 +843,7 @@ void Game::physicsLoop2()
 
                 if(depl.grounded.get() and not inJump)
                 {
-                    if(JoltVulpine::useVelocityBasedDeplacement)
+                    if(JoltVulpine::useVelocityBasedMovement)
                     {   
                         vec3 dir = depl.direction.goal;
 
@@ -849,7 +851,7 @@ void Game::physicsLoop2()
                         dir.y = -smoothstep(0.98f, 0.95f, slopeDir)*max(depDotNormal, 0.f);
 
                         interface.SetLinearVelocity(body, Vvec3(dir*speed));
-                        interface.SetMaxLinearVelocity(body, 1e3f);
+                        interface.SetMaxLinearVelocity(body, speed*length(depl.direction.goal));
 
                         // NOTIF_MESSAGE(dir)
                     }

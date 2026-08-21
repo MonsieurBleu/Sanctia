@@ -101,7 +101,7 @@ void Game::init(int paramSample)
 
     App::setController(nullptr);
 
-    ambientLight = vec3(0.1);
+    // ambientLight = vec3(0.1);
 
     camera.init(radians(70.0f), globals.windowWidth(), globals.windowHeight(), 0.1f, 1E5f);
     // camera.setMouseFollow(false);
@@ -245,7 +245,7 @@ void Game::init(int paramSample)
     
     glfwSwapInterval(0);
 
-    ambientLight = vec3(0.07);
+    ambientLight = vec3(0.15);
 
 
 

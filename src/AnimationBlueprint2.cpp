@@ -23,37 +23,37 @@
 
 bool isEntityViable(Entity *e)
 {
-    return e and e->has<Deplacement>();
+    return e and e->has<Movement>();
 };
 
 ANIMATION_SWITCH_ENTITY(switchIdle, 
     if(!isEntityViable(e)) return false;
-    float speed = e->comp<Deplacement>().speed.current;
+    float speed = e->comp<Movement>().speed.goal * length(e->comp<Movement>().direction.goal);
     return speed <= 1e-3f;
 )
 
 
 ANIMATION_SWITCH_ENTITY(switchWalk, 
     if(!isEntityViable(e)) return false;
-    float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.current);
-    // float speed = e->comp<Deplacement>().speed.current;
-    auto &dep = e->comp<Deplacement>();
-    return speed > 0.01f and speed <= mix(dep.walkSpeed, dep.jogSpeed, 0.6f);
+    float speed = e->comp<Movement>().speed.goal * length(e->comp<Movement>().direction.goal);
+    // float speed = e->comp<Movement>().speed.current;
+    auto &dep = e->comp<Movement>();
+    return speed > 0.1f and speed <= mix(dep.walkSpeed, dep.jogSpeed, 0.6f);
 )
 
 ANIMATION_SWITCH_ENTITY(switchJog, 
     if(!isEntityViable(e)) return false;
-    float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.current);
-    // float speed = e->comp<Deplacement>().speed.current;
-    auto &dep = e->comp<Deplacement>();
-    return speed > mix(dep.walkSpeed, dep.jogSpeed, 0.6f) and speed <= e->comp<Deplacement>().sprintSpeed*0.9f;
+    float speed = e->comp<Movement>().speed.goal * length(e->comp<Movement>().direction.goal);
+    // float speed = e->comp<Movement>().speed.current;
+    auto &dep = e->comp<Movement>();
+    return speed > mix(dep.walkSpeed, dep.jogSpeed, 0.6f) and speed <= e->comp<Movement>().sprintSpeed*0.9f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchRun, 
     if(!isEntityViable(e)) return false;
-    float speed = e->comp<Deplacement>().speed.goal * length(e->comp<Deplacement>().direction.current);
-    // float speed = e->comp<Deplacement>().speed.current;
-    return speed >= e->comp<Deplacement>().sprintSpeed*0.9f;
+    float speed = e->comp<Movement>().speed.goal * length(e->comp<Movement>().direction.goal);
+    // float speed = e->comp<Movement>().speed.current;
+    return speed >= e->comp<Movement>().sprintSpeed*0.9f;
 )
 
 ANIMATION_SWITCH_ENTITY(switchClimb, 
@@ -81,19 +81,33 @@ ANIMATION_SWITCH_ENTITY(switchJump,
     return e->comp<ComplexMovements>().jump.getCurrent() and e->comp<ComplexMovements>().jump.timeSinceGoalMet() < 0.1;
 )
 
+ANIMATION_SWITCH_ENTITY(switchJumpEnd, 
+    if(!isEntityViable(e)) return false;
+
+    // WARNING_MESSAGE(
+    //     PRINTVAR(e->comp<Movement>().grounded.get()),
+    //     PRINTVAR(e->comp<ComplexMovements>().jump.timeSinceGoalMet()),
+    //     PRINTVAR(e->comp<ComplexMovements>().jump.timeSinceGoalChange())
+    // )
+
+    return e->comp<Movement>().grounded.get() and e->comp<ComplexMovements>().jump.timeSinceGoalMet() > 0.25;
+)
+
+
 ANIMATION_SWITCH_ENTITY(switchFalling, 
     if(!isEntityViable(e)) return false;
-    return !e->comp<Deplacement>().grounded.get() and e->comp<Deplacement>().grounded.timeSinceChange() > 0.1;
+    return !e->comp<Movement>().grounded.get() and e->comp<Movement>().grounded.timeSinceChange() > 0.1;
 )
 
 ANIMATION_SWITCH_ENTITY(switchLand, 
     if(!isEntityViable(e)) return false;
-    return e->comp<Deplacement>().grounded.get() and e->comp<Deplacement>().grounded.previousTimeSinceChange() > 0.75;
+    return e->comp<Movement>().grounded.get() and e->comp<Movement>().grounded.previousTimeSinceChange() > 0.75;
 )
 
 ANIMATION_SWITCH_ENTITY(switchLandEnd, 
     if(!isEntityViable(e)) return false;
-    return e->comp<Deplacement>().grounded.get() and e->comp<Deplacement>().grounded.timeSinceChange() > 1.0;
+    // return e->comp<Movement>().grounded.get() and e->comp<Movement>().grounded.timeSinceChange() > 1.0;
+    return e->comp<Movement>().grounded.get() and e->comp<Movement>().grounded.timeSinceChange() > 0.20;
 )
 
 AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & prefix, Entity *e)
@@ -107,11 +121,13 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
     LOAD_ANIM_FROM_PREFIX(ClimbPlatform)
 
     LOAD_ANIM_FROM_PREFIX(Jump)
+    LOAD_ANIM_FROM_PREFIX(JumpF)
     LOAD_ANIM_FROM_PREFIX(Falling)
     LOAD_ANIM_FROM_PREFIX(Land)
 
     float deplacementTT = 0.25;
     float stuntTT = 0.25;
+    float jumpTT = 0.125;
 
     auto walkCallback = [](float f, void *usr)
     {
@@ -121,7 +137,7 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
             return 1.f;
         }
         Entity *e = (Entity*)usr;
-        auto &dep = e->comp<Deplacement>();
+        auto &dep = e->comp<Movement>();
 
         float s = sign(dot(dep.direction.current, dep.look.current) + 0.5f);
 
@@ -142,7 +158,7 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
             return 1.f;
         }
         Entity *e = (Entity*)usr;
-        auto &dep = e->comp<Deplacement>();
+        auto &dep = e->comp<Movement>();
 
         float s = sign(dot(dep.direction.current, dep.look.current) + 0.5f);
 
@@ -167,7 +183,7 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
             return 1.f;
         }
         Entity *e = (Entity*)usr;
-        auto &dep = e->comp<Deplacement>();
+        auto &dep = e->comp<Movement>();
 
         float s = sign(dot(dep.direction.current, dep.look.current) + 0.5f);
 
@@ -214,19 +230,27 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
         Jump->speedCallback = [l](float f, void *usr)
         {
             Entity *e = (Entity*)usr;
-            if(!e or !e->has<ComplexMovements>()) return l/0.5f;
-            return e->comp<ComplexMovements>().climbAnimSpeed * l/0.5f;
+            return l/0.6f;
         };
         Jump->repeat = false;
     }
     
     {
+        float l = JumpF->getLength();
+        JumpF->speedCallback = [l](float f, void *usr)
+        {
+            Entity *e = (Entity*)usr;
+            return l/0.6f;
+        };
+        JumpF->repeat = false;
+    }
+
+    {
         float l = Land->getLength();
         Land->speedCallback = [l](float f, void *usr)
         {
             Entity *e = (Entity*)usr;
-            if(!e or !e->has<ComplexMovements>()) return l/1.0f;
-            return e->comp<ComplexMovements>().climbAnimSpeed * l/1.0f;
+            return l/1.0f;
         };
         Land->repeat = false;
     }
@@ -242,7 +266,7 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
         ACT(Idle, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
         ACT(Idle, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
         ACT(Idle, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
-        // ACT(Idle, Jump, stuntTT, switchJump),
+        ACT(Idle, Jump, jumpTT, switchJump),
         ACT(Idle, Falling, stuntTT, switchFalling),
 
         /* FROM WALK */
@@ -252,7 +276,7 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
         ACT(Walk, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
         ACT(Walk, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
         ACT(Walk, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
-        // ACT(Walk, Jump, stuntTT, switchJump),
+        ACT(Walk, Jump, jumpTT, switchJump),
         ACT(Walk, Falling, stuntTT, switchFalling),
 
         /* FROM JOG */
@@ -262,7 +286,7 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
         ACT(Jog, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
         ACT(Jog, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
         ACT(Jog, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
-        // ACT(Jog, Jump, stuntTT, switchJump),
+        ACT(Jog, JumpF, jumpTT, switchJump),
         ACT(Jog, Falling, stuntTT, switchFalling),
 
         /* FROM RUN */
@@ -272,7 +296,7 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
         ACT(Run, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
         ACT(Run, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
         ACT(Run, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
-        // ACT(Run, Jump, stuntTT, switchJump),
+        ACT(Run, JumpF, jumpTT, switchJump),
         ACT(Run, Falling, stuntTT, switchFalling),
 
         /* FROM CLIMB */
@@ -295,7 +319,26 @@ AnimationControllerRef AnimBlueprint::Human::ParkourMoveset(const std::string & 
 
 
         /* FROM JUMP */
-        // AnimationControllerTransition(Jump, Falling, COND_ANIMATION_FINISHED, stuntTT),
+        ACT(Jump, Land, stuntTT, AND_ANIMATION_SWITCH(switchLand, switchJumpEnd)),
+        ACT(Jump, Idle, stuntTT, AND_ANIMATION_SWITCH(switchIdle, switchJumpEnd)),
+        ACT(Jump, Run,  stuntTT, AND_ANIMATION_SWITCH(switchRun,  switchJumpEnd)),
+        ACT(Jump, Jog,  stuntTT, AND_ANIMATION_SWITCH(switchJog,  switchJumpEnd)),
+        ACT(Jump, Walk, stuntTT, AND_ANIMATION_SWITCH(switchWalk, switchJumpEnd)),
+        ACT(Jump, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(Jump, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(Jump, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        AnimationControllerTransition(Jump, Falling, COND_ANIMATION_FINISHED, stuntTT),
+
+        /* FROM JUMP FORWARD */
+        ACT(JumpF, Land, stuntTT, AND_ANIMATION_SWITCH(switchLand, switchJumpEnd)),
+        ACT(JumpF, Idle, stuntTT, AND_ANIMATION_SWITCH(switchIdle, switchJumpEnd)),
+        ACT(JumpF, Run,  stuntTT, AND_ANIMATION_SWITCH(switchRun,  switchJumpEnd)),
+        ACT(JumpF, Jog,  stuntTT, AND_ANIMATION_SWITCH(switchJog,  switchJumpEnd)),
+        ACT(JumpF, Walk, stuntTT, AND_ANIMATION_SWITCH(switchWalk, switchJumpEnd)),
+        ACT(JumpF, Climb, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbHigh)),
+        ACT(JumpF, ClimbLow, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbLow)),
+        ACT(JumpF, ClimbPlatform, stuntTT, AND_ANIMATION_SWITCH(switchClimb, switchClimbPlatform)),
+        AnimationControllerTransition(JumpF, Falling, COND_ANIMATION_FINISHED, stuntTT),
 
         /* FROM FALLING */
         ACT(Falling, Land, stuntTT, AND_ANIMATION_SWITCH(switchLand, INV_ANIMATION_SWITCH(switchFalling))),

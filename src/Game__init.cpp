@@ -245,7 +245,7 @@ void Game::init(int paramSample)
     
     glfwSwapInterval(0);
 
-    ambientLight = vec3(0.15);
+    ambientLight = vec3(0.08);
 
 
 

@@ -129,7 +129,8 @@ void Game::mainloop()
 
     GlobalComponentToggler<LevelOfDetailsInfos>::activated = true;
 
-    // renderBuffer.clearColor = VulpineColorUI::DarkBackgroundColor2;
+    // renderBuffer.clearColor = VulpineColorUI::DarkBackgroundCol<or2;
+    // screenBuffer2D.clearColor = VulpineColorUI::DarkBackgroundColor2Opaque;
 
 
     /****** Setting Up Debug UI *******/
@@ -153,7 +154,7 @@ void Game::mainloop()
                     , WidgetUI_Context{&ui}
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(-1.1 + widgetTileSPace, -1 - widgetTileSPace))
-                    , WidgetBackground()
+                    // , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ), 
             EDITOR::MENUS::AppControl = 
@@ -161,7 +162,7 @@ void Game::mainloop()
                     , WidgetUI_Context{&ui}
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + widgetTileSPace, 1.f + widgetTileSPace + controLWidgetSize))
-                    , WidgetBackground()
+                    // , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ),
             EDITOR::MENUS::GlobalControl = 
@@ -169,7 +170,7 @@ void Game::mainloop()
                     , WidgetUI_Context{&ui}
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + 2.f*widgetTileSPace + controLWidgetSize, 1.f + 2.f*widgetTileSPace + 2.f*controLWidgetSize))
-                    , WidgetBackground()
+                    // , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1).setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                     ),
             EDITOR::MENUS::GlobalInfos =
@@ -177,7 +178,7 @@ void Game::mainloop()
                     , WidgetUI_Context{&ui}
                     , WidgetState()
                     , WidgetBox(vec2(-1, 1 - widgetTileSPace), vec2(1.f + 3.f*widgetTileSPace + 2.f*controLWidgetSize, 1.9-widgetTileSPace))
-                    , WidgetBackground()
+                    // , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
                     ),
             EDITOR::MENUS::AppMenu =
@@ -185,7 +186,7 @@ void Game::mainloop()
                     , WidgetUI_Context{&ui}
                     , WidgetState()
                     , WidgetBox(vec2(-2 + widgetTileSPace, -1 - widgetTileSPace), vec2(-1.1 + widgetTileSPace, 1.9-widgetTileSPace))
-                    , WidgetBackground()
+                    // , WidgetBackground()
                     , WidgetStyle().setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
                     ),
                 }
@@ -216,19 +217,19 @@ void Game::mainloop()
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(globals.appTime, VulpineColorUI::HightlightColor1)
+    //     VulpineBlueprintUI::TimerPlot(globals.appTime, VulpineColorUI::HightlightColorOrange)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(physicsTimer, VulpineColorUI::HightlightColor2)
+    //     VulpineBlueprintUI::TimerPlot(physicsTimer, VulpineColorUI::HightlightColorCyan)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(globals.cpuTime, VulpineColorUI::HightlightColor3)
+    //     VulpineBlueprintUI::TimerPlot(globals.cpuTime, VulpineColorUI::HightlightColorPink)
     // );
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalInfos,
-    //     VulpineBlueprintUI::TimerPlot(globals.gpuTime, VulpineColorUI::HightlightColor4)
+    //     VulpineBlueprintUI::TimerPlot(globals.gpuTime, VulpineColorUI::HightlightColorYellow)
     // );
 
     float TitleTabSize = 0.775f;
@@ -237,7 +238,7 @@ void Game::mainloop()
         , WidgetUI_Context{&ui}
         , WidgetState()
         , WidgetBox(vec2(-1, 1), vec2(-1, -TitleTabSize))
-        , WidgetBackground()
+        // , WidgetBackground()
         , WidgetStyle()
             .setautomaticTabbing(1)
             .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
@@ -255,6 +256,8 @@ void Game::mainloop()
             // .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
+    SubApps::GlobalInfosTitleTab = GlobalInfosTitleTab;
+    SubApps::GlobalInfosSubTab = GlobalInfosSubTab;
 
 
     VulpineBlueprintUI::AddToSelectionMenu(
@@ -335,7 +338,7 @@ void Game::mainloop()
                             , WidgetBox(vec2(-1, -0.5), vec2(-1, 1))
                             , WidgetText(UFTconvert.from_bytes(category))
                             , WidgetStyle()
-                                .settextColor1(VulpineColorUI::HightlightColor1)
+                                .settextColor1(VulpineColorUI::HightlightColorOrange)
                         ));
                         
                         auto &box = e->comp<WidgetBox>();
@@ -347,7 +350,7 @@ void Game::mainloop()
                             , WidgetBox(vec2(0.5, 1), vec2(-1, 1))
                             , WidgetText(UFTconvert.from_bytes(inputstr))
                             , WidgetStyle()
-                                .settextColor1(VulpineColorUI::HightlightColor2)
+                                .settextColor1(VulpineColorUI::HightlightColorCyan)
                         ));
                     }
                 }
@@ -456,7 +459,7 @@ void Game::mainloop()
     // EDITOR::MENUS::AppControl->comp<WidgetStyle>().setautomaticTabbing(1);
     EDITOR::MENUS::AppChoice->comp<WidgetStyle>()
         .setautomaticTabbing(1)
-        .setuseInternalSpacing(true)
+        // .setuseInternalSpacing(true)
     ;
     EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
 
@@ -819,6 +822,7 @@ void Game::mainloop()
         screenBuffer2D.bindTexture(0, 7);
         paintShaderPass.getFBO().bindTexture(2, 8);
         paintShaderPass.FBO_AO.bindTexture(0, 3);
+        paintShaderPass.FBO_Exposure_3.bindTexture(0, 9);
         ShaderUniform(&GG::skyboxType, 25).activate();
         // WARNING_MESSAGE(paintShaderPass.getFBO().getNBtextures())
         globals.drawFullscreenQuad();
@@ -878,6 +882,10 @@ void Game::mainloop()
                 paintShaderPass.cloudShader.reset();
                 paintShaderPass.bloomShader.reset();
                 paintShaderPass.aoShader.reset();
+                paintShaderPass.exposureShaderPass1.reset();
+                paintShaderPass.exposureShaderPass2.reset();
+                paintShaderPass.exposureShaderPass3.reset();
+                paintShaderPass.exposureShaderPassCOPY.reset();
 
                 ui.fontMaterial->reset();
                 defaultSUIMaterial->reset();
@@ -1348,7 +1356,7 @@ void Game::mainloop()
             auto &model = entity.comp<EntityModel>();
             if(!model) return;
 
-            if(model->getChildren().size() || model->state.hide == ModelStatus::HIDE) return;
+            if(model->getChildren().size() <= 1 || model->state.hide == ModelStatus::HIDE) return;
 
             if(!entity.has<LevelOfDetailsInfos>()) entity.set<LevelOfDetailsInfos>(LevelOfDetailsInfos());
             
@@ -2336,6 +2344,8 @@ void Game::mainloop()
     gameScreenWidget = 
     GlobalInfosTitleTab = 
     GlobalInfosSubTab =
+    SubApps::GlobalInfosTitleTab =
+    SubApps::GlobalInfosSubTab = 
     EDITOR::MENUS::GameScreen =
     EDITOR::MENUS::AppChoice =
     EDITOR::MENUS::AppControl=

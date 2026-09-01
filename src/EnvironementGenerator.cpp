@@ -23,7 +23,7 @@ BiomeInfos& Loader<BiomeInfos>::loadFromInfos()
     EXIT_ROUTINE_AND_RETURN
 }
 
-AUTOGEN_DATA_RW_FUNC_STRUCT(EntityScatterer::SpawnInfo, 
+AUTOGEN_DATA_RW_FUNC_STRUCT_AN(EntityScatterer::SpawnInfo, 
     (
         scaleRangeMin,
         scaleRangeMax,
@@ -69,7 +69,7 @@ DATA_READ_FUNC_INIT(std::vector<EntityScatterer::SpawnInfo>)
 
 DATA_READ_END_FUNC
 
-AUTOGEN_DATA_RW_FUNC_STRUCT(EntityScatterer,
+AUTOGEN_DATA_RW_FUNC_STRUCT_AN(EntityScatterer,
     (
         rangeMin,
         rangeMax,
@@ -142,7 +142,7 @@ float getTerrainHeight(vec2 pos)
     ivec2 pixelPos = ivec2(round(2048.f + pos));
 
     const ivec2 res = terrain.getResolution();
-    pixelPos = clamp(pixelPos, ivec2(0), res);
+    pixelPos = clamp(pixelPos, ivec2(0), res-1);
 
     return pixels[pixelPos.x*res.x + pixelPos.y]*512.f;
 }

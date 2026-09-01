@@ -3,6 +3,9 @@
 #include <AssetManager.hpp>
 #include <GameGlobals.hpp>
 
+int autoExposureDownscale = 16;
+int autoExposureDownscale2 = 16*4;
+
 DefferedBuffer::DefferedBuffer(const ivec2 *resolution) : RenderBuffer(resolution)
 {
 }
@@ -15,7 +18,7 @@ void DefferedBuffer::generate()
         .addTexture(
             Texture2D() // COLOR 
                 .setResolution(*resolution)
-                .setInternalFormat(GL_SRGB)
+                .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
                 .setFilter(GL_LINEAR)
@@ -52,7 +55,7 @@ void DefferedBuffer::generate()
         .addTexture(
             Texture2D() // EMISSIVE
                 .setResolution(*resolution)
-                .setInternalFormat(GL_SRGB)
+                .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
                 .setFilter(GL_LINEAR)
@@ -62,7 +65,7 @@ void DefferedBuffer::generate()
         .addTexture(
             Texture2D() // SRGB BUFFER
                 .setResolution(*resolution)
-                .setInternalFormat(GL_SRGB)
+                .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
                 .setFilter(GL_LINEAR)
@@ -192,6 +195,30 @@ void PaintShaderPass::setup()
         globals.standartShaderUniform3D())
         .addUniform(ShaderUniform((vec3*)&ssaoKernel[0], 16).setCount(64));
 
+    exposureShaderPass1 = ShaderProgram(
+        Loader<ShaderFragPath>::get("Auto Exposure Pass 1").path,
+        Loader<ShaderVertPath>::get("PP_basic").path,
+        "",
+        globals.standartShaderUniform3D());
+
+    exposureShaderPass2 = ShaderProgram(
+        Loader<ShaderFragPath>::get("Auto Exposure Pass 2").path,
+        Loader<ShaderVertPath>::get("PP_basic").path,
+        "",
+        globals.standartShaderUniform3D());
+
+    exposureShaderPass3 = ShaderProgram(
+        Loader<ShaderFragPath>::get("Auto Exposure Pass 3").path,
+        Loader<ShaderVertPath>::get("PP_basic").path,
+        "",
+        globals.standartShaderUniform3D());
+
+    exposureShaderPassCOPY = ShaderProgram(
+        Loader<ShaderFragPath>::get("Auto Exposure Pass COPY").path,
+        Loader<ShaderVertPath>::get("PP_basic").path,
+        "",
+        globals.standartShaderUniform3D());
+
     FBO
         .addTexture(
             Texture2D() // COLOR SRGB BUFFER
@@ -281,6 +308,61 @@ void PaintShaderPass::setup()
                 .setAttachement(GL_COLOR_ATTACHMENT0))
         .generate();
 
+    
+    FBO_Exposure_1
+        .addTexture(
+            Texture2D()
+                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale)
+                .setInternalFormat(GL_R8)
+                .setFormat(GL_RED)
+                .setPixelType(GL_UNSIGNED_BYTE)
+                .setFilter(GL_LINEAR)
+                .setWrapMode(GL_CLAMP_TO_EDGE)
+                .setAttachement(GL_COLOR_ATTACHMENT0)
+            )
+        .generate();
+
+    FBO_Exposure_2
+        .addTexture(
+            Texture2D() 
+                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale2)
+                .setInternalFormat(GL_R8)
+                .setFormat(GL_RED)
+                .setPixelType(GL_UNSIGNED_BYTE)
+                .setFilter(GL_LINEAR)
+                .setWrapMode(GL_CLAMP_TO_EDGE)
+                .setAttachement(GL_COLOR_ATTACHMENT0)
+            )
+        .generate();
+
+    FBO_Exposure_3
+        .addTexture(
+            Texture2D() 
+                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale2)
+                .setInternalFormat(GL_R32F)
+                .setFormat(GL_RED)
+                .setPixelType(GL_FLOAT)
+                .setFilter(GL_LINEAR)
+                .setWrapMode(GL_CLAMP_TO_EDGE)
+                .setAttachement(GL_COLOR_ATTACHMENT0)
+            )
+        .generate();
+    
+    FBO_Exposure_3.clearColor = vec4(1);
+
+    FBO_Exposure_COPY
+        .addTexture(
+            Texture2D() 
+                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale2)
+                .setInternalFormat(GL_R32F)
+                .setFormat(GL_RED)
+                .setPixelType(GL_FLOAT)
+                .setFilter(GL_LINEAR)
+                .setWrapMode(GL_CLAMP_TO_EDGE)
+                .setAttachement(GL_COLOR_ATTACHMENT0)
+            )
+        .generate();
+
     enable();
 }
 
@@ -293,11 +375,15 @@ void PaintShaderPass::render(Camera &camera)
         Texture2D &EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
 
         FBO.resizeAll(globals.renderSize());
-        FBO_Bloom.resizeAll(globals.renderSize()/2);
-        FBO_Clouds.resizeAll(globals.renderSize()/2);
+        FBO_Bloom.resizeAll(globals.windowSize()/2);
+        FBO_Clouds.resizeAll(globals.windowSize()/2);
         FBO_CopyAndDeform.resizeAll(defferedBuffer.getTexture(0).getResolution());
-        FBO_AO.resizeAll(globals.renderSize()/4);
+        FBO_AO.resizeAll(globals.windowSize()/4);
 
+        FBO_Exposure_1.resizeAll(globals.windowSize()/autoExposureDownscale);
+        FBO_Exposure_2.resizeAll(globals.windowSize()/autoExposureDownscale2);
+        FBO_Exposure_3.resizeAll(globals.windowSize()/autoExposureDownscale2);
+        FBO_Exposure_COPY.resizeAll(globals.windowSize()/autoExposureDownscale2);
 
         glEnable(GL_FRAMEBUFFER_SRGB);
         glDisable(GL_DEPTH_TEST);
@@ -350,9 +436,67 @@ void PaintShaderPass::render(Camera &camera)
         FBO_Clouds.deactivate();
         cloudShader.deactivate();
         
+        /*
+            PASS 3 : auto exposure
+        */
+        if(enableExposure)
+        {
+            FBO_Exposure_1.activate();
+            exposureShaderPass1.activate();
+            FBO.bindTexture(0, 0);
+
+            globals.drawFullscreenQuad();
+
+            FBO_Exposure_1.deactivate();
+            exposureShaderPass1.deactivate();
+
+
+
+            FBO_Exposure_2.activate();
+            exposureShaderPass2.activate();
+            FBO_Exposure_1.bindTexture(0, 0);
+
+            globals.drawFullscreenQuad();
+
+            FBO_Exposure_2.deactivate();
+            exposureShaderPass2.deactivate();
+
+
+
+            FBO_Exposure_3.activate();
+            exposureShaderPass3.activate();
+            FBO_Exposure_2.bindTexture(0, 0);
+            FBO_Exposure_COPY.bindTexture(0, 1);
+            
+            static float delta = 0.f;
+            delta = globals.simulationTime.getDelta();
+            ShaderUniform(&delta, 32).activate();
+            globals.drawFullscreenQuad();
+
+            FBO_Exposure_3.deactivate();
+            exposureShaderPass3.deactivate();
+
+
+
+            FBO_Exposure_COPY.activate();
+            exposureShaderPassCOPY.activate();
+            FBO_Exposure_3.bindTexture(0, 0);
+
+            globals.drawFullscreenQuad();
+
+            FBO_Exposure_COPY.deactivate();
+            exposureShaderPassCOPY.deactivate();
+        }
+        else
+        {
+            FBO_Exposure_3.activate();
+            glClear(0);
+            FBO_Exposure_3.deactivate();
+        }
+
 
         /*
-            PASS 3 : Bloom
+            PASS 4 : Bloom
         */
         if(enableBloom)
         {
@@ -360,7 +504,7 @@ void PaintShaderPass::render(Camera &camera)
             bloomShader.activate();
             
             // defferedBuffer.bindTexture(RENDER_BUFFER_COLOR_TEXTURE_ID,    0);
-            // FBO.bindTexture(0, 0);
+            FBO.bindTexture(0, 0);
             defferedBuffer.bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,    1);
             // defferedBuffer.bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID,   2);
             // defferedBuffer.bindTexture(MATERIAL_POS_ID,                   4);
@@ -372,6 +516,7 @@ void PaintShaderPass::render(Camera &camera)
             // Loader<Texture2D>::get("nebula blur").bind(8);
             // Loader<Texture2D>::get("small nebula").bind(9);
             // EnvironementMap.bind(10);
+            FBO_Exposure_3.bindTexture(0, 9);
             
             globals.drawFullscreenQuad();
     
@@ -386,7 +531,7 @@ void PaintShaderPass::render(Camera &camera)
         }
 
         /*
-            PASS 4 : SSAO
+            PASS 5 : SSAO
         */
         if(enableAO)
         {
@@ -414,8 +559,9 @@ void PaintShaderPass::render(Camera &camera)
             FBO_AO.deactivate();
         }
 
+
         /*
-            PASS 5 : copying the bloom results
+            PASS 6 : copying the bloom results
         */
         copyShader.activate();
         FBO_CopyAndDeform.activate();
@@ -430,6 +576,7 @@ void PaintShaderPass::render(Camera &camera)
 
         FBO_CopyAndDeform.deactivate();
         copyShader.deactivate();
+
 
         glDisable(GL_FRAMEBUFFER_SRGB);
     }

@@ -154,15 +154,20 @@ EntityRef Blueprint::Terrain(
         float maxV = -1e6;
 
         for(int j = 0; j < dsize; j++)
-        for(int i = 0; i < dsize; i++)
         {
-            int id = i * dsize + j;
-            heightData[id] = src[((i + iuvmin.y)*textureSize.x + j + iuvmin.x)];
-
-            minV = min(heightData[id], minV);
-            maxV = max(heightData[id], maxV);
-
-            // std::cout << heightData[i*dsize + j] << "\n";
+            // NOTIF_MESSAGE(PRINTVAR(j), PRINTVAR(dsize), PRINTVAR(textureSize))
+            for(int i = 0; i < dsize; i++)
+            {
+                int id = i * dsize + j;
+                int id2 = ((i + iuvmin.y)*textureSize.x + j + iuvmin.x);
+                id2 = min(id2, textureSize.x*textureSize.y);
+                heightData[id] = src[id2];
+    
+                minV = min(heightData[id], minV);
+                maxV = max(heightData[id], maxV);
+    
+                // std::cout << heightData[i*dsize + j] << "\n";
+            }
         }
 
         // float halfHeight = (-(maxV - minV)*0.5 - minV) + 0.5;

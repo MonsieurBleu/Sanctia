@@ -106,7 +106,7 @@ EntityRef Apps::EventGraphApp::UImenu()
         , UI_BASE_COMP
         , WidgetBox()
         // , WidgetStyle()
-        //     .settextColor1(VulpineColorUI::HightlightColor1)
+        //     .settextColor1(VulpineColorUI::HightlightColorOrange)
         // , WidgetText(std::u32string(U"hello :)"))
         // , WidgetBackground()
     );

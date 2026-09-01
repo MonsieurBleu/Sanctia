@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Controller.hpp"
+#include <EditorControllers.hpp>
 #include <SanctiaEntity.hpp>
 #include <EventGraph.hpp>
 #include <VEAC/vulpineFormats.hpp>
@@ -49,6 +50,9 @@ class SubApps
         static void UpdateApps();
 
         static void cleanActiveApp();
+
+        static inline EntityRef GlobalInfosTitleTab;
+        static inline EntityRef GlobalInfosSubTab;
 
         static EntityRef getCurrentRoot()
         {
@@ -477,7 +481,7 @@ namespace Apps
     {
         private :
 
-            OrbitController orbitController;
+            EditorTerrainControler orbitController;
 
         public : 
 

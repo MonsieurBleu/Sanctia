@@ -135,7 +135,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
     //     }   
     // }
 
-    std::string dirName = "data/[0] Export/Asset Convertor/[0] " + getNameOnlyFromPath(path.c_str()) + "/";
+    std::string dirName = "data/[0] Export/Asset Convertor/" + getNameOnlyFromPath(path.c_str()) + "/";
     std::filesystem::create_directory(dirName);
 
     Stencil_BoneMap bonesInfosMap;
@@ -774,7 +774,7 @@ EntityRef Apps::AssetListViewer::UImenu()
             return 0.f;
         },
         0.f,
-        VulpineColorUI::HightlightColor6,
+        VulpineColorUI::HightlightColorGreen,
         1.f/16.f
     );
 
@@ -789,7 +789,7 @@ EntityRef Apps::AssetListViewer::UImenu()
             return e->comp<EntityInfos>().name == skeletonTarget ? 0. : 1.;
         },
         -1,
-        VulpineColorUI::HightlightColor5,
+        VulpineColorUI::HightlightColorPurple,
         1.f/8.f
     );
 
@@ -804,7 +804,7 @@ EntityRef Apps::AssetListViewer::UImenu()
             return e->comp<EntityInfos>().name == retargetMethode ? 0. : 1.;
         },
         -1,
-        VulpineColorUI::HightlightColor4,
+        VulpineColorUI::HightlightColorYellow,
         1.f/8.f
     );
 
@@ -857,7 +857,7 @@ EntityRef Apps::AssetListViewer::UImenu()
 
             return 0.f;
         },
-        VulpineColorUI::HightlightColor6
+        VulpineColorUI::HightlightColorGreen
     );
 
     float exportButtonSize = 2.f/17.f;
@@ -976,7 +976,7 @@ void Apps::AssetListViewer::init()
             return e->comp<EntityInfos>().name == currentType ? 0. : 1.;
         },
         0.0,
-        VulpineColorUI::HightlightColor1,
+        VulpineColorUI::HightlightColorOrange,
         0.05
     );
 
@@ -1016,7 +1016,7 @@ void Apps::AssetListViewer::init()
                             , UI_BASE_COMP
                             , WidgetBox(vec2(-1, -1./2.), vec2(-1, 1))
                             , WidgetStyle()
-                                .settextColor1(VulpineColorUI::HightlightColor2)
+                                .settextColor1(VulpineColorUI::HightlightColorCyan)
                                 .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
                             , WidgetBackground()
                             , WidgetText(UFTconvert.from_bytes(versionName))
@@ -1028,7 +1028,7 @@ void Apps::AssetListViewer::init()
                             , UI_BASE_COMP
                             , WidgetBox(vec2(0.85, 1.), vec2(-1, 1))
                             , WidgetStyle()
-                                .settextColor1(VulpineColorUI::HightlightColor2)
+                                .settextColor1(VulpineColorUI::HightlightColorCyan)
                                 .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
                             , WidgetBackground()
                             , WidgetText(ftou32str(AssetLoadInfos::assetList[type][name].size()))
@@ -1048,7 +1048,7 @@ void Apps::AssetListViewer::init()
             return e->comp<EntityInfos>().name == currentAsset ? 0. : 1.;
         },
         0.0,
-        VulpineColorUI::HightlightColor2,
+        VulpineColorUI::HightlightColorCyan,
         0.05
     );
 
@@ -1063,7 +1063,7 @@ void Apps::AssetListViewer::init()
             return e->comp<EntityInfos>().name == currentVersion ? 0. : 1.;
         },
         0.0,
-        VulpineColorUI::HightlightColor3,
+        VulpineColorUI::HightlightColorPink,
         0.05
     );
 
@@ -1076,7 +1076,7 @@ void Apps::AssetListViewer::init()
         , WidgetBox()
         , WidgetStyle()
             // .setautomaticTabbing(2)
-                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
+                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2Opaque)
         , WidgetBackground()
         , EntityGroupInfo({
             newEntity("ASSET LIST APP MENU - SELECTION"
@@ -1116,7 +1116,7 @@ void Apps::AssetListViewer::init()
                                     
                                     return UFTconvert.from_bytes("...");
                                 }, 
-                                VulpineColorUI::HightlightColor3,
+                                VulpineColorUI::HightlightColorPink,
                                 true
                             ),
                             VulpineBlueprintUI::ColoredConstEntry(
@@ -1133,7 +1133,7 @@ void Apps::AssetListViewer::init()
                                     
                                     return UFTconvert.from_bytes("...");
                                 }, 
-                                VulpineColorUI::HightlightColor3,
+                                VulpineColorUI::HightlightColorPink,
                                 true
                             )
                         })

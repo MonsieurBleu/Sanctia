@@ -51,7 +51,7 @@ EntityRef Apps::SceneMergeApp::UImenu()
         , UI_BASE_COMP
         , WidgetBox()
         // , WidgetStyle()
-        //     .settextColor1(VulpineColorUI::HightlightColor1)
+        //     .settextColor1(VulpineColorUI::HightlightColorOrange)
         // , WidgetBackground()
     );
 }

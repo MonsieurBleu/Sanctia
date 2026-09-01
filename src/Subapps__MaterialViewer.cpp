@@ -95,7 +95,7 @@ void Apps::MaterialViewerApp::spawnHelper()
     if(id >= 16)
         return;
 
-    color.push_back(VulpineColorUI::HightlightColor1);
+    color.push_back(VulpineColorUI::HightlightColorOrange);
     SME.push_back(vec3(0));
     PSBD.push_back(vec4(0));
     BD.push_back(vec2(0));
@@ -293,7 +293,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         , WidgetStyle()
             .setautomaticTabbing(1)
             .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2)
-            // .setbackgroundColor1(VulpineColorUI::HightlightColor2)
+            // .setbackgroundColor1(VulpineColorUI::HightlightColorCyan)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
     );
 
@@ -306,7 +306,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         , WidgetStyle()
             // .setautomaticTabbing(1)
             .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
-            // .setbackgroundColor1(VulpineColorUI::HightlightColor1)
+            // .setbackgroundColor1(VulpineColorUI::HightlightColorOrange)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
         
     );
@@ -405,7 +405,7 @@ EntityRef Apps::MaterialViewerApp::UImenu()
         , VulpineBlueprintUI::UIcontext
         , WidgetBox()
         , WidgetStyle()
-            .settextColor1(VulpineColorUI::HightlightColor1)
+            .settextColor1(VulpineColorUI::HightlightColorOrange)
         // , WidgetText(U"...")
         // , WidgetBackground()
         , EntityGroupInfo({titleTab, menuInfosTab})
@@ -552,6 +552,59 @@ void Apps::MaterialViewerApp::init()
     // VulpineTextOutputRef test(new VulpineTextOutput());
     // DataLoader<MaterialPalette>::write(palette, test);
     // test->saveAs("data/[0] Editor/palettes/test2.MaterialPalette");
+
+    // if(false)
+    // {
+    //     const int strandNumber = 16;
+    //     const int stripResultion = 32;
+    //     const int numberOfPoints = strandNumber*stripResultion*6;
+    
+    //     GenericSharedBuffer geometry(new char[sizeof(vec3)*numberOfPoints]);
+    //     vec3 *pos = (vec3*)geometry.get();
+    
+    //     GenericSharedBuffer infos(new char[sizeof(vec3)*numberOfPoints]);
+    //     vec3 *inf = (vec3*)infos.get();
+
+    //     for(int strand = 0; strand < strandNumber; strand++)
+    //     {
+    //         float width = 0.1;
+    //         vec3 strandPos(width*(float)strand, 30, 0);
+
+    //         for(int v = 0; v < stripResultion; v++)
+    //         {
+    //             float a = ((float)v)/((float)stripResultion);
+    //             float b = ((float)v+1)/((float)stripResultion);
+
+    //             int id = (strand*stripResultion + v)*6;
+    //             pos[id++] = strandPos + vec3(width*a, a, 0.f);
+    //             pos[id++] = strandPos + vec3(-width*a, a, 0.f);
+    //             pos[id++] = strandPos + vec3(width*b, b, 0.f);
+
+    //             pos[id++] = strandPos + vec3(-width*a, a, 0.f);
+    //             pos[id++] = strandPos + vec3(-width*b, b, 0.f);
+    //             pos[id++] = strandPos + vec3(width*b, b, 0.f);
+    //         }
+    //     }
+    
+    //     MeshVao vao(new 
+    //         VertexAttributeGroup({
+    //             VertexAttribute(geometry, 0, numberOfPoints, 3, GL_FLOAT, false),
+    //             VertexAttribute(infos, 1, numberOfPoints, 3, GL_FLOAT, false)
+    //         })
+    //     );
+        
+    //     ModelRef mesh = newModel(Loader<MeshMaterial>::get("basicHelper"), vao);
+    //     // mesh->defaultMode = GL_TRIANGLES;
+    //     mesh->noBackFaceCulling = true;
+    
+    //     EntityModel model(newObjectGroup());
+    //     model.group->add(mesh);
+
+    //     globals.getScene()->add(model);
+
+    //     // glLineWidth(500.0);
+    //     // glEnable(GL_LINE_SMOOTH);
+    // }
 }
 
 

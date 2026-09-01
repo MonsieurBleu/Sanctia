@@ -111,11 +111,11 @@ namespace EDITOR
         //     inline vec4 DarkBackgroundColor2  = 0.5f*vec4( 53,  49,  48, BASE_ALPHA)/255.f;
         //     inline vec4 DarkBackgroundColor2Opaque  = 0.5f*vec4( 53,  49,  48, 255 * 2)/255.f;
 
-        //     inline vec4 HightlightColor1 = vec4(253, 103,  6,   BASE_ALPHA)/255.f;
-        //     inline vec4 HightlightColor2 = vec4(44, 211,  175,  BASE_ALPHA)/255.f;
-        //     inline vec4 HightlightColor3 = vec4(217, 38,  144,  BASE_ALPHA)/255.f;
-        //     inline vec4 HightlightColor4 = vec4(249, 192,  25,  BASE_ALPHA)/255.f;
-        //     inline vec4 HightlightColor5 = vec4(170, 60,   230, BASE_ALPHA)/255.f;
+        //     inline vec4 HightlightColorOrange = vec4(253, 103,  6,   BASE_ALPHA)/255.f;
+        //     inline vec4 HightlightColorCyan = vec4(44, 211,  175,  BASE_ALPHA)/255.f;
+        //     inline vec4 HightlightColorPink = vec4(217, 38,  144,  BASE_ALPHA)/255.f;
+        //     inline vec4 HightlightColorYellow = vec4(249, 192,  25,  BASE_ALPHA)/255.f;
+        //     inline vec4 HightlightColorPurple = vec4(170, 60,   230, BASE_ALPHA)/255.f;
         // }   
     }
 }

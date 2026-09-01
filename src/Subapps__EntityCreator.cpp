@@ -648,7 +648,7 @@ EntityRef Apps::EntityCreator::UImenu()
             //             , UI_BASE_COMP
             //             , WidgetBox(vec2(-1./3., 1), vec2(-1, 1))
             //             , WidgetStyle()
-            //                 .settextColor1(VulpineColorUI::HightlightColor1)
+            //                 .settextColor1(VulpineColorUI::HightlightColorOrange)
             //             , WidgetText(UFTconvert.from_bytes(name), StringAlignment::TO_LEFT)
             //         );
 
@@ -665,7 +665,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
             return currentEntity.name == e->comp<EntityInfos>().name ? 0.f : 1.f;
         },
-        -0.25, VulpineColorUI::HightlightColor1, 0.0
+        -0.25, VulpineColorUI::HightlightColorOrange, 0.0
     );
 
 
@@ -683,7 +683,7 @@ EntityRef Apps::EntityCreator::UImenu()
             else
                 return 1.f;
         },
-        -0.25, VulpineColorUI::HightlightColor3, 0.0625
+        -0.25, VulpineColorUI::HightlightColorPink, 0.0625
     );
 
 
@@ -723,7 +723,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
             return 0.;
         },
-        -0.25, VulpineColorUI::HightlightColor4, 0.0625
+        -0.25, VulpineColorUI::HightlightColorYellow, 0.0625
     );
 
 
@@ -761,8 +761,8 @@ EntityRef Apps::EntityCreator::UImenu()
                         , WidgetStyle()
                             .settextColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
                             .settextColor2(VulpineColorUI::DarkBackgroundColor1Opaque)
-                            .setbackgroundColor1(VulpineColorUI::HightlightColor1)
-                            .setbackgroundColor2(VulpineColorUI::HightlightColor7)
+                            .setbackgroundColor1(VulpineColorUI::HightlightColorOrange)
+                            .setbackgroundColor2(VulpineColorUI::HightlightColorRed)
                             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                         , WidgetText(U"X")
                         , WidgetButton(
@@ -787,8 +787,8 @@ EntityRef Apps::EntityCreator::UImenu()
                         , WidgetStyle()
                             .settextColor1(VulpineColorUI::DarkBackgroundColor1Opaque)
                             .settextColor2(VulpineColorUI::DarkBackgroundColor1Opaque)
-                            .setbackgroundColor1(VulpineColorUI::HightlightColor4)
-                            .setbackgroundColor2(VulpineColorUI::HightlightColor6)
+                            .setbackgroundColor1(VulpineColorUI::HightlightColorYellow)
+                            .setbackgroundColor2(VulpineColorUI::HightlightColorGreen)
                             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
                         , WidgetText(U"0")
                         , WidgetButton(
@@ -807,13 +807,13 @@ EntityRef Apps::EntityCreator::UImenu()
                                         if(isEntityHidden(c))
                                         {
                                             e->comp<WidgetStyle>()
-                                                .setbackgroundColor2(VulpineColorUI::HightlightColor1)
+                                                .setbackgroundColor2(VulpineColorUI::HightlightColorOrange)
                                                 ;
                                         }
                                         else
                                         {
                                             e->comp<WidgetStyle>()
-                                                .setbackgroundColor2(VulpineColorUI::HightlightColor6)
+                                                .setbackgroundColor2(VulpineColorUI::HightlightColorGreen)
                                                 ;
                                         }
                                     }                                
@@ -838,7 +838,7 @@ EntityRef Apps::EntityCreator::UImenu()
             else
                 return 1.f;
         },
-        -0.125, VulpineColorUI::HightlightColor2, 0.054
+        -0.125, VulpineColorUI::HightlightColorCyan, 0.054
     );
 
     VulpineBlueprintUI::AddToSelectionMenu(
@@ -914,7 +914,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                             return controlledEntity->comp<state3D>().position.x;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
-                                    ), 0.25, false, VulpineColorUI::HightlightColor1
+                                    ), 0.25, false, VulpineColorUI::HightlightColorOrange
                                 ),
                                 VulpineBlueprintUI::NamedEntry(U"Y",
                                     VulpineBlueprintUI::ValueInput("Y Position"
@@ -930,7 +930,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                             return controlledEntity->comp<state3D>().position.y;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
-                                    ), 0.25, false, VulpineColorUI::HightlightColor2
+                                    ), 0.25, false, VulpineColorUI::HightlightColorCyan
                                 ),
                                 VulpineBlueprintUI::NamedEntry(U"Z",
                                     VulpineBlueprintUI::ValueInput("Z Position"
@@ -946,7 +946,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                             return controlledEntity->comp<state3D>().position.z;
                                         }, 
                                         -1e6f, 1e6f, 0.1f, 1.f
-                                    ), 0.25, false, VulpineColorUI::HightlightColor3
+                                    ), 0.25, false, VulpineColorUI::HightlightColorPink
                                 ),
                             })
                         ),
@@ -973,7 +973,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.x) + 180.f;
                                     },
-                                    VulpineColorUI::HightlightColor1
+                                    VulpineColorUI::HightlightColorOrange
                                 ),
                                 VulpineBlueprintUI::ValueInputSlider("Y Rotation",
                                     0.f, 360.f, 360/5, 
@@ -988,7 +988,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.y) + 180.f;
                                     },
-                                    VulpineColorUI::HightlightColor2
+                                    VulpineColorUI::HightlightColorCyan
                                 ),
                                 VulpineBlueprintUI::ValueInputSlider("Z Rotation",
                                     0.f, 360.f, 360/5, 
@@ -1003,7 +1003,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                         if(!controlledEntity) return 0.f;
                                         return degrees(controlledEntityEuleur.z) + 180.f;
                                     },
-                                    VulpineColorUI::HightlightColor3
+                                    VulpineColorUI::HightlightColorPink
                                 )
                             })
                         ),
@@ -1028,7 +1028,7 @@ EntityRef Apps::EntityCreator::UImenu()
                                         }
                                     },
                                     [](Entity *e){return 0.;},
-                                    VulpineColorUI::HightlightColor6
+                                    VulpineColorUI::HightlightColorGreen
                                 ),
                                 VulpineBlueprintUI::Toggable(
                                     "Play Entity", "",
@@ -1044,7 +1044,7 @@ EntityRef Apps::EntityCreator::UImenu()
 
                                         return isEntityPlayable(controlledEntity->comp<EntityGroupInfo>().children[0]) ? 0.f : 1.f;
                                     },
-                                    VulpineColorUI::HightlightColor6
+                                    VulpineColorUI::HightlightColorGreen
                                 ),
                                 newEntity()
                             })
@@ -1063,42 +1063,42 @@ EntityRef Apps::EntityCreator::UImenu()
                                     [&](Entity *e, float f){},
                                     [&](Entity *e)
                                     {ENTITY_FILTER_UPDATE_FONCTION(entityFilterAny(child, filterLightSources))},
-                                    VulpineColorUI::HightlightColor4
+                                    VulpineColorUI::HightlightColorYellow
                                 ),
                                 VulpineBlueprintUI::Toggable(
                                     "Static", "",
                                     [&](Entity *e, float f){},
                                     [&](Entity *e)
                                     {ENTITY_FILTER_UPDATE_FONCTION(!entityFilterAny(child, filterStaticEnv))},
-                                    VulpineColorUI::HightlightColor4
+                                    VulpineColorUI::HightlightColorYellow
                                 ),
                                 VulpineBlueprintUI::Toggable(
                                     "Items", "",
                                     [&](Entity *e, float f){},
                                     [&](Entity *e)
                                     {ENTITY_FILTER_UPDATE_FONCTION(entityFilterAny(child, filterItems))},
-                                    VulpineColorUI::HightlightColor4
+                                    VulpineColorUI::HightlightColorYellow
                                 ),
                                 VulpineBlueprintUI::Toggable(
                                     "Playable", "",
                                     [&](Entity *e, float f){},
                                     [&](Entity *e)
                                     {ENTITY_FILTER_UPDATE_FONCTION(isEntityPlayable(child->comp<EntityGroupInfo>().children[0]))},
-                                    VulpineColorUI::HightlightColor4
+                                    VulpineColorUI::HightlightColorYellow
                                 ),
                                 VulpineBlueprintUI::Toggable(
                                     "Terrain", "",
                                     [&](Entity *e, float f){},
                                     [&](Entity *e)
                                     {ENTITY_FILTER_UPDATE_FONCTION(entityFilterAny(child, filterTerrain))},
-                                    VulpineColorUI::HightlightColor4
+                                    VulpineColorUI::HightlightColorYellow
                                 ),
                                 VulpineBlueprintUI::Toggable(
                                     "", "",
                                     [&](Entity *e, float f){},
                                     [&](Entity *e)
                                     {return 1.f;},
-                                    VulpineColorUI::HightlightColor4
+                                    VulpineColorUI::HightlightColorYellow
                                 ),
                             })
                         ),
@@ -1163,7 +1163,7 @@ EntityRef Apps::EntityCreator::UIcontrols()
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            // .settextColor1(VulpineColorUI::HightlightColor1)
+            // .settextColor1(VulpineColorUI::HightlightColorOrange)
             // .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
             .setautomaticTabbing(1)
         // , WidgetBackground()
@@ -1268,16 +1268,16 @@ EntityRef Apps::EntityCreator::UIcontrols()
 
 vec4 gizmoColorsBase[3] = 
 {
-    VulpineColorUI::HightlightColor1, 
-    VulpineColorUI::HightlightColor2,
-    VulpineColorUI::HightlightColor3 
+    VulpineColorUI::HightlightColorOrange, 
+    VulpineColorUI::HightlightColorCyan,
+    VulpineColorUI::HightlightColorPink 
 };
 
 vec4 gizmoColors[3] = 
 {
-    VulpineColorUI::HightlightColor1, 
-    VulpineColorUI::HightlightColor2,
-    VulpineColorUI::HightlightColor3 
+    VulpineColorUI::HightlightColorOrange, 
+    VulpineColorUI::HightlightColorCyan,
+    VulpineColorUI::HightlightColorPink 
 };
 
 void Apps::EntityCreator::init()
@@ -1339,9 +1339,9 @@ void Apps::EntityCreator::init()
 
     /****** Creating Gizmo Helper ******/
     {
-        // LineHelperRef x(new LineHelper(vec3(0), vec3(1, 0, 0), VulpineColorUI::HightlightColor1));
-        // LineHelperRef y(new LineHelper(vec3(0), vec3(0, 1, 0), VulpineColorUI::HightlightColor2));
-        // LineHelperRef z(new LineHelper(vec3(0), vec3(0, 0, 1), VulpineColorUI::HightlightColor3));
+        // LineHelperRef x(new LineHelper(vec3(0), vec3(1, 0, 0), VulpineColorUI::HightlightColorOrange));
+        // LineHelperRef y(new LineHelper(vec3(0), vec3(0, 1, 0), VulpineColorUI::HightlightColorCyan));
+        // LineHelperRef z(new LineHelper(vec3(0), vec3(0, 0, 1), VulpineColorUI::HightlightColorPink));
 
         EntityModel model = EntityModel{ObjectGroupRef(newObjectGroup())};
         auto aabbhelper = CubeHelperRef(new CubeHelper(vec3(-0.5), vec3(0.5), VulpineColorUI::LightBackgroundColor1));
@@ -1398,27 +1398,27 @@ void Apps::EntityCreator::init()
         float inf = 5000;
 
         // vec3 color = VulpineColorUI::DarkBackgroundColor1;
-        vec3 color = VulpineColorUI::HightlightColor6;
+        vec3 color = VulpineColorUI::HightlightColorGreen;
 
         // model->add(
         //     LineHelperRef(new LineHelper(
         //         vec3(+inf, 0, 0), 
         //         vec3(-inf, 0, 0), 
-        //         0.5f * VulpineColorUI::HightlightColor1))
+        //         0.5f * VulpineColorUI::HightlightColorOrange))
         // );
 
         // model->add(
         //     LineHelperRef(new LineHelper(
         //         vec3(0, +inf, 0), 
         //         vec3(0, -inf, 0), 
-        //         0.5f * VulpineColorUI::HightlightColor2))
+        //         0.5f * VulpineColorUI::HightlightColorCyan))
         // );
 
         // model->add(
         //     LineHelperRef(new LineHelper(
         //         vec3(0, 0, +inf), 
         //         vec3(0, 0, -inf), 
-        //         0.5f * VulpineColorUI::HightlightColor3))
+        //         0.5f * VulpineColorUI::HightlightColorPink))
         // );
 
         int size = 50;
@@ -1613,7 +1613,7 @@ void Apps::EntityCreator::update()
     // if(globals.mouseRightClick())
     // {
     //     globals.getScene()->add(
-    //         LineHelperRef(new LineHelper(world, origin, VulpineColorUI::HightlightColor6))
+    //         LineHelperRef(new LineHelper(world, origin, VulpineColorUI::HightlightColorGreen))
     //     );
     // }
 

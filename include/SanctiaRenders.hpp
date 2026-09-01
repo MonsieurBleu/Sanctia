@@ -25,14 +25,23 @@ class PaintShaderPass : public RenderPass
         FrameBuffer FBO_Bloom;
         FrameBuffer FBO_CopyAndDeform;
         FrameBuffer FBO_AO;
+        FrameBuffer FBO_Exposure_1;
+        FrameBuffer FBO_Exposure_2;
+        FrameBuffer FBO_Exposure_3;
+        FrameBuffer FBO_Exposure_COPY;
         
         ShaderProgram copyShader;
         ShaderProgram cloudShader;
         ShaderProgram bloomShader;
         ShaderProgram aoShader;
+        ShaderProgram exposureShaderPass1;
+        ShaderProgram exposureShaderPass2;
+        ShaderProgram exposureShaderPass3;
+        ShaderProgram exposureShaderPassCOPY;
 
         bool enableBloom = true;
         bool enableAO = true;
+        bool enableExposure = true;
 
         PaintShaderPass(DefferedBuffer &defferedBuffer) : defferedBuffer(defferedBuffer){};
         void setup();

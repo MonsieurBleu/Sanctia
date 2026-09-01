@@ -4,6 +4,7 @@
 #include <MappedEnum.hpp>
 #include <AnimationBlueprint.hpp>
 #include <AnimationBlueprint2.hpp>
+#include <Flags.hpp>
 
 #include <GameGlobals.hpp>
 
@@ -32,6 +33,10 @@ DATA_WRITE_FUNC(EntityRef)
 }
 
 std::string tmpEntityName;
+
+HierarchyState3D tmpTransform;
+Entity *tmpParent;
+bool tmpDoTransform;
 
 DATA_READ_FUNC(EntityRef) { 
     
@@ -71,6 +76,31 @@ DATA_READ_FUNC(EntityRef) {
                     j.element(data, buff);
                     break;
                 }
+        }
+
+        if(!strcmp(member, "State3D") and tmpDoTransform and tmpParent)
+        {
+            data->set<HierarchyState3D>(tmpTransform);
+            data->set<State3D>(State3D());
+            data->comp<HierarchyState3D>() = tmpTransform;
+
+            auto &s = data->comp<State3D>(); 
+            const auto &h = data->comp<HierarchyState3D>();
+            const auto &p = tmpParent->comp<State3D>();
+            
+            if(h.type & 0b001)
+                s.position = p.position + (p.rotation * h.position)*p.scale;
+
+            if(h.type & 0b010)
+                s.rotation = p.rotation * h.rotation;
+
+            if(h.type & 0b100)
+                s.scale = h.scale*p.scale;
+
+            // Updating visibility
+            ModelStatus tmp = h.isActive;
+            ManageHideStatus(tmp, p.isActive);
+            s.isActive = tmp;
         }
 
         if(!found)
@@ -128,9 +158,49 @@ DATA_READ_FUNC(EntityRef) {
         }
     }
 
+    if(data->has<EntitySpawner>())
+    {
+        auto &s = data->comp<State3D>();
+        auto &es = data->comp<EntitySpawner>();
+
+        for(auto &i : es.onLoading)
+        {
+            // TODO : add cond
+
+            if(i.cond.empty() or Loader<Flag>::get(i.cond)->as_bool())
+            {
+                spawnEntityToParent(i.name, *data, i.state);
+            }
+        }
+    }
+
     // GG::entities.push_back(data);
 
     DATA_READ_END
+}
+
+EntityRef spawnEntityToParent(const std::string &name, Entity &parent, HierarchyState3D state)
+{
+    auto it = Loader<EntityRef>::loadingInfos.find(name);
+
+    if(it == Loader<EntityRef>::loadingInfos.end())
+    {
+        FILE_ERROR_MESSAGE("\'", name, "' Entity not found.");
+        return EntityRef();
+    }
+
+    VulpineTextBuffRef file(new VulpineTextBuff(it->second->buff->getSource().c_str()));
+    tmpTransform = state;
+    tmpDoTransform = true;
+    tmpParent = &parent;
+    auto e = DataLoader<EntityRef>::read(file);
+
+    tmpDoTransform = false;
+    tmpParent = nullptr;
+    tmpTransform = HierarchyState3D();
+
+    ComponentModularity::addChild(parent, e);
+    return e;
 }
 
 template<>
@@ -147,6 +217,7 @@ EntityRef& Loader<EntityRef>::loadFromInfos()
 }
 
 AUTOGEN_COMPONENT_RWFUNC(State3D)
+AUTOGEN_COMPONENT_RWFUNC(HierarchyState3D)
 AUTOGEN_COMPONENT_RWFUNC(Movement)
 AUTOGEN_COMPONENT_RWFUNC(ComplexMovements)
 AUTOGEN_COMPONENT_RWFUNC(Gauges)
@@ -177,7 +248,7 @@ AUTOGEN_COMPONENT_RWFUNC(MovementBehaviour)
 AUTOGEN_COMPONENT_RWFUNC(AgentState__old)
 
 AUTOGEN_COMPONENT_RWFUNC_E(EntityGroupInfo)
-
+AUTOGEN_COMPONENT_RWFUNC(EntitySpawner)
 
 
 // for some reason this just doesn't work

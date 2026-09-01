@@ -156,7 +156,7 @@ Apps::BiomeApp::BiomeApp() : SubApps("Biome Editor")
         "save all biomes & scatterers", GLFW_KEY_S, GLFW_MOD_CONTROL, GLFW_PRESS, [&]() { 
             if(save())
             {
-                saveButton->comp<WidgetStyle>().setbackgroundColor1(VulpineColorUI::HightlightColor6);
+                saveButton->comp<WidgetStyle>().setbackgroundColor1(VulpineColorUI::HightlightColorGreen);
             }
         })
     );
@@ -354,7 +354,7 @@ EntityRef Apps::BiomeApp::BiomeDataModifier()
 
             tmpSpawnInfo.entities = tmp;
         }, 
-        [](Entity *e){return 0.f;}, -1.0, VulpineColorUI::HightlightColor1, 0.075
+        [](Entity *e){return 0.f;}, -1.0, VulpineColorUI::HightlightColorOrange, 0.075
     )
     ;
 
@@ -365,7 +365,7 @@ EntityRef Apps::BiomeApp::BiomeDataModifier()
         {
             tmpSpawnInfo.entities.push_back(e->comp<EntityInfos>().name);
         }, 
-        [](Entity *e){return 0.f;}, -1.0, VulpineColorUI::HightlightColor5, 0.075
+        [](Entity *e){return 0.f;}, -1.0, VulpineColorUI::HightlightColorPurple, 0.075
     )
     ;
 
@@ -457,7 +457,7 @@ EntityRef Apps::BiomeApp::UImenu()
                     return &Loader<EntityScatterer>::get(e->comp<EntityInfos>().name) == currentScatterer ? 0.f : 1.f;
                 },
                 -1.0,
-                VulpineColorUI::HightlightColor2,
+                VulpineColorUI::HightlightColorCyan,
                 0.075
             ),
 
@@ -492,7 +492,7 @@ EntityRef Apps::BiomeApp::UImenu()
                                 }
                             },
                             [](Entity *e){return 0.f;}, 
-                            VulpineColorUI::HightlightColor7
+                            VulpineColorUI::HightlightColorRed
                         );
 
                         ComponentModularity::addChild(*parent, delButton);
@@ -505,7 +505,7 @@ EntityRef Apps::BiomeApp::UImenu()
                     return currentBiome == e->comp<EntityInfos>().name ? 0.f : 1.f;
                 },
                 -1.0,
-                VulpineColorUI::HightlightColor3,
+                VulpineColorUI::HightlightColorPink,
                 0.075
             ),
 
@@ -525,7 +525,7 @@ EntityRef Apps::BiomeApp::UImenu()
                 },
                 [](Entity *e){return 0.f;},
                 -1.0,
-                VulpineColorUI::HightlightColor4,
+                VulpineColorUI::HightlightColorYellow,
                 0.075
             ),
 
@@ -585,14 +585,14 @@ EntityRef Apps::BiomeApp::UIcontrols()
         []()
         {
             return currentScatterer ? ftou32str(currentScatterer->generateGetProgress()*100.f) + U"%" : U"-";
-        }, VulpineColorUI::HightlightColor6
+        }, VulpineColorUI::HightlightColorGreen
     );
 
     auto entityCounter = VulpineBlueprintUI::ColoredConstEntry("Entity Count", 
         [&]()
         {
             return biome ? ftou32str((float)biome->comp<EntityGroupInfo>().children.size(), 5): U"-";
-        }, VulpineColorUI::HightlightColor1
+        }, VulpineColorUI::HightlightColorOrange
     );
 
     saveButton = VulpineBlueprintUI::Toggable("Save Everything", "",
@@ -600,7 +600,7 @@ EntityRef Apps::BiomeApp::UIcontrols()
         {
             if(save())
             {
-                e->comp<WidgetStyle>().setbackgroundColor1(VulpineColorUI::HightlightColor6);
+                e->comp<WidgetStyle>().setbackgroundColor1(VulpineColorUI::HightlightColorGreen);
             }
         },
         [&](Entity *e)
@@ -610,7 +610,7 @@ EntityRef Apps::BiomeApp::UIcontrols()
             e->comp<WidgetStyle>().setbackgroundColor1(
                 mix(
                     color, 
-                    VulpineColorUI::HightlightColor7, 
+                    VulpineColorUI::HightlightColorRed, 
                     globals.appTime.getDelta()*0.125f
                 )
             );

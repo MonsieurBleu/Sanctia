@@ -27,7 +27,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Last 500ms Avg",
                         [e](){return ftou32str(getSystemPreciseTimer(e->comp<EntityInfos>().name).getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor1
+                        VulpineColorUI::HightlightColorOrange
                     )
                 );
 
@@ -35,7 +35,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::SystemsPreciseBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Update Counter",
                         [e](){return ftou32str(getSystemPreciseTimer(e->comp<EntityInfos>().name).getUpdateCounter(), 6);},
-                        VulpineColorUI::HightlightColor2
+                        VulpineColorUI::HightlightColorCyan
                     )
                 );
             }
@@ -104,19 +104,19 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                 , EntityGroupInfo({
                     // VulpineBlueprintUI::TimerPlot(
                     //     globals.mainThreadTime, 
-                    //     VulpineColorUI::HightlightColor1,
+                    //     VulpineColorUI::HightlightColorOrange,
                     //     getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(
                         globals.mainThreadTime, 
-                        VulpineColorUI::HightlightColor1,
+                        VulpineColorUI::HightlightColorOrange,
                         getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(
                         globals.cpuTime, 
-                        VulpineColorUI::HightlightColor2,
+                        VulpineColorUI::HightlightColorCyan,
                         getMinmaxMainThread),
                     VulpineBlueprintUI::TimerPlot(
                         ScriptInstance::globalTimers["Main Thread"], 
-                        VulpineColorUI::HightlightColor5,
+                        VulpineColorUI::HightlightColorPurple,
                         getMinmaxMainThread)
                 })
             )
@@ -138,19 +138,19 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                 , EntityGroupInfo({
                     VulpineBlueprintUI::TimerPlot(
                         JoltVulpine::physicsWorldUpdateTimer, 
-                        VulpineColorUI::HightlightColor5,
+                        VulpineColorUI::HightlightColorPurple,
                         getMinmaxPhysicThread),
                     // TimerPlot(
                     //     Game::physicsWorldUpdateTimer, 
-                    //     VulpineColorUI::HightlightColor4,
+                    //     VulpineColorUI::HightlightColorYellow,
                     //     getMinmaxPhysicThread),
                     VulpineBlueprintUI::TimerPlot(
                         JoltVulpine::physicsSystemsTimer, 
-                        VulpineColorUI::HightlightColor4,
+                        VulpineColorUI::HightlightColorYellow,
                         getMinmaxPhysicThread),
                     VulpineBlueprintUI::TimerPlot(
                         ScriptInstance::globalTimers["JoltVulpine"], 
-                        VulpineColorUI::HightlightColor5,
+                        VulpineColorUI::HightlightColorPurple,
                         getMinmaxPhysicThread)
                 })
             )
@@ -189,17 +189,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "CPU",
                         [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor2
+                        VulpineColorUI::HightlightColorCyan
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "GPU Wait",
                         [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor1
+                        VulpineColorUI::HightlightColorOrange
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Lua",
                         [](){return ftou32str(ScriptInstance::globalTimers["Main Thread"].getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor5
+                        VulpineColorUI::HightlightColorPurple
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "FPS",
@@ -230,17 +230,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Jolt",
                         [](){return ftou32str(JoltVulpine::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor6
+                        VulpineColorUI::HightlightColorGreen
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Systems",
                         [](){return ftou32str(JoltVulpine::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor4
+                        VulpineColorUI::HightlightColorYellow
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "Lua",
                         [](){return ftou32str(ScriptInstance::globalTimers["Jolt Thread"].getLastAvg().count()) + U" ms";},
-                        VulpineColorUI::HightlightColor5
+                        VulpineColorUI::HightlightColorPurple
                     ),
                     VulpineBlueprintUI::ColoredConstEntry(
                         "TPS",
@@ -267,17 +267,17 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
     //         // ColoredConstEntry(
     //         //     "Main",
     //         //      [](){return ftou32str(globals.mainThreadTime.getLastAvg().count());},
-    //         //      VulpineColorUI::HightlightColor1
+    //         //      VulpineColorUI::HightlightColorOrange
     //         // ),
     //         ColoredConstEntry(
     //             "GPU",
     //              [](){return ftou32str(globals.gpuTime.getLastAvg().count()) + U" ms";},
-    //              VulpineColorUI::HightlightColor3
+    //              VulpineColorUI::HightlightColorPink
     //         ),
     //         ColoredConstEntry(
     //             "CPU",
     //              [](){return ftou32str(globals.cpuTime.getLastAvg().count()) + U" ms";},
-    //              VulpineColorUI::HightlightColor2
+    //              VulpineColorUI::HightlightColorCyan
     //         ),
     //         // newEntity("Global Benchmark values separator"
 
@@ -291,12 +291,12 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen()
     //         ColoredConstEntry(
     //             "Physic Update",
     //              [](){return ftou32str(Game::physicsWorldUpdateTimer.getLastAvg().count()) + U" ms";},
-    //              VulpineColorUI::HightlightColor5
+    //              VulpineColorUI::HightlightColorPurple
     //         ),
     //         ColoredConstEntry(
     //             "Physic Systems",
     //              [](){return ftou32str(Game::physicsSystemsTimer.getLastAvg().count()) + U" ms";},
-    //              VulpineColorUI::HightlightColor4
+    //              VulpineColorUI::HightlightColorYellow
     //         ),
     //     })
     // );
@@ -422,7 +422,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
             )
         , WidgetStyle()
             .setspriteScale(0.2)
-            .setbackgroundColor1(VulpineColorUI::HightlightColor3)
+            .setbackgroundColor1(VulpineColorUI::HightlightColorPink)
             .setbackGroundStyle(UiTileType::ATMOSPHERE_VIEWER)
         , WidgetBackground()
         , WidgetButton(

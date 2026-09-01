@@ -31,6 +31,8 @@
 
 EntityRef spawnEntity(const std::string &name, vec3 spawnPoint = vec3(0), quat rotation = quat(1, 0, 0, 0));
 
+EntityRef spawnEntityToParent(const std::string &name, Entity &parent, HierarchyState3D state);
+
 bool isVisible(Entity &a, Entity &b);
 
 Entity* getClosestVisibleEnemy(Entity &e);

@@ -296,6 +296,7 @@ DATA_WRITE_FUNC_INIT(EntityGroupInfo)
     // WRITE_NAME(children, out);
     // out->Tabulate();
     
+    if(!data.children.empty() and !data.children[0]->comp<EntityGroupInfo>().parent->has<EntitySpawner>())
     for(auto i : data.children)
     {
         out->Entry();

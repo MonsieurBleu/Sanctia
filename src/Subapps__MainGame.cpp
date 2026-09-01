@@ -161,7 +161,7 @@ EntityRef Apps::MainGameApp::UImenu()
         , UI_BASE_COMP
         , WidgetBox()
         , WidgetStyle()
-            .settextColor1(VulpineColorUI::HightlightColor1)
+            .settextColor1(VulpineColorUI::HightlightColorOrange)
         // , WidgetText(ftou32str(cnt))
         , WidgetBackground()
     );

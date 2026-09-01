@@ -105,7 +105,7 @@ void PlayerController2::init()
             newEntity("Stamina Bar - Vitality 1"
                 , UI_BASE_COMP
                 , WidgetStyle()
-                    .setbackgroundColor1(VulpineColorUI::HightlightColor1 *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
+                    .setbackgroundColor1(VulpineColorUI::HightlightColorOrange *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
                 , WidgetBackground()
                 , WidgetBox([](Entity* parent, Entity* child)
                 {
@@ -126,7 +126,7 @@ void PlayerController2::init()
             newEntity("Stamina Bar - Vitality 2"
                 , UI_BASE_COMP
                 , WidgetStyle()
-                    .setbackgroundColor1(VulpineColorUI::HightlightColor1 *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
+                    .setbackgroundColor1(VulpineColorUI::HightlightColorOrange *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
                 , WidgetBackground()
                 , WidgetBox([](Entity* parent, Entity* child)
                 {
@@ -148,7 +148,7 @@ void PlayerController2::init()
             newEntity("Stamina Bar - Vitality 3"
                 , UI_BASE_COMP
                 , WidgetStyle()
-                    .settextColor1(VulpineColorUI::HightlightColor1 *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
+                    .settextColor1(VulpineColorUI::HightlightColorOrange *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
                     .setminFontScale(2.0)
                 , WidgetText(U"")
                 , WidgetBox([](Entity* parent, Entity* child)
@@ -186,7 +186,7 @@ void PlayerController2::init()
             newEntity("Stamina Bar - Vitality 4"
                 , UI_BASE_COMP
                 , WidgetStyle()
-                    .settextColor1(VulpineColorUI::HightlightColor1 *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
+                    .settextColor1(VulpineColorUI::HightlightColorOrange *vec4(1,1,1,0)+vec4(0, 0, 0, 1))
                     .setminFontScale(2.0)
                 , WidgetText(U"")
                 , WidgetBox([](Entity* parent, Entity* child)

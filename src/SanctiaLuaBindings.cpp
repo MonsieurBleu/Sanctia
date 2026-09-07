@@ -790,6 +790,10 @@ struct GG_Wrapper {
 
     static int getCurrentLanguage() { return GG::currentLanguage; }
     static void setCurrentLanguage(int v) { GG::currentLanguage = v; }
+
+    void setEditorGridPositionScale(const vec4 &ps){EDITOR::gridPositionScale = ps;}
+    void setEditorGridNormale(const vec3 &n){EDITOR::gridNormale = n;}
+    void setEditorGridColor(const vec3 &c){EDITOR::gridColor = c;}
 };
 
 void SanctiaLuaBindings::Globals(sol::state &lua)
@@ -822,10 +826,13 @@ void SanctiaLuaBindings::Globals(sol::state &lua)
             getTimeOfDayCycleEnable,
             getPlayerEntity,
             getCurrentLanguage,
-            setCurrentLanguage
+            setCurrentLanguage,
+            setEditorGridPositionScale,
+            setEditorGridNormale,
+            setEditorGridColor
         )
     }
     luaHeader << "GameGlobals = {}\n";
-     lua["GameGlobals"] = GG_Wrapper();
+    lua["GameGlobals"] = GG_Wrapper();
     #undef CURRENT_CLASS_BINDING
 }

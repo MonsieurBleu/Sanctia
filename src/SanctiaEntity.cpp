@@ -20,7 +20,8 @@
 void setEntityTransform(Entity &e, State3D s)
 {
     if(!e.has<State3D>())
-        return; // bro is trying to update transform with no entity transform
+        e.set(State3D());
+        // return; // bro is trying to update transform with no entity transform
 
     if(e.has<State3D>()) e.comp<State3D>() = s;
 

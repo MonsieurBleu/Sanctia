@@ -131,7 +131,7 @@ void DrawBox::initData()
     defaultMode = GL_LINES;
     // defaultMode = GL_TRIANGLE_FAN;
 
-    int nbOfPoints = 48;
+    int nbOfPoints = 24;
     GenericSharedBuffer buff(new char[sizeof(vec3)*nbOfPoints]);
     GenericSharedBuffer buffNormal(new char[sizeof(vec3)*nbOfPoints]);
 
@@ -186,41 +186,41 @@ void DrawBox::initData()
 
 
     // Cross inside faces
-    pos[24] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
-    pos[25] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+    // pos[24] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
+    // pos[25] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
 
-    pos[26] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
-    pos[27] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+    // pos[26] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
+    // pos[27] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
 
-    pos[28] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
-    pos[29] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+    // pos[28] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
+    // pos[29] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
 
-    pos[30] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
-    pos[31] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+    // pos[30] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
+    // pos[31] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
 
-    pos[32] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
-    pos[33] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+    // pos[32] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
+    // pos[33] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
 
-    pos[34] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
-    pos[35] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
+    // pos[34] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
+    // pos[35] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
 
-    pos[36] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
-    pos[37] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+    // pos[36] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
+    // pos[37] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
 
-    pos[38] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
-    pos[39] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
+    // pos[38] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
+    // pos[39] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
     
-    pos[40] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
-    pos[41] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+    // pos[40] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
+    // pos[41] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
 
-    pos[42] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
-    pos[43] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+    // pos[42] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
+    // pos[43] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
 
-    pos[44] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
-    pos[45] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+    // pos[44] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+    // pos[45] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
 
-    pos[46] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
-    pos[47] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+    // pos[46] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+    // pos[47] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
 
     MeshVao vao(new 
         VertexAttributeGroup({

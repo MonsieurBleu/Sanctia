@@ -489,6 +489,8 @@ namespace Apps
 
             virtual EntityRef UImenu() override;
 
+            virtual EntityRef UIcontrols() override;
+
             virtual void init() override;
 
             virtual void update() override;

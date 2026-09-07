@@ -87,6 +87,8 @@ void Game::init(int paramSample)
         .addUniform(ShaderUniform(&globals.sceneVignette, 35))
         .addUniform(ShaderUniform(&globals.sceneHsvShift, 36))
         .addUniform(ShaderUniform(&EDITOR::gridPositionScale, 37))
+        .addUniform(ShaderUniform(&EDITOR::gridNormale, 38))
+        .addUniform(ShaderUniform(&EDITOR::gridColor, 39))
         ;
 
     // setIcon(Loader<Texture2D>::loadingInfos["icon"]->buff->getSource());

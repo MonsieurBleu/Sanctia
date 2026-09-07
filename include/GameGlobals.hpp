@@ -86,6 +86,8 @@ namespace EDITOR
     // inline WidgetUI_Context UIcontext;
 
     inline vec4 gridPositionScale = vec4(0);
+    inline vec3 gridNormale = vec3(0, 1, 0);
+    inline vec3 gridColor = vec3(1);
 
     namespace MENUS
     {

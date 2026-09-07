@@ -165,11 +165,9 @@ DATA_READ_FUNC(EntityRef) {
 
         for(auto &i : es.onLoading)
         {
-            // TODO : add cond
-
             if(i.cond.empty() or Loader<Flag>::get(i.cond)->as_bool())
             {
-                spawnEntityToParent(i.name, *data, i.state);
+                i.child = spawnEntityToParent(i.name, *data, i.state);
             }
         }
     }

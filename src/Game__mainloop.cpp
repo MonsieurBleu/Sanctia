@@ -1165,7 +1165,8 @@ void Game::mainloop()
             for(auto m : JoltVulpine::debugRenderer->models)
                 m->resetInstances();
 
-            JoltVulpine::debugRendererSettings.mDrawShapeColor = JPH::BodyManager::EShapeColor::MotionTypeColor;
+            // JoltVulpine::debugRendererSettings.mDrawShapeColor = JPH::BodyManager::EShapeColor::MotionTypeColor;
+            JoltVulpine::debugRendererSettings.mDrawShapeColor = JPH::BodyManager::EShapeColor::SleepColor;
             // JoltVulpine::debugRendererSettings.mDrawShapeWireframe = false;
 
             class PhysicsDebugFilter : public JPH::BodyDrawFilter

@@ -19,7 +19,7 @@ class Gizmo {
 
     std::list<State3D> historic;
     std::list<State3D>::iterator currentHistoricNode;
-    uint historicMaxSize;
+    uint historicMaxSize = 1e3;
     
     
     void enable()
@@ -29,6 +29,8 @@ class Gizmo {
             isEnable = true;
             
             if(followTerrain) enableFollowTerrain();
+
+            resetHistoric();
         }
     }
 
@@ -36,6 +38,8 @@ class Gizmo {
     {
         isEnable = false;
         heightAboveTerrain = 0.f;
+        currentHistoricNode = {};
+        historic.clear();
     }
 
     void enableFollowTerrain()
@@ -43,12 +47,14 @@ class Gizmo {
         followTerrain = true;
         auto &p = parent->comp<State3D>().position;
         heightAboveTerrain = p.y - getTerrainHeight(vec2(p.z, p.x));
+        threadState["GIZMO_useAbsoluteHeightSave"] = true;
     }
 
     void disableFollowTerrain()
     {
         followTerrain = false;
         heightAboveTerrain = 0.f;
+        threadState["GIZMO_useAbsoluteHeightSave"] = false;
     }
 
     void toggleFollowTerrain()
@@ -203,7 +209,7 @@ class Gizmo {
     {
         if(!isEnable) return;
 
-        if(currentHistoricNode != historic.begin())
+        if(currentHistoricNode != ++historic.begin())
             parent->comp<State3D>() = *(--currentHistoricNode);
     }
 
@@ -211,7 +217,7 @@ class Gizmo {
     {
         if(!isEnable) return;
 
-        if(currentHistoricNode != historic.begin())
+        if(currentHistoricNode != --historic.end())
             parent->comp<State3D>() = *(++currentHistoricNode);
     }
 
@@ -337,5 +343,212 @@ class Gizmo {
                 if(i.getLocation() == 20)
                     EDITOR::gridColor = *(vec3 *)i.getData();
         }
+    }
+
+    EntityRef createMenu()
+    {
+        vec4 gizmoTitleColor = VulpineColorUI::LightBackgroundColor1;
+        vec4 gizmoBaseColor = gizmoTitleColor;
+        // gizmoBaseColor.a = 1.0;
+
+        // gizmoBaseColor = VulpineColorUI::LightBackgroundColor1;
+        // gizmoTitleColor = VulpineColorUI::HightlightColorPurple;
+
+        auto modeControls = newEntity("World Editor - APP CONTROL",
+            UI_BASE_COMP,
+            WidgetStyle().setautomaticTabbing(-1).setuseInternalSpacing(true),
+            EntityGroupInfo({
+
+                VulpineBlueprintUI::Toggable2("Follow Terrain Height", "", 
+                    [&](Entity *e, float f){toggleFollowTerrain();},
+                    [&](Entity *e){return isFollowingTerrain() ? 0. : 1.;},
+                    gizmoBaseColor
+                ),
+        
+                VulpineBlueprintUI::Toggable2("Snap To Grid", "", 
+                    [&](Entity *e, float f){toggleSnapping();},
+                    [&](Entity *e){return isSnapingEnable() ? 0. : 1.;},
+                    gizmoBaseColor
+                ),
+
+                // newEntity("Blank Space"),
+
+                // VulpineBlueprintUI::NamedEntry(U"Translation Type",
+                    newEntity("",
+                        UI_BASE_COMP,
+                        WidgetStyle().setautomaticTabbing(-2),
+                        EntityGroupInfo({
+        
+                            VulpineBlueprintUI::Toggable("World Translation", "", 
+                                [&](Entity *e, float f){translateModeWorld();},
+                                [&](Entity *e){return isTranslateModeWorld() ? 0. : 1.;},
+                                gizmoBaseColor
+                            ),
+                            VulpineBlueprintUI::Toggable("Relative Translation", "", 
+                                [&](Entity *e, float f){translateModeRelative();},
+                                [&](Entity *e){return isTranslateModeRelative() ? 0. : 1.;},
+                                gizmoBaseColor
+                            )
+                        })
+                    // ), 0.5, false, gizmoBaseColor
+                )
+
+            })
+        );
+
+        auto positionMenu = newEntity("Gizmo Position",  UI_BASE_COMP,
+            WidgetStyle().setautomaticTabbing(3).setuseInternalSpacing(true),
+            EntityGroupInfo({
+
+                VulpineBlueprintUI::NamedEntry(U"X",
+                    VulpineBlueprintUI::ValueInput("X", 
+                        [&](float f){parent->comp<State3D>().position.x = f;},
+                        [&](){return parent->comp<State3D>().position.x;},
+                        -1e5, 1e5, 0.25, 1.0, VulpineColorUI::HightlightColorOrange
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorOrange
+                ),
+                VulpineBlueprintUI::NamedEntry(U"Y",
+                    VulpineBlueprintUI::ValueInput("Y", 
+                        [&](float f){parent->comp<State3D>().position.y = f;},
+                        [&](){return parent->comp<State3D>().position.y;},
+                        -1e5, 1e5, 0.25, 1.0, VulpineColorUI::HightlightColorCyan
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorCyan
+                ),
+                VulpineBlueprintUI::NamedEntry(U"Z",
+                    VulpineBlueprintUI::ValueInput("Z", 
+                        [&](float f){parent->comp<State3D>().position.z = f;},
+                        [&](){return parent->comp<State3D>().position.z;},
+                        -1e5, 1e5, 0.25, 1.0, VulpineColorUI::HightlightColorPink
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorPink
+                )
+            })
+        );
+
+        auto rotationMenu = newEntity("Gizmo Rotation",  UI_BASE_COMP,
+            WidgetStyle().setautomaticTabbing(3).setuseInternalSpacing(true),
+            EntityGroupInfo({
+
+                VulpineBlueprintUI::NamedEntry(U"X",
+                    VulpineBlueprintUI::ValueInputSlider("X", -180, 180, 360,
+                        [&](float f)
+                        {
+                            vec3 euler = eulerAngles(parent->comp<State3D>().rotation);
+                            euler.x = radians(f);
+                            parent->comp<State3D>().rotation = quat(euler);
+                        },
+                        [&](){return degrees(eulerAngles(parent->comp<State3D>().rotation).x);},
+                        VulpineColorUI::HightlightColorOrange
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorOrange
+                ),
+
+                VulpineBlueprintUI::NamedEntry(U"Y",
+                    VulpineBlueprintUI::ValueInputSlider("Y", -180, 180, 360,
+                        [&](float f)
+                        {
+                            vec3 euler = eulerAngles(parent->comp<State3D>().rotation);
+                            euler.y = radians(f);
+                            parent->comp<State3D>().rotation = quat(euler);
+                        },
+                        [&](){return degrees(eulerAngles(parent->comp<State3D>().rotation).y);},
+                        VulpineColorUI::HightlightColorCyan
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorCyan
+                ),
+
+                VulpineBlueprintUI::NamedEntry(U"Z",
+                    VulpineBlueprintUI::ValueInputSlider("Z", -180, 180, 360,
+                        [&](float f)
+                        {
+                            vec3 euler = eulerAngles(parent->comp<State3D>().rotation);
+                            euler.z = radians(f);
+                            parent->comp<State3D>().rotation = quat(euler);
+                        },
+                        [&](){return degrees(eulerAngles(parent->comp<State3D>().rotation).z);},
+                        VulpineColorUI::HightlightColorPink
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorPink
+                )
+            })
+        );
+
+        auto scaleMenu = newEntity("Gizmo Scale",  UI_BASE_COMP,
+            WidgetStyle().setautomaticTabbing(3).setuseInternalSpacing(true),
+            EntityGroupInfo({
+
+                VulpineBlueprintUI::NamedEntry(U"X",
+                    VulpineBlueprintUI::ValueInput("X", 
+                        [&](float f){parent->comp<State3D>().scale.x = f;},
+                        [&](){return parent->comp<State3D>().scale.x;},
+                        1e-3, 1e3, 0.1, 1.0, VulpineColorUI::HightlightColorYellow
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorYellow
+                ),
+                VulpineBlueprintUI::NamedEntry(U"Y",
+                    VulpineBlueprintUI::ValueInput("Y", 
+                        [&](float f){parent->comp<State3D>().scale.y = f;},
+                        [&](){return parent->comp<State3D>().scale.y;},
+                        1e-3, 1e3, 0.1, 1.0, VulpineColorUI::HightlightColorPurple
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorPurple
+                ),
+                VulpineBlueprintUI::NamedEntry(U"Z",
+                    VulpineBlueprintUI::ValueInput("Z", 
+                        [&](float f){parent->comp<State3D>().scale.z = f;},
+                        [&](){return parent->comp<State3D>().scale.z;},
+                        1e-3, 1e3, 0.1, 1.0, VulpineColorUI::HightlightColorGreen
+                    ),
+                    0.125, false, VulpineColorUI::HightlightColorGreen
+                )
+            })
+        );
+
+        auto posTab = VulpineBlueprintUI::NamedEntry(U"Position", positionMenu, 0.2, true, gizmoTitleColor);
+        auto rotTab = VulpineBlueprintUI::NamedEntry(U"Rotation", rotationMenu, 0.2, true, gizmoTitleColor);
+        auto scaleTab = VulpineBlueprintUI::NamedEntry(U"Scale", scaleMenu, 0.2, true, gizmoTitleColor);
+
+        posTab->comp<EntityGroupInfo>().children[0]->comp<WidgetBox>().set(vec2(-0.75, 1.0), vec2(-1., -0.6));
+        rotTab->comp<EntityGroupInfo>().children[0]->comp<WidgetBox>().set(vec2(-0.75, 1.0), vec2(-1., -0.6));
+        scaleTab->comp<EntityGroupInfo>().children[0]->comp<WidgetBox>().set(vec2(-0.75, 1.0), vec2(-1., -0.6));
+
+        auto posToggle = VulpineBlueprintUI::Toggable("Translate", "Gizmo Translate", 
+            [&](Entity *e, float f){translationMode();},
+            [&](Entity *e){return isTranslationMode() ? 0. : 1.;},
+            gizmoBaseColor
+        );
+        posToggle->comp<WidgetBox>().set(vec2(-1.0, -0.75), vec2(-1., -0.6));
+        ComponentModularity::addChild(*posTab, posToggle);
+
+        auto rotToggle = VulpineBlueprintUI::Toggable("Rotate", "Gizmo Rotation", 
+            [&](Entity *e, float f){rotationMode();},
+            [&](Entity *e){return isRotationMode() ? 0. : 1.;},
+            gizmoBaseColor
+        );
+        rotToggle->comp<WidgetBox>().set(vec2(-1.0, -0.75), vec2(-1., -0.6));
+        ComponentModularity::addChild(*rotTab, rotToggle);
+
+        auto scaleToggle = VulpineBlueprintUI::Toggable("Scale", "Gizmo Scale", 
+            [&](Entity *e, float f){scalingMode();},
+            [&](Entity *e){return isScalingMode() ? 0. : 1.;},
+            gizmoBaseColor
+        );
+        scaleToggle->comp<WidgetBox>().set(vec2(-1.0, -0.75), vec2(-1., -0.6));
+        ComponentModularity::addChild(*scaleTab, scaleToggle);
+
+        return newEntity("Gizmo Control Menu",
+            UI_BASE_COMP,
+            WidgetStyle().setautomaticTabbing(1).setuseInternalSpacing(true),
+            EntityGroupInfo({
+                // newEntity("Gizmo Control Pos/Rot/scale", UI_BASE_COMP, 
+                //     WidgetStyle().setautomaticTabbing(3),
+                //     EntityGroupInfo({posTab, rotTab, scaleTab})
+                // ),
+                VulpineBlueprintUI::NamedEntry(U"Gizmo Mode", modeControls, 0.2, true, gizmoTitleColor),
+                posTab, rotTab, scaleTab
+            })
+        );
     }
 };

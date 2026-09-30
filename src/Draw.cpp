@@ -24,6 +24,8 @@ void DrawLine::initData()
 
     noBackFaceCulling = true;
     defaultMode = GL_LINES;
+    // depthWrite = false;
+    // sorted = false;
 
     int nbOfPoints = 2;
     GenericSharedBuffer buff(new char[sizeof(vec3)*nbOfPoints]);
@@ -254,7 +256,7 @@ void Draw::addElement(DrawElementBasePtr element)
     );
 }
 
-void Draw::drawLine(vec3 start, vec3 end, float duration, ModelState3D state, vec3 color)
+void Draw::drawLine(vec3 start, vec3 end, float duration, ModelState3D state, vec3 color, bool depthWrite)
 {
     std::shared_ptr<DrawLine> line = std::make_shared<DrawLine>(
           start
@@ -264,6 +266,12 @@ void Draw::drawLine(vec3 start, vec3 end, float duration, ModelState3D state, ve
         , state
         , color
     );
+
+    if(!depthWrite)
+    {
+        line->depthWrite = false;
+        line->sorted = false;
+    }
 
     queueMutex.lock();
     toDrawQueue.push(line);

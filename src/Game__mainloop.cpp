@@ -42,6 +42,7 @@
 
 #include <cmath>
 
+#include <EnvironementGenerator.hpp>
 
 
 void Game::mainloop()
@@ -94,6 +95,7 @@ void Game::mainloop()
 
     GG::sun = sunLight;
 
+    // GG::sun->cameraResolution = vec2(2048);
     GG::sun->cameraResolution = vec2(2048);
     // GG::sun->cameraResolution = vec2(4096);
     GG::sun->shadowCameraSize = vec2(64);
@@ -263,7 +265,7 @@ void Game::mainloop()
     VulpineBlueprintUI::AddToSelectionMenu(
         GlobalInfosTitleTab, GlobalInfosSubTab, 
         Blueprint::EDITOR_ENTITY::INO::GlobalBenchmarkScreen(),
-        "Global Benchmark", "icon_chrono"
+        "Global Benchmark", ""
     );
 
     VulpineBlueprintUI::AddToSelectionMenu(
@@ -367,7 +369,7 @@ void Game::mainloop()
             },
             -2.f
         ),
-        "Controls Helper", ""
+        "Active Keybinds", ""
     );
 
 
@@ -461,7 +463,7 @@ void Game::mainloop()
         .setautomaticTabbing(1)
         // .setuseInternalSpacing(true)
     ;
-    EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1);
+    EDITOR::MENUS::GlobalControl->comp<WidgetStyle>().setautomaticTabbing(1).setuseInternalSpacing(true);
 
     // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
     //     VulpineBlueprintUI::ValueInputSlider(
@@ -490,27 +492,41 @@ void Game::mainloop()
     //     )
     // );
 
+    // ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+    //     VulpineBlueprintUI::Toggable(
+    //         "Entity Infos Stats Helper", 
+    //         "icon_idcard",
+    //         [&](Entity *e, float v)
+    //         {
+    //             GlobalComponentToggler<InfosStatsHelpers>::activated =
+    //                 !GlobalComponentToggler<InfosStatsHelpers>::activated;
+    //         },
+    //         [&](Entity *e)
+    //         {
+    //             return GlobalComponentToggler<InfosStatsHelpers>::activated  ? 0.f : 1.f;
+    //         }
+    //     )
+    // );
+
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        VulpineBlueprintUI::Toggable(
-            "Entity Infos Stats Helper", 
-            "icon_idcard",
+        VulpineBlueprintUI::Toggable2(
+            "Pause Simulation", 
+            "",
             [&](Entity *e, float v)
             {
-                GlobalComponentToggler<InfosStatsHelpers>::activated =
-                    !GlobalComponentToggler<InfosStatsHelpers>::activated;
+                globals.simulationTime.toggle();
             },
             [&](Entity *e)
             {
-                return GlobalComponentToggler<InfosStatsHelpers>::activated  ? 0.f : 1.f;
+                return globals.simulationTime.isPaused() ? 0.f : 1.f;
             }
         )
     );
 
-
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        VulpineBlueprintUI::Toggable(
-            "Entity Physic Helper", 
-            "icon_hitbox",
+        VulpineBlueprintUI::Toggable2(
+            "Show Physics Body", 
+            "",
             [&](Entity *e, float v)
             {
                 JoltVulpine::debugRendererActive = !JoltVulpine::debugRendererActive;
@@ -528,7 +544,7 @@ void Game::mainloop()
 
     {
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-            VulpineBlueprintUI::Toggable(
+            VulpineBlueprintUI::Toggable2(
                 "Bloom", 
                 "",
                 [&](Entity *e, float v)
@@ -544,7 +560,7 @@ void Game::mainloop()
     }
     {
         ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-            VulpineBlueprintUI::Toggable(
+            VulpineBlueprintUI::Toggable2(
                 "AO", 
                 "",
                 [&](Entity *e, float v)
@@ -605,7 +621,7 @@ void Game::mainloop()
     // );
 
     ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
-        VulpineBlueprintUI::Toggable(
+        VulpineBlueprintUI::Toggable2(
             "Pré-Alpha World Regions", 
             "",
             [&](Entity *e, float v)
@@ -674,6 +690,7 @@ void Game::mainloop()
 
     // /****** Last Pre Loop Routines ******/
     state = AppState::run;
+    GrassGenerator::init();
 
 
     // Sword->meshes[0]->setMenu(menu, U"sword");
@@ -721,7 +738,16 @@ void Game::mainloop()
         // PG::doPhysicInterpolation = false;
 
         mainloopStartRoutine();
+        
+
+        for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
+        std::vector<GLFWKeyInfo> gamepadInputs = InputManager::pollGamepad();
+        for (auto &input : gamepadInputs) userInput(input), InputManager::processEventInput(input);
+        InputManager::processContinuousInputs();
+
         mainloopPreRenderRoutine();
+
+        GrassGenerator::update();
 
 
         /* UI & 2D Render */
@@ -742,7 +768,7 @@ void Game::mainloop()
 
             // FenceGPU::list["Scene 2D Draw"] = FenceGPU();
 
-            scene2D.draw(0);
+            scene2D.draw(0, &screenBuffer2D);
             
             // glFlush();
             // FenceGPU::list["Scene 2D Draw End"] = FenceGPU();
@@ -793,7 +819,8 @@ void Game::mainloop()
         scene.genLightBuffer();
         // FenceGPU::list["Scene 3D Draw"] = FenceGPU();
         scene.cull();
-        scene.draw(0);
+        paintShaderPass.getFBO().bindTexture(2, 8);
+        scene.draw(0, defferedBuffer);
         // FenceGPU::list["Scene 3D Draw End"] = FenceGPU();
 
         // occlusionPass.render(*globals.currentCamera);
@@ -832,12 +859,7 @@ void Game::mainloop()
         
         // tmp_Timer.start();
         
-        
-        for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
-        std::vector<GLFWKeyInfo> gamepadInputs = InputManager::pollGamepad();
-        for (auto &input : gamepadInputs) userInput(input), InputManager::processEventInput(input);
-        InputManager::processContinuousInputs();
-
+    
         // plottest->push(globals.appTime.getDeltaMS());
         // plottest->updateData();
 
@@ -1384,6 +1406,7 @@ void Game::mainloop()
             d = log2(max(0.f, (power-1.f)*d/(firstLevelRadius)) + 1) / log2(power);
 
             level = floor(d);
+            level = min(level, 2);
             
 
             auto &c = model->getChildren();

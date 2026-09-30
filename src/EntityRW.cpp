@@ -163,11 +163,27 @@ DATA_READ_FUNC(EntityRef) {
         auto &s = data->comp<State3D>();
         auto &es = data->comp<EntitySpawner>();
 
-        for(auto &i : es.onLoading)
+        if(EntitySpawner::loadAllAndHide)
         {
-            if(i.cond.empty() or Loader<Flag>::get(i.cond)->as_bool())
-            {
+            for(auto &i : es.onLoading)
+            {                
+                if(!i.cond.empty() and !Loader<Flag>::get(i.cond)->as_bool())
+                {
+                    i.state.isActive = ModelStatus::HIDE;
+                }
+
                 i.child = spawnEntityToParent(i.name, *data, i.state);
+
+            }
+        }
+        else
+        {
+            for(auto &i : es.onLoading)
+            {
+                if(i.cond.empty() or Loader<Flag>::get(i.cond)->as_bool())
+                {
+                    i.child = spawnEntityToParent(i.name, *data, i.state);
+                }
             }
         }
     }

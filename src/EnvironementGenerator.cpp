@@ -2,6 +2,169 @@
 #include <AssetManagerUtils.hpp>
 #include <MathsUtils.hpp>
 
+#include <EntityBlueprint.hpp>
+
+void GrassGenerator::init()
+{
+    models[0] = Loader<ObjectGroup>::get("Grass Patch 4x64x64").copy();
+    models[1] = Loader<ObjectGroup>::get("Grass Patch 2x32x32").copy();
+    models[2] = Loader<ObjectGroup>::get("Grass Patch 1x16x16").copy();
+    models[3] = Loader<ObjectGroup>::get("Grass Patch 1x8x8").copy();
+
+    for(int i = 0; i < 4; i++)
+    {
+        models[i]->
+        getInstances()[0]
+            .originalModel
+            ->baseUniforms.add(ShaderUniform(float(i), 31));
+
+        globals.getScene()->add(models[i]);
+    }
+}
+
+void GrassGenerator::update()
+{
+    for(int i = 0; i < 4; i++)
+        models[i]->getInstances()[0].originalModel->resetInstances();
+
+    if(!active) return;
+
+    constexpr float patchSize = 16.f;
+    constexpr int gridRes = 23;
+
+    vec2 camDir2D = normalize(vec2(globals.currentCamera->getDirection().x, globals.currentCamera->getDirection().z));
+    // float angle = atan2f(camDir2D.y, camDir2D.x);
+    float angleMax = cos(globals.currentCamera->getState().FOV*0.75f);
+    // float angleMax = cos(globals.currentCamera->getState().FOV*2);
+
+    angleMax = mix(angleMax, -1.f, max(0.f, -globals.currentCamera->getDirection().y*2.f));
+
+    vec2 off[4] = 
+    {
+        vec2(-.5f, -.5f), 
+        vec2(+.5f, -.5f), 
+        vec2(-.5f, +.5f), 
+        vec2(+.5f, +.5f), 
+    };
+
+    for(int i = -gridRes+1; i < gridRes; i++)
+        for(int j = -gridRes+1; j < gridRes; j++)
+        {
+            ivec2 uvi(i, j);
+            vec2 uv(uvi);
+
+            bool skip = true;
+            int minLod = 4;
+
+            for(auto &o : off)
+            {
+                vec2 uv2 = uv + o;
+
+                float l = length(uv2);
+                skip &= dot(camDir2D, uv2) < angleMax*l and l > 2.0;
+
+                float d = l/(float)gridRes;
+                d = log2(max(2.f, 64.f*d))-2.f;
+                int lod = max(floor(d), 0.f);
+
+                minLod = min(minLod, lod);
+
+            }
+            
+            // skip = false;
+
+            if(skip or minLod >= 4) continue;
+
+            auto instance = models[minLod]->getInstances()[0].originalModel->createInstance();
+            instance->setPosition(vec3(uv.x, 0, uv.y)*patchSize);
+            instance->update();
+        }
+}
+
+void WaterGenerator::init()
+{
+    /// ...
+}
+
+EntityRef WaterGenerator::generate()
+{
+    cellSize = 128.f;
+
+    ModelRef terrain = newModel(
+        Loader<MeshMaterial>::get("Water"), 
+        Loader<MeshVao>::get("8x8_terrainPlane")
+    );
+
+    ivec2 gridDim = vec2(Blueprint::terrainConst::terrainSize.x, Blueprint::terrainConst::terrainSize.z)/cellSize;
+
+    Texture2D HeightMap = Loader<Texture2D>::get(Blueprint::terrainConst::mapFileName);
+    Texture2D WaterLevel = Loader<Texture2D>::get("Water Level");
+
+    terrain->state.setScale(
+        vec3(cellSize, Blueprint::terrainConst::terrainSize.y, cellSize));
+    terrain->defaultMode = GL_PATCHES;
+    terrain->setMap(HeightMap, 2);
+    terrain->setMap(WaterLevel, 3);
+
+    terrain->sorted = false;
+    terrain->transparent = true;
+
+    entity = newEntity("Water");
+
+    for(int i = 0; i < gridDim.x; i++)
+        for(int j = 0; j < gridDim.y; j++)
+        {
+            vec2 uvhalf = (vec2((float)i+0.5f, (float)j+0.5f)/vec2(gridDim)) - 0.5f;
+            vec3 pos = vec3(vec3(Blueprint::terrainConst::terrainSize.x*uvhalf.x, 0, Blueprint::terrainConst::terrainSize.z*uvhalf.y));
+
+            vec2 uvmin = vec2(i, j)/vec2(gridDim);
+            vec2 uvmax = vec2(i+1, j+1)/vec2(gridDim);
+
+            ModelRef t = terrain->copy();
+
+            t->defaultMode = GL_PATCHES;
+            t->noBackFaceCulling = true;
+            t->state.frustumCulled = true;
+            t->sorted = false;
+            // t->sorted = true;
+            t->tessActivate(vec2(1, 16), vec2(25, 250));
+            t->tessHeighFactors(1, Blueprint::terrainConst::terrainSize.y/Blueprint::terrainConst::terrainSize.x);
+
+            t->tessHeightTextureRange(uvmin, uvmax);
+
+            EntityModel model = EntityModel{newObjectGroup()};
+            model->add(t);
+
+            model->update();
+            model->updateMeshesBoundingBox();
+
+            vec3 cellPos = vec3(Blueprint::terrainConst::terrainSize.x*uvhalf.x, 0, Blueprint::terrainConst::terrainSize.z*uvhalf.y);
+
+            float minV = 0.f; // TODO : fill later
+            float maxV = 1.f; // TODO : fill later
+
+            model->setStaticAABB(
+                vec3(cellPos + model->getMeshesBoundingBox().first) *vec3(1, 0, 1) + vec3(0, minV*Blueprint::terrainConst::terrainSize.y, 0), 
+                vec3(cellPos + model->getMeshesBoundingBox().second)*vec3(1, 0, 1) + vec3(0, maxV*Blueprint::terrainConst::terrainSize.y, 0)
+            );
+
+            EntityRef chunk = newEntity(
+                "Water Cell" + std::to_string(i) + "x" + std::to_string(j), 
+                State3D({pos}),
+                model
+            );
+
+            ComponentModularity::addChild(*entity, chunk); 
+        }
+
+    return entity;
+}
+
+void WaterGenerator::clear()
+{
+    entity = EntityRef();
+}
+
 AUTOGEN_DATA_RW_FUNC_AN(BiomeInfos,
     Grassyness,
     ForestDensity,
@@ -133,7 +296,14 @@ EntityScatterer::EntityScatterer(
     
 }
 
-float getTerrainHeight(vec2 pos)
+// void updateTerrainFromGPU()
+// {
+//     auto &terrain = Loader<Texture2D>::get("Herault_4096");
+
+//     terrain.updateSourceFromGPU();
+// }
+
+float getTerrainHeightBase(vec2 pos)
 {
     static auto &terrain = Loader<Texture2D>::get("Herault_4096");
 
@@ -145,6 +315,35 @@ float getTerrainHeight(vec2 pos)
     pixelPos = clamp(pixelPos, ivec2(0), res-1);
 
     return pixels[pixelPos.x*res.x + pixelPos.y]*512.f;
+}
+
+float getTerrainHeight(vec2 pos)
+{
+    float h = getTerrainHeightBase(pos);
+
+    // float hx1 = getTerrainHeightBase(pos + vec2(1, 0));
+    // float hx2 = getTerrainHeightBase(pos - vec2(1, 0));
+
+    // float hz1 = getTerrainHeightBase(pos + vec2(0, 1));
+    // float hz2 = getTerrainHeightBase(pos - vec2(0, 1));
+
+    // // float hd1 = getTerrainHeightBase(pos + vec2(+1, +1));
+    // // float hd2 = getTerrainHeightBase(pos + vec2(-1, -1));
+    // // float hd3 = getTerrainHeightBase(pos + vec2(-1, +1));
+    // // float hd4 = getTerrainHeightBase(pos + vec2(+1, -1));
+
+    // float ax1 = linearstep(.5f, 1.f, fract(pos.x));
+    // float ax2 = linearstep(.5f, 0.f, fract(pos.x));
+
+    // float az1 = linearstep(.5f, 1.f, fract(pos.y));
+    // float az2 = linearstep(.5f, 0.f, fract(pos.y));
+
+    // h = mix(h, hx1, ax1);
+    // h = mix(h, hx2, ax2);
+    // h = mix(h, hz1, az1);
+    // h = mix(h, hz2, az2);
+
+    return h;
 }
 
 float getBiomeMap(vec2 pos, std::string name)
@@ -339,24 +538,31 @@ void EntityScatterer::generateFrame(float timeAllowed)
                     // static BenchTimer test("Time To Spawn Entity");
                     
 
-                    EntityRef e = spawnEntity(
-                        spawn.entities[name(generator)],
-                        vec3(pos.y, getTerrainHeight(pos), pos.x),
-                        quat(radians(vec3(radialx(generator),radialy(generator),radialz(generator))))
-                    );
-
-
                     float modelScale = scale(generator);
-                    // WARNING_MESSAGE(modelScale);
-                    if(e->has<EntityModel>())
-                    {
-                        e->comp<EntityModel>()->state.scaleScalar(modelScale);
-                        e->comp<EntityModel>()->update();
-                    }
+                    
+                    HierarchyState3D state;
+                    state.position = vec3(pos.y, getTerrainHeight(pos), pos.x);
+                    state.rotation = quat(radians(vec3(radialx(generator),radialy(generator),radialz(generator))));
+                    state.scale = vec3(modelScale);
+                    spawnEntityToParent(spawn.entities[name(generator)], *genParent, state);
 
-                    // test.start();
+                    // EntityRef e = spawnEntity(
+                    //     spawn.entities[name(generator)],
+                    //     vec3(pos.y, getTerrainHeight(pos), pos.x),
+                    //     quat(radians(vec3(radialx(generator),radialy(generator),radialz(generator))))
+                    // );
 
-                    ComponentModularity::addChild(*genParent, e);
+
+                    // // WARNING_MESSAGE(modelScale);
+                    // if(e->has<EntityModel>())
+                    // {
+                    //     e->comp<EntityModel>()->state.scaleScalar(modelScale);
+                    //     e->comp<EntityModel>()->update();
+                    // }
+
+                    // // test.start();
+
+                    // ComponentModularity::addChild(*genParent, e);
                     // genParent->comp<EntityGroupInfo>().children.push_back(e);
                     // WARNING_MESSAGE(genParent->comp<EntityGroupInfo>().children.size())
                     

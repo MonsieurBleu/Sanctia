@@ -5,6 +5,31 @@
 float getTerrainHeight(vec2 pos);
 float getBiomeMap(vec2 pos, std::string name);
 
+namespace GrassGenerator
+{
+    inline bool active = false;
+    inline ObjectGroupRef models[4];
+
+    void init();
+
+    void update();
+}
+
+namespace WaterGenerator
+{
+    inline bool active = false;
+    inline ObjectGroupRef model;
+    inline EntityRef entity;
+
+    inline float cellSize = 32.f;
+
+    void init();
+
+    EntityRef generate();
+
+    void clear();
+}
+
 struct BiomeInfos
 {
     float Grassyness = 0.f;

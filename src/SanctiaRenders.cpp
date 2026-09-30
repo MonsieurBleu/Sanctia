@@ -13,6 +13,19 @@ DefferedBuffer::DefferedBuffer(const ivec2 *resolution) : RenderBuffer(resolutio
 void DefferedBuffer::generate()
 {
     // RenderBuffer::generate();
+    unsortedDraws.doCopy = true;
+    unsortedDraws.location = 16;
+    (*this).unsortedDraws.sortedDepthCopy = Texture2D() // DEPTH COPY
+        .setResolution(*resolution)
+        .setInternalFormat(GL_R32F)
+        .setFormat(GL_RED)
+        .setPixelType(GL_FLOAT)
+        // .setFilter(GL_LINEAR)
+        .setFilter(GL_NEAREST)
+        .setWrapMode(GL_CLAMP_TO_EDGE)
+        // .setAttachement(GL_DEPTH_ATTACHMENT)
+        .generate()
+        ;
 
     (*this)
         .addTexture(
@@ -69,7 +82,8 @@ void DefferedBuffer::generate()
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
                 .setFilter(GL_LINEAR)
-                .setWrapMode(GL_CLAMP_TO_EDGE))
+                .setWrapMode(GL_CLAMP_TO_EDGE)
+            )
         .addTexture(
             Texture2D() // MATERIAL POSITION
                 .setResolution(*resolution)
@@ -78,7 +92,9 @@ void DefferedBuffer::generate()
                 .setPixelType(GL_SHORT)
                 .setFilter(GL_NEAREST)
                 .setWrapMode(GL_CLAMP_TO_EDGE)
-                .setAttachement(GL_COLOR_ATTACHMENT4))
+                .setAttachement(GL_COLOR_ATTACHMENT4)
+                // .setVulpineAttachement(VulpineTextureAttachement::StaticOnly)
+            )
         .addTexture(
             Texture2D() // MATERIAL PROPERTY
                 .setResolution(*resolution)
@@ -222,7 +238,7 @@ void PaintShaderPass::setup()
     FBO
         .addTexture(
             Texture2D() // COLOR SRGB BUFFER
-                .setResolution(defferedBuffer.getTexture(0).getResolution())
+                .setResolution(defferedBuffer->getTexture(0).getResolution())
                 .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -232,7 +248,7 @@ void PaintShaderPass::setup()
             )
         .addTexture(
             Texture2D() // EMMISSIVE SRGB BUFFER
-                .setResolution(defferedBuffer.getTexture(0).getResolution())
+                .setResolution(defferedBuffer->getTexture(0).getResolution())
                 .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -242,7 +258,7 @@ void PaintShaderPass::setup()
             )
         .addTexture(
             Texture2D() // BRUSH SCREEN POS
-                .setResolution(defferedBuffer.getTexture(0).getResolution())
+                .setResolution(defferedBuffer->getTexture(0).getResolution())
                 .setInternalFormat(GL_RGBA16)
                 .setFormat(GL_RGBA)
                 .setPixelType(GL_UNSIGNED_SHORT)
@@ -256,7 +272,7 @@ void PaintShaderPass::setup()
     FBO_Clouds
         .addTexture(
             Texture2D() // COLOR SRGB BUFFER
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/cloudDownscale)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/cloudDownscale)
                 .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -266,7 +282,7 @@ void PaintShaderPass::setup()
             )
         .addTexture(
             Texture2D() // EMMISSIVE SRGB BUFFER
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/cloudDownscale)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/cloudDownscale)
                 .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -279,7 +295,7 @@ void PaintShaderPass::setup()
     FBO_Bloom
         .addTexture(
             Texture2D() // COLOR SRGB BUFFER
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/cloudDownscale)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/cloudDownscale)
                 .setInternalFormat(GL_SRGB8)
                 .setFormat(GL_RGB)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -292,7 +308,7 @@ void PaintShaderPass::setup()
     FBO_AO
         .addTexture(
             Texture2D() // COLOR SRGB BUFFER
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/cloudDownscale)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/cloudDownscale)
                 .setInternalFormat(GL_SRGB8_ALPHA8)
                 .setFormat(GL_RGBA)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -304,7 +320,7 @@ void PaintShaderPass::setup()
 
     FBO_CopyAndDeform
         .addTexture(
-            defferedBuffer.getTexture(RENDER_BUFFER_COLOR_TEXTURE_ID)
+            defferedBuffer->getTexture(RENDER_BUFFER_COLOR_TEXTURE_ID)
                 .setAttachement(GL_COLOR_ATTACHMENT0))
         .generate();
 
@@ -312,7 +328,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_1
         .addTexture(
             Texture2D()
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale)
                 .setInternalFormat(GL_R8)
                 .setFormat(GL_RED)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -325,7 +341,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_2
         .addTexture(
             Texture2D() 
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale2)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale2)
                 .setInternalFormat(GL_R8)
                 .setFormat(GL_RED)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -338,7 +354,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_3
         .addTexture(
             Texture2D() 
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale2)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale2)
                 .setInternalFormat(GL_R32F)
                 .setFormat(GL_RED)
                 .setPixelType(GL_FLOAT)
@@ -353,7 +369,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_COPY
         .addTexture(
             Texture2D() 
-                .setResolution(defferedBuffer.getTexture(0).getResolution()/autoExposureDownscale2)
+                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale2)
                 .setInternalFormat(GL_R32F)
                 .setFormat(GL_RED)
                 .setPixelType(GL_FLOAT)
@@ -375,9 +391,10 @@ void PaintShaderPass::render(Camera &camera)
         Texture2D &EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
 
         FBO.resizeAll(globals.renderSize());
+        // FBO.resizeAll((3*globals.renderSize())/4);
         FBO_Bloom.resizeAll(globals.windowSize()/2);
         FBO_Clouds.resizeAll(globals.windowSize()/2);
-        FBO_CopyAndDeform.resizeAll(defferedBuffer.getTexture(0).getResolution());
+        FBO_CopyAndDeform.resizeAll(defferedBuffer->getTexture(0).getResolution());
         FBO_AO.resizeAll(globals.windowSize()/4);
 
         FBO_Exposure_1.resizeAll(globals.windowSize()/autoExposureDownscale);
@@ -393,12 +410,13 @@ void PaintShaderPass::render(Camera &camera)
         */
         shader.activate();
         FBO.activate();
+        FBO.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
 
-        defferedBuffer.bindTexture(RENDER_BUFFER_COLOR_TEXTURE_ID,  0);
-        defferedBuffer.bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,  1);
-        defferedBuffer.bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID, 2);
-        defferedBuffer.bindTexture(MATERIAL_POS_ID,                 4);
-        defferedBuffer.bindTexture(MATERIAL_INFOS_ID,               5);
+        defferedBuffer->bindTexture(RENDER_BUFFER_COLOR_TEXTURE_ID,  0);
+        defferedBuffer->bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,  1);
+        defferedBuffer->bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID, 2);
+        defferedBuffer->bindTexture(MATERIAL_POS_ID,                 4);
+        defferedBuffer->bindTexture(MATERIAL_INFOS_ID,               5);
         Loader<Texture2D>::get("nebula blur").bind(8);
         Loader<Texture2D>::get("small nebula").bind(9);
         EnvironementMap.bind(10);
@@ -415,14 +433,15 @@ void PaintShaderPass::render(Camera &camera)
             PASS 2 : Clouds
         */
         FBO_Clouds.activate();
+        FBO_Clouds.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
         cloudShader.activate();
         
-        // defferedBuffer.bindTexture(RENDER_BUFFER_COLOR_TEXTURE_ID,  0);
+        // defferedBuffer->bindTexture(RENDER_BUFFER_COLOR_TEXTURE_ID,  0);
         FBO.bindTexture(0, 0);
-        defferedBuffer.bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,  1);
-        defferedBuffer.bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID, 2);
-        defferedBuffer.bindTexture(MATERIAL_POS_ID,                 4);
-        defferedBuffer.bindTexture(MATERIAL_INFOS_ID,               5);
+        defferedBuffer->bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,  1);
+        defferedBuffer->bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID, 2);
+        defferedBuffer->bindTexture(MATERIAL_POS_ID,                 4);
+        defferedBuffer->bindTexture(MATERIAL_INFOS_ID,               5);
         FBO.bindTexture(1, 6);
         FBO.bindTexture(2, 7);
         Loader<Texture2D>::get("nebula blur").bind(8).setWrapMode(GL_MIRRORED_REPEAT).generate();
@@ -442,6 +461,7 @@ void PaintShaderPass::render(Camera &camera)
         if(enableExposure)
         {
             FBO_Exposure_1.activate();
+            FBO_Exposure_1.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             exposureShaderPass1.activate();
             FBO.bindTexture(0, 0);
 
@@ -453,6 +473,7 @@ void PaintShaderPass::render(Camera &camera)
 
 
             FBO_Exposure_2.activate();
+            FBO_Exposure_2.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             exposureShaderPass2.activate();
             FBO_Exposure_1.bindTexture(0, 0);
 
@@ -464,6 +485,7 @@ void PaintShaderPass::render(Camera &camera)
 
 
             FBO_Exposure_3.activate();
+            FBO_Exposure_3.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             exposureShaderPass3.activate();
             FBO_Exposure_2.bindTexture(0, 0);
             FBO_Exposure_COPY.bindTexture(0, 1);
@@ -479,6 +501,7 @@ void PaintShaderPass::render(Camera &camera)
 
 
             FBO_Exposure_COPY.activate();
+            FBO_Exposure_COPY.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             exposureShaderPassCOPY.activate();
             FBO_Exposure_3.bindTexture(0, 0);
 
@@ -501,15 +524,16 @@ void PaintShaderPass::render(Camera &camera)
         if(enableBloom)
         {
             FBO_Bloom.activate();
+            FBO_Bloom.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             bloomShader.activate();
             
-            // defferedBuffer.bindTexture(RENDER_BUFFER_COLOR_TEXTURE_ID,    0);
+            // defferedBuffer->bindTexture(RENDER_BUFFER_COLOR_TEXTURE_ID,    0);
             FBO.bindTexture(0, 0);
-            defferedBuffer.bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,    1);
-            // defferedBuffer.bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID,   2);
-            // defferedBuffer.bindTexture(MATERIAL_POS_ID,                   4);
-            // defferedBuffer.bindTexture(MATERIAL_INFOS_ID,                 5);
-            // defferedBuffer.bindTexture(RENDER_BUFFER_EMISSIVE_TEXTURE_ID, 6);
+            defferedBuffer->bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,    1);
+            // defferedBuffer->bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID,   2);
+            // defferedBuffer->bindTexture(MATERIAL_POS_ID,                   4);
+            // defferedBuffer->bindTexture(MATERIAL_INFOS_ID,                 5);
+            // defferedBuffer->bindTexture(RENDER_BUFFER_EMISSIVE_TEXTURE_ID, 6);
             FBO_Clouds.bindTexture(1, 6);
             FBO.bindTexture(2, 7);
             // FBO_Clouds.bindTexture(0, 8);
@@ -526,6 +550,7 @@ void PaintShaderPass::render(Camera &camera)
         else
         {
             FBO_Bloom.activate();
+            FBO_Bloom.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             glClear(0);
             FBO_Bloom.deactivate();
         }
@@ -536,13 +561,14 @@ void PaintShaderPass::render(Camera &camera)
         if(enableAO)
         {
             FBO_AO.activate();
+            FBO_AO.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             aoShader.activate();
     
             FBO.bindTexture(0, 0);
-            defferedBuffer.bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,  1);
-            defferedBuffer.bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID, 2);
-            defferedBuffer.bindTexture(MATERIAL_POS_ID,                 4);
-            defferedBuffer.bindTexture(MATERIAL_INFOS_ID,               5);
+            defferedBuffer->bindTexture(RENDER_BUFFER_DEPTH_TEXTURE_ID,  1);
+            defferedBuffer->bindTexture(RENDER_BUFFER_NORMAL_TEXTURE_ID, 2);
+            defferedBuffer->bindTexture(MATERIAL_POS_ID,                 4);
+            defferedBuffer->bindTexture(MATERIAL_INFOS_ID,               5);
             FBO.bindTexture(1, 6);
             FBO.bindTexture(2, 7);
             ssaoNoiseTexture.bind(8);
@@ -555,6 +581,7 @@ void PaintShaderPass::render(Camera &camera)
         else
         {
             FBO_AO.activate();
+            FBO_AO.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
             glClear(0);
             FBO_AO.deactivate();
         }
@@ -565,6 +592,7 @@ void PaintShaderPass::render(Camera &camera)
         */
         copyShader.activate();
         FBO_CopyAndDeform.activate();
+        FBO_CopyAndDeform.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);
 
         FBO.bindTexture(0, 0);
         FBO_Bloom.bindTexture(0, 6);

@@ -127,7 +127,8 @@ public:
         vec3 end, 
         float duration = 0.0f, 
         ModelState3D state = ModelState3D(),
-        vec3 color = "#ff0000"_rgb
+        vec3 color = "#ff0000"_rgb,
+        bool depthWrite = true
     );
     
     void drawSphere(

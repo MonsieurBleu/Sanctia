@@ -770,18 +770,18 @@ void Game::physicsLoop()
             // also if you leave the terrain the game will segfault
             {
                 vec2 field_point = vec2(entity.comp<state3D>().position.x, entity.comp<state3D>().position.z);
-                field_point += vec2(Blueprint::terrainSize.x, Blueprint::terrainSize.z) * 0.5f;
+                field_point += vec2(Blueprint::terrainConst::terrainSize.x, Blueprint::terrainConst::terrainSize.z) * 0.5f;
 
-                Texture2D *HeightMap = Loader<Texture2D>::getIfExist(Blueprint::mapFileName);
+                Texture2D *HeightMap = Loader<Texture2D>::getIfExist(Blueprint::terrainConst::mapFileName);
 
                 if(HeightMap)
                 {
                     float *src = ((float *)HeightMap->getPixelSource());
                     ivec2 textureSize = HeightMap->getResolution();
     
-                    auto texelFetch = [&src, &textureSize](const ivec2& uv){return src[uv.y * textureSize.x + uv.x] * Blueprint::terrainSize.y;};
+                    auto texelFetch = [&src, &textureSize](const ivec2& uv){return src[uv.y * textureSize.x + uv.x] * Blueprint::terrainConst::terrainSize.y;};
     
-                    vec2 terrain_uv = field_point / vec2(Blueprint::terrainSize.x, Blueprint::terrainSize.z);
+                    vec2 terrain_uv = field_point / vec2(Blueprint::terrainConst::terrainSize.x, Blueprint::terrainConst::terrainSize.z);
                     vec2 texel_pos = terrain_uv * vec2(textureSize) - 0.5f;
                     // bilinear interpolation
                     ivec2 base = ivec2(floor(texel_pos));

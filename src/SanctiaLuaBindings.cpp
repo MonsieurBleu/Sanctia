@@ -794,6 +794,9 @@ struct GG_Wrapper {
     void setEditorGridPositionScale(const vec4 &ps){EDITOR::gridPositionScale = ps;}
     void setEditorGridNormale(const vec3 &n){EDITOR::gridNormale = n;}
     void setEditorGridColor(const vec3 &c){EDITOR::gridColor = c;}
+    vec3 getEditorGridColor(){return EDITOR::gridColor;}
+
+    Draw &Draw(){return *GG::draw.get();};
 };
 
 void SanctiaLuaBindings::Globals(sol::state &lua)
@@ -810,6 +813,19 @@ void SanctiaLuaBindings::Globals(sol::state &lua)
     //     "currentLanguage", sol::property(&GG_Wrapper::getCurrentLanguage, &GG_Wrapper::setCurrentLanguage)
     // );
     // lua["GameGlobals"] = GG_Wrapper();
+
+    VBIND_CLASS_DECLARE(Draw)
+    #define CURRENT_CLASS_BINDING Draw
+    {
+        VBIND_CREATE_CLASS
+        VBIND_ADD_CONSTRUCTORS((), ())
+
+        VBIND_ADD_METHODS(
+            drawLine, drawSphere, drawBoxFromHalfExtents
+        )
+    }
+    VBIND_CLASS_END
+    #undef CURRENT_CLASS_BINDING
 
     #undef CURRENT_CLASS_BINDING
 
@@ -829,7 +845,9 @@ void SanctiaLuaBindings::Globals(sol::state &lua)
             setCurrentLanguage,
             setEditorGridPositionScale,
             setEditorGridNormale,
-            setEditorGridColor
+            setEditorGridColor,
+            getEditorGridColor,
+            Draw
         )
     }
     luaHeader << "GameGlobals = {}\n";

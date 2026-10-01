@@ -634,7 +634,7 @@ void Game::mainloop()
     
     // Apps::EventGraphApp eventGraph;
     // Apps::SceneMergeApp sceneMerge;
-    // Apps::LunaTesting lunaTest;
+    Apps::LunaTesting lunaTest;
     // Apps::MovementDemo movementDemo;
 
     Apps::EnviroApp enviro;

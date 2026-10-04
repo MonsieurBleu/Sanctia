@@ -99,17 +99,24 @@ EntityRef WaterGenerator::generate()
 
     Texture2D HeightMap = Loader<Texture2D>::get(Blueprint::terrainConst::mapFileName);
     Texture2D WaterLevel = Loader<Texture2D>::get("Water Level");
+    Texture2D WaterFlow = Loader<Texture2D>::get("Water Flow");
 
     terrain->state.setScale(
         vec3(cellSize, Blueprint::terrainConst::terrainSize.y, cellSize));
     terrain->defaultMode = GL_PATCHES;
     terrain->setMap(HeightMap, 2);
     terrain->setMap(WaterLevel, 3);
+    terrain->setMap(WaterFlow, 4);
 
     terrain->sorted = false;
     terrain->transparent = true;
 
     entity = newEntity("Water");
+
+    int lod = log2f(gridDim.x)+1;
+    vec2 lodres = vec2(WaterLevel.getResolution())/vec2(gridDim*2);
+
+    // WARNING_MESSAGE(PRINTVAR(lod), PRINTVAR(lodres));
 
     for(int i = 0; i < gridDim.x; i++)
         for(int j = 0; j < gridDim.y; j++)
@@ -119,6 +126,16 @@ EntityRef WaterGenerator::generate()
 
             vec2 uvmin = vec2(i, j)/vec2(gridDim);
             vec2 uvmax = vec2(i+1, j+1)/vec2(gridDim);
+
+            vec2 loduv = uvmin;
+
+            float avg = 0.;
+            glGetTextureSubImage(WaterLevel.getHandle(), lod, 
+                ceil(loduv.x*lodres.x), ceil(loduv.y*lodres.y), 0,
+                1, 1, 1, 
+                GL_RED, GL_FLOAT, sizeof(float), &avg
+            );
+            if(avg == 0.) continue;
 
             ModelRef t = terrain->copy();
 

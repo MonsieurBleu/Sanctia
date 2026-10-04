@@ -588,10 +588,12 @@ namespace TerrainEditor
 
     EntityRef secondaryBrushMenu;
     EntityRef currentToolHelper;
+    EntityRef arrow;
+    ObjectGroupRef arrowModel;
 
     std::string currentTarget = Blueprint::terrainConst::mapFileName;
     std::string viableTargets[]{
-        Blueprint::terrainConst::mapFileName, "Water Level", "Grassyness", "Forest Density"
+        Blueprint::terrainConst::mapFileName, "Water Level", "Water Flow", "Grassyness", "Forest Density"
     };
 
     FrameBuffer FBO;
@@ -1030,6 +1032,14 @@ namespace TerrainEditor
 
     void init(EntityRef appRoot)
     {
+        arrow = spawnEntityToParent("Gizmo Arrow", *appRoot, HierarchyState3D());
+        // arrowModel = Loader<ObjectGroup>::get("Gizmo Arrow").copy();
+        auto mesh = arrow->comp<EntityModel>()->getChildren()[0]->getMeshes()[0]; 
+        static vec3 color = vec3(1, 0, 0);
+        mesh->uniforms.add(ShaderUniform(vec3(color), 20)); 
+        mesh->depthWrite = true; 
+        mesh->sorted = true; 
+
         auto &terrainShader = Loader<MeshMaterial>::get("terrain_paintPBR");
         terrainShader->uniforms.add(ShaderUniform(&active,       36));
         terrainShader->uniforms.add(ShaderUniform(&textureView,  37));
@@ -1237,6 +1247,35 @@ namespace TerrainEditor
 
         camToBrushDistance = distance(minDistPos, globals.currentCamera->getPosition());
         brush::pos3D = minDistPos;
+
+        if(currentTarget == viableTargets[2])
+        {
+            arrow->comp<State3D>().isActive = ModelStatus::SHOW;
+            arrow->comp<State3D>().rotation = quat(vec3(0., brush::intensity*PI*2.f, 0.));
+            arrow->comp<State3D>().scale = vec3(5.f);
+
+            vec3 p(
+                brush::pos3D.x, 
+                getBiomeMap(vec2(brush::pos3D.z, brush::pos3D.x), "Water Level")*512.f + 2.f,
+                // brush::pos3D.y + 2.0,
+                brush::pos3D.z
+            );
+            arrow->comp<State3D>().position = p;
+            // setEntityTransform(*arrow, arrow->comp<State3D>());
+
+            // WARNING_MESSAGE(
+            //     PRINTVAR(arrow->comp<State3D>().rotation),
+            //     PRINTVAR(arrow->comp<State3D>().position),
+            //     PRINTVAR(arrow->comp<EntityModel>().inScene)
+            // )
+
+            arrow->remove<HierarchyState3D>();
+        }
+        else
+        {
+            // arrow->comp<State3D>().isActive = ModelStatus::HIDE;
+            // setEntityTransform(*arrow, arrow->comp<State3D>());
+        }
 
         bool doEdition = 
             globals.mouseLeftClickDown() and 
@@ -2060,8 +2099,17 @@ Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
                 vec2 off = globals.mouseScrollOffset();
                 globals.clearMouseScroll();
                 
-                TerrainEditor::brush::forceIntensity[TerrainEditor::brush::tool].y = 
-                    clamp(TerrainEditor::brush::forceIntensity[TerrainEditor::brush::tool].y + sign(off.y)*0.1f, 0.f, 1.f);
+                float &i = TerrainEditor::brush::forceIntensity[TerrainEditor::brush::tool].y;
+
+                if(TerrainEditor::viableTargets[2] == TerrainEditor::currentTarget)
+                {
+                    i = fract(i + sign(off.y)*0.025);
+                }
+                else
+                {
+                    i = clamp(i + sign(off.y)*0.1f, 0.f, 1.f);
+                }
+
             },
             TerrainEditorOnly
         )

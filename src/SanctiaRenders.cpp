@@ -273,8 +273,8 @@ void PaintShaderPass::setup()
         .addTexture(
             Texture2D() // COLOR SRGB BUFFER
                 .setResolution(defferedBuffer->getTexture(0).getResolution()/cloudDownscale)
-                .setInternalFormat(GL_SRGB8)
-                .setFormat(GL_RGB)
+                .setInternalFormat(GL_SRGB8_ALPHA8)
+                .setFormat(GL_RGBA)
                 .setPixelType(GL_UNSIGNED_BYTE)
                 .setFilter(GL_LINEAR)
                 .setWrapMode(GL_CLAMP_TO_EDGE)
@@ -599,6 +599,7 @@ void PaintShaderPass::render(Camera &camera)
         // FBO_Bloom.bindTexture(2, 7);
         FBO_Clouds.bindTexture(0, 8);
         // FBO_AO.bindTexture(0, 9);
+        Loader<Texture2D>::get("Water Level").bind(10);
 
         globals.drawFullscreenQuad();
 

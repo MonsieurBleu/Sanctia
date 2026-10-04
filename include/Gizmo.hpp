@@ -171,8 +171,8 @@ class Gizmo {
             EntityRef e = spawnEntity(name, pos, rot); \
             auto mesh = e->comp<EntityModel>()->getChildren()[0]->getMeshes()[0]; \
             mesh->uniforms.add(ShaderUniform(vec3(color), 20)); \
-            mesh->depthWrite = false; \
-            mesh->sorted = false; \
+            mesh->depthWrite = true; \
+            mesh->sorted = true; \
             ComponentModularity::addChild(*parent, e); \
             e->set<HierarchyState3D>(HierarchyState3D()); \
         }

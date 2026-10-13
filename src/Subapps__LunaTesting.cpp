@@ -1,10 +1,12 @@
 #include <Subapps.hpp>
 #include "App.hpp"
+#include "Constants.hpp"
 #include "EnvironementGenerator.hpp"
 #include "Flags.hpp"
 #include <SanctiaEntity.hpp>
 #include "GameGlobals.hpp"
 #include "JoltIntegration/PhysicsCommons.hpp"
+#include "Navigation/NavMesh.hpp"
 #include "PlayerController2.hpp"
 #include "Scripting/ScriptInstance.hpp"
 #include "Timer.hpp"
@@ -24,12 +26,17 @@
 
 #include <Blueprint/EngineBlueprintUI.hpp>
 
-void testRecast();
 
-namespace NavPath
-{
-    void resetGhost(const vec3 &pos);
-};
+
+// namespace NavPath
+// {
+//     void resetGhost(const vec3 &pos);
+// };
+
+SpectatorController spectator;
+extern PlayerController2 playerControl;
+
+vec3 prevPlayerPosition;
 
 Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 {
@@ -47,18 +54,18 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
             InputManager::Filters::always, false)
     );
 
-    inputs.push_back(&
-        InputManager::addEventInput(
-            "gen navmesh", GLFW_KEY_L, 0, GLFW_PRESS, testRecast
-        ));
+    // inputs.push_back(&
+    //     InputManager::addEventInput(
+    //         "gen navmesh", GLFW_KEY_L, 0, GLFW_PRESS, testRecast
+    //     ));
 
-    inputs.push_back(&
-        InputManager::addEventInput(
-            "pathfind", GLFW_KEY_O, 0, GLFW_PRESS, [&]()
-            {
-                NavPath::resetGhost(GG::playerEntity->comp<State3D>().position + vec3(5, 0, 0));
-            }
-        ));
+    // inputs.push_back(&
+    //     InputManager::addEventInput(
+    //         "pathfind", GLFW_KEY_O, 0, GLFW_PRESS, [&]()
+    //         {
+    //             NavPath::resetGhost(GG::playerEntity->comp<State3D>().position + vec3(5, 0, 0));
+    //         }
+    //     ));
 
     inputs.push_back(&
         InputManager::addEventInput(
@@ -66,6 +73,28 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
                 NOTIF_MESSAGE("Gamepad A button pressed!");
             }
         )
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "toggle free cam", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { 
+            if (globals.getController() == &playerControl && GG::playerEntity)
+            {
+                ComponentModularity::removeChild(*appRoot, GG::playerEntity);
+
+                GG::playerEntity = newEntity();
+
+                GG::ManageEntityGarbage__WithPhysics();
+
+                App::setController(&spectator);
+            }
+            else if (globals.getController() == &spectator && GG::playerEntity)
+            {
+                spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = prevPlayerPosition + vec3(8, 0, 0)}));
+
+                App::setController(&playerControl);
+            }
+        })
     );
 
     for(auto &i : inputs)
@@ -80,6 +109,7 @@ EntityRef Apps::LunaTesting::UImenu()
     );
 }
 
+/*
 
 // adapted from the recast demo
 class BuildContext final : public rcContext
@@ -671,7 +701,44 @@ void testRecast()
     NOTIF_MESSAGE(PRINTVAR(totalBuildTimeSec));
 }
 
-extern PlayerController2 playerControl;
+*/
+
+void TestNavMeshInit()
+{
+    VulpineNav::NavMesh::init();
+}
+
+void TestNavMeshUpdate()
+{
+    System<Pathfind, State3D>([&](Entity& entity, Pathfind& pathfind, State3D& state3D)
+    {
+        VulpineNav::NavMesh::UpdateLoaderPosition(pathfind.lastPos, state3D.position, 0);
+
+        pathfind.lastPos = state3D.position;
+    });
+
+    
+    VulpineNav::NavMesh::Tick();
+
+    VulpineNav::NavMesh::DebugDrawTileQuads(*GG::draw, 256.0f, 0.0f, true, false);
+}
+
+void TestNavMeshUnload()
+{
+    VulpineNav::NavMesh::shutdown();
+}
+
+struct TestObject
+{
+    EntityRef entity;
+    vec2 velocity;
+};
+
+constexpr int N_OBJECT = 1000;
+
+std::array<TestObject, N_OBJECT> testArray;
+
+EntityRef testParent = nullptr;
 
 EntityRef myAwesomeEntity = nullptr;
 void Apps::LunaTesting::init()
@@ -681,36 +748,66 @@ void Apps::LunaTesting::init()
     /***** Preparing App Settings *****/
     {
         appRoot = newEntity("AppRoot", state3D(true));
-        // App::setController(&orbitController);
 
         App::setController(&playerControl);
 
         GG::sun->shadowCameraSize = vec2(2048);
-        ComponentModularity::addChild(
-            *appRoot,
-            GG::playerEntity = spawnEntity("Jolt Player", origin + vec3(0, 8, 0))
-        );
-        
-        // orbitController.position = vec3(0, 40, 0);
-        // globals.currentCamera->setPosition(vec3(32, 64, 0));
+
+        GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = origin + vec3(0, 8, 0)}));
+    }
+
+    testParent = newEntity();
+    ComponentModularity::addChild(*appRoot, testParent);
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    constexpr float rangeWorld = 100.0f;
+    std::uniform_real_distribution<float> distWorld(-rangeWorld, rangeWorld);
+    std::uniform_real_distribution<float> distAngle(0.0f, PI2);
+    std::uniform_real_distribution<float> distVelocity(5.0f, 20.0f);
+    
+    for (int i = 0; i < N_OBJECT; i++)
+    {
+        TestObject obj;
+        obj.entity = newEntity();
+
+        vec2 spawnOffset = vec2(
+            distWorld(rng),
+            distWorld(rng));
+
+        vec3 spawnPos = vec3(
+            origin.x + spawnOffset.x,
+            0.0f,
+            origin.z + spawnOffset.y);
+
+        obj.entity->set<State3D>({.position = spawnPos});
+
+        // float angle = distAngle(rng);
+        // obj.velocity = vec2(cos(angle), sin(angle)) * distVelocity(rng);
+
+        obj.velocity = normalize(spawnOffset) * distVelocity(rng);
+
+        obj.entity->set<Pathfind>({});
+
+        testArray[i] = obj;
     }
     
-    
     for(int x = 0; x < 4; x++)
-        for(int y = 0; y < 4; y++)
+        for(int y = 0; y < 4; y++) 
         {
-                ComponentModularity::addChild(*appRoot, 
-                    spawnEntity("Jolt Test Ball", origin + vec3(0, 8 + x, y) + (rand()%8)/8.f)
-                );
-        
-                ComponentModularity::addChild(*appRoot, 
-                    spawnEntity("Jolt Test Suzanne", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
-                );
+            ComponentModularity::addChild(*appRoot, 
+                spawnEntity("Jolt Test Ball", origin + vec3(0, 8 + x, y) + (rand()%8)/8.f)
+            );
 
-                // ComponentModularity::addChild(*appRoot, 
-                //     spawnEntity("Jolt Player Alt", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
-                // );
-            }
+            ComponentModularity::addChild(*appRoot, 
+                spawnEntity("Jolt Test Suzanne", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
+            );
+
+            // ComponentModularity::addChild(*appRoot, 
+            //     spawnEntity("Jolt Player Alt", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
+            // );
+        }
         
     ComponentModularity::addChild(*appRoot, spawnEntity("Jolt Test Scene", origin));
     
@@ -949,9 +1046,15 @@ void Apps::LunaTesting::init()
     
 
     // testRecast();
+    TestNavMeshInit();
+
+    // GG::playerEntity->set(Pathfind({.navmeshBuildPriority = 10}));
+
 
     glLineWidth(3.0f);
 }
+
+/*
 
 vec3 ghostPos = vec3(0, 0, 0);
 
@@ -967,7 +1070,15 @@ namespace NavPath
     bool computePath(const vec3 &start, const vec3 &end, std::vector<vec3> &outPath)
     {
         outPath.clear();
-        if (!navMesh || !navQuery)
+        if (agentSlot == -1) return false;
+
+        dtNavMesh* dtnavMesh;
+        dtNavMeshQuery* navQuery;
+
+        dtnavMesh = navMesh.GetNavMesh(agentSlot);
+        navQuery = navMesh.GetNavMeshQuery(agentSlot);
+
+        if (!dtnavMesh || !navQuery)
             return false;
 
         dtQueryFilter filter;
@@ -1031,7 +1142,15 @@ namespace NavPath
 
     void updateGhost(float dt, float speed = 4.0f, float repathInterval = 0.5f)
     {
-        if (!navMesh || !navQuery || !GG::playerEntity)
+        if (agentSlot == -1) return;
+
+        dtNavMesh* dtnavMesh;
+        dtNavMeshQuery* navQuery;
+
+        dtnavMesh = navMesh.GetNavMesh(agentSlot);
+        navQuery = navMesh.GetNavMeshQuery(agentSlot);
+
+        if (!dtnavMesh || !navQuery || !GG::playerEntity)
             return;
 
         repathTimer -= dt;
@@ -1071,49 +1190,28 @@ namespace NavPath
         path.clear();
         pathIdx = 0;
         repathTimer = 0.f;
+
+        navMesh.UnloadLoader(prevGhostPos);
+        navMesh.CreateLoader(ghostPos, 0);
+        prevGhostPos = ghostPos;
     }
 }
+*/
 
 void Apps::LunaTesting::update()
 {
     // ComponentModularity::synchronizeChildren(appRoot);
-    if (detailMesh != nullptr)
-    {
-        std::vector<vec3> triangles = std::vector<vec3>();
-        triangles.reserve(0xffff);
 
-        for (int i = 0; i < detailMesh->nmeshes; ++i)
-        {
-            const unsigned int* m = &detailMesh->meshes[i*4];
-            const unsigned int bverts = m[0];
-            const unsigned int btris = m[2];
-            const int ntris = (int)m[3];
-            const vec3* verts = (vec3*)&detailMesh->verts[bverts*3];
-            const unsigned char* tris = &detailMesh->tris[btris*4];
 
-            for (int j = 0; j < ntris; ++j)
-            {
-                triangles.push_back(verts[tris[j*4+0]]);
-                triangles.push_back(verts[tris[j*4+1]]);
-                triangles.push_back(verts[tris[j*4+2]]);
-            }
-        }
+    // NavPath::updateGhost(globals.simulationTime.getDelta(), 0.0f, 0.05f);
 
-        vec3* verts = new vec3[triangles.size()];
-        memcpy(verts, triangles.data(), triangles.size() * sizeof(vec3));
-
-        GG::draw->drawMesh(verts, triangles.size() / 3);
-    }
-
-    NavPath::updateGhost(globals.simulationTime.getDelta(), 4.0f, 0.05f);
-
-    GG::draw->drawBoxFromHalfExtents(ghostPos + vec3(0, 1.0, 0), vec3(0.5, 1.0, 0.5), 0.0f, ModelState3D(), "#00ff00"_rgb);
+    // GG::draw->drawBoxFromHalfExtents(ghostPos + vec3(0, 1.0, 0), vec3(0.5, 1.0, 0.5), 0.0f, ModelState3D(), "#00ff00"_rgb);
     
-    if (NavPath::path.size() > 0)
-    {
-        for (int i = 0; i < NavPath::path.size() - 1; i++)
-        GG::draw->drawLine(NavPath::path[i] + vec3(0, 1, 0), NavPath::path[i + 1] + vec3(0, 1, 0), 0.0f, ModelState3D(), "#0000ff"_rgb);
-    }
+    // if (NavPath::path.size() > 0)
+    // {
+    //     for (int i = 0; i < NavPath::path.size() - 1; i++)
+    //     GG::draw->drawLine(NavPath::path[i] + vec3(0, 1, 0), NavPath::path[i + 1] + vec3(0, 1, 0), 0.0f, ModelState3D(), "#0000ff"_rgb);
+    // }
 
     // float t = globals.appTime.getElapsedTime() * glm::two_pi<float>() * 0.05f;
     // myAwesomeEntity->comp<state3D>().position.x = -700 + sin(t) * 2.0f;
@@ -1128,6 +1226,25 @@ void Apps::LunaTesting::update()
 
     // bool b = InputManager::getGamepadButtonValue(VULPINE_GAMEPAD_BUTTON_A);
     // std::cout << "button A is: " << (b ? "Pressed" : "Not Pressed") << std::endl;
+
+    TestNavMeshUpdate();
+
+    static std::vector<DrawBoxes::Box> boxes(N_OBJECT);
+    for (int i = 0; i < N_OBJECT; i++)
+    {
+        const TestObject& testObject = testArray[i];
+        vec2 translation = testObject.velocity * globals.simulationTime.getDelta();
+        vec3& position = testObject.entity->comp<State3D>().position;
+        position.x += translation.x;
+        position.z += translation.y;
+
+        boxes[i] = {position + vec3(-2) + vec3(0, 256, 0), position + vec3(2) + vec3(0, 256, 0)};
+    }
+
+    GG::draw->drawBoxes(boxes, 0.0f, ModelState3D(), "#ff00ff"_rgb);
+
+    if (globals.getController() == &playerControl && GG::playerEntity)
+        prevPlayerPosition = GG::playerEntity->comp<State3D>().position;
 }
 
 
@@ -1145,5 +1262,7 @@ void Apps::LunaTesting::clean()
     App::setController(nullptr);
 
     GG::sun->shadowCameraSize = vec2(0, 0);
+
+    TestNavMeshUnload();
 }
 

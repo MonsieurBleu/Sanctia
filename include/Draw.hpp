@@ -96,6 +96,46 @@ struct DrawBox : DrawElementBase
     void initData() override;
 };
 
+struct DrawBoxes : DrawElementBase
+{
+    struct Box
+    {
+        vec3 min, max;
+    };
+
+    const std::vector<Box>& boxes;
+    
+    DrawBoxes(
+        const std::vector<Box>& boxes,
+        float startTime, 
+        float duration = 0.0f, 
+        ModelState3D state = ModelState3D(),
+        vec3 color = "#ff0000"_rgb) : 
+            DrawElementBase(startTime, state, duration, color)
+            , boxes(boxes) {}
+    
+    void initData() override;
+};
+
+struct DrawMesh : DrawElementBase
+{
+    vec3* triangles;
+    size_t triangleCount;
+    DrawMesh(
+        vec3* triangles,
+        size_t triangleCount,
+        float startTime, 
+        float duration = 0.0f, 
+        ModelState3D state = ModelState3D(),
+        vec3 color = "#ff0000"_rgb) : 
+              DrawElementBase(startTime, state, duration, color)
+              , triangles(triangles)
+              , triangleCount(triangleCount)
+        {}
+
+    void initData() override;
+};
+
 class Draw
 {
 private:
@@ -159,6 +199,23 @@ public:
     void drawBox(
         rp3d::BoxShape* box,
         const rp3d::Transform& transform,
+        float duration = 0.0f, 
+        ModelState3D state = ModelState3D(),
+        vec3 color = "#ff0000"_rgb
+    );
+
+    void drawMesh(
+        vec3* triangles,
+        size_t triangleCount,
+        float duration = 0.0f, 
+        ModelState3D state = ModelState3D(),
+        vec3 color = "#ff0000"_rgb
+    );
+
+
+
+    void drawBoxes(
+        const std::vector<DrawBoxes::Box>& boxes,
         float duration = 0.0f, 
         ModelState3D state = ModelState3D(),
         vec3 color = "#ff0000"_rgb

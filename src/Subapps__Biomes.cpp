@@ -190,23 +190,7 @@ Apps::BiomeApp::BiomeApp() : SubApps("Biome Editor")
         i->activated = false;
 };
 
-vec3 getHeatmapColor(const float alpha)
-{
-    const vec3 lowest  = vec3(0.125, 0.0, 0.5);
-    const vec3 low     = vec3(0.25, 0.75, 0.5);
-    const vec3 normal  = vec3(1.0, 1.0, 0.5);
-    const vec3 high    = vec3(1.0, 0.5, 0.0);
-    const vec3 highest = vec3(1.0, 0.0, 0.0);
-
-    vec3 color(lowest);
-
-    color = mix(color, low,     smoothstep(0.00f, 0.25f, alpha));
-    color = mix(color, normal,  smoothstep(0.25f, 0.50f, alpha));
-    color = mix(color, high,    smoothstep(0.50f, 0.75f, alpha));
-    color = mix(color, highest, smoothstep(0.75f, 1.00f, alpha));
-
-    return color;
-}
+vec3 getHeatmapColor(const float alpha);
 
 EntityRef BiomeInfosValueModifier(float &center, float &range, std::string name)
 {

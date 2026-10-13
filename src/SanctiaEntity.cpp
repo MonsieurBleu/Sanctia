@@ -14,6 +14,64 @@
 #include <JoltIntegration/PhysicsCommons.hpp>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 
+void manageEntityLOD(Entity &entity)
+{
+    auto &model = entity.comp<EntityModel>();
+    if(!model) return;
+
+    if(model->getChildren().size() <= 1 || model->state.hide == ModelStatus::HIDE) return;
+
+    if(!entity.has<LevelOfDetailsInfos>()) entity.set<LevelOfDetailsInfos>(LevelOfDetailsInfos());
+    
+    LevelOfDetailsInfos &lod = entity.comp<LevelOfDetailsInfos>();
+
+    if(lod.isUpdated)
+    {
+        if(!model->isCulled()) return;
+    }
+
+    lod.isUpdated = true;
+    
+    int level = 0;
+    
+    vec3 middle = 0.5f*(lod.aabbmin+lod.aabbmax);
+    vec3 extents = (lod.aabbmax-lod.aabbmin);
+    float maxRadius = max(extents.x, max(extents.y, extents.z));
+
+
+    float d = distance(globals.currentCamera->getPosition(), middle);
+    const int firstLevelRadius = 128-16;
+    
+    const float power = 2;
+    d = log2(max(0.f, (power-1.f)*d/(firstLevelRadius)) + 1) / log2(power);
+
+    level = floor(d);
+    level = min(level, 2);
+    
+
+    auto &c = model->getChildren();
+    int cnt = 0;
+
+    for(auto i : c)
+    {
+        if(cnt == level)
+        {
+            if(i->state.hide != ModelStatus::SHOW)
+            {
+                i->state.setHideStatus(ModelStatus::SHOW);
+                i->propagateHideStatus();
+            }
+        }
+        else if(i->state.hide != ModelStatus::HIDE)
+        {
+            i->state.setHideStatus(ModelStatus::HIDE);
+            i->propagateHideStatus();
+        }
+
+        cnt ++;
+    }
+}
+
 /*
     TODO : move this code to engine, when all EntityModel code is moved
 */
@@ -472,6 +530,8 @@ COMPONENT_DEFINE_REPARENT(EntityModel)
     //         model.inScene = true;
     //     }
     // }
+
+    manageEntityLOD(*child);
 }
 
 COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)
@@ -630,8 +690,8 @@ template<> void Component<EntityModel>::ComponentElem::clean()
 {
     // NOTIF_MESSAGE("Removing model ", entity->toStr())
     
-    // data->state.setHideStatus(ModelStatus::HIDE);
-    // data->propagateHideStatus();
+    data->state.setHideStatus(ModelStatus::HIDE);
+    data->propagateHideStatus();
     
     // if(data.get())
     // {

@@ -20,6 +20,8 @@ void GrassGenerator::init()
 
         globals.getScene()->add(models[i]);
     }
+
+    // auto leafShader = Loader<MeshMaterial>::get("Leaf Patch");
 }
 
 void GrassGenerator::update()
@@ -108,6 +110,10 @@ EntityRef WaterGenerator::generate()
     terrain->setMap(WaterLevel, 3);
     terrain->setMap(WaterFlow, 4);
 
+    terrain->setMap(Loader<Texture2D>::get("Humidity"), 5);
+    terrain->setMap(Loader<Texture2D>::get("Mystic"), 6);
+    terrain->setMap(Loader<Texture2D>::get("Corruption"), 7);
+
     terrain->sorted = false;
     terrain->transparent = true;
 
@@ -189,7 +195,8 @@ AUTOGEN_DATA_RW_FUNC_AN(BiomeInfos,
     Mystic,
     Corruption,
     Slope,
-    Elevation
+    Elevation,
+    WaterLevel
     )
 
 template<>
@@ -213,7 +220,8 @@ AUTOGEN_DATA_RW_FUNC_STRUCT_AN(EntityScatterer::SpawnInfo,
     (
         entities,
         spawnWeightsCenter,
-        spawnWeightsRange
+        spawnWeightsRange,
+        spawnWeightsTransition
     )
 )
 
@@ -313,16 +321,9 @@ EntityScatterer::EntityScatterer(
     
 }
 
-// void updateTerrainFromGPU()
-// {
-//     auto &terrain = Loader<Texture2D>::get("Herault_4096");
-
-//     terrain.updateSourceFromGPU();
-// }
-
 float getTerrainHeightBase(vec2 pos)
 {
-    static auto &terrain = Loader<Texture2D>::get("Herault_4096");
+    static auto &terrain = Loader<Texture2D>::get("Terrain");
 
     float *pixels = (float *)terrain.getPixelSource();
 
@@ -397,6 +398,12 @@ BiomeInfos EntityScatterer::getLocalInfos(vec2 center)
 
     l.Grassyness = getBiomeMap(center, "Grassyness");
     l.ForestDensity = getBiomeMap(center, "Forest Density");
+    l.Humidity = getBiomeMap(center, "Humidity");
+    l.Mystic = getBiomeMap(center, "Mystic");
+    l.Corruption = getBiomeMap(center, "Corruption");
+
+    l.WaterLevel = getBiomeMap(center, "Water Level")*512.f;
+    l.WaterLevel = 0.1 + 0.9*linearstep(0., 8., l.WaterLevel-l.Elevation);
 
     return l;
 }
@@ -410,7 +417,7 @@ float EntityScatterer::evaluateDensity(const SpawnInfo &biome, const BiomeInfos 
     #define WEIGHT_BIOME_INFO(i) \
         if(biome.spawnWeightsRange.i > 0.f){ \
             weightCount++; \
-            d *= smoothstep(1.f, 0.f, abs(local.i-biome.spawnWeightsCenter.i)/biome.spawnWeightsRange.i); \
+            d *= linearstep(1.f, biome.spawnWeightsTransition.i, abs(local.i-biome.spawnWeightsCenter.i)/biome.spawnWeightsRange.i); \
         }
 
     WEIGHT_BIOME_INFO(Elevation)
@@ -420,6 +427,7 @@ float EntityScatterer::evaluateDensity(const SpawnInfo &biome, const BiomeInfos 
     WEIGHT_BIOME_INFO(Humidity)
     WEIGHT_BIOME_INFO(Mystic)
     WEIGHT_BIOME_INFO(Corruption)
+    WEIGHT_BIOME_INFO(WaterLevel)
 
     return weightCount > 0 ? d : 0.f;
 }
@@ -460,6 +468,74 @@ float EntityScatterer::generateGetTime()
     return genTimer.getElapsedTime();
 }
 
+void EntityScatterer::generateChunk(const vec2 cell, const BiomeInfos &local)
+{
+    std::default_random_engine generator(512.f*random01Vec2(cell*0.01f));
+
+    std::normal_distribution<float> posx(-1.f, +1.f);
+    std::normal_distribution<float> posy(-1.f, +1.f);
+
+    std::vector<vec2> otherPos;
+    
+    for(auto &i : spawnsNames)
+    {
+        auto &spawn = Loader<EntityScatterer::SpawnInfo>::get(i);
+        
+        float density = evaluateDensity(spawn, local);
+
+        if(density == 0.f) continue;
+        
+        std::uniform_int_distribution<int> name(0, spawn.entities.size()-1);
+        std::uniform_real_distribution<float> scale(spawn.scaleRangeMin, spawn.scaleRangeMax);
+        std::uniform_real_distribution<float> radialx(-spawn.radialRange.x, spawn.radialRange.x);
+        std::uniform_real_distribution<float> radialy(-spawn.radialRange.y, spawn.radialRange.y);
+        std::uniform_real_distribution<float> radialz(-spawn.radialRange.z, spawn.radialRange.z);
+
+        // std::normal_distribution<float> 
+        std::uniform_real_distribution<float>
+            spawnChanceDecimal(0.f, 1.f);
+
+        spawnChanceDecimal(generator); /* Call one time the generator to not have result close to 0 almost all the time*/
+        float decimalSpawn = spawnChanceDecimal(generator);
+        int numberToSpawn = round(spawn.densityPerCell*density) + (abs(decimalSpawn) < fract(spawn.densityPerCell)*density ? 1 : 0);
+
+        for(int j = 0; j < numberToSpawn; j++)
+        {
+            vec2 pos;
+            vec2 maxDistPos;
+
+            const int maxTry = 5;
+            float dist = 0.f;
+            for(int l = 0; l < maxTry; l++)
+            {
+                pos = vec2(posx(generator), posy(generator));
+                pos = cell + pos*(rangeMin + abs(vec2(cos(pos.x), sin(pos.y)))*rangeMax);
+
+                float minDist = 1e6;
+                for(auto &p : otherPos)
+                    minDist = min(distance(p, pos), minDist);
+
+                if(minDist > dist)
+                {
+                    maxDistPos = pos;
+                    dist = minDist;
+                }
+            }
+
+            pos = maxDistPos;
+            otherPos.push_back(pos);
+
+            float modelScale = scale(generator);
+            
+            HierarchyState3D state;
+            state.position = vec3(pos.y, getTerrainHeight(pos), pos.x);
+            state.rotation = quat(radians(vec3(radialx(generator),radialy(generator),radialz(generator))));
+            state.scale = vec3(modelScale);
+            spawnEntityToParent(spawn.entities[name(generator)], *genParent, state);
+        }
+    }
+}
+
 void EntityScatterer::generateFrame(float timeAllowed)
 {
     if(genDone) return;
@@ -486,113 +562,9 @@ void EntityScatterer::generateFrame(float timeAllowed)
 
             BiomeInfos local = getLocalInfos(genCurrentCell);
 
-
-            // std::default_random_engine generator(genCurrentCell.x + genCurrentCell.y*0.25f + genCurrentCell.x*genCurrentCell.y*0.5f);
-            std::default_random_engine generator(512.f*random01Vec2(genCurrentCell*0.01f));
-
-            std::normal_distribution<float> posx(-1.f, +1.f);
-            std::normal_distribution<float> posy(-1.f, +1.f);
-
-            std::vector<vec2> otherPos;
-            
-            for(auto &i : spawnsNames)
-            {
-                auto &spawn = Loader<EntityScatterer::SpawnInfo>::get(i);
-                
-                float density = evaluateDensity(spawn, local);
-
-                if(density == 0.f) continue;
-                
-                std::uniform_int_distribution<int> name(0, spawn.entities.size()-1);
-                std::uniform_real_distribution<float> scale(spawn.scaleRangeMin, spawn.scaleRangeMax);
-                std::uniform_real_distribution<float> radialx(-spawn.radialRange.x, spawn.radialRange.x);
-                std::uniform_real_distribution<float> radialy(-spawn.radialRange.y, spawn.radialRange.y);
-                std::uniform_real_distribution<float> radialz(-spawn.radialRange.z, spawn.radialRange.z);
-
-                // std::normal_distribution<float> 
-                std::uniform_real_distribution<float>
-                    spawnChanceDecimal(0.f, 1.f);
-
-                spawnChanceDecimal(generator); /* Call one time the generator to not have result close to 0 almost all the time*/
-                float decimalSpawn = spawnChanceDecimal(generator);
-                int numberToSpawn = round(spawn.densityPerCell*density) + (abs(decimalSpawn) < fract(spawn.densityPerCell)*density ? 1 : 0);
-
-                // if(numberToSpawn) 
-                    // ERROR_MESSAGE(
-                    //     numberToSpawn, "   ",
-                    //     decimalSpawn, "   ",
-                    //     fract(spawn.densityPerCell*density), "   ",
-                    //     round(spawn.densityPerCell*density), "   ",
-                    //     (decimalSpawn < fract(spawn.densityPerCell*density) ? 1 : 0)
-                    // )
-
-                for(int j = 0; j < numberToSpawn; j++)
-                {
-                    vec2 pos;
-                    vec2 maxDistPos;
-
-                    const int maxTry = 5;
-                    float dist = 0.f;
-                    for(int l = 0; l < maxTry; l++)
-                    {
-                        pos = vec2(posx(generator), posy(generator));
-                        pos = genCurrentCell + pos*(rangeMin + abs(vec2(cos(pos.x), sin(pos.y)))*rangeMax);
-
-                        float minDist = 1e6;
-                        for(auto &p : otherPos)
-                            minDist = min(distance(p, pos), minDist);
-
-                        if(minDist > dist)
-                        {
-                            maxDistPos = pos;
-                            dist = minDist;
-                        }
-                    }
-
-                    pos = maxDistPos;
-                    otherPos.push_back(pos);
-
-                    // static BenchTimer test("Time To Spawn Entity");
-                    
-
-                    float modelScale = scale(generator);
-                    
-                    HierarchyState3D state;
-                    state.position = vec3(pos.y, getTerrainHeight(pos), pos.x);
-                    state.rotation = quat(radians(vec3(radialx(generator),radialy(generator),radialz(generator))));
-                    state.scale = vec3(modelScale);
-                    spawnEntityToParent(spawn.entities[name(generator)], *genParent, state);
-
-                    // EntityRef e = spawnEntity(
-                    //     spawn.entities[name(generator)],
-                    //     vec3(pos.y, getTerrainHeight(pos), pos.x),
-                    //     quat(radians(vec3(radialx(generator),radialy(generator),radialz(generator))))
-                    // );
-
-
-                    // // WARNING_MESSAGE(modelScale);
-                    // if(e->has<EntityModel>())
-                    // {
-                    //     e->comp<EntityModel>()->state.scaleScalar(modelScale);
-                    //     e->comp<EntityModel>()->update();
-                    // }
-
-                    // // test.start();
-
-                    // ComponentModularity::addChild(*genParent, e);
-                    // genParent->comp<EntityGroupInfo>().children.push_back(e);
-                    // WARNING_MESSAGE(genParent->comp<EntityGroupInfo>().children.size())
-                    
-                    // test.stop();
-
-
-
-                    // WARNING_MESSAGE("Time To Spawn Entity '", name, "' : ", test.getDeltaMS(), " ms,  Average : ", test.getElapsedTime()*1000.f/(float)test.getUpdateCounter())
-                }
-            }
+            generateChunk(genCurrentCell, local);
             
             timePassed.stop();
-
 
             if(timePassed.getElapsedTime()*1000.f >= timeAllowed)
             {
@@ -612,6 +584,7 @@ void EntityScatterer::generateFrame(float timeAllowed)
     if(genCurrentCell.x > genMax.x)
     {
         // NOTIF_MESSAGE("TERMINAED BY END GEN")
+        NOTIF_MESSAGE(genTimer.getElapsedTime())
         genDone = true;
         genTimer.stop();
     }
@@ -774,4 +747,193 @@ int EntityScatterer::generate_old(
     }
 
     return count;
+}
+
+
+
+void WorldEnvironementGenerator::init()
+{
+    if(!root)
+        root = newEntity("World Environement Generator - Root", EntityGroupInfo());
+
+    if(!root->comp<EntityGroupInfo>().children.empty())
+    {
+        // chunks.clear();
+        root->comp<EntityGroupInfo>().children.clear();
+    }
+
+    for(auto &i : Loader<EntityScatterer>::get("World").spawnsNames)
+    {
+        spawns[i] = true;
+    }
+
+    resolution = (worldMax-worldMin)/chunkSize;
+
+    int size = resolution.x*resolution.y;
+
+    // root->comp<EntityGroupInfo>().children.resize(size);
+
+    active = true;
+
+    // for(auto &i : root->comp<EntityGroupInfo>().children)
+    for(int i = 0; i < resolution.x; i++)
+    for(int j = 0; j < resolution.y; j++)
+    {
+        ComponentModularity::addChild(*root, newEntity("World Environement Generator - Chunk", EntityGroupInfo()));
+    }
+}
+
+void WorldEnvironementGenerator::clear()
+{
+    reset();
+    // chunks.clear();
+    root = EntityRef();
+    WorldEnvironementGenerator::active = false;
+}
+
+void WorldEnvironementGenerator::generateChunk(ivec2 iuv)
+{
+    /*
+        The logic here is as follow : 
+
+        For each spawn rule
+            We evaluate the maximum number of entities that can spawn in the chunk
+            For each potential spawn, we generate a position and check the spawn probability density
+            If the density is randomly met, we spawn everything.
+        
+        Notes : 
+        Normal distribution is used for generating position to avoid overlaping.
+        To keep stable rotations & scales when small changes are applied, we 
+        need to calculte them every time, even if the entity is not spawn.
+    */
+
+    int id = iuv.x*resolution.y + iuv.y;
+    float hsize = chunkSize*.5f;
+    vec2 uv = worldMin + (worldMax-worldMin)*(vec2(iuv)/vec2(resolution)) + hsize;
+
+    int chunkSeed = id*64;
+
+    std::default_random_engine posx(chunkSeed + 0);
+    std::default_random_engine posy(chunkSeed + 1);
+
+    std::default_random_engine rotx(chunkSeed + 2);
+    std::default_random_engine roty(chunkSeed + 3);
+    std::default_random_engine rotz(chunkSeed + 4);
+
+    std::default_random_engine scaleXYZ(chunkSeed + 5);
+
+    std::default_random_engine name(id + 6);
+    std::default_random_engine spawnChance(chunkSeed + 7);
+
+    std::uniform_real_distribution<float> funi(-1.f, 1.f);
+    std::uniform_real_distribution<float> funi2;
+    std::uniform_int_distribution<uint> iuni;
+    std::normal_distribution<float> fnorm(-1.f, 1.f);
+    std::normal_distribution<float> fnorm2;
+
+    /* Call one time the generator to not have result close to 0 almost all the time*/
+    funi2(spawnChance);
+    iuni(name);
+
+    BiomeInfos local;
+
+    for(auto i : spawns)
+        if(i.second)
+        {
+            auto &s = Loader<EntityScatterer::SpawnInfo>::get(i.first);
+
+            float baseDensity = s.densityPerCell*chunkSize*chunkSize*0.25*0.25*0.25;
+            float baseChance = min(baseDensity, 1.f);
+            int tries = ceil(baseDensity);
+
+            
+            for(int j = 0; j < tries; j++)
+            {
+                vec2 position = uv + hsize*vec2(fnorm(posx), fnorm(posy));
+                local = EntityScatterer::getLocalInfos(vec2(position.y, position.x));
+
+                // Density is the probability for an element of s to spawn here
+                float density = EntityScatterer::evaluateDensity(s, local);
+
+                HierarchyState3D state;
+                state.position = vec3(position.x, local.Elevation*512.f, position.y);
+                state.rotation = quat(radians(s.radialRange * vec3(funi(rotx), funi(roty), funi(rotz))));
+                state.scale = vec3(mix(s.scaleRangeMin, s.scaleRangeMax, funi2(scaleXYZ)));
+                int eid = iuni(name)%s.entities.size();
+
+                if(density*baseChance < funi2(spawnChance)) continue;
+
+                spawnEntityToParent(s.entities[eid], *root->comp<EntityGroupInfo>().children[id], state);
+            }
+
+        }
+}
+
+vec2 linearstep(vec2 e0, vec2 e1, vec2 x)
+{
+    return clamp((x - e0)/(e1 - e0), 0.f, 1.f);
+}
+
+
+void WorldEnvironementGenerator::reGenerate(vec2 minp, vec2 maxp)
+{
+    if(!active) return;
+
+    ivec2 imin = floor(linearstep(worldMin, worldMax, minp)*vec2(resolution));
+    ivec2 imax = ceil(linearstep(worldMin, worldMax, maxp)*vec2(resolution));
+
+    imin = clamp(imin, ivec2(0), resolution-1);
+    imax = clamp(imax, ivec2(0), resolution-1);
+
+    for(int i = imin.x; i <= imax.x; i++)
+    for(int j = imin.y; j <= imax.y; j++)
+    {
+        root->comp<EntityGroupInfo>().children[i*resolution.y + j]->comp<EntityGroupInfo>().children.clear();
+    }
+
+    GG::ManageEntityGarbage__WithPhysics();
+
+    for(int i = imin.x; i <= imax.x; i++)
+    for(int j = imin.y; j <= imax.y; j++)
+    {
+        generateChunk(ivec2(i, j));
+    }
+}
+
+void WorldEnvironementGenerator::reset()
+{
+    for(auto i : root->comp<EntityGroupInfo>().children)
+    {
+        i->comp<EntityGroupInfo>().children.clear();
+    }
+
+    GG::ManageEntityGarbage__WithPhysics();
+};
+
+void WorldEnvironementGenerator::multiFrameGen::refresh()
+{
+    current = ivec2(0);
+    reset();
+}
+
+float WorldEnvironementGenerator::multiFrameGen::completion()
+{
+    return float(current.x*resolution.y + current.y)/float(resolution.x*resolution.y);
+}
+
+void WorldEnvironementGenerator::multiFrameGen::update()
+{
+    if(!active) return;
+
+    BenchTimer timeout;
+    for(; current.x < resolution.x; current.x++)
+        for(current.y = 0; current.y < resolution.y; current.y++)
+        {
+            timeout.start();
+            generateChunk(current);
+            timeout.stop();
+
+            if(timeout.getElapsedTime()*1e3 > timeLimitMS)
+                return;
+        }
 }

@@ -223,7 +223,7 @@ class Gizmo {
 
     void translateModeSwitch()
     {
-        // if(!isEnable) return;
+        if(!isEnable) return;
 
         auto & t = translate->comp<HierarchyState3D>().type;
         t = t == HierarchyState3D::POS_AND_ROT ? HierarchyState3D::POS_ONLY : HierarchyState3D::POS_AND_ROT;
@@ -233,22 +233,26 @@ class Gizmo {
 
     void translateModeWorld()
     {
+        if(!translate) return;
         translate->comp<HierarchyState3D>().type = HierarchyState3D::POS_ONLY;
         translate->comp<State3D>().rotation = quat(1, 0, 0, 0);
     }
 
     bool isTranslateModeWorld()
     {
+        if(!translate) return false;
         return translate->comp<HierarchyState3D>().type == HierarchyState3D::POS_ONLY;
     }
 
     void translateModeRelative()
     {
+        if(!translate) return;
         translate->comp<HierarchyState3D>().type = HierarchyState3D::POS_AND_ROT;
     }
 
     bool isTranslateModeRelative()
     {
+        if(!translate) return false;
         return translate->comp<HierarchyState3D>().type == HierarchyState3D::POS_AND_ROT;
     }
 

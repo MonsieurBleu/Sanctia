@@ -39,6 +39,8 @@ Entity* getClosestVisibleEnemy(Entity &e);
 
 Entity* getClosestVisibleAlly(Entity &e);
 
+void manageEntityLOD(Entity &entity);
+
 /***************** SCRIPTING COMPONENTS *****************/
 
     #undef CURRENT_CATEGORY

@@ -74,22 +74,45 @@ EntityRef Apps::PhysicsTestingApp::UImenu()
     );
 }
 
+bool dither(ivec2 uvi, int lod)
+{
+    switch(lod)
+    {
+        case -1 : return true;
+        case 0  : return true;
+        case 1  : return uvi.x%2 == uvi.y%2;
+        default : return uvi.x%(1<<lod) == 0 && uvi.y%(1<<lod) == 0;
+    }
+}
+
+
+ObjectGroupRef models[4];
+ObjectGroupRef grass;
+
 void Apps::PhysicsTestingApp::init()
 {
     const vec3 origin(-675, 37, -624);
 
     /***** Preparing App Settings *****/
     {
-        appRoot = newEntity("AppRoot", state3D(true));
+        // appRoot = newEntity("AppRoot", state3D(true));
+        appRoot = newEntity("AppRoot", State3D());
         // App::setController(&orbitController);
 
         App::setController(&playerControl);
 
         GG::sun->shadowCameraSize = vec2(2048);
-        ComponentModularity::addChild(
-            *appRoot,
-            GG::playerEntity = spawnEntity("Jolt Player", origin + vec3(0, 8, 0))
-        );
+        // GG::sun->cameraResolution = vec2(1024);
+        // ComponentModularity::addChild(
+        //     *appRoot,
+        //     GG::playerEntity = spawnEntity("Jolt Player", origin + vec3(0, 8, 0))
+        // );
+
+        HierarchyState3D s;
+        s.position = origin + vec3(0, 8, 0);
+        GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, s);
+
+        // ComponentModularity::synchronizeChildren(appRoot);
         
         // orbitController.position = vec3(0, 40, 0);
         // globals.currentCamera->setPosition(vec3(32, 64, 0));
@@ -99,56 +122,136 @@ void Apps::PhysicsTestingApp::init()
     for(int x = 0; x < 4; x++)
         for(int y = 0; y < 4; y++)
         {
-                ComponentModularity::addChild(*appRoot, 
-                    spawnEntity("Jolt Test Ball", origin + vec3(0, 8 + x, y) + (rand()%8)/8.f)
-                );
+                // ComponentModularity::addChild(*appRoot, 
+                //     spawnEntity("Jolt Test Ball", origin + vec3(0, 8 + x, y) + (rand()%8)/8.f)
+                // );
         
-                ComponentModularity::addChild(*appRoot, 
-                    spawnEntity("Jolt Test Suzanne", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
-                );
+                // ComponentModularity::addChild(*appRoot, 
+                //     spawnEntity("Jolt Test Suzanne", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
+                // );
 
                 // ComponentModularity::addChild(*appRoot, 
                 //     spawnEntity("Jolt Player Alt", origin + vec3(4 + rand()%2, 8 + x, y) + (rand()%8)/8.f)
                 // );
             }
         
-    ComponentModularity::addChild(*appRoot, spawnEntity("Jolt Test Scene", origin));
-    
+    // ComponentModularity::addChild(*appRoot, spawnEntity("Jolt Test Scene", origin));
+    HierarchyState3D s;
+    s.position = origin;
+    spawnEntityToParent("Jolt Test Scene", *appRoot, s);
+
     ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
     
 
-    bool spawnGrass = true;
+    bool spawnGrass = false;
 
+    // if(spawnGrass)
+    // {
+    //     const float areaSize = (4096-512);
+
+    //     // const float grassPatchSize = areaSize/sqrt(grassPatchCNT);
+    //     // const float grassPatchSize = 22;
+    //     const float grassPatchSize = 16;
+
+    //     for(float i = -areaSize*0.5; i <= areaSize*0.5; i+=grassPatchSize)
+    //     for(float j = -areaSize*0.5; j <= areaSize*0.5; j+=grassPatchSize)
+    //     {
+    //         vec2 pos = vec2(i, j);
+    //         float h0 = getTerrainHeight(pos);
+
+    //         ComponentModularity::addChild(*appRoot, spawnEntity(
+    //             // "Grass Patch 2",
+    //             "Grass Patch 4",
+    //             // "Grass Patch 5",
+    //             vec3(pos.y, h0, pos.x)
+    //         ));
+    //     }
+
+    //     // ComponentModularity::ReparentChildren(*appRoot);
+    // }
     if(spawnGrass)
     {
-        const float areaSize = (4096-512);
+        std::string models[4] = {
+            // "Grass Patch 4x64x64",
+            // "Grass Patch 4x32x32",
+            // "Grass Patch 2x16x16",
+            // "Grass Patch 1x8x8"
+            "Grass Patch 4x64x64",
+            "Grass Patch 2x32x32",
+            "Grass Patch 1x16x16",
+            "Grass Patch 1x8x8"
+        };
 
-        // const float grassPatchSize = areaSize/sqrt(grassPatchCNT);
-        // const float grassPatchSize = 22;
-        const float grassPatchSize = 16;
+        for(int i = 0; i < 4; i++)
+            Loader<ObjectGroup>::get(models[i]).
+            getInstances()[0]
+                .originalModel
+                ->baseUniforms.add(ShaderUniform(float(i), 31));
 
-        for(float i = -areaSize*0.5; i <= areaSize*0.5; i+=grassPatchSize)
-        for(float j = -areaSize*0.5; j <= areaSize*0.5; j+=grassPatchSize)
+        constexpr float patchSize = 16.f;
+        constexpr int gridRes = 23;
+
+        for(int i = -gridRes+1; i < gridRes; i++)
+        for(int j = 0; j < gridRes; j++)
         {
-            vec2 pos = vec2(i, j);
-            float h0 = getTerrainHeight(pos);
+            ivec2 uvi(i, j);
+            vec2 uv(uvi);
 
-            ComponentModularity::addChild(*appRoot, spawnEntity(
-                // "Grass Patch 2",
-                "Grass Patch 4",
-                // "Grass Patch 5",
-                vec3(pos.y, h0, pos.x)
-            ));
+            float d = length(uv/(float)gridRes);
+            d = log2(max(2.f, 64.f*d))-2.f;
+            int lod = max(floor(d), 0.f);
+
+            // WARNING_MESSAGE(PRINTVAR(d), PRINTVAR(lod))
+
+            if(lod >= 4) continue;
+
+            EntityModel model = Loader<ObjectGroup>::get(models[lod]).copy();
+            HierarchyState3D state;
+            state.position = -vec3(uv.x, 0, uv.y)*patchSize;
+
+            ComponentModularity::addChild(*appRoot, 
+                newEntity("Grass Patch", State3D(state), state, model)
+            );
         }
-
-        // ComponentModularity::ReparentChildren(*appRoot);
     }
 
+    // {
+    //     constexpr int gridDim = 128;
+    
+    //     int unDiscarded = 0;
+    //     int total = 0;
+    
+    //     for(int i = -gridDim/2; i <= gridDim/2; i++)
+    //     for(int j = -gridDim/2; j <= gridDim/2; j++)
+    //     {
+    //         ivec2 uvi(i, j);
+    //         float d = length(vec2(uvi)/(float)gridDim)*16.0;
+    //         d = log2(max(2.0, 4.0*d));
+    //         int lod = floor(d)-1;
+
+    //         bool d1 = dither(uvi, lod);
+    //         // bool d2 = dither(uvi, lod+1);
+
+    //         unDiscarded += d1;
+
+    //         total++;
+    //     }
+
+    //     WARNING_MESSAGE(
+    //         PRINTVAR(gridDim),
+    //         PRINTVAR(total), 
+    //         PRINTVAR(unDiscarded)
+    //     )
+
+    // }
     
     // JoltVulpine::jPhysicsSystem->OptimizeBroadPhase();
 
     JoltVulpine::enablePhysics = true;
     globals.simulationTime.resume();
+
+
+    GrassGenerator::active = true;
 }
 
 void Apps::PhysicsTestingApp::update()

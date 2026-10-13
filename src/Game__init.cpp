@@ -20,9 +20,11 @@
 
 #include <ModManager.hpp>
 
-Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSizeAddr())), defferedBuffer(static_cast<DefferedBuffer *>(renderBuffer)), paintShaderPass(*defferedBuffer)
+Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSizeAddr()))
 {
     // defferedBuffer = static_cast<DefferedBuffer *>(renderBuffer);
+    defferedBuffer = (static_cast<DefferedBuffer *>(renderBuffer));
+    paintShaderPass = PaintShaderPass(defferedBuffer);
     currentThreadID = 0;
 }
 

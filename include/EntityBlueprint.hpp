@@ -21,9 +21,25 @@ namespace Blueprint
 
     EntityRef SpawnMainGameTerrain();
 
-    inline const vec3 terrainSize = vec3(4096, 512, 4096);
-    inline constexpr const char* mapFileName = "Herault_4096";
-    inline constexpr int cellSize = 64;
+    namespace terrainConst {
+        inline const vec3 terrainSize = vec3(4096, 512, 4096);
+        inline constexpr const char* mapFileName = "Herault_4096";
+        inline constexpr int cellSize = 64;
+    }
+
+    void terrainChunk(
+        EntityRef chunk, 
+        int i, 
+        int j, 
+        vec3 terrainSize, 
+        vec3 terrainPosition,
+        ivec2 textureSize, 
+        const float *src, 
+        int cellSize, 
+        bool addModel = false,
+        ModelRef terrainBaseModel = ModelRef()
+    );
+
     EntityRef Terrain(
         const char *mapName, 
         vec3 terrainSize,

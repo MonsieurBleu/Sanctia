@@ -16,7 +16,7 @@ class DefferedBuffer : public RenderBuffer
 class PaintShaderPass : public RenderPass
 {
     private:
-        DefferedBuffer &defferedBuffer;
+        DefferedBuffer *defferedBuffer = nullptr;
         Texture2D ssaoNoiseTexture;
         std::vector<glm::vec3> ssaoKernel;
 
@@ -43,7 +43,8 @@ class PaintShaderPass : public RenderPass
         bool enableAO = true;
         bool enableExposure = true;
 
-        PaintShaderPass(DefferedBuffer &defferedBuffer) : defferedBuffer(defferedBuffer){};
+        PaintShaderPass(){};
+        PaintShaderPass(DefferedBuffer *defferedBuffer) : defferedBuffer(defferedBuffer){};
         void setup();
         void render(Camera &camera);
 };

@@ -37,7 +37,7 @@ void Game::initInput()
         InputManager::Filters::always, false);
 
     Inputs::toggleSimTime = InputManager::addEventInput(
-        "toggle sim time", GLFW_KEY_F11, 0, GLFW_PRESS, [&]() { setFullScreen(!isFullScreen);},
+        "toggle fullscreen", GLFW_KEY_F11, 0, GLFW_PRESS, [&]() { setFullScreen(!isFullScreen);},
         InputManager::Filters::always, false);
 
     Inputs::toggleWireframe = InputManager::addEventInput(

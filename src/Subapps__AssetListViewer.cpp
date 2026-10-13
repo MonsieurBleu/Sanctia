@@ -201,7 +201,7 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                 *scene->mMeshes[i], 
                 bonesInfosMap, 
                 scale,
-                dirName, 
+                dirName + scene->mMeshes[i]->mName.C_Str(), 
                 VEAC_EXPORT_FORMAT::FORMAT_SANCTIA
             );
         }

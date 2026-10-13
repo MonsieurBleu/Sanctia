@@ -42,11 +42,12 @@ private:
     int worldRegionHelperEnlable = false;
     EntityRef gameScreenWidget;
 
-    DefferedBuffer *defferedBuffer;
-    PaintShaderPass paintShaderPass;
-
-
+    
+    
 public:
+
+    static inline DefferedBuffer *defferedBuffer;
+    PaintShaderPass paintShaderPass;
     
     static inline bool doAutomaticShaderRefresh = false;
     static inline bool doScriptHotReload = false;

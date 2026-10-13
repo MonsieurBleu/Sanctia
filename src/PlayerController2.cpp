@@ -340,7 +340,7 @@ void PlayerController2::update()
     );
     globals.currentCamera->setDirection(depl.look.current);
 
-    Loader<ScriptInstance>::get("Player Camera").run(GG::playerEntity);
+    Loader<ScriptInstance>::get("Player Camera").run(GG::playerEntity.get());
 
     auto &interface = JoltVulpine::jPhysicsSystem->GetBodyInterface();
 
@@ -440,7 +440,7 @@ void PlayerController2::clean()
     ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, staminaBar);
     staminaBar = EntityRef();
 
-    GG::ManageEntityGarbage();
+    GG::ManageEntityGarbage__WithPhysics();
 
     for(auto &i : inputList) i->activated = false;
 }

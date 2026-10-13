@@ -78,7 +78,7 @@ void setEntityTransform(Entity &e, State3D s)
         // Always Update hide status
         if(m->state.hide != s.isActive)
         {
-            m->state.setHideStatus(s.isActive);
+            m->state.setHideStatus(s.isActive == ModelStatus::HIDE ? ModelStatus::HIDE : ModelStatus::SHOW);
             m->propagateHideStatus();
         }
 
@@ -140,7 +140,7 @@ void setEntityModelStaticFlagUniform(Entity *e)
     }
 }
 
-COMPONENT_DEFINE_REPARENT(State3D)
+COMPONENT_DEFINE_REPARENT(State3D) // TODO : rework
 {
     // return;
 
@@ -206,30 +206,30 @@ COMPONENT_DEFINE_REPARENT(State3D)
         child->set<DynamicState3D>({s, s});
     }
 
-    if(child->has<JoltBody>())
-    {
-        auto &body = child->comp<JoltBody>();
+    // if(child->has<JoltBody>())
+    // {
+    //     auto &body = child->comp<JoltBody>();
 
-        auto &interface = JoltVulpine::jPhysicsSystem->GetBodyInterface();
+    //     auto &interface = JoltVulpine::jPhysicsSystem->GetBodyInterface();
 
-        JPH::BodyID *bodies = &body;
+    //     JPH::BodyID *bodies = &body;
 
-        for(int i = 0; i < JOLT_VULPINE_MAX_ENTITY_SENSORS+1; i++)
-        {
-            if(!bodies[i].IsInvalid())
-            {
-                interface.SetPositionAndRotation(
-                    bodies[i], 
-                    Vvec3(s.position), 
-                    Vquat(s.rotation), 
-                    JPH::EActivation::DontActivate
-                );
+    //     for(int i = 0; i < JOLT_VULPINE_MAX_ENTITY_SENSORS+1; i++)
+    //     {
+    //         if(!bodies[i].IsInvalid())
+    //         {
+    //             interface.SetPositionAndRotation(
+    //                 bodies[i], 
+    //                 Vvec3(s.position), 
+    //                 Vquat(s.rotation), 
+    //                 JPH::EActivation::DontActivate
+    //             );
 
-                // interface.AddBody(bodies[i], JPH::EActivation::Activate);
-            }
-        }
+    //             // interface.AddBody(bodies[i], JPH::EActivation::Activate);
+    //         }
+    //     }
 
-    }
+    // }
 }
 
 
@@ -461,17 +461,17 @@ COMPONENT_DEFINE_REPARENT(EntityModel)
         scene following the default parameters.
     */
     // if(!child->has<state3D>() || !child->has<RigidBody>())
-    if(!child->has<State3D>())
-    {
-        auto &model = child->comp<EntityModel>();
+    // if(!child->has<State3D>())
+    // {
+    //     auto &model = child->comp<EntityModel>();
 
-        if(model)
-        {
-            // globals.getScene()->add(model, true, false);
-            globals.getScene()->add(model, true, false);
-            model.inScene = true;
-        }
-    }
+    //     if(model)
+    //     {
+    //         // globals.getScene()->add(model, true, false);
+    //         globals.getScene()->add(model, true, false);
+    //         model.inScene = true;
+    //     }
+    // }
 }
 
 COMPONENT_DEFINE_COMPATIBILITY_CHECK(RigidBody)
@@ -618,8 +618,9 @@ template<> void Component<EntityModel>::ComponentElem::init()
     // else
     //     globals.getScene()->add(data, false, false);
 
-    // globals.getScene()->add(data, true, false);
-    // data.inScene = true;
+    // TODO : change later
+    globals.getScene()->add(data, true, false);
+    data.inScene = true;
 
     // entity->set<StainStatus>(StainStatus());
     // setEntityStainStatusUniform(entity);
@@ -628,12 +629,21 @@ template<> void Component<EntityModel>::ComponentElem::init()
 template<> void Component<EntityModel>::ComponentElem::clean()
 {
     // NOTIF_MESSAGE("Removing model ", entity->toStr())
+    
+    // data->state.setHideStatus(ModelStatus::HIDE);
+    // data->propagateHideStatus();
+    
+    // if(data.get())
+    // {
+    //     NOTIF_MESSAGE("Removing model ", data->name, PRINTVAR(data.inScene));
+    // }
 
-    data->state.setHideStatus(ModelStatus::HIDE);
-    data->propagateHideStatus();
 
     if(data.get() and data.inScene)
+    // if(data.get())
+    {
         globals.getScene()->remove(data);
+    }
     // else
     //     WARNING_MESSAGE("Trying to clean null component from entity " ,  entity->ids[ENTITY_LIST] ,  " named " ,  entity->comp<EntityInfos>().name)
 };

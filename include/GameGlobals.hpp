@@ -60,6 +60,7 @@ namespace GameGlobals
         ManageGarbage<WidgetText>();
         ManageGarbage<EntityModel>();
         ManageGarbage<PhysicsHelpers>();
+        ManageGarbage<AgentNavigation>();
 
         // ManageGarbage<WidgetStyle>();
         // ManageGarbage<LevelOfDetailsInfos>();

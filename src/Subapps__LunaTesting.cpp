@@ -14,24 +14,8 @@
 #include <EntityBlueprint.hpp>
 #include "Game.hpp"
 
-#include <recastnavigation/Recast.h>
-#include <recastnavigation/DetourNavMesh.h>
-#include <recastnavigation/DetourNavMeshQuery.h>
-#include <recastnavigation/DetourNavMeshBuilder.h>
-
-// debug, probably move this somewhere better when done debuggin'
-#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
-#include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
-#include <Jolt/Geometry/OrientedBox.h>
-
 #include <Blueprint/EngineBlueprintUI.hpp>
 
-
-
-// namespace NavPath
-// {
-//     void resetGhost(const vec3 &pos);
-// };
 
 SpectatorController spectator;
 extern PlayerController2 playerControl;
@@ -40,32 +24,11 @@ vec3 prevPlayerPosition;
 
 Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 {
-    // inputs.push_back(&
-    //     InputManager::addEventInput(
-    //         "execute script", GLFW_KEY_R, 0, GLFW_PRESS, [&]() {    
-    //             appRoot->comp<Script>().setInitialized(false);
-    //         },
-    //         InputManager::Filters::always, false)
-    // );
-
     inputs.push_back(&
         InputManager::addEventInput(
             "test input", GLFW_KEY_T, 0, GLFW_PRESS, "test_input",
             InputManager::Filters::always, false)
     );
-
-    // inputs.push_back(&
-    //     InputManager::addEventInput(
-    //         "gen navmesh", GLFW_KEY_L, 0, GLFW_PRESS, testRecast
-    //     ));
-
-    // inputs.push_back(&
-    //     InputManager::addEventInput(
-    //         "pathfind", GLFW_KEY_O, 0, GLFW_PRESS, [&]()
-    //         {
-    //             NavPath::resetGhost(GG::playerEntity->comp<State3D>().position + vec3(5, 0, 0));
-    //         }
-    //     ));
 
     inputs.push_back(&
         InputManager::addEventInput(
@@ -1221,7 +1184,7 @@ void Apps::LunaTesting::clean()
     }
 
     appRoot = EntityRef();
-    GameGlobals::playerEntity = EntityRef();
+    GG::playerEntity = EntityRef();
 
     testParent = EntityRef();
     

@@ -90,7 +90,7 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
             }
             else if (globals.getController() == &spectator && GG::playerEntity)
             {
-                spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = prevPlayerPosition + vec3(8, 0, 0)}));
+                GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = prevPlayerPosition}));
 
                 App::setController(&playerControl);
             }
@@ -703,30 +703,11 @@ void testRecast()
 
 */
 
-void TestNavMeshInit()
-{
-    VulpineNav::NavMesh::init();
-}
-
 void TestNavMeshUpdate()
 {
-    System<Pathfind, State3D>([&](Entity& entity, Pathfind& pathfind, State3D& state3D)
-    {
-        VulpineNav::NavMesh::UpdateLoaderPosition(pathfind.lastPos, state3D.position, 0);
-
-        pathfind.lastPos = state3D.position;
-    });
-
-    
-    VulpineNav::NavMesh::Tick();
-
-    VulpineNav::NavMesh::DebugDrawTileQuads(*GG::draw, 256.0f, 0.0f, true, false);
+    VulpineNav::NavMesh::DebugDrawTileInstanced(256.0f, 0.0f, true, false);
 }
 
-void TestNavMeshUnload()
-{
-    VulpineNav::NavMesh::shutdown();
-}
 
 struct TestObject
 {
@@ -753,7 +734,9 @@ void Apps::LunaTesting::init()
 
         GG::sun->shadowCameraSize = vec2(2048);
 
-        GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = origin + vec3(0, 8, 0)}));
+        HierarchyState3D s;
+        s.position = origin + vec3(0, 8, 0);
+        GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, s);
     }
 
     testParent = newEntity();
@@ -765,12 +748,14 @@ void Apps::LunaTesting::init()
     constexpr float rangeWorld = 100.0f;
     std::uniform_real_distribution<float> distWorld(-rangeWorld, rangeWorld);
     std::uniform_real_distribution<float> distAngle(0.0f, PI2);
-    std::uniform_real_distribution<float> distVelocity(5.0f, 20.0f);
+    std::uniform_real_distribution<float> distVelocity(5.0f, 80.0f);
     
     for (int i = 0; i < N_OBJECT; i++)
     {
         TestObject obj;
         obj.entity = newEntity();
+
+        // ComponentModularity::addChild(*testParent, obj.entity);
 
         vec2 spawnOffset = vec2(
             distWorld(rng),
@@ -809,37 +794,11 @@ void Apps::LunaTesting::init()
             // );
         }
         
-    ComponentModularity::addChild(*appRoot, spawnEntity("Jolt Test Scene", origin));
+    HierarchyState3D s;
+    s.position = origin;
+    spawnEntityToParent("Jolt Test Scene", *appRoot, s);
     
     ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
-    
-
-    bool spawnGrass = false;
-
-    if(spawnGrass)
-    {
-        const float areaSize = (4096-512);
-
-        // const float grassPatchSize = areaSize/sqrt(grassPatchCNT);
-        // const float grassPatchSize = 22;
-        const float grassPatchSize = 16;
-
-        for(float i = -areaSize*0.5; i <= areaSize*0.5; i+=grassPatchSize)
-        for(float j = -areaSize*0.5; j <= areaSize*0.5; j+=grassPatchSize)
-        {
-            vec2 pos = vec2(i, j);
-            float h0 = getTerrainHeight(pos);
-
-            ComponentModularity::addChild(*appRoot, spawnEntity(
-                // "Grass Patch 2",
-                "Grass Patch 4",
-                // "Grass Patch 5",
-                vec3(pos.y, h0, pos.x)
-            ));
-        }
-
-        // ComponentModularity::ReparentChildren(*appRoot);
-    }
 
     
     // JoltVulpine::jPhysicsSystem->OptimizeBroadPhase();
@@ -1046,9 +1005,9 @@ void Apps::LunaTesting::init()
     
 
     // testRecast();
-    TestNavMeshInit();
+    // TestNavMeshInit();
 
-    // GG::playerEntity->set(Pathfind({.navmeshBuildPriority = 10}));
+    GG::playerEntity->set(Pathfind({.navmeshBuildPriority = 10}));
 
 
     glLineWidth(3.0f);
@@ -1256,13 +1215,18 @@ void Apps::LunaTesting::clean()
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
 
+    for (int i = 0; i < testArray.size(); i++)
+    {
+        testArray[i] = TestObject();
+    }
+
     appRoot = EntityRef();
     GameGlobals::playerEntity = EntityRef();
+
+    testParent = EntityRef();
     
     App::setController(nullptr);
 
     GG::sun->shadowCameraSize = vec2(0, 0);
-
-    TestNavMeshUnload();
 }
 

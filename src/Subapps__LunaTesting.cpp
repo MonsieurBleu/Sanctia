@@ -773,7 +773,7 @@ void Apps::LunaTesting::init()
 
         obj.velocity = normalize(spawnOffset) * distVelocity(rng);
 
-        obj.entity->set<Pathfind>({});
+        obj.entity->set<AgentNavigation>({});
 
         testArray[i] = obj;
     }
@@ -1007,7 +1007,7 @@ void Apps::LunaTesting::init()
     // testRecast();
     // TestNavMeshInit();
 
-    GG::playerEntity->set(Pathfind({.navmeshBuildPriority = 10}));
+    GG::playerEntity->set(AgentNavigation({.navmeshBuildPriority = 10}));
 
 
     glLineWidth(3.0f);

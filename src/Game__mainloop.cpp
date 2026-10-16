@@ -1246,7 +1246,7 @@ void Game::mainloop()
         }
 
         size_t count = 0;
-        System<Pathfind, State3D>([&](Entity& entity, Pathfind& pathfind, State3D& state3D)
+        System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& pathfind, State3D& state3D)
         {
             VulpineNav::NavMesh::UpdateLoaderPosition(pathfind.lastPos, state3D.position, 0);
 

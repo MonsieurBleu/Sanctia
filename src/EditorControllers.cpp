@@ -47,7 +47,7 @@ void EditorTerrainControler::update()
 
     if(enableTerrainFollow)
     {
-        auto &terrain = Loader<Texture2D>::get("Herault_4096");
+        auto &terrain = Loader<Texture2D>::get("Terrain");
 
         float h = 0.f;        
         {

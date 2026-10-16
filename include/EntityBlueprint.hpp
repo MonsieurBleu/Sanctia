@@ -23,7 +23,7 @@ namespace Blueprint
 
     namespace terrainConst {
         inline const vec3 terrainSize = vec3(4096, 512, 4096);
-        inline constexpr const char* mapFileName = "Herault_4096";
+        inline constexpr const char* mapFileName = "Terrain";
         inline constexpr int cellSize = 64;
     }
 

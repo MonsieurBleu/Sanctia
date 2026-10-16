@@ -221,6 +221,9 @@ EntityRef Blueprint::Terrain(
     terrain->setMap(HeightMap, 2);
     terrain->setMap(Loader<Texture2D>::get("Grassyness"), 3);
     terrain->setMap(Loader<Texture2D>::get("Water Level"), 5);
+    terrain->setMap(Loader<Texture2D>::get("Humidity"), 6);
+    terrain->setMap(Loader<Texture2D>::get("Mystic"), 7);
+    terrain->setMap(Loader<Texture2D>::get("Corruption"), 8);
 
     vec3 aabmin = terrain->getVao()->getAABBMin();
     vec3 aabmax = terrain->getVao()->getAABBMax();

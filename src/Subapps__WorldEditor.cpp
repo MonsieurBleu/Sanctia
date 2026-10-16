@@ -363,219 +363,21 @@ namespace WorldEntities {
         DataLoader<Flags>::write(Loader<Flags>::get("World"), out);
         out->saveAs((saveFolder + "World.vFlags").c_str());
 
+        VulpineBlueprintUI::UserNotif::sent(
+            VulpineColorUI::HightlightColorGreen,
+            "World Editor",
+            "World's spawn conditions are saved!"
+        );
+
         saveEntity(world);
-    }
-}
 
-namespace EntitySpawn 
-{
-    namespace Menu {
-        EntityRef parent;
-        EntityRef entities;
-        EntityRef category;
-        EntityRef type;
-    }
-
-    namespace list {
-        // std::unordered_map<std::string, EntityRef> category; // list of category (mods)
-        std::vector<Entity *> category;
-        std::unordered_map<std::string, EntityRef> entities; // list of entities to spawn depending on the current sorting
-    }
-
-    std::string selectedCategory = "";
-    std::string selectedType = "";
-    std::string selectedEntity = "";
-    std::string types[] = {"Light Sources", "Static Decor", "Items"};
-
-    void clear()
-    {
-        Menu::parent = Menu::category = Menu::entities = Menu::type = EntityRef();
-        list::category.clear();
-        list::entities.clear();
-    }
-
-    void refreshEntityList(const std::string &category, const std::string &type)
-    {
-        selectedCategory = selectedCategory == category and &category != &selectedCategory ? "" : category;
-        selectedType = selectedType == type and &type != &selectedType ? "" : type;
-        EntitySpawn::list::entities.clear();
-        std::vector<std::string> list;
-
-        if(selectedType.empty())
-        {
-            for(auto i : AssetLoadInfos::assetList["EntityRef"])
-                list.push_back(i.first);
-        }
-        else
-        {
-            if(selectedType == "Light Sources")
-            {
-                // If the word 'pointLights' is present in any .vGroup file correspond to a LOD model of this entity,
-                // we consider that this entity has source lights
-                for(auto &e : Loader<EntityRef>::loadingInfos)
-                {
-                    for(int i = 0; i < 4; i++)
-                    {
-                        std::string nameCheck = e.first + " LOD" + (char)('0'+i);
-                        auto elem = Loader<ObjectGroup>::loadingInfos.find(nameCheck);
-
-                        if(
-                            elem != Loader<ObjectGroup>::loadingInfos.end() and 
-                            STR_CASE_STR(elem->second->buff->originalData, "pointLights")
-                        )
-                        {
-                            list.push_back(e.first);
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            if(selectedType == "Static Decor")
-            {
-                // If the world STATIC is written after the definition of a JoltBody,
-                // we consider this entity to be a static decor
-                for(auto &e : Loader<EntityRef>::loadingInfos)
-                {
-                    void * body = STR_CASE_STR(e.second->buff->originalData, "JoltBody");
-                    void * static_ = STR_CASE_STR(e.second->buff->originalData, "STATIC") ;
-                    if(body and static_ and body < static_)
-                        list.push_back(e.first);
-                }
-            }
-            else
-            if(selectedType == "Items")
-            {
-                for(auto &e : Loader<EntityRef>::loadingInfos)
-                    if(STR_CASE_STR(e.second->buff->originalData, "ItemInfos"))
-                        list.push_back(e.first);
-            }
-        }
-
-
-        if(selectedCategory.empty())
-        {
-            for(auto &i : list)
-                list::entities[i] = EntityRef();
-        }
-        else
-        {
-            for(auto &i : list)
-                for(auto j : AssetLoadInfos::assetList["EntityRef"][i])
-                    if(j.version->name == EntitySpawn::selectedCategory)
-                        list::entities[i] = EntityRef();
-        }
-    }
-
-    void createMenu()
-    {
-        EntitySpawn::refreshEntityList("", "");
-
-        /*
-            Creating the per Type sort menu
-        */
-        EntitySpawn::Menu::type = newEntity(
-            "Spawn Menu - Type", 
-            UI_BASE_COMP, 
-            WidgetStyle()
-                .setautomaticTabbing(8)
-                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
-                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-                .setuseInternalSpacing(true)
-            // , WidgetBackground()
-        );
-
-        for(auto &i : EntitySpawn::types)
-        {
-            ComponentModularity::addChild(*EntitySpawn::Menu::type, 
-                VulpineBlueprintUI::Toggable(i, "",
-                    [](Entity *e, float f){EntitySpawn::refreshEntityList(EntitySpawn::selectedCategory, e->comp<EntityInfos>().name);},
-                    [](Entity *e){return e->comp<EntityInfos>().name == EntitySpawn::selectedType ? 0.f : 1.f;},
-                    VulpineColorUI::HightlightColorOrange
-                )
-            );
-        }
-
-        /*
-            Creating the per Category sort menu
-        */
-        // EntitySpawn::Menu::category = VulpineBlueprintUI::StringListSelectionMenu("Spawn Menu - Category",
-        //     EntitySpawn::list::category, 
-        //     [](Entity *e, float f){EntitySpawn::refreshEntityList(e->comp<EntityInfos>().name, EntitySpawn::selectedType);},
-        //     [](Entity *e){return e->comp<EntityInfos>().name == EntitySpawn::selectedCategory ? 0.f : 1.f;},
-        //     -2.,
-        //     VulpineColorUI::HightlightColorRed,
-        //     0.
-        // );
-
-        EntitySpawn::Menu::category = VulpineBlueprintUI::SimpleFolderView("Spawn Menu - Category",
-            EntitySpawn::list::category, VulpineColorUI::HightlightColorRed, VulpineColorUI::HightlightColorRed, 2, 8,
-            [](Entity *e, float f){EntitySpawn::refreshEntityList(e->comp<EntityInfos>().name, EntitySpawn::selectedType);},
-            [](Entity *e){return e->comp<EntityInfos>().name == EntitySpawn::selectedCategory ? 0.f : 1.f;},
-            true
-        );
-
-        std::unordered_map<std::string, EntityRef> tmp;
-        for(auto i : AssetLoadInfos::assetList["EntityRef"])
-        {
-            for(auto k : i.second)
-            {                
-                auto c = newEntity(k.version->name);
-                ComponentModularity::addChild(*Menu::category, c);
-                tmp[k.version->name] = c;
-            }
-        }
-        for(auto i : tmp)
-            list::category.push_back(i.second.get());
-
-        /*
-            Creating the per menu that actually spawn entities
-        */
-        EntitySpawn::Menu::entities = VulpineBlueprintUI::StringListSelectionMenu("Spawn Menu - Entites",
-            EntitySpawn::list::entities, 
-            [](Entity *e, float f)
-            {
-                auto &n = e->comp<EntityInfos>().name;
-                // selectedEntity = selectedEntity == n ? "" : n;
-                selectedEntity = n;
-
-                WorldEntities::selectedFile = WorldEntities::addFile(n).get();
-                gizmo.resetHistoric();
-
-               
-                gizmo.parent->comp<State3D>() = WorldEntities::selectedFile->comp<State3D>();
-                // WARNING_MESSAGE(WorldEntities::selectedFile->comp<State3D>().position);
-            },
-            [](Entity *e){return 0.f;},
-            -0.125,
-            VulpineColorUI::HightlightColorYellow,
-            0.
-        );
-
-        // EntitySpawn::Menu::entities->comp<EntityGroupInfo>().children[0]->set<WidgetBackground>(WidgetBackground());
-        // EntitySpawn::Menu::entities->comp<EntityGroupInfo>().children[0]->comp<WidgetStyle>()
-        //         .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
-        //         .setbackgroundColor2(VulpineColorUI::DarkBackgroundColor1)
-        //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED);
-
-        EntitySpawn::Menu::parent = newEntity("Entity Spawn Menu", 
-            UI_BASE_COMP, 
-            WidgetStyle().setautomaticTabbing(1),
-            EntityGroupInfo({
-                newEntity("Entity Spawm Menu 2",
-                    UI_BASE_COMP,
-                    WidgetStyle().setautomaticTabbing(2),
-                    EntityGroupInfo({
-                        VulpineBlueprintUI::NamedEntry(U"Filter by Category", EntitySpawn::Menu::category, 0.1, true, VulpineColorUI::HightlightColorRed),
-                        VulpineBlueprintUI::NamedEntry(U"Filter by Type", EntitySpawn::Menu::type, 0.1, true, VulpineColorUI::HightlightColorOrange)
-                    })
-                ),
-                VulpineBlueprintUI::NamedEntry(U"Entities To Spawn", EntitySpawn::Menu::entities, 0.05, true, VulpineColorUI::HightlightColorYellow)
-            })
+        VulpineBlueprintUI::UserNotif::sent(
+            VulpineColorUI::HightlightColorGreen,
+            "World Editor",
+            "World saved!"
         );
     }
 }
-
 
 namespace TerrainEditor 
 {
@@ -593,7 +395,14 @@ namespace TerrainEditor
 
     std::string currentTarget = Blueprint::terrainConst::mapFileName;
     std::string viableTargets[]{
-        Blueprint::terrainConst::mapFileName, "Water Level", "Water Flow", "Grassyness", "Forest Density"
+        Blueprint::terrainConst::mapFileName, 
+        "Water Level", 
+        "Water Flow", 
+        "Grassyness", 
+        "Forest Density",
+        "Humidity",
+        "Mystic",
+        "Corruption"
     };
 
     FrameBuffer FBO;
@@ -681,6 +490,13 @@ namespace TerrainEditor
             else
             {
                 NOTIF_MESSAGE("Saved Terrain Texture ", filename);
+
+                VulpineBlueprintUI::UserNotif::sent(
+                    VulpineColorUI::HightlightColorGreen,
+                    "Terrain Editor",
+                    "Successfully saved texture",
+                    filename
+                );
             }
 
             delete[] header.channels;
@@ -729,13 +545,26 @@ namespace TerrainEditor
                     changes.data()
                 );
 
+                glBindTexture(GL_TEXTURE_2D, FBO_Copy2.getTexture(0).getHandle());
+                glTexSubImage2D(GL_TEXTURE_2D,
+                    0,
+                    off.x, off.y,
+                    res.x, res.y,
+                    GL_RED, GL_FLOAT,
+                    changes.data()
+                );
+
                 // WARNING_MESSAGE("REDO",
                 //     PRINTVAR(changesApplyed),
                 //     PRINTVAR(off),
                 //     PRINTVAR(res)
                 // )
 
-                //  Loader<Texture2D>::get(currentTarget).updateSourceFromGPU();
+                Loader<Texture2D>::get(currentTarget).updateSourceFromGPU();
+
+                vec2 minp = vec2(off)/vec2(texture.getResolution());
+                vec2 maxp = vec2(off + res)/vec2(texture.getResolution());
+                WorldEnvironementGenerator::reGenerate(minp*4096.f - 2048.f, maxp*4096.f - 2048.f);
             }
 
             void undoChanges()
@@ -761,13 +590,26 @@ namespace TerrainEditor
                     original.data()
                 );
 
+                glBindTexture(GL_TEXTURE_2D, FBO_Copy2.getTexture(0).getHandle());
+                glTexSubImage2D(GL_TEXTURE_2D,
+                    0,
+                    off.x, off.y,
+                    res.x, res.y,
+                    GL_RED, GL_FLOAT,
+                    original.data()
+                );
+
                 // WARNING_MESSAGE("UNDO",
                 //     PRINTVAR(changesApplyed),
                 //     PRINTVAR(off),
                 //     PRINTVAR(res)
                 // )
 
-                //  Loader<Texture2D>::get(currentTarget).updateSourceFromGPU();
+                Loader<Texture2D>::get(currentTarget).updateSourceFromGPU();
+
+                vec2 minp = vec2(off)/vec2(texture.getResolution());
+                vec2 maxp = vec2(off + res)/vec2(texture.getResolution());
+                WorldEnvironementGenerator::reGenerate(minp*4096.f - 2048.f, maxp*4096.f - 2048.f);
             }
 
             void fromTexture()
@@ -1050,6 +892,15 @@ namespace TerrainEditor
         terrainShader->uniforms.add(ShaderUniform(&brush::intensity, 42));
         terrainShader->uniforms.add(ShaderUniform(&brush::target, 43));
 
+        auto &waterShader = Loader<MeshMaterial>::get("Water");
+        waterShader->uniforms.add(ShaderUniform(&active,       36));
+        waterShader->uniforms.add(ShaderUniform(&textureView,  37));
+        waterShader->uniforms.add(ShaderUniform(&brush::range, 38));
+        waterShader->uniforms.add(ShaderUniform(&mouseDragCommandLastPos3D,   39));
+        waterShader->uniforms.add(ShaderUniform(&brush::color, 40));
+        waterShader->uniforms.add(ShaderUniform(&brush::force, 41));
+        waterShader->uniforms.add(ShaderUniform(&brush::intensity, 42));
+        waterShader->uniforms.add(ShaderUniform(&brush::target, 43));
 
         shader::copy = ShaderProgram(
             Loader<ShaderFragPath>::get("Auto Exposure Pass COPY").path,
@@ -1098,13 +949,18 @@ namespace TerrainEditor
 
         setTarget(Blueprint::terrainConst::mapFileName);
 
-        secondaryBrushMenu = getMenu();
-        // secondaryBrushMenu->set(WidgetBackground());
-        secondaryBrushMenu->comp<WidgetStyle>()
-            .setautomaticTabbing(3)
+
+        secondaryBrushMenu = newEntity("Secondary Brush Menu", UI_BASE_COMP,
+            WidgetBackground(),
+            WidgetStyle()
             .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor2Opaque)
             .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
-            ;
+        );
+
+        auto tmpMenu = getMenu();
+        tmpMenu->comp<WidgetStyle>().setautomaticTabbing(3);
+
+        ComponentModularity::addChild(*secondaryBrushMenu, tmpMenu);
         secondaryBrushMenu->set<WidgetBox>(WidgetBox([](Entity *p, Entity *c){
             c->comp<WidgetState>().statusToPropagate = c->comp<WidgetState>().status =
                 TerrainEditor::active and
@@ -1248,6 +1104,8 @@ namespace TerrainEditor
         camToBrushDistance = distance(minDistPos, globals.currentCamera->getPosition());
         brush::pos3D = minDistPos;
 
+
+
         if(currentTarget == viableTargets[2])
         {
             arrow->comp<State3D>().isActive = ModelStatus::SHOW;
@@ -1273,7 +1131,7 @@ namespace TerrainEditor
         }
         else
         {
-            // arrow->comp<State3D>().isActive = ModelStatus::HIDE;
+            arrow->comp<State3D>().isActive = ModelStatus::HIDE;
             // setEntityTransform(*arrow, arrow->comp<State3D>());
         }
 
@@ -1325,6 +1183,32 @@ namespace TerrainEditor
             historic::lastChangeMin = min(historic::lastChangeMin, vec2(minDistPos.x, minDistPos.z) - brush::range);
             historic::lastChangeMax = max(historic::lastChangeMax, vec2(minDistPos.x, minDistPos.z) + brush::range);
             historic::needUpdate = true;
+
+
+            if(currentTarget == viableTargets[1]) // refresh the water generator
+            {
+                // if(globals.appTime.getUpdateCounter()%120 == 0)
+                {
+                    // Loader<Texture2D>::get(currentTarget).generate(true);
+                    
+                    auto &t = Loader<Texture2D>::get(currentTarget);
+                    glBindTexture(GL_TEXTURE_2D, t.getHandle());
+                    glGenerateMipmap(GL_TEXTURE_2D);
+                    // gluBuild2DMipmaps(
+                        //     t.getTarget(), 
+                        //     t.getInternalFormat(), 
+                        //     t.getResolution().x, 
+                        //     t.getResolution().y, 
+                        //     t.getFormat(),
+                        //     t.getPixelType(),
+                        //     nullptr
+                        // );
+
+                    WaterGenerator::clear();
+                    GameGlobals::ManageEntityGarbage();
+                    WaterGenerator::generate();
+                }
+            }
         }
         else
         {
@@ -1354,7 +1238,13 @@ namespace TerrainEditor
             // TODO : update with a version using sub image function to just pull the changes AABB
             Loader<Texture2D>::get(currentTarget).updateSourceFromGPU();
         }
-
+        if(globals.appTime.getUpdateCounter()%8 == 1 and doEdition)
+        {
+            WorldEnvironementGenerator::reGenerate(
+                vec2(minDistPos.x, minDistPos.z)-brush::range, 
+                vec2(minDistPos.x, minDistPos.z)+brush::range
+            );
+        }
 
     }
 
@@ -1418,7 +1308,7 @@ namespace TerrainEditor
         auto brushTools = VulpineBlueprintUI::NamedEntry(U"Brush Tool", brushToolMenu,0.125, true);
 
         auto brushTargetMenu = newEntity("Brush Tool", UI_BASE_COMP,
-            WidgetStyle().setuseInternalSpacing(true).setautomaticTabbing(6)
+            WidgetStyle().setuseInternalSpacing(true).setautomaticTabbing(4)
         );
 
         for(auto i : viableTargets)
@@ -1559,26 +1449,734 @@ namespace StreetView
     }
 }
 
+vec3 getHeatmapColor(const float alpha)
+{
+    // const vec3 lowest  = vec3(0.125, 0.0, 0.5);
+    // const vec3 low     = vec3(0.25, 0.75, 0.5);
+    // const vec3 normal  = vec3(1.0, 1.0, 0.5);
+    // const vec3 high    = vec3(1.0, 0.5, 0.0);
+    // const vec3 highest = vec3(1.0, 0.0, 0.0);
+
+    const vec3 lowest  = VulpineColorUI::DarkBackgroundColor2;
+    const vec3 low     = VulpineColorUI::HightlightColorCyan;
+    const vec3 normal  = VulpineColorUI::HightlightColorGreen;
+    const vec3 high    = VulpineColorUI::HightlightColorYellow;
+    const vec3 highest = VulpineColorUI::HightlightColorRed;
+
+    vec3 color(lowest);
+
+    color = mix(color, low,     smoothstep(0.00f, 0.25f, alpha));
+    color = mix(color, normal,  smoothstep(0.25f, 0.50f, alpha));
+    color = mix(color, high,    smoothstep(0.50f, 0.75f, alpha));
+    color = mix(color, highest, smoothstep(0.75f, 1.00f, alpha));
+
+    return color;
+}
 
 namespace Biome
 {
-    EntityScatterer *scatterer;
-    EntityRef entity;
+    namespace Menu
+    {
+        EntityRef parent;
+        std::unordered_map<std::string, EntityRef> spawnInfosMap;
+        std::string currentSpawnInfos;
+
+        std::vector<Entity *> currentSpawnList;
+        std::vector<EntityRef> currentSpawnListRef;
+
+        void refreshSpawnList()
+        {
+            Menu::currentSpawnList.clear();
+            Menu::currentSpawnListRef.clear();
+            for(auto &i : Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).entities)
+            {
+                Menu::currentSpawnListRef.push_back(newEntity(i));
+                Menu::currentSpawnList.push_back(Menu::currentSpawnListRef.back().get());
+            }
+        }
+    }
+
+    bool active = false;
+
+    namespace Helper
+    {
+        int gridRes = 96;
+        ObjectGroupRef model;
+        bool active = true;
+
+        void update()
+        {
+            if(Menu::currentSpawnInfos.empty() || !active)
+                return;
+            
+            auto m = model->getInstances()[0].originalModel;
+            m->resetInstances();
+
+            vec2 wmin = WorldEnvironementGenerator::worldMin;
+            vec2 wmax = WorldEnvironementGenerator::worldMax;
+
+            auto &spawn = Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos);
+
+            for(int i = 0; i < gridRes; i++)
+            for(int j = 0; j < gridRes; j++)
+            {
+                vec2 uv = wmin + (wmax-wmin)*(vec2(i + .5f, j + .5f)/vec2(gridRes));
+                BiomeInfos local = EntityScatterer::getLocalInfos(vec2(uv.y, uv.x));
+
+                float d = EntityScatterer::evaluateDensity(spawn, local);
+
+                vec3 color = getHeatmapColor(d);
+
+                auto inst = m->createInstance();
+                inst->
+                    setPosition(vec3(uv.x, local.Elevation*512.f + 32.f, uv.y))
+                    .setScale(vec3((wmax.x-wmin.x)/(float)gridRes, 32.f, (wmax.y-wmin.y)/(float)gridRes));
+                inst->userData = uvec4(uvec3(color*256.f), 0.f);
+                inst->update();
+            }
+        }
+
+        void activate()
+        {
+            active = true;
+            update();
+        }
+
+        void deactivate()
+        {
+            auto m = model->getInstances()[0].originalModel;
+            m->resetInstances();
+            active = false;
+        }
+
+        void toggle()
+        {
+            if(active)
+                deactivate();
+            else
+                activate();
+        }
+    };
 
     void init()
     {
-        scatterer = &Loader<EntityScatterer>::get("Forest");
-        // scatterer->generateInit(vec2(-2000.f), vec2(2000.f), entity = newEntity("Biome", State3D(), EntityGroupInfo()));
+        Helper::model = Loader<ObjectGroup>::get("Cube Helper").copy();
+        globals.getScene()->add(Helper::model);
+
+        WorldEnvironementGenerator::chunkSize = 16;
+        
+        for(auto &i : Loader<EntityScatterer::SpawnInfo>::loadingInfos)
+        {
+            WorldEnvironementGenerator::spawns[i.first] = false;
+            Menu::spawnInfosMap[i.first] = EntityRef();
+        }
+
+        WorldEnvironementGenerator::init();
+        WorldEnvironementGenerator::active = false;
+
+        // for(int i = 0; i < WorldEnvironementGenerator::resolution.x; i++)
+        //     for(int j = 0; j < WorldEnvironementGenerator::resolution.y; j++)
+        //         WorldEnvironementGenerator::generateChunk(ivec2(i, j));
     }
 
     void update()
     {
-        // scatterer->generateFrame(10.f);
+        active = Menu::parent->comp<WidgetState>().statusToPropagate != ModelStatus::HIDE;
+
+        if(!active) Helper::deactivate();
+
+        WorldEnvironementGenerator::multiFrameGen::update();
     }
 
     void clear()
     {
-        entity = EntityRef();
+        WorldEnvironementGenerator::clear();
+        Menu::parent = EntityRef();
+        Menu::spawnInfosMap.clear();
+        Menu::currentSpawnListRef.clear();
+
+        globals.getScene()->remove(Helper::model);
+        Helper::model = ObjectGroupRef();
+    }
+
+    void save()
+    {
+        NOTIF_MESSAGE("BiomeApp : Saving All SpawnInfos");
+
+        VulpineBlueprintUI::UserNotif::sent(
+            VulpineColorUI::HightlightColorGreen,
+            "Biome Editor",
+            "Spawn infos saved"
+        );
+
+
+        // for(auto &i : Loader<EntityScatterer>::loadedAssets)
+        {
+            auto i = Loader<EntityScatterer>::loadedAssets.find("World");
+
+            i->second.spawnsNames.clear();
+            for(auto &j : WorldEnvironementGenerator::spawns)
+                if(j.second)
+                    i->second.spawnsNames.push_back(j.first);
+
+            std::string source = Loader<EntityScatterer>::loadingInfos[i->first]->buff->getSource();
+            i->second.writeToFile(source);
+        }
+
+
+
+        for(auto &i : Loader<EntityScatterer::SpawnInfo>::loadedAssets)
+        {
+            std::string source = Loader<EntityScatterer::SpawnInfo>::loadingInfos[i.first]->buff->getSource();
+            i.second.writeToFile(source);
+        }
+    }
+
+    EntityRef BiomeInfosValueModifier(std::function<float*()> center, std::function<float*()> range, std::function<float*()> transition, std::string name)
+    {
+        auto visualazer = newEntity("Biome Infos Value Modifier " + name + " - Visualazer"
+            , UI_BASE_COMP
+            , WidgetStyle()
+                .setautomaticTabbing(1)
+            , EntityGroupInfo()
+            , WidgetButton(
+                WidgetButton::Type::SLIDER,
+                [center](Entity *e, float f){
+                    *center() = f;
+                    Helper::update();
+                },
+                [center, range, transition](Entity *e)
+                {
+                    auto &box = e->comp<WidgetBox>();
+                    if(box.isUnderCursor)
+                    {
+                        vec2 off = globals.mouseScrollOffset();
+                        
+                        if(globals.mouseRightClickDown())
+                            *transition() = clamp(*transition()+sign(off.y)*0.1f, 0.f, 0.99f);
+                        else
+                            *range() = clamp(*range()+sign(off.y)*0.05f, 0.f, 1.f);
+
+                        globals.clearMouseScroll();
+                        
+                        if(off.y != 0)
+                            Helper::update();
+                    }
+                    return *center();
+                }
+            )
+        );
+
+        const int it = 16;
+        for(int i = 0; i <= it; i++)
+        {
+            float a = (float)i/(float)it;
+            ComponentModularity::addChild(*visualazer, 
+                newEntity("Biome Infos Value Modifier " + name + " - Visualazer part"
+                    , UI_BASE_COMP
+                    , WidgetBox([a, center, range, transition](Entity* parent, Entity* child){
+                        // float alpha = *range() != 0.f ? 1.f-clamp(abs(a-(*center()))/(*range()), 0.f, 1.f) : 0.f;
+                        float alpha = linearstep(1.f, *transition(), abs(a-*center())/ *range());
+                        alpha = *range() != 0.f ? alpha : 0.f;
+
+                        vec3 color = getHeatmapColor(alpha);
+
+                        child->comp<WidgetStyle>().setbackgroundColor1(vec4(color, 1.f));
+                    })
+                    , WidgetBackground()
+                    , WidgetStyle()
+                        .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                        // .setbackGroundStyle(UiTileType::CIRCLE)
+                    )
+            );
+        }
+
+        return VulpineBlueprintUI::NamedEntry(UFTconvert.from_bytes(name),
+            newEntity("Biome Infos Value Modifier" + name
+                , UI_BASE_COMP
+                , WidgetStyle()
+                    .setautomaticTabbing(1)
+                , EntityGroupInfo({
+                    // sliders,
+                    visualazer
+                    })
+                ),
+            0.33,
+            false
+        );
+    };
+
+    void createMenu()
+    {
+        auto spawnInfosMenu = VulpineBlueprintUI::StringListSelectionMenu("Spawn Selection", Menu::spawnInfosMap,
+            [](Entity *e, float f)
+            {
+                Menu::currentSpawnInfos = e->comp<EntityInfos>().name;
+
+                Menu::refreshSpawnList();
+
+                Helper::update();
+            },
+            [](Entity *e)
+            {
+                std::string name = e->comp<EntityInfos>().name;
+                auto parent = e->comp<EntityGroupInfo>().parent;
+
+                // Creating the other buttons
+                if(parent->comp<EntityGroupInfo>().children.size() <= 1)
+                {
+                    auto select = VulpineBlueprintUI::Toggable("USE", "",
+                        [name](Entity *e, float f)
+                        {
+                            WorldEnvironementGenerator::spawns[name] = !WorldEnvironementGenerator::spawns[name];
+                        },
+                        [name](Entity *e)
+                        {
+                            vec4 color = WorldEnvironementGenerator::spawns[name] ? VulpineColorUI::HightlightColorGreen : VulpineColorUI::HightlightColorYellow;
+                            e->comp<WidgetStyle>().setbackgroundColor1(color).setbackgroundColor2(vec4(vec3(color), ALPHA2));
+                            e->comp<WidgetText>().text = WorldEnvironementGenerator::spawns[name] ? U"Enabled" : U"Disabled";
+                            return 0.;
+                        }
+                    );
+
+                    select->comp<WidgetBox>().set(vec2(-1, -0.5), vec2(-1, 1));
+                    e->comp<WidgetBox>().set(vec2(-0.5, 1.0), vec2(-1, 1));
+                    parent->comp<WidgetStyle>().setautomaticTabbing(0);
+                    ComponentModularity::addChild(*parent, select);
+                }
+                // Updating the buttons state
+                else
+                {
+                    vec4 color = WorldEnvironementGenerator::spawns[name] ? VulpineColorUI::HightlightColorGreen : VulpineColorUI::HightlightColorYellow;
+                    e->comp<WidgetStyle>().setbackgroundColor1(color).setbackgroundColor2(vec4(vec3(color), ALPHA2));
+                }
+
+                return Menu::currentSpawnInfos == e->comp<EntityInfos>().name ? 0.f : 1.f;
+            },
+            -1.0, VulpineColorUI::HightlightColorGreen, 0.1
+        );
+
+
+        static float fallback = 0.f;
+
+        #define BIOME_VALUE_MODIFER(v) BiomeInfosValueModifier( \
+            [](){return Menu::currentSpawnInfos.empty() ? &fallback : &Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).spawnWeightsCenter.v;}, \
+            [](){return Menu::currentSpawnInfos.empty() ? &fallback : &Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).spawnWeightsRange.v;}, \
+            [](){return Menu::currentSpawnInfos.empty() ? &fallback : &Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).spawnWeightsTransition.v;}, \
+            #v)
+
+        auto biomeInfosModif = newEntity("Biome Infos Modifier"
+            , UI_BASE_COMP
+            , WidgetStyle()
+                .setautomaticTabbing(-1)
+                .setuseInternalSpacing(true)
+            , EntityGroupInfo({
+                BIOME_VALUE_MODIFER(Elevation),
+                BIOME_VALUE_MODIFER(Slope),
+                BIOME_VALUE_MODIFER(Humidity),
+                BIOME_VALUE_MODIFER(Grassyness),
+                BIOME_VALUE_MODIFER(ForestDensity),
+                BIOME_VALUE_MODIFER(Mystic),
+                BIOME_VALUE_MODIFER(Corruption),
+                BIOME_VALUE_MODIFER(WaterLevel),
+
+                VulpineBlueprintUI::NamedEntry(U"Rotation X", 
+                    VulpineBlueprintUI::ValueInputSlider(
+                        "Rotation Range X", 0.f, 180.f, 180/5, 
+                        [](float f){
+                            if(!Menu::currentSpawnInfos.empty())
+                                Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).radialRange.x = f;
+                        }, 
+                        [](){
+                            if(Menu::currentSpawnInfos.empty())
+                                return 0.f;
+                            else
+                                return Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).radialRange.x;
+                        },
+                        VulpineColorUI::HightlightColorGreen
+                    ), 0.33
+                ),
+
+                VulpineBlueprintUI::NamedEntry(U"Rotation Y", 
+                    VulpineBlueprintUI::ValueInputSlider(
+                        "Rotation Range Y", 0.f, 180.f, 180/5, 
+                        [](float f){
+                            if(!Menu::currentSpawnInfos.empty())
+                                Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).radialRange.y = f;
+                        }, 
+                        [](){
+                            if(Menu::currentSpawnInfos.empty())
+                                return 0.f;
+                            else
+                                return Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).radialRange.y;
+                        },
+                        VulpineColorUI::HightlightColorGreen
+                    ), 0.33
+                ),
+
+                VulpineBlueprintUI::NamedEntry(U"Rotation Z", 
+                    VulpineBlueprintUI::ValueInputSlider(
+                        "Rotation Range Z", 0.f, 180.f, 180/5, 
+                        [](float f){
+                            if(!Menu::currentSpawnInfos.empty())
+                                Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).radialRange.z = f;
+                        }, 
+                        [](){
+                            if(Menu::currentSpawnInfos.empty())
+                                return 0.f;
+                            else
+                                return Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).radialRange.z;
+                        }, VulpineColorUI::HightlightColorGreen
+                    ), 0.33
+                ),
+
+                VulpineBlueprintUI::NamedEntry(U"Scale Min", 
+                    VulpineBlueprintUI::ValueInput("Scale Min", 
+                        [](float f){
+                            if(!Menu::currentSpawnInfos.empty())
+                                Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).scaleRangeMin = f;
+                        }, 
+                        [](){
+                            if(Menu::currentSpawnInfos.empty())
+                                return 0.f;
+                            else
+                                return Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).scaleRangeMin;
+                        },
+                        0., 10.f, 0.1, 1.0, VulpineColorUI::HightlightColorGreen
+                    ), 
+                    0.33
+                ),
+
+                VulpineBlueprintUI::NamedEntry(U"Scale Max", 
+                    VulpineBlueprintUI::ValueInput("Scale Max", 
+                        [](float f){
+                            if(!Menu::currentSpawnInfos.empty())
+                                Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).scaleRangeMax = f;
+                        }, 
+                        [](){
+                            if(Menu::currentSpawnInfos.empty())
+                                return 0.f;
+                            else
+                                return Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).scaleRangeMax;
+                        },
+                        0., 10.f, 0.1, 1.0, VulpineColorUI::HightlightColorGreen
+                    ), 
+                    0.33
+                ),
+
+                VulpineBlueprintUI::NamedEntry(U"Density", 
+                    VulpineBlueprintUI::ValueInput("Density", 
+                        [](float f){
+                            if(!Menu::currentSpawnInfos.empty())
+                                Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).densityPerCell = f;
+                        }, 
+                        [](){
+                            if(Menu::currentSpawnInfos.empty())
+                                return 0.f;
+                            else
+                                return Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).densityPerCell;
+                        },
+                        0., 10.f, 0.1, 1.0, VulpineColorUI::HightlightColorGreen
+                    ), 
+                    0.33
+                ),
+
+                VulpineBlueprintUI::Toggable("Toggle Helper", "",
+                    [](Entity *e, float f)
+                    {
+                        Helper::toggle();
+                    },
+                    [](Entity *e)
+                    {
+                        return Helper::active ? 0.f : 1.f;
+                    }, VulpineColorUI::HightlightColorGreen
+                ),
+
+                VulpineBlueprintUI::Toggable("(Re)Generate World", "",
+                    [](Entity *e, float f)
+                    {
+                        WorldEnvironementGenerator::active = true;
+                        // WorldEnvironementGenerator::reGenerate(vec2(-2048.f), vec2(2048.f));
+                        WorldEnvironementGenerator::multiFrameGen::refresh();
+                    },
+                    [](Entity *e)
+                    {
+                        e->comp<WidgetText>().text = WorldEnvironementGenerator::active ? U"Re-Generate World" : U"Generate World";
+                        return 0.f;
+                    }, VulpineColorUI::HightlightColorGreen
+                ),
+
+                VulpineBlueprintUI::Toggable("Clear World", "",
+                    [](Entity *e, float f)
+                    {
+                        WorldEnvironementGenerator::active = false;
+                        WorldEnvironementGenerator::reset();
+                    },
+                    [](Entity *e)
+                    {
+                        return 0.f;
+                    }, VulpineColorUI::HightlightColorRed
+                )
+
+            })
+        );
+
+        auto spawnList = VulpineBlueprintUI::NamedEntry(U"Selected Spawn Entites",
+            VulpineBlueprintUI::SimpleFolderView("Spawn List", Menu::currentSpawnList, 
+                VulpineColorUI::HightlightColorCyan, VulpineColorUI::HightlightColorCyan,
+                2, 8,
+                [](Entity *e, float f)
+                {
+                    auto &list = Loader<EntityScatterer::SpawnInfo>::get(Menu::currentSpawnInfos).entities;
+                    for(auto i = list.begin(); i != list.end(); i++)
+                        if(*i == e->comp<EntityInfos>().name)
+                        {
+                            list.erase(i);
+                            Menu::refreshSpawnList();
+                            break;
+                        }
+                },
+                [](Entity *e)
+                {
+                    return 0.f;
+                }
+            ), 0.1, true, VulpineColorUI::HightlightColorCyan
+        );
+        
+
+        auto spawnEditionparent = newEntity("Biome Edition Parent", UI_BASE_COMP, 
+            WidgetStyle().setautomaticTabbing(1),
+            EntityGroupInfo({biomeInfosModif})
+        );
+
+        auto spawnListsParent = newEntity("Biome Edition Parent", UI_BASE_COMP, 
+            WidgetStyle().setautomaticTabbing(2),
+            EntityGroupInfo({spawnInfosMenu, spawnList})
+        );
+
+        Menu::parent = newEntity("Biome Tool Menu", UI_BASE_COMP,
+            WidgetStyle().setautomaticTabbing(-2),
+            EntityGroupInfo({spawnListsParent, spawnEditionparent})
+        );
+    }
+}
+
+namespace EntitySpawn 
+{
+    namespace Menu {
+        EntityRef parent;
+        EntityRef entities;
+        EntityRef category;
+        EntityRef type;
+    }
+
+    namespace list {
+        // std::unordered_map<std::string, EntityRef> category; // list of category (mods)
+        std::vector<Entity *> category;
+        std::unordered_map<std::string, EntityRef> entities; // list of entities to spawn depending on the current sorting
+    }
+
+    std::string selectedCategory = "";
+    std::string selectedType = "";
+    std::string selectedEntity = "";
+    std::string types[] = {"Light Sources", "Static Decor", "Items"};
+
+    void clear()
+    {
+        Menu::parent = Menu::category = Menu::entities = Menu::type = EntityRef();
+        list::category.clear();
+        list::entities.clear();
+    }
+
+    void refreshEntityList(const std::string &category, const std::string &type)
+    {
+        selectedCategory = selectedCategory == category and &category != &selectedCategory ? "" : category;
+        selectedType = selectedType == type and &type != &selectedType ? "" : type;
+        EntitySpawn::list::entities.clear();
+        std::vector<std::string> list;
+
+        if(selectedType.empty())
+        {
+            for(auto i : AssetLoadInfos::assetList["EntityRef"])
+                list.push_back(i.first);
+        }
+        else
+        {
+            if(selectedType == "Light Sources")
+            {
+                // If the word 'pointLights' is present in any .vGroup file correspond to a LOD model of this entity,
+                // we consider that this entity has source lights
+                for(auto &e : Loader<EntityRef>::loadingInfos)
+                {
+                    for(int i = 0; i < 4; i++)
+                    {
+                        std::string nameCheck = e.first + " LOD" + (char)('0'+i);
+                        auto elem = Loader<ObjectGroup>::loadingInfos.find(nameCheck);
+
+                        if(
+                            elem != Loader<ObjectGroup>::loadingInfos.end() and 
+                            STR_CASE_STR(elem->second->buff->originalData, "pointLights")
+                        )
+                        {
+                            list.push_back(e.first);
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            if(selectedType == "Static Decor")
+            {
+                // If the world STATIC is written after the definition of a JoltBody,
+                // we consider this entity to be a static decor
+                for(auto &e : Loader<EntityRef>::loadingInfos)
+                {
+                    void * body = STR_CASE_STR(e.second->buff->originalData, "JoltBody");
+                    void * static_ = STR_CASE_STR(e.second->buff->originalData, "STATIC") ;
+                    if(body and static_ and body < static_)
+                        list.push_back(e.first);
+                }
+            }
+            else
+            if(selectedType == "Items")
+            {
+                for(auto &e : Loader<EntityRef>::loadingInfos)
+                    if(STR_CASE_STR(e.second->buff->originalData, "ItemInfos"))
+                        list.push_back(e.first);
+            }
+        }
+
+
+        if(selectedCategory.empty())
+        {
+            for(auto &i : list)
+                list::entities[i] = EntityRef();
+        }
+        else
+        {
+            for(auto &i : list)
+                for(auto j : AssetLoadInfos::assetList["EntityRef"][i])
+                    if(j.version->name == EntitySpawn::selectedCategory)
+                        list::entities[i] = EntityRef();
+        }
+    }
+
+    void createMenu()
+    {
+        EntitySpawn::refreshEntityList("", "");
+
+        /*
+            Creating the per Type sort menu
+        */
+        EntitySpawn::Menu::type = newEntity(
+            "Spawn Menu - Type", 
+            UI_BASE_COMP, 
+            WidgetStyle()
+                .setautomaticTabbing(8)
+                .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
+                .setbackGroundStyle(UiTileType::SQUARE_ROUNDED)
+                .setuseInternalSpacing(true)
+            // , WidgetBackground()
+        );
+
+        for(auto &i : EntitySpawn::types)
+        {
+            ComponentModularity::addChild(*EntitySpawn::Menu::type, 
+                VulpineBlueprintUI::Toggable(i, "",
+                    [](Entity *e, float f){EntitySpawn::refreshEntityList(EntitySpawn::selectedCategory, e->comp<EntityInfos>().name);},
+                    [](Entity *e){return e->comp<EntityInfos>().name == EntitySpawn::selectedType ? 0.f : 1.f;},
+                    VulpineColorUI::HightlightColorOrange
+                )
+            );
+        }
+
+        /*
+            Creating the per Category sort menu
+        */
+        // EntitySpawn::Menu::category = VulpineBlueprintUI::StringListSelectionMenu("Spawn Menu - Category",
+        //     EntitySpawn::list::category, 
+        //     [](Entity *e, float f){EntitySpawn::refreshEntityList(e->comp<EntityInfos>().name, EntitySpawn::selectedType);},
+        //     [](Entity *e){return e->comp<EntityInfos>().name == EntitySpawn::selectedCategory ? 0.f : 1.f;},
+        //     -2.,
+        //     VulpineColorUI::HightlightColorRed,
+        //     0.
+        // );
+
+        EntitySpawn::Menu::category = VulpineBlueprintUI::SimpleFolderView("Spawn Menu - Category",
+            EntitySpawn::list::category, VulpineColorUI::HightlightColorRed, VulpineColorUI::HightlightColorRed, 2, 8,
+            [](Entity *e, float f){EntitySpawn::refreshEntityList(e->comp<EntityInfos>().name, EntitySpawn::selectedType);},
+            [](Entity *e){return e->comp<EntityInfos>().name == EntitySpawn::selectedCategory ? 0.f : 1.f;},
+            true
+        );
+
+        std::unordered_map<std::string, EntityRef> tmp;
+        for(auto i : AssetLoadInfos::assetList["EntityRef"])
+        {
+            for(auto k : i.second)
+            {                
+                auto c = newEntity(k.version->name);
+                ComponentModularity::addChild(*Menu::category, c);
+                tmp[k.version->name] = c;
+            }
+        }
+        for(auto i : tmp)
+            list::category.push_back(i.second.get());
+
+        /*
+            Creating the per menu that actually spawn entities
+        */
+        EntitySpawn::Menu::entities = VulpineBlueprintUI::StringListSelectionMenu("Spawn Menu - Entites",
+            EntitySpawn::list::entities, 
+            [](Entity *e, float f)
+            {
+                auto &n = e->comp<EntityInfos>().name;
+                // selectedEntity = selectedEntity == n ? "" : n;
+                selectedEntity = n;
+
+                if(Biome::active)
+                {
+
+                    if(Biome::Menu::currentSpawnInfos.empty())
+                        return;
+
+                    auto &list = Loader<EntityScatterer::SpawnInfo>::get(Biome::Menu::currentSpawnInfos).entities;
+                    list.push_back(n);
+                    Biome::Menu::refreshSpawnList();
+                }
+                else
+                {
+                    WorldEntities::selectedFile = WorldEntities::addFile(n).get();
+                    gizmo.resetHistoric();
+                    gizmo.parent->comp<State3D>() = WorldEntities::selectedFile->comp<State3D>();
+                }
+            },
+            [](Entity *e){return 0.f;},
+            -0.125,
+            VulpineColorUI::HightlightColorYellow,
+            0.
+        );
+
+        // EntitySpawn::Menu::entities->comp<EntityGroupInfo>().children[0]->set<WidgetBackground>(WidgetBackground());
+        // EntitySpawn::Menu::entities->comp<EntityGroupInfo>().children[0]->comp<WidgetStyle>()
+        //         .setbackgroundColor1(VulpineColorUI::DarkBackgroundColor1)
+        //         .setbackgroundColor2(VulpineColorUI::DarkBackgroundColor1)
+        //         .setbackGroundStyle(UiTileType::SQUARE_ROUNDED);
+
+        EntitySpawn::Menu::parent = newEntity("Entity Spawn Menu", 
+            UI_BASE_COMP, 
+            WidgetStyle().setautomaticTabbing(1),
+            EntityGroupInfo({
+                newEntity("Entity Spawm Menu 2",
+                    UI_BASE_COMP,
+                    WidgetStyle().setautomaticTabbing(2),
+                    EntityGroupInfo({
+                        VulpineBlueprintUI::NamedEntry(U"Filter by Category", EntitySpawn::Menu::category, 0.1, true, VulpineColorUI::HightlightColorRed),
+                        VulpineBlueprintUI::NamedEntry(U"Filter by Type", EntitySpawn::Menu::type, 0.1, true, VulpineColorUI::HightlightColorOrange)
+                    })
+                ),
+                VulpineBlueprintUI::NamedEntry(U"Entities To Spawn", EntitySpawn::Menu::entities, 0.05, true, VulpineColorUI::HightlightColorYellow)
+            })
+        );
     }
 }
 
@@ -1851,12 +2449,43 @@ EntityRef Apps::WorldEditorApp::UImenu()
         "Terrain Edition", ""
     );
 
+    Biome::createMenu();
+
+    auto editionToolSwitchInfos = newEntity("Edition Tool Switch", UI_BASE_COMP,
+        WidgetBox(vec2(-1, 1), vec2(-1.0, -0.9)),
+        WidgetStyle().setautomaticTabbing(1).setuseInternalSpacing(true),
+        EntityGroupInfo()
+    );
+
+    auto editionToolSwitchTab = newEntity("Edition Tool Switch", UI_BASE_COMP,
+        WidgetBox(vec2(-1, 1), vec2(-0.9, 1.0)),
+        WidgetStyle(),
+        EntityGroupInfo()
+    );
+
+    auto editionToolSwitch = newEntity("Edition Tool Switch", UI_BASE_COMP,
+        WidgetStyle(),
+        EntityGroupInfo({editionToolSwitchInfos, editionToolSwitchTab})
+    );
+
+    VulpineBlueprintUI::AddToSelectionMenu(
+        editionToolSwitchInfos, editionToolSwitchTab,
+        WorldEntities::Menu::parent,
+        "World Editor", ""
+    );
+
+    VulpineBlueprintUI::AddToSelectionMenu(
+        editionToolSwitchInfos, editionToolSwitchTab,
+        Biome::Menu::parent,
+        "Biome Editor", ""
+    );
+
     return newEntity("WorldEditor - APP MENU"
         , UI_BASE_COMP
         , WidgetStyle().setautomaticTabbing(2).setuseInternalSpacing(true)
         , EntityGroupInfo(
             {
-                WorldEntities::Menu::parent,
+                editionToolSwitch,
                 EntitySpawn::Menu::parent
             })
     );
@@ -1914,9 +2543,24 @@ EntityRef Apps::WorldEditorApp::UIcontrols()
 Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
 {
     
-    static InputFilter WorldEditorOnly = [](){return !TerrainEditor::active and !StreetView::active;};
-    static InputFilter GizmoOnly = [](){return !TerrainEditor::active and gizmo.isEnabled() and !StreetView::active;};
-    static InputFilter TerrainEditorOnly = [](){return TerrainEditor::active and !StreetView::active;};
+    static InputFilter WorldEditorOnly = [](){return 
+        !Biome::active and 
+        !TerrainEditor::active and 
+        !StreetView::active;};
+
+    static InputFilter GizmoOnly = [](){return 
+        !TerrainEditor::active and 
+        gizmo.isEnabled() and 
+        !StreetView::active;};
+
+    static InputFilter TerrainEditorOnly = [](){return 
+        TerrainEditor::active and 
+        !StreetView::active;};
+
+    static InputFilter BiomeEditorOnly = [](){return 
+        Biome::active and 
+        !StreetView::active;
+    };
 
     inputs.push_back(&
         InputManager::addEventInput(
@@ -1977,7 +2621,8 @@ Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
     inputs.push_back(&
         InputManager::addEventInput(
             "Save World", GLFW_KEY_S, GLFW_MOD_CONTROL, GLFW_PRESS, [&]() {
-                WorldEntities::saveEntity(WorldEntities::world);
+                // WorldEntities::saveEntity(WorldEntities::world);
+                WorldEntities::saveWorld();
             },
             WorldEditorOnly, false)
     ); 
@@ -2249,11 +2894,19 @@ Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
 
     inputs.push_back(&
         InputManager::addEventInput(
-            "Toggle 'Street View'", GLFW_KEY_ESCAPE, 0, GLFW_PRESS, [&]() {
+            "Quit 'Street View'", GLFW_KEY_ESCAPE, 0, GLFW_PRESS, [&]() {
                 if(StreetView::inStreetView)
                     StreetView::disable();
             },
             InputManager::Filters::always, false)
+    ); 
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+            "Biome Editor : Save World", GLFW_KEY_S, GLFW_MOD_CONTROL, GLFW_PRESS, [&]() {
+                Biome::save();
+            },
+            BiomeEditorOnly, false)
     ); 
 
     for(auto &i : inputs)
@@ -2332,6 +2985,8 @@ void getEntityAABB(
 
 void Apps::WorldEditorApp::update()
 {
+    // BenchTimer timer("test");
+    // timer.start();
     /* 
         UPDATING ORBIT CONTROLLER ACTIVATION 
     */
@@ -2445,6 +3100,9 @@ void Apps::WorldEditorApp::update()
         selectedFileUpdateCounter = 0;
         gizmo.disable();
     }
+    
+    // timer.stop();
+    // NOTIF_MESSAGE(timer.getDeltaMS())
 }
 
 void Apps::WorldEditorApp::clean()
@@ -2459,12 +3117,16 @@ void Apps::WorldEditorApp::clean()
     ComponentModularity::removeChild(*GlobalInfosSubTab, GlobalInfosSubTab->comp<EntityGroupInfo>().children.back());
     ComponentModularity::removeChild(*GlobalInfosTitleTab, GlobalInfosTitleTab->comp<EntityGroupInfo>().children.back());
 
+    ComponentModularity::removeChild(*GlobalInfosSubTab, GlobalInfosSubTab->comp<EntityGroupInfo>().children.back());
+    ComponentModularity::removeChild(*GlobalInfosTitleTab, GlobalInfosTitleTab->comp<EntityGroupInfo>().children.back());
+
     EntitySpawn::clear();
     WorldEntities::clear();
     TerrainEditor::clear();
     StreetView::clear();
     Biome::clear();
     WaterGenerator::clear();
+    GrassGenerator::active = false;
 
     EntitySpawn::Menu::parent = EntityRef();
     gizmo.clear();

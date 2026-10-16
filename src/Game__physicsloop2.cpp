@@ -65,7 +65,7 @@ void Game::physicsLoop2()
 	JPH::RegisterTypes();
 
     /* Allocating x bytes per possible physics body */
-    constexpr uint bytePerMaxBody = 128;
+    constexpr uint bytePerMaxBody = 512;
     constexpr uint joltPreAllocatedBytes = bytePerMaxBody  * Component<JoltBody>::elements.size();
     JPH::TempAllocatorImpl temp_allocator(joltPreAllocatedBytes);
     NOTIF_MESSAGE("Physics Thread pre-allocated ", joltPreAllocatedBytes/(1024*1024), " MB for physics world.")
@@ -74,7 +74,8 @@ void Game::physicsLoop2()
     JPH::JobSystemThreadPool job_system(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
 
 	// constexpr uint cMaxBodies = Component<Body>::elements.size();
-    constexpr uint cMaxBodies = 1<<16;
+    // constexpr uint cMaxBodies = 1<<16;
+    constexpr uint cMaxBodies = Component<JoltBody>::elements.size();
 	constexpr uint cNumBodyMutexes = 0;
 	constexpr uint cMaxBodyPairs = 1<<18;
 	constexpr uint cMaxContactConstraints = 1<<15;

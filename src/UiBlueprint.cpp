@@ -487,7 +487,7 @@ EntityRef Blueprint::EDITOR_ENTITY::INO::AmbientControls()
             [](Entity *e){return GG::timeOfDayCycleEnable ? 0.f : 1.f;}
             ),
 
-            VulpineBlueprintUI::NamedEntry(U"Time Of Day Speed", VulpineBlueprintUI::SmoothSlider("Time Of Day Speed", 0, 8, 16, 
+            VulpineBlueprintUI::NamedEntry(U"Time Of Day Speed", VulpineBlueprintUI::SmoothSlider("Time Of Day Speed", 0, 0.25, 16, 
             [](Entity *e, float v){GG::timeOfDaySpeed = v;},
             [](Entity *e){return GG::timeOfDaySpeed;}
             )),

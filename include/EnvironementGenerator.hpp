@@ -39,6 +39,7 @@ struct BiomeInfos
     float Corruption = 0.f;
     float Slope = 0.f;
     float Elevation = 0.f;
+    float WaterLevel = 0.f;
 
     float operator*(const BiomeInfos &other)
     {
@@ -84,6 +85,7 @@ class EntityScatterer
             std::vector<std::string> entities;
             BiomeInfos spawnWeightsCenter;
             BiomeInfos spawnWeightsRange;
+            BiomeInfos spawnWeightsTransition;
             vec3 radialRange = vec3(0);
 
             float densityPerCell = 1.f;
@@ -120,7 +122,8 @@ class EntityScatterer
         );
         float generateGetProgress();
         float generateGetTime();
-
+        
+        void generateChunk(const vec2 cell, const BiomeInfos & local);
 
         int generate_old(
             vec2 center,
@@ -135,3 +138,41 @@ class EntityScatterer
 
         void writeToFile(std::string filename);
 };
+
+namespace WorldEnvironementGenerator
+{
+    // inline std::vector<EntityScatterer::SpawnInfo *> spawns;
+    // inline std::unordered_map<std::string, EntityScatterer::SpawnInfo *> spawns;
+    inline std::unordered_map<std::string, bool> spawns;
+
+    inline EntityRef root;
+    // inline std::vector<EntityRef> chunks; // can be replace by root->comp<EntityGroupInfos>().children
+
+    inline vec2 worldMin = vec2(-2048.0);
+    inline vec2 worldMax = vec2(+2048.0);
+
+    inline ivec2 resolution = vec2(0);
+
+    inline float chunkSize = 64.0;
+
+    inline bool active = false;
+
+    namespace multiFrameGen
+    {
+        inline ivec2 current;
+        inline float timeLimitMS = 10.0;
+
+        void refresh();
+        void update();
+        float completion();
+    };
+
+    void init();
+    void clear();
+
+    void generateChunk(ivec2 uv);
+
+    void reset();
+
+    void reGenerate(vec2 minp, vec2 maxp);
+};  

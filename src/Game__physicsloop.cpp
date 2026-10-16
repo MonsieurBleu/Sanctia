@@ -549,7 +549,7 @@ void TryPlayerClimb()
 
 void Game::physicsLoop()
 {
-    currentThreadID = 1;
+    currentThreadID = THREAD_ID_RP3D_MAIN;
     physicsTicks.freq = 100.f;
     physicsTicks.activate();
 

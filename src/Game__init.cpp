@@ -27,7 +27,7 @@ Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSi
     // defferedBuffer = static_cast<DefferedBuffer *>(renderBuffer);
     defferedBuffer = (static_cast<DefferedBuffer *>(renderBuffer));
     paintShaderPass = PaintShaderPass(defferedBuffer);
-    currentThreadID = 0;
+    currentThreadID = THREAD_ID_MAIN;
 }
 
 void Game::init(int paramSample)

@@ -1,27 +1,29 @@
 #include <Subapps.hpp>
 #include "App.hpp"
+#include "Constants.hpp"
+#include "EnvironementGenerator.hpp"
 #include "Flags.hpp"
 #include <SanctiaEntity.hpp>
 #include "GameGlobals.hpp"
+#include "JoltIntegration/PhysicsCommons.hpp"
+#include "Navigation/NavMesh.hpp"
+#include "PlayerController2.hpp"
 #include "Scripting/ScriptInstance.hpp"
 #include "Timer.hpp"
 #include <AssetManager.hpp>
 #include <EntityBlueprint.hpp>
 #include "Game.hpp"
 
-
 #include <Blueprint/EngineBlueprintUI.hpp>
+
+
+SpectatorController spectator;
+extern PlayerController2 playerControl;
+
+vec3 prevPlayerPosition;
 
 Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 {
-    // inputs.push_back(&
-    //     InputManager::addEventInput(
-    //         "execute script", GLFW_KEY_R, 0, GLFW_PRESS, [&]() {    
-    //             appRoot->comp<Script>().setInitialized(false);
-    //         },
-    //         InputManager::Filters::always, false)
-    // );
-
     inputs.push_back(&
         InputManager::addEventInput(
             "test input", GLFW_KEY_T, 0, GLFW_PRESS, "test_input",
@@ -36,6 +38,28 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
         )
     );
 
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "toggle free cam", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { 
+            if (globals.getController() == &playerControl && GG::playerEntity)
+            {
+                ComponentModularity::removeChild(*appRoot, GG::playerEntity);
+
+                GG::playerEntity = newEntity();
+
+                GG::ManageEntityGarbage__WithPhysics();
+
+                App::setController(&spectator);
+            }
+            else if (globals.getController() == &spectator && GG::playerEntity)
+            {
+                GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = prevPlayerPosition}));
+
+                App::setController(&playerControl);
+            }
+        })
+    );
+
     for(auto &i : inputs)
         i->activated = false;
 };
@@ -48,110 +72,14 @@ EntityRef Apps::LunaTesting::UImenu()
     );
 }
 
-EntityRef myAwesomeEntity = nullptr;
-void Apps::LunaTesting::init()
+void TestNavMeshUpdate()
 {
-    const vec3 playerSpawnPoint = vec3(-700, 30, -750)*1.f;
-    /***** Preparing App Settings *****/
-    {
-        appRoot = newEntity("AppRoot");
-        globals.currentCamera->getState().FOV = radians(100.f);
-        globals.simulationTime.resume();
+    VulpineNav::NavMesh::DebugDrawTileInstanced(256.0f, 0.0f, true, false);
+}
 
-        appRoot->set<state3D>(true);
-        
-        GG::playerEntity = spawnEntity("(Combats) Player", playerSpawnPoint);
-        ComponentModularity::addChild(*appRoot, GG::playerEntity);
+void TestLogicBlocks()
+{
 
-        Game::playerControl = PlayerController(globals.currentCamera);
-        App::setController(&Game::playerControl);
-
-        Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::PLAYER_ENEMY});
-        Faction::setEnemy({Faction::Type::PLAYER}, {Faction::Type::MONSTERS});
-        Faction::setEnemy({Faction::Type::MONSTERS}, {Faction::Type::PLAYER_ENEMY});
-        
-        GG::sun->shadowCameraSize = vec2(256, 256);
-
-        
-    }
-
-    ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
-
-    physicsMutex.lock();
-    ComponentModularity::addChild(*appRoot, spawnEntity("movement demo terrain"));
-    myAwesomeEntity = std::make_shared<Entity>("myAwesomeEntity");
-    ComponentModularity::addChild(*appRoot, myAwesomeEntity);
-    ComponentModularity::ReparentChildren(*appRoot);
-    physicsMutex.unlock();
-
-    // if (Loader<ScriptInstance>::loadingInfos.find("test_ent") != Loader<ScriptInstance>::loadingInfos.end())
-    // {
-    //     Loader<ScriptInstance>::get("test_ent").run();
-    // }
-
-
-    // appRoot->set<Script>(Script(
-    //     "test", ScriptHook::ON_INIT, 
-    //     "test_step", ScriptHook::ON_UPDATE
-    // ));
-
-    // VulpineTextOutputRef out(new VulpineTextOutput());
-    // EntityRef e = appRoot;
-    // DataLoader<EntityRef>::write(e, out);
-    // out->saveAs("data/test_ent.vEntity");
-
-    // flags["test"] = "Hello World!";
-    // flags["test2"] = 1354;
-    // flags["test3"] = 13.54f;
-    // flags["test4"] = true;
-    // flags["test5"] = Flag::MakeFlagFromScript<int>("return_int");
-
-    for(auto &i : Loader<Flag>::loadingInfos)
-        std::cout << i.first << "\n";
-
-    std::cout << Loader<Flag>::get("test4")->as_string() << "\n";
-
-
-    // auto flags = Loader<Flags>::get("ModTest");
-    // flags["CPP_FLAG"] = 1e6f;
-
-
-    /*
-        Exemple de code pour faire une sauvegarde.
-
-        A la place de Flags, il faudra utiliser une struct qui ne charge qu'un certain type de flag
-    */
-    // std::string saveFolder = "data/saves/";
-    // for(auto &i : Loader<Flags>::loadedAssets)
-    // {
-    //     VulpineTextOutputRef out2(new VulpineTextOutput(4096));
-    //     i.second.writeAsSaveFileMode = true;
-    //     DataLoader<Flags>::write(i.second, out2);
-    //     i.second.writeAsSaveFileMode = false;
-
-    //     std::string filename = saveFolder + i.first + ".vSavedFlags";
-    //     out2->saveAs(filename.c_str());
-
-    //     // NOTIF_MESSAGE(filename)
-    // }
-
-    // VulpineTextBuffRef in(new VulpineTextBuff("data/flags.vFlags"));
-    // flags = DataLoader<Flags>::read(in);
-
-    
-    // std::cout << "Value of flag test5: " << flags["test5"]->as_string() << std::endl << std::endl;
-    // if (flags["test"])
-    // {
-    //     std::cout << "Flag test is true!" << std::endl;
-    // }
-    // else {
-    //     std::cout << "Flag test is false!" << std::endl;
-    // }
-
-    // std::cout << "Value of flag test2: " << flags["test2"]->as_int() << std::endl;
-
-    // VulpineTextOutputRef out2(new VulpineTextOutput(4096));
-    
     // DataLoader<Flags>::write(flags, out2);
     // out2->saveAs(Loader<Flags>::loadingInfos["ModTest"]->buff->getSource().c_str());
 
@@ -166,18 +94,18 @@ void Apps::LunaTesting::init()
     //         }
     //     )
     // );
-    LogicBlock::registerFunction(
-        LogicBlock::Function(
-            "pow",
-            FlagData::FLOAT,
-            {FlagData::FLOAT, FlagData::FLOAT},
-            [](const std::vector<FlagDataPtr>& args) -> FlagDataPtr {
-                float base = args[0]->as_float();
-                float exponent = args[1]->as_float();
-                return FlagData::MakeFlag(std::pow(base, exponent));
-            }
-        )
-    );
+    // LogicBlock::registerFunction(
+    //     LogicBlock::Function(
+    //         "pow",
+    //         FlagData::FLOAT,
+    //         {FlagData::FLOAT, FlagData::FLOAT},
+    //         [](const std::vector<FlagDataPtr>& args) -> FlagDataPtr {
+    //             float base = args[0]->as_float();
+    //             float exponent = args[1]->as_float();
+    //             return FlagData::MakeFlag(std::pow(base, exponent));
+    //         }
+    //     )
+    // );
 
     // LogicBlock::registerFunction(
     //     LogicBlock::Function(
@@ -207,24 +135,25 @@ void Apps::LunaTesting::init()
     // std::string testStr = "$(if (1 > 2) then (\"Hello\") else (\"World\")) $(1 + 1 1) $(1 12354656) $(if (1 + 1 + 1) then (1 + 1) else (false) 1)";
     // std::string testStr = "okay wait does this break??: $(1 + 1 1) $(1 + 1 1)";
     // std::string testStr = "nothing: $( () )";
-    std::string testStr = "$(${test7})";
+    // std::string testStr = "$(${test7})";
 
-    size_t len = testStr.length();
-    char *input = new char[len+1];
-    strcpy(input, testStr.c_str());
+    // size_t len = testStr.length();
+    // char *input = new char[len+1];
+    // strcpy(input, testStr.c_str());
 
-    std::cout << len << "\t" << input << "\n";
-    LogicBlock::parse_string_cstr(&input, len, len+1);
-    std::cout << len << "\t" << input << "\n";
+    // std::cout << len << "\t" << input << "\n";
+    // LogicBlock::parse_string_cstr(&input, len, len+1);
+    // std::cout << len << "\t" << input << "\n";
 
-    myAwesomeEntity->set<AudioPlayer>({});
+    // myAwesomeEntity->set<AudioPlayer>({});
     // AudioPlayer& p = myAwesomeEntity->comp<AudioPlayer>();
 
     // AudioClip& c = p.Play({.clipName = "FootstepsStoneDirt1Mono", .position = vec3(2, 0, 0), .positionInEntityReferential = true, .loop = true});
 
-    myAwesomeEntity->set<state3D>(state3D(playerSpawnPoint));
-    myAwesomeEntity->set<EntityModel>(EntityModel{Loader<ObjectGroup>::get("chaise").copy()});
+    // myAwesomeEntity->set<state3D>(state3D(origin));
+    // myAwesomeEntity->set<EntityModel>(EntityModel{Loader<ObjectGroup>::get("chaise").copy()});
 
+    /*
     myAwesomeEntity->set<AudioScatterer>({
         .clips = {
             "zapsplat_animals_budgies_x2_chirping_happy_001_75540",
@@ -240,6 +169,7 @@ void Apps::LunaTesting::init()
 
     GG::playerEntity->set<AudioPlayer>({});
     GG::playerEntity->set<FootstepsManager>({});
+    */
 
     // constexpr int N = 1e6;
     // BenchTimer timer("Logic Block Parsing Benchmark");
@@ -280,25 +210,112 @@ void Apps::LunaTesting::init()
     // // std::cout << testStr << std::endl;
 }
 
+
+struct TestObject
+{
+    EntityRef entity;
+    vec2 velocity;
+};
+
+constexpr int N_OBJECT = 1000;
+
+std::array<TestObject, N_OBJECT> testArray;
+
+EntityRef testParent = nullptr;
+
+EntityRef myAwesomeEntity = nullptr;
+void Apps::LunaTesting::init()
+{
+    const vec3 origin(-675, 37, -624);
+
+    /***** Preparing App Settings *****/
+    {
+        appRoot = newEntity("AppRoot", state3D(true));
+
+        App::setController(&playerControl);
+
+        GG::sun->shadowCameraSize = vec2(2048);
+
+        HierarchyState3D s;
+        s.position = origin + vec3(0, 8, 0);
+        GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, s);
+    }
+
+    testParent = newEntity();
+    ComponentModularity::addChild(*appRoot, testParent);
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    constexpr float rangeWorld = 100.0f;
+    std::uniform_real_distribution<float> distWorld(-rangeWorld, rangeWorld);
+    std::uniform_real_distribution<float> distAngle(0.0f, PI2);
+    std::uniform_real_distribution<float> distVelocity(5.0f, 80.0f);
+    
+    for (int i = 0; i < N_OBJECT; i++)
+    {
+        TestObject obj;
+        obj.entity = newEntity();
+
+        vec2 spawnOffset = vec2(
+            distWorld(rng),
+            distWorld(rng));
+
+        vec3 spawnPos = vec3(
+            origin.x + spawnOffset.x,
+            0.0f,
+            origin.z + spawnOffset.y);
+
+        obj.entity->set<State3D>({.position = spawnPos});
+
+
+        obj.velocity = normalize(spawnOffset) * distVelocity(rng);
+
+        obj.entity->set<AgentNavigation>({});
+
+        testArray[i] = obj;
+    }
+        
+    HierarchyState3D s;
+    s.position = origin;
+    spawnEntityToParent("Jolt Test Scene", *appRoot, s);
+    
+    ComponentModularity::addChild(*appRoot, Blueprint::SpawnMainGameTerrain());
+
+    JoltVulpine::enablePhysics = true;
+    globals.simulationTime.resume();
+
+
+    // testRecast();
+    // TestNavMeshInit();
+
+    GG::playerEntity->set(AgentNavigation({.navmeshBuildPriority = 10}));
+
+
+    glLineWidth(3.0f);
+}
+
+
 void Apps::LunaTesting::update()
 {
-    // ComponentModularity::synchronizeChildren(appRoot);
+    TestNavMeshUpdate();
 
+    static std::vector<DrawBoxes::Box> boxes(N_OBJECT);
+    for (int i = 0; i < N_OBJECT; i++)
+    {
+        const TestObject& testObject = testArray[i];
+        vec2 translation = testObject.velocity * globals.simulationTime.getDelta();
+        vec3& position = testObject.entity->comp<State3D>().position;
+        position.x += translation.x;
+        position.z += translation.y;
 
-    
-    // float t = globals.appTime.getElapsedTime() * glm::two_pi<float>() * 0.05f;
-    // myAwesomeEntity->comp<state3D>().position.x = -700 + sin(t) * 2.0f;
-    // myAwesomeEntity->comp<state3D>().lookDirection = vec3(sin(t), 0, cos(t));
-    
-    // if (globals.appTime.getUpdateCounter() % 60)
-    // {
-        // AudioPlayer& p = myAwesomeEntity->comp<AudioPlayer>();
+        boxes[i] = {position + vec3(-2) + vec3(0, 256, 0), position + vec3(2) + vec3(0, 256, 0)};
+    }
 
-        // p.Play({.clipName = "FootstepsStoneDirt1", .loop = true});
-    // }   
+    GG::draw->drawBoxes(boxes, 0.0f, ModelState3D(), "#ff00ff"_rgb);
 
-    // bool b = InputManager::getGamepadButtonValue(VULPINE_GAMEPAD_BUTTON_A);
-    // std::cout << "button A is: " << (b ? "Pressed" : "Not Pressed") << std::endl;
+    if (globals.getController() == &playerControl && GG::playerEntity)
+        prevPlayerPosition = GG::playerEntity->comp<State3D>().position;
 }
 
 
@@ -310,8 +327,15 @@ void Apps::LunaTesting::clean()
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
 
+    for (int i = 0; i < testArray.size(); i++)
+    {
+        testArray[i] = TestObject();
+    }
+
     appRoot = EntityRef();
-    GameGlobals::playerEntity = EntityRef();
+    GG::playerEntity = EntityRef();
+
+    testParent = EntityRef();
     
     App::setController(nullptr);
 

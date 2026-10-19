@@ -186,43 +186,163 @@ void DrawBox::initData()
     pos[22] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
     pos[23] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
 
+    MeshVao vao(new 
+        VertexAttributeGroup({
+            VertexAttribute(buff, 0, nbOfPoints, 3, GL_FLOAT, false),
+            VertexAttribute(buffNormal, 1, nbOfPoints, 3, GL_FLOAT, false),
+            VertexAttribute(buffNormal, 2, nbOfPoints, 3, GL_FLOAT, false)
+        })
+    );
 
-    // Cross inside faces
-    // pos[24] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
-    // pos[25] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+    setVao(vao);
+}
 
-    // pos[26] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
-    // pos[27] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+void DrawBoxes::initData()
+{
+    createUniforms();
+    uniforms.add(ShaderUniform(&color, 20));
 
-    // pos[28] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
-    // pos[29] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+    // state.frustumCulled = false;
+    // depthWrite = false;
+    noBackFaceCulling = true;
+    defaultMode = GL_LINES;
+    // defaultMode = GL_TRIANGLE_FAN;
 
-    // pos[30] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
-    // pos[31] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+    int nbOfPointsPerBox = 24;
+    GenericSharedBuffer buff(new char[sizeof(vec3) * nbOfPointsPerBox * boxes.size()]);
+    GenericSharedBuffer buffNormal(new char[sizeof(vec3) * nbOfPointsPerBox * boxes.size()]);
 
-    // pos[32] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
-    // pos[33] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+    for (int i = 0; i < boxes.size(); i++)
+    {
+        vec3 min = boxes[i].min;
+        vec3 max = boxes[i].max;
 
-    // pos[34] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
-    // pos[35] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
+        vec3 *pos = ((vec3*)buff.get()) + (nbOfPointsPerBox * i);
+        vec3 *nor = ((vec3*)buffNormal.get()) + (nbOfPointsPerBox * i);
 
-    // pos[36] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
-    // pos[37] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+        for(int i = 0; i < nbOfPointsPerBox; i++)
+        {
+            nor[i] = vec3(2);
+            // pos[i] = vec3(0);
+        }
 
-    // pos[38] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
-    // pos[39] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
-    
-    // pos[40] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
-    // pos[41] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+        // Face 1
+        pos[0] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
+        pos[1] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
 
-    // pos[42] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
-    // pos[43] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+        pos[2] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
+        pos[3] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
 
-    // pos[44] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
-    // pos[45] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+        pos[4] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
+        pos[5] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
 
-    // pos[46] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
-    // pos[47] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+        pos[6] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
+        pos[7] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
+
+        // Face 2
+        pos[8] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+        pos[9] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+
+        pos[10] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+        pos[11] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+
+        pos[12] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+        pos[13] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+
+        pos[14] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+        pos[15] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+
+        // Connecting faces
+        pos[16] = min*vec3(1, 1, 1) + max*(vec3(0, 0, 0));
+        pos[17] = min*vec3(0, 1, 1) + max*(vec3(1, 0, 0));
+
+        pos[18] = min*vec3(1, 0, 1) + max*(vec3(0, 1, 0));
+        pos[19] = min*vec3(0, 0, 1) + max*(vec3(1, 1, 0));
+
+        pos[20] = min*vec3(1, 1, 0) + max*(vec3(0, 0, 1));
+        pos[21] = min*vec3(0, 1, 0) + max*(vec3(1, 0, 1));
+
+        pos[22] = min*vec3(1, 0, 0) + max*(vec3(0, 1, 1));
+        pos[23] = min*vec3(0, 0, 0) + max*(vec3(1, 1, 1));
+
+    }
+
+    MeshVao vao(new 
+        VertexAttributeGroup({
+            VertexAttribute(buff, 0, nbOfPointsPerBox * boxes.size(), 3, GL_FLOAT, false),
+            VertexAttribute(buffNormal, 1, nbOfPointsPerBox * boxes.size(), 3, GL_FLOAT, false),
+            VertexAttribute(buffNormal, 2, nbOfPointsPerBox * boxes.size(), 3, GL_FLOAT, false)
+        })
+    );
+
+    setVao(vao);
+
+}
+
+void DrawMesh::initData()
+{
+    createUniforms();
+    uniforms.add(ShaderUniform(&color, 20));
+
+    noBackFaceCulling = true;
+#ifdef DRAW_MESH_TRIANGLES
+    defaultMode = GL_TRIANGLES;
+
+    int nbOfPoints = triangleCount * 3;
+    GenericSharedBuffer buff(new char[sizeof(vec3)*nbOfPoints]);
+    GenericSharedBuffer buffNormal(new char[sizeof(vec3)*nbOfPoints]);
+
+    vec3 *pos = (vec3*)buff.get();
+    vec3 *nor = (vec3*)buffNormal.get();
+
+    for(int i = 0; i < triangleCount; i++)
+    {
+#ifdef USE_TRIANGLE_NORMAL
+        vec3 p0 = triangles[i * 3 + 0];
+        vec3 p1 = triangles[i * 3 + 1];
+        vec3 p2 = triangles[i * 3 + 2];
+
+        vec3 u = p1 - p0;
+        vec3 v = p2 - p0;
+
+        vec3 triangleNormal = cross(u, v);
+#endif
+
+        #pragma unroll
+        for (int j = 0; j < 3; j++)
+        {
+            vec3 p = triangles[i * 3 + j];
+#ifdef USE_TRIANGLE_NORMAL
+            nor[i * 3 + j] = triangleNormal;
+#else
+            nor[i * 3 + j] = normalize(p);
+#endif
+            pos[i * 3 + j] = p;
+        }
+    }
+#else
+    defaultMode = GL_LINES;
+
+    int nbOfPoints = triangleCount * 3 * 2;
+    GenericSharedBuffer buff(new char[sizeof(vec3)*nbOfPoints]);
+    GenericSharedBuffer buffNormal(new char[sizeof(vec3)*nbOfPoints]);
+
+    vec3 *pos = (vec3*)buff.get();
+    vec3 *nor = (vec3*)buffNormal.get();
+
+    for(int i = 0; i < triangleCount; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            nor[i * 6 + j * 2 + 0] = vec3(2);
+            nor[i * 6 + j * 2 + 1] = vec3(2);
+
+            pos[i * 6 + j * 2 + 0] = triangles[i * 3 +  j];
+            pos[i * 6 + j * 2 + 1] = triangles[i * 3 + (j == 2 ? 0 : j + 1)];
+        }
+    }
+#endif
+
 
     MeshVao vao(new 
         VertexAttributeGroup({
@@ -369,6 +489,47 @@ void Draw::drawBoxFromHalfExtents(
 
     queueMutex.lock();
     toDrawQueue.push(box);
+    queueMutex.unlock();
+}
+
+void Draw::drawBoxes(
+    const std::vector<DrawBoxes::Box>& boxes,
+    float duration, 
+    ModelState3D state,
+    vec3 color)
+{
+        std::shared_ptr<DrawBoxes> drawBoxes = std::make_shared<DrawBoxes>(
+          boxes
+        , globals.appTime.getElapsedTime()
+        , duration
+        , state
+        , color
+    );
+
+    queueMutex.lock();
+    toDrawQueue.push(drawBoxes);
+    queueMutex.unlock();
+}
+
+void Draw::drawMesh(
+    vec3* triangles,
+    size_t triangleCount,
+    float duration, 
+    ModelState3D state,
+    vec3 color
+)
+{
+    std::shared_ptr<DrawMesh> mesh = std::make_shared<DrawMesh>(
+        triangles,
+        triangleCount,
+        globals.appTime.getElapsedTime(),
+        duration,
+        state,
+        color
+    );
+
+    queueMutex.lock();
+    toDrawQueue.push(mesh);
     queueMutex.unlock();
 }
 

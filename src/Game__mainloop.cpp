@@ -1,4 +1,5 @@
 #include "ECS/ComponentTypeScripting.hpp"
+#include "Navigation/NavMesh.hpp"
 #include <fstream>
 #include <thread>
 
@@ -67,6 +68,8 @@ void Game::mainloop()
     std::thread physicsThreads(&Game::physicsLoop, this);
 
     std::thread physicsThreads2(&Game::physicsLoop2, this);
+
+    VulpineNav::NavMesh::init();
 
     /****** Loading Models and setting up the scene ******/
     globals.simulationTime.pause();
@@ -656,7 +659,7 @@ void Game::mainloop()
     
     // Apps::EventGraphApp eventGraph;
     // Apps::SceneMergeApp sceneMerge;
-    // Apps::LunaTesting lunaTest;
+    Apps::LunaTesting lunaTest;
     // Apps::MovementDemo movementDemo;
 
     Apps::EnviroApp enviro;
@@ -1269,6 +1272,20 @@ void Game::mainloop()
             );
             JoltVulpine::physicsMutex.unlock();
         }
+
+        size_t count = 0;
+        System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& pathfind, State3D& state3D)
+        {
+            VulpineNav::NavMesh::UpdateLoaderPosition(pathfind.lastPos, state3D.position, 0);
+
+            pathfind.lastPos = state3D.position;
+
+            count++;
+        });
+
+        // NOTIF_MESSAGE("COUNT: ", count);
+
+        VulpineNav::NavMesh::Tick();
 
         // tmp_Timer.stop();
 
@@ -2394,7 +2411,6 @@ void Game::mainloop()
     // save settings to file
     Settings::save();
 
-    JoltVulpine::quitThread = true;
     physicsThreads.join();
     physicsThreads2.join();
     

@@ -1,7 +1,7 @@
 ifeq ($(OS),Windows_NT)
 	GEXEC = Sanctia_WIN64.exe
 else
-	GEXEC = Sanctia_UNIX.bin
+	GEXEC = Sanctia_LINUX
 endif
 
 CC = clang++

@@ -1273,6 +1273,8 @@ void Game::mainloop()
             JoltVulpine::physicsMutex.unlock();
         }
 
+        NEW_SPLIT(NAVIGATION SYNCH)
+
         size_t count = 0;
         System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& pathfind, State3D& state3D)
         {
@@ -2411,6 +2413,8 @@ void Game::mainloop()
     // save settings to file
     Settings::save();
 
+    VulpineNav::NavMesh::shutdown();
+    JoltVulpine::quitThread = true;
     physicsThreads.join();
     physicsThreads2.join();
     

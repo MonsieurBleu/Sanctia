@@ -52,8 +52,6 @@ void GrassGenerator::update()
         vec2(+.5f, +.5f), 
     };
 
-    int cnt = 0;
-
     for(int i = -gridRes+1; i < gridRes; i++)
         for(int j = -gridRes+1; j < gridRes; j++)
         {
@@ -86,11 +84,7 @@ void GrassGenerator::update()
             instance->setPosition(vec3(uv.x, 0, uv.y)*patchSize);
             instance->update();
 
-            cnt ++;
         }
-    
-    // if(globals.appTime.getUpdateCounter()%128 == 0)
-    //     NOTIF_MESSAGE("Number of grass instances accross all lods : ", cnt)
 }
 
 void GrassGenerator::clear()

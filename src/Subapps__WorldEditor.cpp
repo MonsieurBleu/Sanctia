@@ -1017,7 +1017,11 @@ namespace TerrainEditor
         terrain = EntityRef();
         ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, secondaryBrushMenu);
         // ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, currentToolHelper);
-        currentToolHelper = secondaryBrushMenu = EntityRef();
+        currentToolHelper = secondaryBrushMenu = arrow = EntityRef();
+
+        arrowModel = ObjectGroupRef();
+
+        historic::historics.clear();
     }
 
     void update(vec2 cursor)
@@ -1446,6 +1450,7 @@ namespace StreetView
         disable();
 
         ComponentModularity::removeChild(*EDITOR::MENUS::GameScreen, button);
+        button = EntityRef();
     }
 }
 
@@ -1560,10 +1565,12 @@ namespace Biome
 
     void init()
     {
+        // return;
+
         Helper::model = Loader<ObjectGroup>::get("Cube Helper").copy();
         globals.getScene()->add(Helper::model);
 
-        WorldEnvironementGenerator::chunkSize = 16;
+        // WorldEnvironementGenerator::chunkSize = 16 * 2;
         
         for(auto &i : Loader<EntityScatterer::SpawnInfo>::loadingInfos)
         {
@@ -1581,6 +1588,7 @@ namespace Biome
 
     void update()
     {
+        // return;
         active = Menu::parent->comp<WidgetState>().statusToPropagate != ModelStatus::HIDE;
 
         if(!active) Helper::deactivate();
@@ -1590,9 +1598,11 @@ namespace Biome
 
     void clear()
     {
+        // return;
         WorldEnvironementGenerator::clear();
         Menu::parent = EntityRef();
         Menu::spawnInfosMap.clear();
+        Menu::currentSpawnList.clear();
         Menu::currentSpawnListRef.clear();
 
         globals.getScene()->remove(Helper::model);
@@ -2451,7 +2461,7 @@ EntityRef Apps::WorldEditorApp::UImenu()
 
     Biome::createMenu();
 
-    auto editionToolSwitchInfos = newEntity("Edition Tool Switch", UI_BASE_COMP,
+    auto editionToolTitles = newEntity("Edition Tool Switch", UI_BASE_COMP,
         WidgetBox(vec2(-1, 1), vec2(-1.0, -0.9)),
         WidgetStyle().setautomaticTabbing(1).setuseInternalSpacing(true),
         EntityGroupInfo()
@@ -2463,22 +2473,34 @@ EntityRef Apps::WorldEditorApp::UImenu()
         EntityGroupInfo()
     );
 
-    auto editionToolSwitch = newEntity("Edition Tool Switch", UI_BASE_COMP,
-        WidgetStyle(),
-        EntityGroupInfo({editionToolSwitchInfos, editionToolSwitchTab})
-    );
+    // editionToolSwitchTab->comp<WidgetState>().statusToPropagate = ModelStatus::UNDEFINED;
 
     VulpineBlueprintUI::AddToSelectionMenu(
-        editionToolSwitchInfos, editionToolSwitchTab,
+        editionToolTitles, editionToolSwitchTab,
         WorldEntities::Menu::parent,
         "World Editor", ""
     );
-
+    
     VulpineBlueprintUI::AddToSelectionMenu(
-        editionToolSwitchInfos, editionToolSwitchTab,
+        editionToolTitles, editionToolSwitchTab,
         Biome::Menu::parent,
         "Biome Editor", ""
     );
+
+    auto editionToolSwitch = newEntity("Edition Tool Switch", 
+        VulpineBlueprintUI::UIcontext,
+        WidgetBox(),
+        WidgetStyle(),
+        EntityGroupInfo({editionToolSwitchTab, editionToolTitles})
+    );
+
+    // editionToolSwitchInfos->comp<EntityGroupInfo>().children.front()->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+
+    // editionToolSwitchInfos->comp<EntityGroupInfo>().children.front()->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
+    // editionToolSwitchInfos->comp<EntityGroupInfo>().children.back()->comp<WidgetState>().statusToPropagate = ModelStatus::HIDE;
+    // editionToolSwitchInfos->comp<EntityGroupInfo>().children.front()->comp<WidgetState>().status = ModelStatus::HIDE;
+    // editionToolSwitchInfos->comp<EntityGroupInfo>().children.back()->comp<WidgetState>().status = ModelStatus::HIDE;
+
 
     return newEntity("WorldEditor - APP MENU"
         , UI_BASE_COMP
@@ -2915,6 +2937,8 @@ Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
 
 void Apps::WorldEditorApp::init()
 {
+    // NOTIF_MESSAGE("DBUG : INIT WORLD EDITOR BEGIN")
+
     unsavedChanges = 0;
     EntitySpawner::loadAllAndHide = true;
     controllerPTR = &orbitController;
@@ -2956,9 +2980,11 @@ void Apps::WorldEditorApp::init()
     TerrainEditor::init(appRoot);
     StreetView::init();
     Biome::init();
-    WaterGenerator::generate();
 
-    GrassGenerator::active = true;
+    WaterGenerator::generate();
+    // GrassGenerator::active = true;
+
+    // NOTIF_MESSAGE("DBUG : INIT WORLD EDITOR END")
 }
 
 void getEntityAABB(
@@ -3107,8 +3133,11 @@ void Apps::WorldEditorApp::update()
 
 void Apps::WorldEditorApp::clean()
 {
+    JoltVulpine::physicsMutex.lock();
+
     EntitySpawner::loadAllAndHide = false;
     globals.simulationTime.pause();
+
 
     globals.currentCamera->setMouseFollow(false);
     globals.currentCamera->setPosition(vec3(0));
@@ -3133,6 +3162,17 @@ void Apps::WorldEditorApp::clean()
     appRoot = EntityRef();
     App::setController(nullptr);
 
+    JoltVulpine::bodiesToAddMutex.lock();
+    JoltVulpine::bodiesToAdd.clear();
+    JoltVulpine::bodiesToAddMutex.unlock();
+
+    // GameGlobals::ManageEntityGarbage__WithPhysics();
+
+    JoltVulpine::physicsMutex.unlock();
+
     GG::sun->shadowCameraSize = vec2(0, 0);
+
+
+    // NOTIF_MESSAGE("DEBUG TMP : QUITTING WORLD EDITOR SUBAPP")
 }
 

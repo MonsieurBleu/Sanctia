@@ -33,6 +33,8 @@
 
 // JPH::AssertFailedFunction JPH::AssertFailed;
 
+bool JoltVulpine::quitThread = false;
+
 void Game::physicsLoop2()
 {
     currentThreadID = JOLT_MAIN_THREAD_ID;
@@ -202,7 +204,7 @@ void Game::physicsLoop2()
     
 
 
-    while (state != quit)
+    while (!JoltVulpine::quitThread)
     {   
         // WARNING_MESSAGE(&JoltVulpine::jPhysicsSystem)
         

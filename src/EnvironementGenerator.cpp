@@ -32,13 +32,16 @@ void GrassGenerator::update()
     if(!active) return;
 
     constexpr float patchSize = 16.f;
-    constexpr int gridRes = 23;
+    // constexpr int gridRes = 23;
+    constexpr int gridRes = 16;
 
     vec2 camDir2D = normalize(vec2(globals.currentCamera->getDirection().x, globals.currentCamera->getDirection().z));
     // float angle = atan2f(camDir2D.y, camDir2D.x);
-    float angleMax = cos(globals.currentCamera->getState().FOV*0.75f);
+    // float angleMax = cos(globals.currentCamera->getState().FOV*0.75f);
     // float angleMax = cos(globals.currentCamera->getState().FOV*2);
-
+    
+    
+    float angleMax = cos(globals.currentCamera->getState().FOV*0.6);
     angleMax = mix(angleMax, -1.f, max(0.f, -globals.currentCamera->getDirection().y*2.f));
 
     vec2 off[4] = 
@@ -48,6 +51,8 @@ void GrassGenerator::update()
         vec2(-.5f, +.5f), 
         vec2(+.5f, +.5f), 
     };
+
+    int cnt = 0;
 
     for(int i = -gridRes+1; i < gridRes; i++)
         for(int j = -gridRes+1; j < gridRes; j++)
@@ -80,7 +85,20 @@ void GrassGenerator::update()
             auto instance = models[minLod]->getInstances()[0].originalModel->createInstance();
             instance->setPosition(vec3(uv.x, 0, uv.y)*patchSize);
             instance->update();
+
+            cnt ++;
         }
+    
+    // if(globals.appTime.getUpdateCounter()%128 == 0)
+    //     NOTIF_MESSAGE("Number of grass instances accross all lods : ", cnt)
+}
+
+void GrassGenerator::clear()
+{
+    models[0] = ObjectGroupRef();
+    models[1] = ObjectGroupRef();
+    models[2] = ObjectGroupRef();
+    models[3] = ObjectGroupRef();
 }
 
 void WaterGenerator::init()
@@ -749,7 +767,9 @@ int EntityScatterer::generate_old(
     return count;
 }
 
+#include <Subapps.hpp>
 
+EntityRef WorldEnvironementGenerator::root;
 
 void WorldEnvironementGenerator::init()
 {
@@ -771,7 +791,7 @@ void WorldEnvironementGenerator::init()
 
     int size = resolution.x*resolution.y;
 
-    // root->comp<EntityGroupInfo>().children.resize(size);
+    root->comp<EntityGroupInfo>().children.reserve(size);
 
     active = true;
 
@@ -780,15 +800,40 @@ void WorldEnvironementGenerator::init()
     for(int j = 0; j < resolution.y; j++)
     {
         ComponentModularity::addChild(*root, newEntity("World Environement Generator - Chunk", EntityGroupInfo()));
+        // ComponentModularity::addChild(*SubApps::getCurrentRoot(), newEntity("World Environement Generator - Chunk", EntityGroupInfo()));
+
+        // auto e = newEntity("World Environement Generator - Chunk", EntityGroupInfo());
+        // root->comp<EntityGroupInfo>().children.push_back(e);
+        // e->comp<EntityGroupInfo>().parent = root.get();
     }
+
+    // ComponentModularity::addChild(*SubApps::getCurrentRoot(), root);
+
+    // NOTIF_MESSAGE(root->comp<EntityGroupInfo>().children.size());
+    // NOTIF_MESSAGE(size);
 }
+
+void WorldEnvironementGenerator::reset()
+{
+    if(!root) return;
+
+    for(auto i : root->comp<EntityGroupInfo>().children)
+    {
+        i->comp<EntityGroupInfo>().children.clear();
+    }
+
+    // JoltVulpine::physicsMutex.lock();
+    GG::ManageEntityGarbage__WithPhysics();
+    // JoltVulpine::physicsMutex.unlock();
+};
 
 void WorldEnvironementGenerator::clear()
 {
-    reset();
+    // reset();
     // chunks.clear();
     root = EntityRef();
-    WorldEnvironementGenerator::active = false;
+    GG::ManageEntityGarbage__WithPhysics();
+    active = false;
 }
 
 void WorldEnvironementGenerator::generateChunk(ivec2 iuv)
@@ -813,8 +858,8 @@ void WorldEnvironementGenerator::generateChunk(ivec2 iuv)
 
     int chunkSeed = id*64;
 
-    std::default_random_engine posx(chunkSeed + 0);
-    std::default_random_engine posy(chunkSeed + 1);
+    static std::default_random_engine posx(chunkSeed + 0);
+    static std::default_random_engine posy(chunkSeed + 1);
 
     std::default_random_engine rotx(chunkSeed + 2);
     std::default_random_engine roty(chunkSeed + 3);
@@ -900,15 +945,7 @@ void WorldEnvironementGenerator::reGenerate(vec2 minp, vec2 maxp)
     }
 }
 
-void WorldEnvironementGenerator::reset()
-{
-    for(auto i : root->comp<EntityGroupInfo>().children)
-    {
-        i->comp<EntityGroupInfo>().children.clear();
-    }
 
-    GG::ManageEntityGarbage__WithPhysics();
-};
 
 void WorldEnvironementGenerator::multiFrameGen::refresh()
 {
@@ -921,19 +958,25 @@ float WorldEnvironementGenerator::multiFrameGen::completion()
     return float(current.x*resolution.y + current.y)/float(resolution.x*resolution.y);
 }
 
+void increment(ivec2 &current, ivec2 resolution)
+{
+    current.y ++;
+    current.x += current.y >= resolution.y;
+    current.y *= current.y < resolution.y;
+}
+
 void WorldEnvironementGenerator::multiFrameGen::update()
 {
     if(!active) return;
 
     BenchTimer timeout;
-    for(; current.x < resolution.x; current.x++)
-        for(current.y = 0; current.y < resolution.y; current.y++)
-        {
-            timeout.start();
-            generateChunk(current);
-            timeout.stop();
 
-            if(timeout.getElapsedTime()*1e3 > timeLimitMS)
-                return;
-        }
+    while(current.x < resolution.x and current.y < resolution.y and timeout.getElapsedTime()*1e3f < timeLimitMS)
+    {
+        timeout.start();
+        generateChunk(current);
+        timeout.stop();
+
+        increment(current, resolution);
+    }
 }

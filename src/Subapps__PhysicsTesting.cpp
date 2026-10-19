@@ -252,10 +252,27 @@ void Apps::PhysicsTestingApp::init()
 
 
     GrassGenerator::active = true;
+
+    // WorldEnvironementGenerator::chunkSize = 16 * 2;
+
+    WorldEnvironementGenerator::init();
+
+    // const int it = 128;
+
+    // for(int i = 0; i < it*it; i++)
+    // {
+    //     ComponentModularity::addChild(*appRoot, newEntity("World Environement Generator - Chunk", EntityGroupInfo()));
+    // }
+
+    // WorldEnvironementGenerator::reGenerate(vec2(-2048), vec2(2048));
+
+    // WorldEnvironementGenerator::multiFrameGen::refresh();
 }
 
 void Apps::PhysicsTestingApp::update()
 {
+    WorldEnvironementGenerator::multiFrameGen::update();
+
     // ComponentModularity::synchronizeChildren(appRoot);
 
     /* 
@@ -296,6 +313,9 @@ void Apps::PhysicsTestingApp::clean()
     globals.currentCamera->setMouseFollow(false);
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
+
+    NOTIF_MESSAGE(PRINTVAR(WorldEnvironementGenerator::root.use_count()))
+    WorldEnvironementGenerator::clear();
 
     appRoot = EntityRef();
     App::setController(nullptr);

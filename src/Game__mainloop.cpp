@@ -46,6 +46,8 @@
 
 #include <EnvironementGenerator.hpp>
 
+#include <Flags.hpp>
+
 
 void Game::mainloop()
 {
@@ -554,11 +556,13 @@ void Game::mainloop()
                 "",
                 [&](Entity *e, float v)
                 {
-                    paintShaderPass.enableBloom = !paintShaderPass.enableBloom;
+                    // paintShaderPass.enableBloom = !paintShaderPass.enableBloom;
+                    bool &b = ((BoolFlag *)Loader<Flag>::get("FancyLighting").flag.get())->value;
+                    b = !b;
                 },
                 [&](Entity *e)
                 {
-                    return paintShaderPass.enableBloom ? 0.f : 1.f;
+                    return Loader<Flag>::get("FancyLighting").flag->as_bool() ? 0.f : 1.f;
                 }
             )
         );
@@ -758,6 +762,12 @@ void Game::mainloop()
     /******  Main Loop ******/
     while (state != AppState::quit)
     {
+        std::vector<BenchTimer> splits = {BenchTimer("Loop Start")};
+        splits.back().start();
+
+        #define NEW_SPLIT(name) splits.back().stop(); splits.push_back(BenchTimer(#name)); splits.back().start();
+
+        // tmp_Timer.start();
         // system("clear");
         
         // std::cout << "========================================\n";
@@ -765,16 +775,19 @@ void Game::mainloop()
         // PG::doPhysicInterpolation = false;
 
         mainloopStartRoutine();
-        
+
+        NEW_SPLIT(INPUTS)
 
         for (GLFWKeyInfo input; inputs.pull(input); userInput(input), InputManager::processEventInput(input));
         std::vector<GLFWKeyInfo> gamepadInputs = InputManager::pollGamepad();
         for (auto &input : gamepadInputs) userInput(input), InputManager::processEventInput(input);
         InputManager::processContinuousInputs();
 
+        NEW_SPLIT(PRE RENDER ROUTINE)
+
         mainloopPreRenderRoutine();
 
-        GrassGenerator::update();
+        NEW_SPLIT(2D RENDER)
         VulpineBlueprintUI::UserNotif::update();
 
 
@@ -805,6 +818,7 @@ void Game::mainloop()
 
         // tmp_Timer.start();
         
+        NEW_SPLIT(3D RENDER - SHADOWS)
 
         /* 3D Pre-Render */
         glDisable(GL_FRAMEBUFFER_SRGB);
@@ -841,6 +855,8 @@ void Game::mainloop()
 
         // tmp_Timer.stop();
 
+        NEW_SPLIT(3D RENDER - CULL)
+
         /* 3D Render */
         EnvironementMap.bind(4);
 
@@ -848,6 +864,9 @@ void Game::mainloop()
         // FenceGPU::list["Scene 3D Draw"] = FenceGPU();
         scene.cull();
         paintShaderPass.getFBO().bindTexture(2, 8);
+
+        NEW_SPLIT(3D RENDER - DRAW)
+
         scene.draw(0, defferedBuffer);
         // FenceGPU::list["Scene 3D Draw End"] = FenceGPU();
 
@@ -884,6 +903,11 @@ void Game::mainloop()
         glFlush();
         
         
+        NEW_SPLIT(GRASS GENERATOR)
+        GrassGenerator::update();
+
+
+        NEW_SPLIT(SHADER AND SCRIPT HOT RELOAD)
         
         // tmp_Timer.start();
         
@@ -961,6 +985,8 @@ void Game::mainloop()
                 }
             }
         }
+
+        NEW_SPLIT(CONTROL LIST HELPER)
 
         /****** Refreshing Controls List helper
         ******/        
@@ -1062,7 +1088,7 @@ void Game::mainloop()
 
         
         // }
-
+        NEW_SPLIT(TIME OF DAY SUN LOGIC)
 
         /****** SUN / TIME OF DAY LOGIC
          * 
@@ -1205,6 +1231,8 @@ void Game::mainloop()
             GG::moon->setIntensity(0.25 * (1.0 - sunIntensity));
         }
 
+        NEW_SPLIT(PHYSICS DEBUG RENDER)
+
         /****** 
             Updating Physics Debug Renderer
         ******/    
@@ -1247,6 +1275,8 @@ void Game::mainloop()
             JoltVulpine::physicsMutex.unlock();
         }
 
+        NEW_SPLIT(NAVIGATION SYNC)
+
         System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& nav, State3D& state3D)
         {
             if (!nav.initialized) return;
@@ -1261,9 +1291,15 @@ void Game::mainloop()
         VulpineNav::NavMesh::Tick();
         VulpineNav::NavServer::Tick();
 
+        // tmp_Timer.stop();
+
+        NEW_SPLIT(SUB APP UPDATE)
+
         SubApps::UpdateApps(); 
         
         // tmp_Timer.start();
+
+        NEW_SPLIT(UI UPDATE)
 
         WidgetUI_Context uiContext = WidgetUI_Context(&ui);
         updateEntityCursor(globals.mousePosition(), globals.mouseLeftClickDown(), globals.mouseLeftClick(), uiContext);
@@ -1295,6 +1331,8 @@ void Game::mainloop()
         /*****
             UPDATING LOD LEVEL
         */
+
+        NEW_SPLIT(LOD UPDATE)
 
         int elementsCNT[QUADTREE_ITERATION] = {0};
 
@@ -1434,6 +1472,8 @@ void Game::mainloop()
 
         
         // tmp_Timer.start();
+
+        NEW_SPLIT(OTHER SYSTEMS)
 
         /*****
             UPDATING VISUAL FATIGUE LEVEL
@@ -1860,6 +1900,8 @@ void Game::mainloop()
 
         });
 
+        NEW_SPLIT(ENTITY GARBAGE)
+
         // tmp_Timer.start();
         GG::ManageEntityGarbage();
         // tmp_Timer.stop(); // 0.4ms
@@ -1879,15 +1921,19 @@ void Game::mainloop()
         // }
         // tmp_Timer.stop(); // 0.0ms
         
+        NEW_SPLIT(SCENE UPDATE)
+
         scene2D.updateAllObjects();
 
-        static NAMED_TIMER(scene_update)
-        scene_update.start();
+        // static NAMED_TIMER(scene_update)
+        // scene_update.start();
 
         scene.updateAllObjects();
 
-        scene_update.stop(); // 0.03 ms
+        // scene_update.stop(); // 0.03 ms
         // NOTIF_MESSAGE(scene_update)
+
+        NEW_SPLIT(FINAL SYSTEMS)
 
         /***** Items follow the skeleton
         *****/
@@ -2339,9 +2385,25 @@ void Game::mainloop()
         }
         systemsPreciseTimerMutex.unlock();
 
+        NEW_SPLIT(GPU WAIT)
+
         /* Main loop End */
         mainloopEndRoutine();
+
+        // splits.back().stop();
+        // std::string results;
+        // float sum = 0;
+        // for(auto &i : splits)
+        //     sum += i.getDeltaMS();
+        // for(auto &i : splits)
+        // {
+        //     results += "\n\t" + i.name + "\n\t\t: " + std::to_string(i.getDeltaMS());
+        //     results += "\n\t\t: " + std::to_string(roundf(100.f*i.getDeltaMS()/sum)) + "%";
+        // }
+        // NOTIF_MESSAGE(results)
     }
+
+    GrassGenerator::clear();
 
     Settings::bloomEnabled = paintShaderPass.enableBloom;
     Settings::ssaoEnabled = paintShaderPass.enableAO;
@@ -2355,6 +2417,7 @@ void Game::mainloop()
 
     VulpineNav::NavServer::Shutdown();
     VulpineNav::NavMesh::Shutdown();
+    JoltVulpine::quitThread = true;
     physicsThreads.join();
     physicsThreads2.join();
     
@@ -2389,6 +2452,28 @@ void Game::mainloop()
 
     Loader<AudioFile>::loadingInfos.clear(); 
     Loader<AudioFile>::loadedAssets.clear(); 
+
+    Loader<ObjectGroup>::loadedAssets.clear();
+    Loader<InstancedModelRef>::loadedAssets.clear();
+
+    Loader<AnimationRef>::loadedAssets.clear();
+    Loader<AnimationRef>::loadingInfos.clear();
+
+
+    // for(auto i : Loader<InstancedModelRef>::loadedAssets)
+    // {
+    //     i.second->~InstancedMeshModel3D();
+    // }
+    
+
+    // for(auto i : Loader<ObjectGroup>::loadedAssets)
+    // {
+    //     // i.second.~ObjectGroup();
+    //     i.second.getInstances().clear();
+    //     i.second.getChildren().clear();
+    //     i.second.getMeshes().clear();
+    //     i.second.getLights().clear();
+    // }
 }
 
 

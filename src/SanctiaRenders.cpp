@@ -2,6 +2,7 @@
 #include <Globals.hpp>
 #include <AssetManager.hpp>
 #include <GameGlobals.hpp>
+#include <Flags.hpp>
 
 int autoExposureDownscale = 16;
 int autoExposureDownscale2 = 16*4;
@@ -390,8 +391,10 @@ void PaintShaderPass::render(Camera &camera)
     {
         Texture2D &EnvironementMap = Loader<Texture2D>::get("IndoorEnvironmentHDRI008_4K-TONEMAPPED");
 
-        FBO.resizeAll(globals.renderSize());
+        // FBO.resizeAll(globals.windowSize());
         // FBO.resizeAll((3*globals.renderSize())/4);
+        FBO.resizeAll(vec2(globals.windowSize())*Loader<Flag>::get("DefferedScale")->as_float());
+        // FBO.resizeAll((globals.renderSize())/2);
         FBO_Bloom.resizeAll(globals.windowSize()/2);
         FBO_Clouds.resizeAll(globals.windowSize()/2);
         FBO_CopyAndDeform.resizeAll(defferedBuffer->getTexture(0).getResolution());
@@ -521,7 +524,8 @@ void PaintShaderPass::render(Camera &camera)
         /*
             PASS 4 : Bloom
         */
-        if(enableBloom)
+        // if(enableBloom)
+        if(Loader<Flag>::get("FancyLighting").flag->as_bool())
         {
             FBO_Bloom.activate();
             FBO_Bloom.enableDrawBuffers(VulpineTextureAttachement::StaticAndDynamic);

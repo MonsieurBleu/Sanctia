@@ -11,7 +11,7 @@ namespace GrassGenerator
     inline ObjectGroupRef models[4];
 
     void init();
-
+    void clear();
     void update();
 }
 
@@ -145,7 +145,7 @@ namespace WorldEnvironementGenerator
     // inline std::unordered_map<std::string, EntityScatterer::SpawnInfo *> spawns;
     inline std::unordered_map<std::string, bool> spawns;
 
-    inline EntityRef root;
+    extern EntityRef root;
     // inline std::vector<EntityRef> chunks; // can be replace by root->comp<EntityGroupInfos>().children
 
     inline vec2 worldMin = vec2(-2048.0);
@@ -153,7 +153,7 @@ namespace WorldEnvironementGenerator
 
     inline ivec2 resolution = vec2(0);
 
-    inline float chunkSize = 64.0;
+    inline float chunkSize = 32;
 
     inline bool active = false;
 

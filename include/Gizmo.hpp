@@ -203,6 +203,7 @@ class Gizmo {
     void clear()
     {
         parent = translate = rotate = scale = EntityRef();
+        historic.clear();
     }
 
     void undo()

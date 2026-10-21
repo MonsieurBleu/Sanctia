@@ -20,6 +20,8 @@
 
 #include <ModManager.hpp>
 
+#include <User/Options.hpp>
+
 Game::Game(GLFWwindow *window) : App(window, new DefferedBuffer(globals.renderSizeAddr()))
 {
     // defferedBuffer = static_cast<DefferedBuffer *>(renderBuffer);
@@ -277,6 +279,10 @@ void Game::init(int paramSample)
     //     if (!strcmp(ext, ".vEntity"))
     //         Loader<EntityRef>::addInfos(p);
     // }
+    
+    Option::init();
+    Option::apply();
+
 
     Loader<MeshMaterial>::get("basicHelper");
     Loader<MeshMaterial>::get("basicHelperInstanced");
@@ -290,4 +296,5 @@ void Game::init(int paramSample)
 
     paintShaderPass.setup();
     occlusionPass.setup();
+
 }

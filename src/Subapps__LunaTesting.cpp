@@ -48,7 +48,7 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 
     inputs.push_back(&
         InputManager::addEventInput(
-        "debug navmesh build pass", GLFW_KEY_F10, 0, GLFW_PRESS, [&]() { 
+        "debug navmesh build pass", GLFW_KEY_F8, 0, GLFW_PRESS, [&]() { 
             const int slot = VulpineNav::NavMesh::FindAgentSlot(GG::playerEntity->comp<AgentNavigation>().profile);
             static u32 stage = 0;
             VulpineNav::NavMesh::DebugDrawBuildStage<DrawLines::Line>(*GG::draw, prevPlayerPosition, stage, slot);        
@@ -61,7 +61,7 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 
     inputs.push_back(&
         InputManager::addEventInput(
-        "toggle free cam", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { 
+        "toggle free cam", GLFW_KEY_F10, 0, GLFW_PRESS, [&]() { 
             if (globals.getController() == &playerControl && GG::playerEntity)
             {
                 ComponentModularity::removeChild(*appRoot, GG::playerEntity);

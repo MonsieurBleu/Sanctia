@@ -21,6 +21,7 @@ SpectatorController spectator;
 extern PlayerController2 playerControl;
 
 vec3 prevPlayerPosition;
+bool debugDrawMesh = false;
 
 Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 {
@@ -40,6 +41,26 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
 
     inputs.push_back(&
         InputManager::addEventInput(
+        "toggle debug navmesh draw", GLFW_KEY_F9, 0, GLFW_PRESS, [&]() { 
+            debugDrawMesh = !debugDrawMesh;
+        })
+    );
+
+    inputs.push_back(&
+        InputManager::addEventInput(
+        "debug navmesh build pass", GLFW_KEY_F10, 0, GLFW_PRESS, [&]() { 
+            const int slot = VulpineNav::NavMesh::FindAgentSlot(GG::playerEntity->comp<AgentNavigation>().profile);
+            static u32 stage = 0;
+            VulpineNav::NavMesh::DebugDrawBuildStage<DrawLines::Line>(*GG::draw, prevPlayerPosition, stage, slot);        
+            stage++;
+            stage = stage % 5;
+        })
+    );
+
+    
+
+    inputs.push_back(&
+        InputManager::addEventInput(
         "toggle free cam", GLFW_KEY_F12, 0, GLFW_PRESS, [&]() { 
             if (globals.getController() == &playerControl && GG::playerEntity)
             {
@@ -53,7 +74,7 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
             }
             else if (globals.getController() == &spectator && GG::playerEntity)
             {
-                GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = prevPlayerPosition}));
+                GG::playerEntity = spawnEntityToParent("Jolt Player", *appRoot, HierarchyState3D({.position = globals.currentCamera->getPosition() - vec3(0, 1.5, 0)}));
 
                 App::setController(&playerControl);
             }
@@ -70,11 +91,6 @@ EntityRef Apps::LunaTesting::UImenu()
         , UI_BASE_COMP
         , WidgetBox()
     );
-}
-
-void TestNavMeshUpdate()
-{
-    VulpineNav::NavMesh::DebugDrawTileInstanced(256.0f, 0.0f, true, false);
 }
 
 void TestLogicBlocks()
@@ -210,16 +226,7 @@ void TestLogicBlocks()
     // // std::cout << testStr << std::endl;
 }
 
-
-struct TestObject
-{
-    EntityRef entity;
-    vec2 velocity;
-};
-
-constexpr int N_OBJECT = 1000;
-
-std::array<TestObject, N_OBJECT> testArray;
+constexpr size_t N_OBJECT = 1000;
 
 EntityRef testParent = nullptr;
 
@@ -249,33 +256,42 @@ void Apps::LunaTesting::init()
 
     constexpr float rangeWorld = 100.0f;
     std::uniform_real_distribution<float> distWorld(-rangeWorld, rangeWorld);
-    std::uniform_real_distribution<float> distAngle(0.0f, PI2);
-    std::uniform_real_distribution<float> distVelocity(5.0f, 80.0f);
     
+    vec3 playerPos = GG::playerEntity->comp<State3D>().position;
+
     for (int i = 0; i < N_OBJECT; i++)
     {
-        TestObject obj;
-        obj.entity = newEntity();
+        // EntityRef entity = newEntity();
 
         vec2 spawnOffset = vec2(
             distWorld(rng),
             distWorld(rng));
 
-        vec3 spawnPos = vec3(
+        vec2 posXZ = {
             origin.x + spawnOffset.x,
-            0.0f,
-            origin.z + spawnOffset.y);
+            origin.z + spawnOffset.y
+        };
 
-        obj.entity->set<State3D>({.position = spawnPos});
+        float h = getTerrainHeight(vec2(posXZ.y, posXZ.x));
 
+        vec3 spawnPos = vec3(
+            posXZ.x,
+            h + 5.0f,
+            posXZ.y);
 
-        obj.velocity = normalize(spawnOffset) * distVelocity(rng);
+        // entity->set<State3D>({.position = spawnPos});
 
-        obj.entity->set<AgentNavigation>({});
-
-        testArray[i] = obj;
-    }
         
+        // ComponentModularity::addChild(*testParent, entity);
+        
+        EntityRef entity = spawnEntityToParent("Jolt NPC Test", *testParent, HierarchyState3D({.position = spawnPos}));
+        AgentNavigation nav;
+        nav.goal = playerPos;
+        nav.hasGoal = true;
+        nav.profileFromBody = false;
+        entity->set<AgentNavigation>(nav);
+    }
+
     HierarchyState3D s;
     s.position = origin;
     spawnEntityToParent("Jolt Test Scene", *appRoot, s);
@@ -289,7 +305,7 @@ void Apps::LunaTesting::init()
     // testRecast();
     // TestNavMeshInit();
 
-    GG::playerEntity->set(AgentNavigation({.navmeshBuildPriority = 10}));
+    GG::playerEntity->set(AgentNavigation({.navmeshBuildPriority = 10, .profileFromBody = false}));
 
 
     glLineWidth(3.0f);
@@ -298,24 +314,97 @@ void Apps::LunaTesting::init()
 
 void Apps::LunaTesting::update()
 {
-    TestNavMeshUpdate();
+    // VulpineNav::NavMesh::DebugDrawTileInstanced(256.0f, 0.0f, true, false);
 
-    static std::vector<DrawBoxes::Box> boxes(N_OBJECT);
-    for (int i = 0; i < N_OBJECT; i++)
-    {
-        const TestObject& testObject = testArray[i];
-        vec2 translation = testObject.velocity * globals.simulationTime.getDelta();
-        vec3& position = testObject.entity->comp<State3D>().position;
-        position.x += translation.x;
-        position.z += translation.y;
+    float dt = globals.simulationTime.getDelta();
 
-        boxes[i] = {position + vec3(-2) + vec3(0, 256, 0), position + vec3(2) + vec3(0, 256, 0)};
-    }
+    // static std::vector<DrawBoxes::Box> boxes(N_OBJECT);
+    // for (int i = 0; i < N_OBJECT; i++)
+    // {
+    //     const TestObject& testObject = testArray[i];
+    //     vec2 translation = testObject.velocity * globals.simulationTime.getDelta();
+    //     vec3& position = testObject.entity->comp<State3D>().position;
+    //     position.x += translation.x;
+    //     position.z += translation.y;
 
-    GG::draw->drawBoxes(boxes, 0.0f, ModelState3D(), "#ff00ff"_rgb);
+    //     boxes[i] = {position + vec3(-2) + vec3(0, 256, 0), position + vec3(2) + vec3(0, 256, 0)};
+    // }
+
+    // GG::draw->drawBoxes(boxes, 0.0f, ModelState3D(), "#ff00ff"_rgb);
 
     if (globals.getController() == &playerControl && GG::playerEntity)
         prevPlayerPosition = GG::playerEntity->comp<State3D>().position;
+
+    int count = 0;
+    System<AgentNavigation, State3D, Movement>([&](Entity& entity, AgentNavigation& nav, State3D& state3D, Movement& mov)
+    {
+        // does that even work
+        if (&entity == GG::playerEntity.get()) return;
+
+        nav.goal = prevPlayerPosition;
+        nav.hasGoal = true;
+
+        constexpr float moveSpeed = 16.0f;
+
+        vec2 move = nav.detail.moveDirection * (dt * moveSpeed);
+
+        if (distance(state3D.position, prevPlayerPosition) < 1.f)
+        {
+            mov.look.goal = prevPlayerPosition;
+            mov.speed.goal = 0;
+        }
+        else
+        {
+            if (entity.has<ComplexMovements>() && !entity.comp<ComplexMovements>().climb.getCurrent())
+            {
+                ComplexMovements cpx = entity.comp<ComplexMovements>();
+                cpx.climb.setGoal(true);
+            }
+
+            if (VulpineNav::NavServer::CanWalkStraight(state3D.position, prevPlayerPosition, nav.profile))
+            {
+                mov.direction.goal = normalize(prevPlayerPosition - state3D.position);
+                mov.look.goal = prevPlayerPosition;
+                mov.speed.goal = moveSpeed;
+            }
+            else if (length(move) > 0)
+            {
+                // state3D.position += vec3(move.x, 0, move.y);
+                // vec3 newPos;
+                // VulpineNav::NavServer::ClosestPoint(state3D.position, newPos, nav.profile);
+                // state3D.position = newPos;
+
+                // vec3 targetPos = state3D.position + vec3(move.x, 0, move.y);
+                // vec3 newPos;
+                // VulpineNav::NavServer::MoveAlongSurface(state3D.position, targetPos, newPos, nav.profile);
+                // state3D.position = newPos;
+
+                mov.direction.goal = vec3(move.x, 0, move.y);
+                mov.look.goal = prevPlayerPosition;
+                mov.speed.goal = moveSpeed;
+            }
+        }
+        
+        // GG::draw->drawBox(state3D.position - vec3(0.5), state3D.position + vec3(0.5), 0.0f, ModelState3D(), "#ff00ff"_rgb);
+        // DebugDrawAgentNavigation<DrawLines::Line>(*GG::draw, nav, state3D.position);
+
+        count++;
+    });
+
+    if (debugDrawMesh)
+    {
+        const int slot = VulpineNav::NavMesh::FindAgentSlot(GG::playerEntity->comp<AgentNavigation>().profile);
+        constexpr int drawTileRadius = 4;
+        if (globals.getController() == &playerControl && GG::playerEntity) // has player controller
+        {
+            VulpineNav::NavMesh::DebugDrawGeometry<DrawLines::Line>(*GG::draw, prevPlayerPosition, drawTileRadius, slot);
+        }
+        else if (globals.getController() == &spectator && GG::playerEntity) // has spectator controller
+        {
+            VulpineNav::NavMesh::DebugDrawGeometry<DrawLines::Line>(*GG::draw, globals.currentCamera->getPosition(), drawTileRadius, slot);
+        }
+    }
+
 }
 
 
@@ -327,17 +416,15 @@ void Apps::LunaTesting::clean()
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
 
-    for (int i = 0; i < testArray.size(); i++)
-    {
-        testArray[i] = TestObject();
-    }
 
     appRoot = EntityRef();
     GG::playerEntity = EntityRef();
 
-    testParent = EntityRef();
-    
+
     App::setController(nullptr);
+
+    GrassGenerator::active = false;
+    WaterGenerator::clear();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
 }

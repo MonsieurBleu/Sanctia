@@ -56,6 +56,27 @@ struct DrawLine : DrawElementBase
     void initData() override;
 };
 
+struct DrawLines : DrawElementBase
+{
+    struct Line
+    {
+        vec3 start, end;
+    };
+
+    std::vector<Line> lines;
+
+    DrawLines(
+        const std::vector<Line>& lines,
+        float startTime, 
+        float duration = 0.0f, 
+        ModelState3D state = ModelState3D(),
+        vec3 color = "#ff0000"_rgb) : 
+            DrawElementBase(startTime, state, duration, color)
+            , lines(lines) {}
+
+    void initData() override;
+};
+
 struct DrawSphere : DrawElementBase
 {
     vec3 center;
@@ -165,6 +186,14 @@ public:
     void drawLine(
         vec3 start, 
         vec3 end, 
+        float duration = 0.0f, 
+        ModelState3D state = ModelState3D(),
+        vec3 color = "#ff0000"_rgb,
+        bool depthWrite = true
+    );
+
+    void drawLines(
+        const std::vector<DrawLines::Line>& lines,
         float duration = 0.0f, 
         ModelState3D state = ModelState3D(),
         vec3 color = "#ff0000"_rgb,

@@ -56,6 +56,45 @@ void DrawLine::initData()
     setVao(vao);
 }
 
+void DrawLines::initData()
+{
+    createUniforms();
+    uniforms.add(ShaderUniform(&color, 20));
+
+    noBackFaceCulling = true;
+    defaultMode = GL_LINES;
+
+    const int nbOfPointsPerLine = 2;
+    const int nbOfPoints = nbOfPointsPerLine * (int)lines.size();
+
+    GenericSharedBuffer buff(new char[sizeof(vec3) * nbOfPoints]);
+    GenericSharedBuffer buffNormal(new char[sizeof(vec3) * nbOfPoints]);
+
+    vec3 *pos = (vec3*)buff.get();
+    vec3 *nor = (vec3*)buffNormal.get();
+
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        const size_t id = i * nbOfPointsPerLine;
+
+        pos[id + 0] = lines[i].start;
+        pos[id + 1] = lines[i].end;
+
+        nor[id + 0] = vec3(2);
+        nor[id + 1] = vec3(2);
+    }
+
+    MeshVao vao(new 
+        VertexAttributeGroup({
+            VertexAttribute(buff, 0, nbOfPoints, 3, GL_FLOAT, false),
+            VertexAttribute(buffNormal, 1, nbOfPoints, 3, GL_FLOAT, false),
+            VertexAttribute(buffNormal, 2, nbOfPoints, 3, GL_FLOAT, false)
+        })
+    );
+
+    setVao(vao);
+}
+
 void DrawSphere::initData()
 {
     createUniforms();
@@ -395,6 +434,35 @@ void Draw::drawLine(vec3 start, vec3 end, float duration, ModelState3D state, ve
 
     queueMutex.lock();
     toDrawQueue.push(line);
+    queueMutex.unlock();
+}
+
+void Draw::drawLines(
+    const std::vector<DrawLines::Line>& lines,
+    float duration,
+    ModelState3D state,
+    vec3 color,
+    bool depthWrite)
+{
+    if (lines.empty())
+        return;
+
+    std::shared_ptr<DrawLines> drawLines = std::make_shared<DrawLines>(
+          lines
+        , globals.appTime.getElapsedTime()
+        , duration
+        , state
+        , color
+    );
+
+    if(!depthWrite)
+    {
+        drawLines->depthWrite = false;
+        drawLines->sorted = false;
+    }
+
+    queueMutex.lock();
+    toDrawQueue.push(drawLines);
     queueMutex.unlock();
 }
 

@@ -1279,11 +1279,11 @@ void Game::mainloop()
 
         System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& nav, State3D& state3D)
         {
-            if (!nav.initialized) return;
+            if (!nav.detail.initialized) return;
 
-            VulpineNav::NavMesh::UpdateLoaderPosition(nav.lastPos, state3D.position, nav.navmeshBuildPriority);
+            VulpineNav::NavMesh::UpdateLoaderPosition(nav.detail.lastPos, state3D.position, nav.navmeshBuildPriority);
 
-            nav.lastPos = state3D.position;
+            nav.detail.lastPos = state3D.position;
 
             UpdateAgentNavigation(nav, state3D.position);
         });

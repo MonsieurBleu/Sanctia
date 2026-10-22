@@ -226,7 +226,7 @@ void TestLogicBlocks()
     // // std::cout << testStr << std::endl;
 }
 
-constexpr size_t N_OBJECT = 1000;
+constexpr size_t N_OBJECT = 100;
 
 EntityRef testParent = nullptr;
 
@@ -285,11 +285,9 @@ void Apps::LunaTesting::init()
         // ComponentModularity::addChild(*testParent, entity);
         
         EntityRef entity = spawnEntityToParent("Jolt NPC Test", *testParent, HierarchyState3D({.position = spawnPos}));
-        AgentNavigation nav;
+        AgentNavigation& nav = entity->comp<AgentNavigation>();
         nav.goal = playerPos;
         nav.hasGoal = true;
-        nav.profileFromBody = false;
-        entity->set<AgentNavigation>(nav);
     }
 
     HierarchyState3D s;
@@ -304,8 +302,6 @@ void Apps::LunaTesting::init()
 
     // testRecast();
     // TestNavMeshInit();
-
-    GG::playerEntity->set(AgentNavigation({.navmeshBuildPriority = 10, .profileFromBody = false}));
 
 
     glLineWidth(3.0f);
@@ -344,7 +340,7 @@ void Apps::LunaTesting::update()
         nav.goal = prevPlayerPosition;
         nav.hasGoal = true;
 
-        constexpr float moveSpeed = 16.0f;
+        constexpr float moveSpeed = 10.0f;
 
         vec2 move = nav.detail.moveDirection * (dt * moveSpeed);
 
@@ -355,54 +351,44 @@ void Apps::LunaTesting::update()
         }
         else
         {
-            if (entity.has<ComplexMovements>() && !entity.comp<ComplexMovements>().climb.getCurrent())
+            if (entity.has<ComplexMovements>())
             {
-                ComplexMovements cpx = entity.comp<ComplexMovements>();
-                cpx.climb.setGoal(true);
+                ComplexMovements& cpx = entity.comp<ComplexMovements>();
+                if (
+                      !cpx.climb.getCurrent() 
+                    && cpx.climb.timeSinceGoalMet() > 3.0 
+                    && cpx.closestSurface.y >= state3D.position.y + 0.5f)
+                {
+                    cpx.climb.setGoal(true);
+                }
             }
 
             if (VulpineNav::NavServer::CanWalkStraight(state3D.position, prevPlayerPosition, nav.profile))
             {
                 mov.direction.goal = normalize(prevPlayerPosition - state3D.position);
-                mov.look.goal = prevPlayerPosition;
+                mov.look.current = prevPlayerPosition;
                 mov.speed.goal = moveSpeed;
             }
             else if (length(move) > 0)
             {
-                // state3D.position += vec3(move.x, 0, move.y);
-                // vec3 newPos;
-                // VulpineNav::NavServer::ClosestPoint(state3D.position, newPos, nav.profile);
-                // state3D.position = newPos;
-
-                // vec3 targetPos = state3D.position + vec3(move.x, 0, move.y);
-                // vec3 newPos;
-                // VulpineNav::NavServer::MoveAlongSurface(state3D.position, targetPos, newPos, nav.profile);
-                // state3D.position = newPos;
-
                 mov.direction.goal = vec3(move.x, 0, move.y);
-                mov.look.goal = prevPlayerPosition;
+                mov.look.current = vec3(move.x, 0, move.y);
                 mov.speed.goal = moveSpeed;
             }
         }
         
         // GG::draw->drawBox(state3D.position - vec3(0.5), state3D.position + vec3(0.5), 0.0f, ModelState3D(), "#ff00ff"_rgb);
-        // DebugDrawAgentNavigation<DrawLines::Line>(*GG::draw, nav, state3D.position);
+        DebugDrawAgentNavigation<DrawLines::Line>(*GG::draw, nav, state3D.position);
 
         count++;
     });
 
+    static auto profile = GG::playerEntity->comp<AgentNavigation>().profile;
     if (debugDrawMesh)
     {
-        const int slot = VulpineNav::NavMesh::FindAgentSlot(GG::playerEntity->comp<AgentNavigation>().profile);
+        const int slot = VulpineNav::NavMesh::FindAgentSlot(profile);
         constexpr int drawTileRadius = 4;
-        if (globals.getController() == &playerControl && GG::playerEntity) // has player controller
-        {
-            VulpineNav::NavMesh::DebugDrawGeometry<DrawLines::Line>(*GG::draw, prevPlayerPosition, drawTileRadius, slot);
-        }
-        else if (globals.getController() == &spectator && GG::playerEntity) // has spectator controller
-        {
-            VulpineNav::NavMesh::DebugDrawGeometry<DrawLines::Line>(*GG::draw, globals.currentCamera->getPosition(), drawTileRadius, slot);
-        }
+        VulpineNav::NavMesh::DebugDrawGeometry<DrawLines::Line>(*GG::draw, globals.currentCamera->getPosition(), drawTileRadius, slot);
     }
 
 }

@@ -68,7 +68,7 @@ void Game::mainloop()
     SanctiaLuaBindings::bindAll(threadState);
     std::thread physicsThreads(&Game::physicsLoop, this);
 
-    std::thread physicsThreads2(&Game::physicsLoop2, this);
+    std::jthread physicsThreads2(std::bind_front(&Game::physicsLoop2, this));
 
     VulpineNav::NavMesh::Init();
     VulpineNav::NavServer::Init();
@@ -2417,9 +2417,8 @@ void Game::mainloop()
 
     VulpineNav::NavServer::Shutdown();
     VulpineNav::NavMesh::Shutdown();
-    JoltVulpine::quitThread = true;
     physicsThreads.join();
-    physicsThreads2.join();
+    physicsThreads2 = std::jthread();
     
     cursorHelp = 
     gameScreenWidget = 

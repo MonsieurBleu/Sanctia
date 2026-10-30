@@ -31,7 +31,7 @@ private:
     // B_PhysicsScene physics;
     void physicsLoop();
 
-    void physicsLoop2();
+    void physicsLoop2(std::stop_token stop_token);
 
 
     EffectHandler effects;

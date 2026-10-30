@@ -35,7 +35,7 @@
 
 bool JoltVulpine::quitThread = false;
 
-void Game::physicsLoop2()
+void Game::physicsLoop2(std::stop_token stop_token)
 {
     currentThreadID = JOLT_MAIN_THREAD_ID;
     JoltVulpine::physicsMutex.lock();
@@ -204,7 +204,7 @@ void Game::physicsLoop2()
     
 
 
-    while (!JoltVulpine::quitThread)
+    while (!stop_token.stop_requested())
     {   
         // WARNING_MESSAGE(&JoltVulpine::jPhysicsSystem)
         

@@ -30,10 +30,162 @@
 #include <Jolt/Physics/Collision/CastResult.h>
 
 #include <Jolt/Physics/Collision/ShapeCast.h>
+#include <Jolt/Physics/Body/BodyLock.h>
+
+#include <unordered_map>
+
+#include "Navigation/NavServer.hpp"
 
 // JPH::AssertFailedFunction JPH::AssertFailed;
 
-bool JoltVulpine::quitThread = false;
+namespace
+{
+constexpr float kStepProbeLow    = 0.05f;
+constexpr float kStepMinHeight   = 0.03f;
+constexpr float kStepReachMargin = 0.15f;
+constexpr float kWalkableNormalY = 0.70f;
+constexpr float kStepRiseTime    = 0.12f; // seconds for a full-height step
+constexpr float kStepTimeout     = 0.3f;
+
+struct StepState
+{
+    float targetY;
+    float timeLeft;
+    uint64_t lastTick;
+};
+
+// physics thread only, keyed by BodyID index + sequence number
+std::unordered_map<uint32_t, StepState> activeSteps;
+uint64_t stepTick = 0;
+
+// drops steps of bodies that weren't updated last tick (removed, or the entity lost its components)
+void pruneSteps()
+{
+    stepTick++;
+    for(auto it = activeSteps.begin(); it != activeSteps.end();)
+    {
+        if(it->second.lastTick + 1 < stepTick)
+            it = activeSteps.erase(it);
+        else
+            ++it;
+    }
+}
+
+// read lock instead of spinning on TryGetBody, which never returns for a removed body
+bool castEnvRay(vec3 origin, vec3 dirAndLength, JPH::BodyID exclude, float& outFraction, vec3& outNormal)
+{
+    JPH::RRayCast ray;
+    ray.mOrigin = Vvec3(origin);
+    ray.mDirection = Vvec3(dirAndLength);
+    JPH::RayCastResult result;
+
+    const bool hit = JoltVulpine::jPhysicsSystem->GetNarrowPhaseQuery().CastRay(
+        ray,
+        result,
+        JPH::BroadPhaseLayerFilter(),
+        JoltVulpine::EnvironementCollideFilter(),
+        JoltVulpine::BodyExcludeFilter(exclude)
+    );
+    if(!hit || result.mBodyID.IsInvalid())
+        return false;
+
+    JPH::BodyLockRead lock(JoltVulpine::jPhysicsSystem->GetBodyLockInterface(), result.mBodyID);
+    if(!lock.Succeeded())
+        return false;
+
+    outFraction = result.mFraction;
+    outNormal = vec3(Vvec3(lock.GetBody().GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction))));
+    return true;
+}
+
+// height of a step in front of the body, 0 if there's none
+float findStep(JPH::BodyInterface& bi, JPH::BodyID body, vec3 moveDir)
+{
+    const float maxStep = VulpineNav::NavServer::kHumanoidStepHeight;
+
+    vec2 dir2(moveDir.x, moveDir.z);
+    const float dirLen = length(dir2);
+    if(dirLen < 0.1f)
+        return 0.f;
+    const vec3 fwd(dir2.x / dirLen, 0.f, dir2.y / dirLen);
+
+    const vec3 feet = vec3(Vvec3(bi.GetPosition(body)));
+    const JPH::Vec3 extent = bi.GetShape(body)->GetLocalBounds().GetExtent();
+    const float radius = max(extent.GetX(), extent.GetZ());
+    const float height = extent.GetY() * 2.f;
+    const float reach = radius + kStepReachMargin;
+    const float probeTopY = maxStep + 0.05f;
+
+    float t = 0.f, tOther = 0.f;
+    vec3 n(0.f), nOther(0.f);
+
+    // steep and low in front & clear just above step height (otherwise it's a wall)
+    if(!castEnvRay(feet + vec3(0, kStepProbeLow, 0), fwd * reach, body, t, n) || n.y > kWalkableNormalY)
+        return 0.f;
+    if(castEnvRay(feet + vec3(0, probeTopY, 0), fwd * reach, body, tOther, nOther))
+        return 0.f;
+
+    const vec3 downOrigin = feet + fwd * (t * reach + 0.1f) + vec3(0, probeTopY, 0);
+    if(!castEnvRay(downOrigin, vec3(0, -probeTopY, 0), body, tOther, nOther) || nOther.y < kWalkableNormalY)
+        return 0.f;
+
+    const float stepHeight = probeTopY * (1.f - tOther);
+    if(stepHeight < kStepMinHeight || stepHeight > maxStep)
+        return 0.f;
+
+    const vec3 stepTop(downOrigin.x, feet.y + stepHeight, downOrigin.z);
+    if(castEnvRay(stepTop + vec3(0, 0.02f, 0), vec3(0, height, 0), body, tOther, nOther))
+        return 0.f;
+
+    return stepHeight;
+}
+
+// vertical speed to apply this tick, 0 when the body isn't stepping.
+// keeps rising even if `grounded` flips mid-step, the ground ray only reaches 0.25m below the feet
+float updateStep(JPH::BodyInterface& bi, JPH::BodyID body, bool canStart, bool abort, vec3 moveDir, float dt)
+{
+    const uint32_t key = body.GetIndexAndSequenceNumber();
+    auto it = activeSteps.find(key);
+
+    if(abort)
+    {
+        if(it != activeSteps.end())
+            activeSteps.erase(it);
+        return 0.f;
+    }
+
+    const float feetY = vec3(Vvec3(bi.GetPosition(body))).y;
+
+    if(it == activeSteps.end())
+    {
+        if(!canStart)
+            return 0.f;
+        const float h = findStep(bi, body, moveDir);
+        if(h <= 0.f)
+            return 0.f;
+        it = activeSteps.emplace(key, StepState{feetY + h + 0.02f, kStepTimeout, stepTick}).first;
+    }
+
+    StepState& st = it->second;
+    st.lastTick = stepTick;
+    st.timeLeft -= dt;
+
+    const float remaining = st.targetY - feetY;
+    if(remaining <= 0.005f || st.timeLeft <= 0.f)
+    {
+        activeSteps.erase(it);
+        return 0.f;
+    }
+
+    // gravity is applied before the position update, so it has to be countered
+    const float riseSpeed = VulpineNav::NavServer::kHumanoidStepHeight / kStepRiseTime;
+    const float gravity = -JoltVulpine::jPhysicsSystem->GetGravity().GetY() * bi.GetGravityFactor(body);
+    return min(remaining / dt, riseSpeed) + gravity * dt;
+}
+
+bool isStepping(JPH::BodyID body) { return activeSteps.count(body.GetIndexAndSequenceNumber()) != 0; }
+
+} // namespace
 
 void Game::physicsLoop2(std::stop_token stop_token)
 {
@@ -752,6 +904,7 @@ void Game::physicsLoop2(std::stop_token stop_token)
             // );
         });
 
+        pruneSteps();
         System<Movement, JoltBody>([&](Entity &e, Movement &depl, JoltBody &body)
         {
             if(!body.IsInvalid())
@@ -770,6 +923,8 @@ void Game::physicsLoop2(std::stop_token stop_token)
                 {
                     depl.direction.current = vec3(0, 0, 0);
                 }
+
+                const bool stepping = isStepping(body);
 
                 JPH::RRayCast ray;
                 
@@ -803,7 +958,7 @@ void Game::physicsLoop2(std::stop_token stop_token)
 
                 if(!hit || result.mBodyID.IsInvalid())
                 {
-                    depl.grounded.set(false);
+                    depl.grounded.set(stepping);
                     // ERROR_MESSAGE("NO GROUND ", JoltVulpine::physicsTimer.getUpdateCounter())
                 }
                 else
@@ -818,7 +973,7 @@ void Game::physicsLoop2(std::stop_token stop_token)
                     const float tresholdAirborn = 0.60;
                     const float tresholdSlowed = 0.99;
 
-                    depl.grounded.set(result.mFraction < offset+0.25f);
+                    depl.grounded.set(stepping || result.mFraction < offset+0.25f);
 
                     if(e.has<Gauges>())
                     {
@@ -849,6 +1004,16 @@ void Game::physicsLoop2(std::stop_token stop_token)
 
                 // NOTIF_MESSAGE(PRINTVAR(e.has<ComplexMovements>()), PRINTVAR(e.comp<ComplexMovements>().jump.getCurrent()))
 
+                bool inClimb = e.has<ComplexMovements>() and e.comp<ComplexMovements>().climb.getCurrent();
+
+                const float stepVy = updateStep(
+                    interface, body,
+                    depl.grounded.get() and depl.speed.goal > 0.f,
+                    inJump or inClimb,
+                    depl.direction.goal,
+                    globals.simulationTime.speed / JoltVulpine::physicsTicks.freq
+                );
+
                 if(depl.grounded.get() and not inJump)
                 {
                     if(JoltVulpine::useVelocityBasedMovement)
@@ -878,6 +1043,14 @@ void Game::physicsLoop2(std::stop_token stop_token)
                     interface.AddForce(body, Vvec3(accSpeedFactor * depl.direction.goal * 1e6f * smoothstep(depl.walkSpeed, 0.f, depl.speed.current)));
 
                     interface.SetMaxLinearVelocity(body, 1e3f);
+                }
+
+                if(stepVy > 0.f)
+                {
+                    JPH::Vec3 v = interface.GetLinearVelocity(body);
+                    v.SetY(stepVy);
+                    interface.SetLinearVelocity(body, v);
+                    interface.SetMaxLinearVelocity(body, max(speed, v.Length()));
                 }
 
                 interface.SetGravityFactor(body, 3.f);

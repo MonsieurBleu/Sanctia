@@ -96,7 +96,7 @@ ANIMATION_SWITCH_ENTITY(switchJumpEnd,
 
 ANIMATION_SWITCH_ENTITY(switchFalling, 
     if(!isEntityViable(e)) return false;
-    return !e->comp<Movement>().grounded.get() and e->comp<Movement>().grounded.timeSinceChange() > 0.1;
+    return !e->comp<Movement>().grounded.get() and e->comp<Movement>().grounded.timeSinceChange() > 0.2;
 )
 
 ANIMATION_SWITCH_ENTITY(switchLand, 

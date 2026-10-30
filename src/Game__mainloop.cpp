@@ -1,4 +1,5 @@
 #include "ECS/ComponentTypeScripting.hpp"
+#include "NavLocomotion.hpp"
 #include "Navigation/NavMesh.hpp"
 #include "Navigation/NavServer.hpp"
 #include <fstream>
@@ -1290,6 +1291,8 @@ void Game::mainloop()
 
         VulpineNav::NavMesh::Tick();
         VulpineNav::NavServer::Tick();
+
+        SanctiaNavigation::UpdateNavLocomotion();
 
         // tmp_Timer.stop();
 

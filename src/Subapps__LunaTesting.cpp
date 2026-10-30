@@ -229,7 +229,7 @@ void TestLogicBlocks()
     // // std::cout << testStr << std::endl;
 }
 
-constexpr size_t N_OBJECT = 10;
+constexpr size_t N_OBJECT = 5;
 
 EntityRef testParent = nullptr;
 
@@ -315,7 +315,6 @@ void Apps::LunaTesting::update()
 {
     // VulpineNav::NavMesh::DebugDrawTileInstanced(256.0f, 0.0f, true, false);
 
-    // float dt = globals.simulationTime.getDelta(); 
 
     // static std::vector<DrawBoxes::Box> boxes(N_OBJECT);
     // for (int i = 0; i < N_OBJECT; i++)
@@ -334,84 +333,20 @@ void Apps::LunaTesting::update()
     if (globals.getController() == &playerControl && GG::playerEntity)
         prevPlayerPosition = GG::playerEntity->comp<State3D>().position;
 
-    using VulpineNav::NavServer::PathStatus;
-
     float playerRadius = VulpineNav::NavServer::AgentProfile::Humanoid.radius;
     if (GG::playerEntity && GG::playerEntity->has<AgentNavigation>())
         playerRadius = GG::playerEntity->comp<AgentNavigation>().profile.radius;
 
-    int count = 0;
-    System<AgentNavigation, State3D, Movement>([&](Entity& entity, AgentNavigation& nav, State3D& state3D, Movement& mov)
+    System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& nav, State3D& state3D)
     {
         if (&entity == GG::playerEntity.get()) return;
 
         nav.goal = prevPlayerPosition;
         nav.hasGoal = true;
         nav.goalRadius = playerRadius + nav.profile.radius;
+        nav.moveSpeed = 10.0f;
 
-        constexpr float moveSpeed = 5.0f;
-        const auto& d = nav.detail;
-        const vec3 pos = state3D.position;
-
-        const vec3 toGoal(prevPlayerPosition.x - pos.x, 0.0f, prevPlayerPosition.z - pos.z);
-        const float toGoalLen = length(toGoal);
-        const vec3 toGoalDir = toGoalLen > 1e-4f ? toGoal / toGoalLen : vec3(0);
-
-        if (d.arrived)
-        {
-            if (toGoalLen > 1e-4f)
-            {
-                mov.look.goal = toGoalDir;
-                mov.look.current = toGoalDir;
-            }
-            mov.speed.goal = 0;
-        }
-        else
-        {
-            const bool onFinalLeg = d.status == PathStatus::Complete && d.waypointIdx + 1 >= d.waypoints.size();
-
-            vec3 wantDir(0);
-            if (onFinalLeg && toGoalLen > 1e-4f && VulpineNav::NavServer::CanWalkStraight(pos, prevPlayerPosition, nav.profile))
-                wantDir = toGoalDir;
-            else if (length(d.moveDirection) > 0.0f)
-                wantDir = vec3(d.moveDirection.x, 0.0f, d.moveDirection.y);
-
-            if (length(wantDir) > 0.0f)
-            {
-                mov.direction.goal = wantDir;
-
-                mov.look.goal = wantDir;
-                mov.look.current = wantDir;
-                mov.speed.goal = moveSpeed;
-            }
-            else
-            {
-                mov.speed.goal = 0;
-
-                if (d.status == PathStatus::Partial && toGoalLen > 1e-4f)
-                {
-                    mov.look.goal = toGoalDir;
-                    mov.look.current = toGoalDir;
-                }
-            }
-
-            if (entity.has<ComplexMovements>())
-            {
-                ComplexMovements& cpx = entity.comp<ComplexMovements>();
-                if (
-                      !cpx.climb.getCurrent() 
-                    && cpx.climb.timeSinceGoalMet() > 3.0 
-                    && cpx.closestSurface.y >= pos.y + 0.5f)
-                {
-                    cpx.climb.setGoal(true);
-                }
-            }
-        }
-        
-        // GG::draw->drawBox(state3D.position - vec3(0.5), state3D.position + vec3(0.5), 0.0f, ModelState3D(), "#ff00ff"_rgb);
         DebugDrawAgentNavigation<DrawLines::Line>(*GG::draw, nav, state3D.position);
-
-        count++;
     });
 
     static auto profile = GG::playerEntity->comp<AgentNavigation>().profile;

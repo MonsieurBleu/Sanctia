@@ -103,6 +103,14 @@ void manageEntityLOD(Entity &entity);
     template<> void Component<LevelOfDetailsInfos>::ComponentElem::init();
 
 
+/***************** GRAPHICS DYNAMIC *****************/
+
+    #undef CURRENT_CATEGORY
+    #define CURRENT_CATEGORY GRAPHIC_DYNAMIC
+
+    Component(HairInfos)
+
+
 /***************** HELPERS *****************/
 
     Component(PhysicsHelpers);

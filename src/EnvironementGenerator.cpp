@@ -159,7 +159,7 @@ EntityRef WaterGenerator::generate()
 
             t->defaultMode = GL_PATCHES;
             t->noBackFaceCulling = true;
-            t->state.frustumCulled = true;
+            t->state.frustumCulled = false;
             t->sorted = false;
             // t->sorted = true;
             t->tessActivate(vec2(1, 16), vec2(25, 250));
@@ -175,12 +175,12 @@ EntityRef WaterGenerator::generate()
 
             vec3 cellPos = vec3(Blueprint::terrainConst::terrainSize.x*uvhalf.x, 0, Blueprint::terrainConst::terrainSize.z*uvhalf.y);
 
-            float minV = 0.f; // TODO : fill later
-            float maxV = 1.f; // TODO : fill later
+            float minV = -100.f; // TODO : fill later
+            float maxV = 100.f; // TODO : fill later
 
             model->setStaticAABB(
-                vec3(cellPos + model->getMeshesBoundingBox().first) *vec3(1, 0, 1) + vec3(0, minV*Blueprint::terrainConst::terrainSize.y, 0), 
-                vec3(cellPos + model->getMeshesBoundingBox().second)*vec3(1, 0, 1) + vec3(0, maxV*Blueprint::terrainConst::terrainSize.y, 0)
+                cellPos - 1e6f*cellSize*0.5f*vec3(1, 0, 1) + vec3(0, minV*Blueprint::terrainConst::terrainSize.y, 0), 
+                cellPos + 1e6f*cellSize*0.5f*vec3(1, 0, 1) + vec3(0, maxV*Blueprint::terrainConst::terrainSize.y, 0)
             );
 
             EntityRef chunk = newEntity(
@@ -852,8 +852,8 @@ void WorldEnvironementGenerator::generateChunk(ivec2 iuv)
 
     int chunkSeed = id*64;
 
-    static std::default_random_engine posx(chunkSeed + 0);
-    static std::default_random_engine posy(chunkSeed + 1);
+    std::default_random_engine posx(chunkSeed + 0);
+    std::default_random_engine posy(chunkSeed + 1);
 
     std::default_random_engine rotx(chunkSeed + 2);
     std::default_random_engine roty(chunkSeed + 3);

@@ -33,3 +33,23 @@ struct PhysicsHelpers : public ObjectGroupRef{};
 
 struct InfosStatsHelpers{std::vector<ModelRef> models;};
 
+class Entity;
+
+struct HairInfos
+{
+    vec3 rootColor = vec3(1);
+    vec3 tipColor = vec3(0);
+    float colorSplit = 1.0;
+    float colorSplitSmoothness = 0.5;
+
+    float length = 1.0;
+    float braidsLength = 0.0;
+    float lengthDispertion = 0.0;
+    float messyness = 0.0;
+
+    int type = 0;
+    int subtype = 0;
+
+    std::shared_ptr<Entity> createMenu();
+    uvec4 toUserInfo(int id, int totalInstance);
+};

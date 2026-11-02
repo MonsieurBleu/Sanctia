@@ -333,6 +333,16 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         WRITE_NAME(material |, outModel)
                         /* TODO : add conditions later */
 
+
+                        if(STR_CASE_STR(mesh->mName.C_Str(), "Hair"))
+                        {
+                            outModel->write(CONST_CSTRING_SIZED("Hair"));
+                            outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("patchmode 6"));
+                            outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("backface t"));
+                            entity->set(SkeletonAnimationState(Loader<SkeletonRef>::get(skeletonTarget)));
+                            entity->set(HairInfos());
+                        }
+                        else
                         if(scene->mMeshes[mesh->mMeshes[0]]->HasBones())
                         {
                             outModel->write(CONST_CSTRING_SIZED("\"Animated Packing Paint\""));
@@ -341,21 +351,32 @@ VEAC::FileConvertStatus ConvertSceneFile__SanctiaEntity(
                         }
                         else
                         {
-                            std::string customMaterial = "";
+                            // std::string customMaterial = "";
                             if(STR_CASE_STR(mesh->mName.C_Str(), "leaves"))
                             {
-                                switch (lodcnt-1) 
-                                {
-                                    case '0' :
-                                        outModel->write(CONST_CSTRING_SIZED("\"Painted Leaves LOD0\""));
-                                        outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("backface t"));
-                                        outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("patchmode t"));
-                                        break;
+                                outModel->write(CONST_CSTRING_SIZED("\"Leaf Patch\""));
+                                
+                                outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("texture 0 | Terrain"));
+                                outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("texture 1 | Grassyness"));
+                                outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("texture 2 | Water Level"));
+                                outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("texture 3 | Humidity"));
+                                outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("texture 4 | Mystic"));
+                                outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("texture 5 | Corruption"));
+                                
+                                outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("backface t"));
 
-                                    default :
-                                        outModel->write(CONST_CSTRING_SIZED("\"Painted Leaves LOD1\""));
-                                        break;
-                                }
+                                // switch (lodcnt-1) 
+                                // {
+                                //     case '0' :
+                                //         outModel->write(CONST_CSTRING_SIZED("\"Painted Leaves LOD0\""));
+                                //         outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("backface t"));
+                                //         outModel->Entry(); outModel->write(CONST_CSTRING_SIZED("patchmode t"));
+                                //         break;
+
+                                //     default :
+                                //         outModel->write(CONST_CSTRING_SIZED("\"Painted Leaves LOD1\""));
+                                //         break;
+                                // }
 
                             }
                             else 

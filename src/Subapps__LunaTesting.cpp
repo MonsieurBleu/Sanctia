@@ -45,7 +45,7 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
             {
                 ComponentModularity::removeChild(*appRoot, GG::playerEntity);
 
-                GG::playerEntity = newEntity();
+                GG::playerEntity = EntityRef();
 
                 GG::ManageEntityGarbage__WithPhysics();
 

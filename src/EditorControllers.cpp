@@ -51,7 +51,8 @@ void EditorTerrainControler::update()
 
         float h = 0.f;        
         {
-            int lod = 5;
+            // int lod = 5;
+            int lod = 3;
             vec2 uv((targetPosition.x+2048.f)/exp2((float)lod), (targetPosition.z+2048.f)/exp2((float)lod));
 
             // uv -= 0.25;

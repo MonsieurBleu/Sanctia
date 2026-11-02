@@ -642,28 +642,42 @@ void Game::mainloop()
         )
     );
 
+    ComponentModularity::addChild(*EDITOR::MENUS::GlobalControl,
+        VulpineBlueprintUI::Toggable2(
+            "Fog", 
+            "",
+            [&](Entity *e, float v)
+            {
+                PaintShaderPass::enableFog = PaintShaderPass::enableFog ? 0 : 1;
+            },
+            [&](Entity *e)
+            {
+                return PaintShaderPass::enableFog ? 0.f : 1.f;
+            }
+        )
+    );
 
     // EDITOR::MENUS::GameScreen->comp<WidgetBox>().useClassicInterpolation = true;
     // EDITOR::MENUS::GameScreen->comp<WidgetBox>().smoothingAnimationSpeed = 1.f;
     
     // Apps::MainGameApp testsubapps1;
-    Apps::EntityCreator entityCreator;
-    Apps::AssetListViewer assetView;
+    // Apps::EntityCreator entityCreator;
+    Apps::WorldEditorApp worldEditor;
+    Apps::CharaApp charaApp;
     Apps::MaterialViewerApp materialView;
+    Apps::AnimationApp animationViewer;
+    Apps::AssetListViewer assetView;
     
-    Apps::BiomeApp BiomeApp;
+    // Apps::BiomeApp BiomeApp;
     Apps::PhysicsTestingApp physicsTesting;
 
     Apps::CombatsApp combatsApps;
-    Apps::AnimationApp animationViewer;
     
     // Apps::EventGraphApp eventGraph;
     // Apps::SceneMergeApp sceneMerge;
     Apps::LunaTesting lunaTest;
     // Apps::MovementDemo movementDemo;
 
-    Apps::EnviroApp enviro;
-    Apps::WorldEditorApp worldEditor;
 
 
     VulpineBlueprintUI::UserNotif::init(EDITOR::MENUS::GameScreen);
@@ -1193,19 +1207,29 @@ void Game::mainloop()
             float theta = acos(sunDir.y);
             float sunIntensity = smoothstep(-0.2f, 0.25f, sunDir.y);
             // float sunIntensity = smoothstep(-0.2f, 0.25f, theta);            
-            sunLight->setIntensity(sunIntensity);
-
+            
             // std::cout << "Sun intensity " << sunIntensity << "\n";
-
-            sunLight->setColor(
+            
+            vec3 sunColor = 
                 mix(
                     vec3(255, 198, 0)/255.f,
                     vec3(1, 1, 1),
                     smoothstep(0.f, (float)PI/6.f, theta)
-                )
-            );
+                );
 
-            sunLight->setDirection(-sunDir);
+            vec3 sunLightDir = sunDir;
+
+            if(sunDir.y < -0.25)
+            {
+                float nuebulaAlpha = smoothstep(0.25f, 0.35f, -sunDir.y);
+                sunLightDir = normalize(vec3(0, 0.8, -1));
+                sunColor = mix(sunColor, vec3(1, 0, 1), nuebulaAlpha);
+                sunIntensity = 0.1*nuebulaAlpha;
+            }
+
+            sunLight->setColor(sunColor);
+            sunLight->setIntensity(sunIntensity);
+            sunLight->setDirection(-sunLightDir);
 
             // compute moon position and rotation
 
@@ -1463,6 +1487,79 @@ void Game::mainloop()
         globals.appTime.getUpdateCounter()%frameDelay
         );
 
+        /*
+            Update the instance count of every hair entity.
+
+            Mandatory structure for the model : 
+                - Instances are empty by default, and will be populated here
+                - There is at least one children (LOD0)
+                - The LOD0 contains the hair base model
+                - Other LODs can exist but will not be affected
+                - The LOD0 contains ONE instanced mesh
+            
+            This structure is basiccly what you arleady have by using the default
+            way of importing models & entities.
+            
+            Hairs, Beard, Fur etc... are separate entities that have their own 
+            setup and infos. This enable multislot hairstyles and greatly simplify
+            this system.
+
+
+            TODO : Add animation support
+        */
+        System<HairInfos, EntityModel>([](Entity &e, HairInfos &h, EntityModel &m)
+        {
+            if(m->getChildren().empty() or m->getChildren()[0]->getInstances().empty()) return;
+
+            m->updateMeshesBoundingBox();
+            auto aabb = m->getMeshesBoundingBox();
+            vec3 middle = 0.5f*(aabb.first+aabb.second);
+            float d = distance(globals.currentCamera->getPosition(), middle);
+            int level = mix(31.0, 4.0, linearstep(4.0, 32.0, d));
+
+            // level = 16;
+            // NOTIF_MESSAGE(level)
+
+            /*
+                No need to re-created the instances if the size arleady match
+            */
+            if(level == m->getInstances().size())
+            {
+                int id = 0;
+                for(auto &i : m->getInstances())
+                    i.setUserData(h.toUserInfo(id++, level));
+
+                return;
+            }
+
+            for(auto &i : m->getInstances())
+            {
+                i.originalModel->removeInstance(i.instance);
+            }
+            m->getInstances().clear();
+
+            auto inst = m->getChildren()[0]->getInstances()[0];
+
+            // Remove the default LOD0 instance if it was created, we don't need it here
+            if(inst.instance)
+            {
+                inst.originalModel->removeInstance(inst.instance);
+                inst.instance = nullptr;
+            }
+
+            for(int i = 0; i < level; i++)
+            {
+                uvec4 u = h.toUserInfo(i, level);
+                ModelInstanceRef newInstance = inst;
+                newInstance.userData = u;
+                
+                m->add(newInstance);
+            }
+
+            m->update(true);
+            m->propagateHideStatus();
+        });
+
         // NOTIF_MESSAGE(scene.tree)
 
         // LOOD_calcul.stop();
@@ -1472,6 +1569,7 @@ void Game::mainloop()
         // tmp_Timer.start();
 
         NEW_SPLIT(OTHER SYSTEMS)
+
 
         /*****
             UPDATING VISUAL FATIGUE LEVEL

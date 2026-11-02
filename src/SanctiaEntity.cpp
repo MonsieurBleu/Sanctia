@@ -13,6 +13,9 @@
 
 #include <JoltIntegration/PhysicsCommons.hpp>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
+
+#include <Blueprint/EngineBlueprintUI.hpp>
 
 void manageEntityLOD(Entity &entity)
 {
@@ -81,7 +84,10 @@ void setEntityTransform(Entity &e, State3D s)
         e.set(State3D());
         // return; // bro is trying to update transform with no entity transform
 
-    if(e.has<State3D>()) e.comp<State3D>() = s;
+    auto oldState = e.comp<State3D>();
+
+    // if(e.has<State3D>()) 
+    e.comp<State3D>() = s;
 
     bool isStatic = false;
 
@@ -113,13 +119,24 @@ void setEntityTransform(Entity &e, State3D s)
         }
 
         // Updating the scale
-        auto shape = interface.GetShape(b);
-        if(shape->GetSubType() == JPH::EShapeSubType::Scaled)
+        if(s.scale != vec3(1) and s.scale != oldState.scale)
         {
-            shape = ((JPH::ScaledShape *)shape.GetPtr())->GetInnerShape();
+            auto shape = interface.GetShape(b);
+
+            if(shape->GetSubType() == JPH::EShapeSubType::Scaled)
+            {
+                shape = ((JPH::ScaledShape *)shape.GetPtr())->GetInnerShape();
+            }
+
+            // We need to make the scale valid otherwise Jolt will try and fix the scale for
+            // all individual subshapes and the result will be broken
+            s.scale = e.comp<State3D>().scale = Vvec3(shape->MakeScaleValid(Vvec3(s.scale)));
+
+            {
+                shape = shape->ScaleShape(Vvec3(s.scale)).Get();
+                interface.SetShape(b, shape, true, isBodyActive);
+            }
         }
-        shape = shape->ScaleShape(Vvec3(s.scale)).Get();
-        interface.SetShape(b, shape, true, isBodyActive);
 
         // Updating pos and rot
         // Note : we skip kinematic bodies because they are arleady synched each physic frame
@@ -145,15 +162,17 @@ void setEntityTransform(Entity &e, State3D s)
         // - Kynematic and Dynamic entities have game specific update code that runs each frame arleady
         // - Static scene object need a special treament, because they are inserted inside the static scene octree.
         //   For optimization reasons, the only way to move them is by removing them from the scene and re-adding them.
-        if(isStatic)
+        if(isStatic and oldState != s)
         {
             // if(m.inScene) globals.getScene()->remove(m);
+            globals.getScene()->tree.remove(m);
             
             m->state.setPosition(s.position).setQuaternion(s.rotation).setScale(s.scale);
             m->update();
 
-            // globals.getScene()->add(m, false, true);
+            // globals.getScene()->add(m, true, true);
             // m.inScene = true;
+            globals.getScene()->tree.add(m);
         }
     }
 }
@@ -229,8 +248,11 @@ COMPONENT_DEFINE_REPARENT(State3D) // TODO : rework
     */
     bool isStatic = 
         // !child->has<HeightFieldDummyFlag>() && // Terrain are too big for the static scene optimization
-        !child->has<DynamicState3D>() && 
-        !(child->has<KynematicFlag>() && child->comp<KynematicFlag>());
+        !child->has<JoltBody>() or
+        (
+            !child->has<DynamicState3D>() and 
+            !(child->has<KynematicFlag>() and child->comp<KynematicFlag>())
+        );
 
     // NOTIF_MESSAGE(isStatic, "   ", child->toStr(), "\n\t", s.position, "\n\t", s.rotation);
 
@@ -679,8 +701,8 @@ template<> void Component<EntityModel>::ComponentElem::init()
     //     globals.getScene()->add(data, false, false);
 
     // TODO : change later
-    globals.getScene()->add(data, true, false);
-    data.inScene = true;
+    // globals.getScene()->add(data, true, false);
+    // data.inScene = true;
 
     // entity->set<StainStatus>(StainStatus());
     // setEntityStainStatusUniform(entity);

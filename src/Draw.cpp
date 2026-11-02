@@ -366,7 +366,7 @@ void Draw::addElement(DrawElementBasePtr element)
     m->add(element);
     
     EntityRef e = newEntity("Draw Element"
-        , m
+        , m, State3D()
     );
 
     drawElements.push_back(e);

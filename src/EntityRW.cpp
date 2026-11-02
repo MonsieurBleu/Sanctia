@@ -264,6 +264,7 @@ AUTOGEN_COMPONENT_RWFUNC(AgentState__old)
 AUTOGEN_COMPONENT_RWFUNC_E(EntityGroupInfo)
 AUTOGEN_COMPONENT_RWFUNC(EntitySpawner)
 
+AUTOGEN_COMPONENT_RWFUNC(AgentNavigation)
 
 // for some reason this just doesn't work
 // AUTOGEN_COMPONENT_RWFUNC(AudioPlayer)

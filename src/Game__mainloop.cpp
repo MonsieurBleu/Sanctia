@@ -1,5 +1,6 @@
 #include "ECS/ComponentTypeScripting.hpp"
 #include "Navigation/NavMesh.hpp"
+#include "Navigation/NavServer.hpp"
 #include <fstream>
 #include <thread>
 
@@ -69,7 +70,8 @@ void Game::mainloop()
 
     std::thread physicsThreads2(&Game::physicsLoop2, this);
 
-    VulpineNav::NavMesh::init();
+    VulpineNav::NavMesh::Init();
+    VulpineNav::NavServer::Init();
 
     /****** Loading Models and setting up the scene ******/
     globals.simulationTime.pause();
@@ -1297,21 +1299,21 @@ void Game::mainloop()
             JoltVulpine::physicsMutex.unlock();
         }
 
-        NEW_SPLIT(NAVIGATION SYNCH)
+        NEW_SPLIT(NAVIGATION SYNC)
 
-        size_t count = 0;
-        System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& pathfind, State3D& state3D)
+        System<AgentNavigation, State3D>([&](Entity& entity, AgentNavigation& nav, State3D& state3D)
         {
-            VulpineNav::NavMesh::UpdateLoaderPosition(pathfind.lastPos, state3D.position, 0);
+            if (!nav.detail.initialized) return;
 
-            pathfind.lastPos = state3D.position;
+            VulpineNav::NavMesh::UpdateLoaderPosition(nav.detail.lastPos, state3D.position, nav.navmeshBuildPriority);
 
-            count++;
+            nav.detail.lastPos = state3D.position;
+
+            UpdateAgentNavigation(nav, state3D.position);
         });
 
-        // NOTIF_MESSAGE("COUNT: ", count);
-
         VulpineNav::NavMesh::Tick();
+        VulpineNav::NavServer::Tick();
 
         // tmp_Timer.stop();
 
@@ -2511,7 +2513,8 @@ void Game::mainloop()
     // save settings to file
     Settings::save();
 
-    VulpineNav::NavMesh::shutdown();
+    VulpineNav::NavServer::Shutdown();
+    VulpineNav::NavMesh::Shutdown();
     JoltVulpine::quitThread = true;
     physicsThreads.join();
     physicsThreads2.join();

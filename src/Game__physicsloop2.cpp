@@ -425,6 +425,11 @@ void Game::physicsLoop2()
                     while (!bodyptr) 
                         bodyptr = JoltVulpine::jPhysicsSystem->GetBodyLockInterface().TryGetBody(inResult.mBodyID2);
                     
+                    if (bodyptr->GetMotionType() == JPH::EMotionType::Dynamic) return;
+                    
+                    Entity* ptr = ((Entity*)bodyptr->GetUserData());
+                    if (ptr != nullptr && ptr->has<DynamicState3D>()) return;
+
                     Vvec3 point = Vvec3(inResult.mContactPointOn2) + dir2D*0.25f + vec3(0, 0.0, 0);
                     Vvec3 normal = bodyptr->GetWorldSpaceSurfaceNormal(inResult.mSubShapeID2, point);
 

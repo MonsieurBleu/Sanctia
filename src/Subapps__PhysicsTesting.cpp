@@ -255,7 +255,7 @@ void Apps::PhysicsTestingApp::init()
 
     // WorldEnvironementGenerator::chunkSize = 16 * 2;
 
-    WorldEnvironementGenerator::init();
+    // WorldEnvironementGenerator::init();
 
     // const int it = 128;
 
@@ -271,7 +271,7 @@ void Apps::PhysicsTestingApp::init()
 
 void Apps::PhysicsTestingApp::update()
 {
-    WorldEnvironementGenerator::multiFrameGen::update();
+    // WorldEnvironementGenerator::multiFrameGen::update();
 
     // ComponentModularity::synchronizeChildren(appRoot);
 

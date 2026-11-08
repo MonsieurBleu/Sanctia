@@ -42,6 +42,7 @@ class PaintShaderPass : public RenderPass
         bool enableBloom = true;
         bool enableAO = true;
         bool enableExposure = true;
+        static inline int enableFog = true;
 
         PaintShaderPass(){};
         PaintShaderPass(DefferedBuffer *defferedBuffer) : defferedBuffer(defferedBuffer){};

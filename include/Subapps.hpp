@@ -439,7 +439,7 @@ namespace Apps
             virtual void clean() override;
     };
 
-    class EnviroApp : public SubApps
+    class CharaApp : public SubApps
     {
         private :
 
@@ -447,7 +447,7 @@ namespace Apps
 
         public : 
 
-            EnviroApp();
+            CharaApp();
 
             virtual EntityRef UImenu() override;
 

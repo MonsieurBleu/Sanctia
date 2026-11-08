@@ -17,6 +17,10 @@
 
 #include <tinyexr.h>
 
+#include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+
 Gizmo gizmo;
 EditorTerrainControler *controllerPTR = nullptr;
 uint unsavedChanges = 0;
@@ -134,7 +138,9 @@ namespace WorldEntities {
     EntityRef addFile(const std::string name)
     {
         selectedFileUpdateCounter = 0;
-        auto child = spawnEntityToParent(name, *WorldEntities::selectedFolder, HierarchyState3D());
+        auto child = spawnEntityToParent(name, *WorldEntities::selectedFolder, HierarchyState3D({
+            .position = controllerPTR->targetPosition
+        }));
         addElement(child);
 
         return child;
@@ -145,6 +151,74 @@ namespace WorldEntities {
         auto folder = newEntity(name, State3D(), HierarchyState3D(), EntityGroupInfo()); 
         ComponentModularity::addChild(*selectedFolder, folder);
         addElement(folder);
+    }
+
+    void update(vec2 cursor)
+    {
+        // if(selectedFile == nullptr and globals.mouseLeftClick())
+        if(globals.mouseRightClick())
+        {
+            // Stealing this code from terrain editor because it does everything I need
+            Loader<ScriptInstance>::get("Terrain Editor Update").run(cursor);
+            vec3 raydir = threadState["TERRAIN_EDITOR_RayDirection"];
+            vec3 rayOrigin = globals.currentCamera->getPosition();
+    
+            JPH::RRayCast ray;
+            ray.mOrigin = Vvec3(rayOrigin);
+            ray.mDirection = Vvec3(raydir*1e5f);
+            JPH::RayCastResult result;
+    
+            class WorldEditorFilter : public JPH::BodyFilter
+            {
+                public : 
+                    WorldEditorFilter(){};
+    
+                    virtual bool ShouldCollide(const JPH::BodyID &inBodyID) const override
+                    {
+                        JPH::Body *bodyptr = nullptr;
+                        while (!bodyptr) 
+                            bodyptr = JoltVulpine::jPhysicsSystem->GetBodyLockInterface().TryGetBody(inBodyID);
+    
+                        Entity *e = (Entity *)bodyptr->GetUserData();
+    
+                        // Checking if the body's entity is part of the world editor
+                        while(e and e->has<EntityGroupInfo>())
+                        {
+                            if(e == world.get())
+                                return true;
+    
+                            e = e->comp<EntityGroupInfo>().parent;
+                        }
+    
+                        return false;
+                    }
+            };
+    
+            bool hit = JoltVulpine::jPhysicsSystem->GetNarrowPhaseQuery().CastRay(
+                ray, 
+                result,
+                JPH::BroadPhaseLayerFilter(),
+                JoltVulpine::EnvironementCollideFilter(),
+                WorldEditorFilter()
+            );
+    
+            if(hit && !result.mBodyID.IsInvalid())
+            {
+                Entity *e = (Entity*)JoltVulpine::jPhysicsSystem->GetBodyInterface().GetUserData(result.mBodyID);
+
+                if(e != world.get())
+                {
+                    openFolder(e->comp<EntityGroupInfo>().parent);
+                    selectedFile = e;
+                    gizmo.resetHistoric();
+                    selectedFileUpdateCounter = 0;
+                    controllerPTR->targetPosition = selectedFile->comp<State3D>().position;
+                    gizmo.parent->comp<State3D>() = selectedFile->comp<State3D>();
+                }
+
+            }
+        }
+
     }
 
     void createMenu()
@@ -785,6 +859,7 @@ namespace TerrainEditor
         float range = 1.f;
         float force = 1.f;
         float intensity = 1.f;
+        float value = 0.5f;
         int tool = 0;
         int target = 0;
         float minHeight = 0.f;
@@ -793,7 +868,7 @@ namespace TerrainEditor
         
         GENERATE_ENUM_FAST_REVERSE(BrushTool, Add, Substract, Flatten, Slope, Smooth, Noise, Erosion)
 
-        vec2 forceIntensity[BrushTool::Erosion+1] = {vec2(1, 0.), vec2(1, 0), vec2(1, 0.), vec2(1, 0.5), vec2(1, 0.) ,vec2(1, 0.5), vec2(1, 0.5)};
+        vec3 forceIntensity[BrushTool::Erosion+1] = {vec3(1, 0., 0.5), vec3(1, 0, 0.5), vec3(1, 0., 0.5), vec3(1, 0.5, 0.5), vec3(1, 0., 0.5) ,vec3(1, 0.5, 0.5), vec3(1, 0.5, 0.5)};
     }
 
     void setTarget(std::string target)
@@ -924,6 +999,7 @@ namespace TerrainEditor
         shader::brush.addUniform(ShaderUniform(&brush::tool, 37));
         shader::brush.addUniform(ShaderUniform(&brush::target, 38));
         shader::brush.addUniform(ShaderUniform(&brush::minHeight, 39));
+        shader::brush.addUniform(ShaderUniform(&brush::value, 40));
 
         FBO_Copy.addTexture(
             Texture2D()
@@ -1040,6 +1116,7 @@ namespace TerrainEditor
 
 
         brush::intensity = brush::forceIntensity[TerrainEditor::brush::tool].y;
+        brush::value = brush::forceIntensity[TerrainEditor::brush::tool].z;
 
         GrassGenerator::active = !textureView;
 
@@ -1279,6 +1356,14 @@ namespace TerrainEditor
                         VulpineBlueprintUI::ValueInputSlider("Intensity", 0.f, 1.f, 1e2, 
                             [](float f){brush::forceIntensity[brush::tool].y = f;}, 
                             [](){return brush::forceIntensity[brush::tool].y;}, 
+                            VulpineColorUI::HightlightColorBlue
+                        ), 0.25
+                    ),
+
+                    VulpineBlueprintUI::NamedEntry(U"Value",
+                        VulpineBlueprintUI::ValueInputSlider("Value", 0.f, 1.f, 20, 
+                            [](float f){brush::forceIntensity[brush::tool].z = f;}, 
+                            [](){return brush::forceIntensity[brush::tool].z;}, 
                             VulpineColorUI::HightlightColorBlue
                         ), 0.25
                     ),
@@ -2206,7 +2291,7 @@ EntityRef Apps::WorldEditorApp::UImenu()
             newEntity("Selected Entity - Hide/Show/Remove", UI_BASE_COMP, 
                 WidgetStyle().setautomaticTabbing(1),
                 EntityGroupInfo({
-                    VulpineBlueprintUI::Toggable2("Show", "",
+                    VulpineBlueprintUI::Toggable("Show", "",
                         [](Entity *e, float f)
                         {
                             if(WorldEntities::selectedFile and WorldEntities::selectedFile->has<State3D>())
@@ -2217,11 +2302,18 @@ EntityRef Apps::WorldEditorApp::UImenu()
                         },
                         [](Entity *e)
                         {
-                            return 
+                            bool isHidden = 
                                 WorldEntities::selectedFile and 
                                 WorldEntities::selectedFile->has<State3D>() and 
                                 WorldEntities::selectedFile->comp<State3D>().isActive != ModelStatus::HIDE
-                                ? 0.f : 1.f;
+                            ;
+
+                            e->comp<WidgetStyle>().setbackgroundColor2(VulpineColorUI::HightlightColorGreen);
+                            e->comp<WidgetStyle>().setbackgroundColor1(VulpineColorUI::HightlightColorOrange);
+                            
+                            e->comp<WidgetText>().text = isHidden ? U"Hide" : U"Show";
+
+                            return isHidden ? 0.f : 1.f;
                         }, VulpineColorUI::HightlightColorOrange
                     ),
                     VulpineBlueprintUI::Toggable("Remove", "",
@@ -2303,7 +2395,7 @@ EntityRef Apps::WorldEditorApp::UImenu()
 
                                 bool isFile = !STR_CASE_STR(name.c_str(), FOLDER_STR);
 
-                                if(isFile) return;
+                                // if(isFile) return;
 
                                 for(auto &i : WorldEntities::selectedFolder->comp<EntitySpawner>().onLoading)
                                     if(i.child.get() == WorldEntities::selectedFile)
@@ -2340,7 +2432,8 @@ EntityRef Apps::WorldEditorApp::UImenu()
                             for(auto &i : WorldEntities::selectedFolder->comp<EntitySpawner>().onLoading)
                                 if(i.child.get() == WorldEntities::selectedFile and !i.cond.empty())
                                 {
-                                    auto &f = Loader<Flag>::get(i.cond);
+                                    // auto &f = Loader<Flag>::get(i.cond);
+                                    auto &f = Loader<Flags>::get("World").getFlagLocal(i.cond);
                                     name = UFTconvert.from_bytes(f->as_string());
                                     break;
                                 }
@@ -2361,7 +2454,8 @@ EntityRef Apps::WorldEditorApp::UImenu()
                             for(auto &i : WorldEntities::selectedFolder->comp<EntitySpawner>().onLoading)
                                 if(i.child.get() == WorldEntities::selectedFile and !i.cond.empty())
                                 {
-                                    auto &f = Loader<Flag>::get(i.cond);
+                                    // auto &f = Loader<Flag>::get(i.cond);
+                                    auto &f = Loader<Flags>::get("World").getFlagLocal(i.cond);
                                     name = UFTconvert.from_bytes(f->typeToString());
                                     break;
                                 }
@@ -2376,7 +2470,8 @@ EntityRef Apps::WorldEditorApp::UImenu()
                             for(auto &i : WorldEntities::selectedFolder->comp<EntitySpawner>().onLoading)
                                 if(i.child.get() == WorldEntities::selectedFile and !i.cond.empty())
                                 {
-                                    auto &f = Loader<Flag>::get(i.cond);
+                                    // auto &f = Loader<Flag>::get(i.cond);
+                                    auto &f = Loader<Flags>::get("World").getFlagLocal(i.cond);
 
                                     if(f->isLogicBlock)
                                         name = U"Inline Logic BLock";
@@ -2399,7 +2494,8 @@ EntityRef Apps::WorldEditorApp::UImenu()
                     for(auto &i : WorldEntities::selectedFolder->comp<EntitySpawner>().onLoading)
                         if(i.child.get() == WorldEntities::selectedFile and !i.cond.empty())
                         {
-                            auto &f = Loader<Flag>::get(i.cond);
+                            // auto &f = Loader<Flag>::get(i.cond);
+                            auto &f = Loader<Flags>::get("World").getFlagLocal(i.cond);
 
                             if(f->isLogicBlock)
                                 name = UFTconvert.from_bytes(((LogicFlag*)f.flag.get())->logicBlock);
@@ -2493,6 +2589,9 @@ EntityRef Apps::WorldEditorApp::UImenu()
         WidgetStyle(),
         EntityGroupInfo({editionToolSwitchTab, editionToolTitles})
     );
+
+    editionToolTitles->comp<EntityGroupInfo>().children.front()->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
+    editionToolSwitchTab->comp<EntityGroupInfo>().children.front()->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
 
     // editionToolSwitchInfos->comp<EntityGroupInfo>().children.front()->comp<WidgetState>().statusToPropagate = ModelStatus::SHOW;
 
@@ -2642,6 +2741,15 @@ Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
 
     inputs.push_back(&
         InputManager::addEventInput(
+            "World Editor : Unselect File", GLFW_KEY_ESCAPE, 0, GLFW_PRESS, [&]() {
+                WorldEntities::selectedFile = nullptr;
+            },
+            WorldEditorOnly, false)
+    ); 
+
+
+    inputs.push_back(&
+        InputManager::addEventInput(
             "Save World", GLFW_KEY_S, GLFW_MOD_CONTROL, GLFW_PRESS, [&]() {
                 // WorldEntities::saveEntity(WorldEntities::world);
                 WorldEntities::saveWorld();
@@ -2685,6 +2793,19 @@ Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
                     orbitController.targetPosition = WorldEntities::selectedFile->comp<State3D>().position;
             },
             WorldEditorOnly, false)
+    ); 
+
+    inputs.push_back(&
+        InputManager::addContinuousInput(
+            "Center Camera On Selected File/Folder", GLFW_KEY_SPACE, [&]() {
+                if(WorldEntities::selectedFile)
+                {
+                    // WorldEntities::selectedFile->comp<State3D>().position = orbitController.targetPosition;
+                    gizmo.parent->comp<State3D>().position = orbitController.targetPosition;
+                }
+            },
+            WorldEditorOnly
+        )
     ); 
 
     inputs.push_back(&
@@ -2781,6 +2902,21 @@ Apps::WorldEditorApp::WorldEditorApp() : SubApps("WorldEditor")
             TerrainEditorOnly
         )
     ); 
+
+    inputs.push_back(&
+        InputManager::addContinuousInput(
+            "Scroll Time of Day", GLFW_KEY_P,
+            [&]()
+            {
+                globals.currentCamera->setMouseFollow(false);
+                vec2 off = globals.mouseScrollOffset();
+                globals.clearMouseScroll();
+
+                GG::timeOfDay += sign(off.y)*0.125;
+            }
+        )
+    ); 
+
 
     inputs.push_back(&
         InputManager::addContinuousInput(
@@ -2945,6 +3081,10 @@ void Apps::WorldEditorApp::init()
     /***** Preparing App Settings *****/
     {
         appRoot = newEntity("AppRoot", UI_BASE_COMP);
+
+        orbitController.distance = 128.0;
+        orbitController.position.y = getTerrainHeight(vec2(0));
+
         App::setController(&orbitController);
         globals.currentCamera->setPosition(vec3(10, getTerrainHeight(vec2(0)), 0));
 
@@ -2982,7 +3122,7 @@ void Apps::WorldEditorApp::init()
     Biome::init();
 
     WaterGenerator::generate();
-    // GrassGenerator::active = true;
+    GrassGenerator::active = true;
 
     // NOTIF_MESSAGE("DBUG : INIT WORLD EDITOR END")
 }
@@ -3031,6 +3171,10 @@ void Apps::WorldEditorApp::update()
     }
 
     gizmo.update(cursor);
+
+    if(!TerrainEditor::active and !StreetView::active and !Biome::active)
+        WorldEntities::update(cursor);
+
     StreetView::update(cursor);
     Biome::update();
 
@@ -3073,7 +3217,7 @@ void Apps::WorldEditorApp::update()
         TerrainEditor::update(cursor);
     }
 
-    if(WorldEntities::selectedFile and !TerrainEditor::active and !StreetView::active)
+    if(WorldEntities::selectedFile and !TerrainEditor::active and !StreetView::active  and !Biome::active)
     {
         gizmo.enable();
         // gizmo.isEnable = true;
@@ -3124,6 +3268,7 @@ void Apps::WorldEditorApp::update()
     else
     {
         selectedFileUpdateCounter = 0;
+        EDITOR::gridPositionScale.w = 0.f;
         gizmo.disable();
     }
     

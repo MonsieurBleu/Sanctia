@@ -403,27 +403,33 @@ void PlayerController2::mouseEvent(vec2 dir, GLFWwindow* window)
 
     if(cameraFollow)
     {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        if(glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-        vec2 center(globals.windowWidth()*0.5, globals.windowHeight()*0.5);
-        vec2 sensibility(100.0);
-        dir = sensibility * (dir-center)*globals.appTime.getDelta();
+        static vec2 center(dir);
+       
+        vec2 sensibility(0.5);
+        vec2 dirtmp = dir;
+        dir = sensibility * (dir-center);
+        // dir += fract(dirtmp)*sign(dir); // subpixel precison
+        
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
 
+        // NOTIF_MESSAGE(PRINTVAR(center.x), PRINTVAR(dirtmp.x), PRINTVAR(dir.x), PRINTVAR(x))
+        center = dirtmp;
+        
         float yaw = radians(-dir.x);
         float pitch = radians(-dir.y);
-
+        
         vec3 up = vec3(0,1,0);
         vec3 front = mat3(rotate(mat4(1), yaw, up)) * globals.currentCamera->getDirection();
         front = mat3(rotate(mat4(1), pitch, cross(front, up))) * front;
         front = normalize(front);
-
+        
         front.y = clamp(front.y, -0.8f, 0.8f);
-
-
+        
         GG::playerEntity->comp<Movement>().look.current = front;
-
-
-        glfwSetCursorPos(window, center.x, center.y);
     }
     else
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

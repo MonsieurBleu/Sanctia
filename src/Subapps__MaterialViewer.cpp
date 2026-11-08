@@ -108,7 +108,7 @@ void Apps::MaterialViewerApp::spawnHelper()
 
     EntityModel model(EntityModel{newObjectGroup()}); 
     model->add(helper);
-    ComponentModularity::addChild(*appRoot, newEntity("materialHelper", model));
+    ComponentModularity::addChild(*appRoot, newEntity("materialHelper", model, State3D()));
 
     auto colorSelector = VulpineBlueprintUI::ColorSelectionScreen(
         "Material Color", [&, id](){return color[id];}, [&, id](vec3 c){color[id] = c;}
@@ -494,7 +494,7 @@ void Apps::MaterialViewerApp::init()
         App::setController(&orbitController);
 
         globals.currentCamera->setPosition(vec3(-1, HELPERS_BASE_HEIGHT, 0));
-        globals.currentCamera->getState().FOV = radians(40.f);
+        // globals.currentCamera->getState().FOV = radians(40.f);
         orbitController.distance = 10;
         orbitController.position = vec3(0, HELPERS_BASE_HEIGHT, 0);
         
@@ -605,6 +605,8 @@ void Apps::MaterialViewerApp::init()
     //     // glLineWidth(500.0);
     //     // glEnable(GL_LINE_SMOOTH);
     // }
+
+    globals.simulationTime.resume();
 }
 
 
@@ -672,6 +674,8 @@ void Apps::MaterialViewerApp::clean()
     globals.currentCamera->setMouseFollow(false);
     globals.currentCamera->setPosition(vec3(0));
     globals.currentCamera->setDirection(vec3(-1, 0, 0));
-    globals.currentCamera->getState().FOV = radians(90.f);
+    // globals.currentCamera->getState().FOV = radians(90.f);
     App::setController(nullptr);
+
+    globals.simulationTime.pause();
 }

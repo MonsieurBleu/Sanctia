@@ -47,7 +47,7 @@ void PlayerController::update()
         x += res.y*InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_X )*globals.appTime.getDelta();
         y += res.y*InputManager::getGamepadAxisValue(GLFW_GAMEPAD_AXIS_LEFT_Y )*globals.appTime.getDelta();
 
-        glfwSetCursorPos(window, x, y);
+        // glfwSetCursorPos(window, x, y);
 
         if(!gamepadCursor)
         {

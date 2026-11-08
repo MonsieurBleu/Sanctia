@@ -75,6 +75,13 @@ class Gizmo {
         currentHistoricNode = historic.begin();
     }
 
+    void noMode()
+    {
+        translate->comp<HierarchyState3D>().isActive = ModelStatus::HIDE;
+        rotate->comp<HierarchyState3D>().isActive = ModelStatus::HIDE;
+        scale->comp<HierarchyState3D>().isActive = ModelStatus::HIDE;
+    }
+
     void translationMode()
     {
         // if(!isEnable) return;
@@ -171,8 +178,9 @@ class Gizmo {
             EntityRef e = spawnEntity(name, pos, rot); \
             auto mesh = e->comp<EntityModel>()->getChildren()[0]->getMeshes()[0]; \
             mesh->uniforms.add(ShaderUniform(vec3(color), 20)); \
-            mesh->depthWrite = true; \
-            mesh->sorted = true; \
+            mesh->depthWrite = false; \
+            mesh->sorted = false; \
+            mesh->noBackFaceCulling = true; \
             ComponentModularity::addChild(*parent, e); \
             e->set<HierarchyState3D>(HierarchyState3D()); \
         }
@@ -520,7 +528,7 @@ class Gizmo {
         scaleTab->comp<EntityGroupInfo>().children[0]->comp<WidgetBox>().set(vec2(-0.75, 1.0), vec2(-1., -0.6));
 
         auto posToggle = VulpineBlueprintUI::Toggable("Translate", "Gizmo Translate", 
-            [&](Entity *e, float f){translationMode();},
+            [&](Entity *e, float f){f == 0. ? translationMode() : noMode();},
             [&](Entity *e){return isTranslationMode() ? 0. : 1.;},
             gizmoBaseColor
         );
@@ -528,7 +536,7 @@ class Gizmo {
         ComponentModularity::addChild(*posTab, posToggle);
 
         auto rotToggle = VulpineBlueprintUI::Toggable("Rotate", "Gizmo Rotation", 
-            [&](Entity *e, float f){rotationMode();},
+            [&](Entity *e, float f){f == 0. ? rotationMode() : noMode();},
             [&](Entity *e){return isRotationMode() ? 0. : 1.;},
             gizmoBaseColor
         );
@@ -536,7 +544,7 @@ class Gizmo {
         ComponentModularity::addChild(*rotTab, rotToggle);
 
         auto scaleToggle = VulpineBlueprintUI::Toggable("Scale", "Gizmo Scale", 
-            [&](Entity *e, float f){scalingMode();},
+            [&](Entity *e, float f){f == 0. ? scalingMode() : noMode();},
             [&](Entity *e){return isScalingMode() ? 0. : 1.;},
             gizmoBaseColor
         );

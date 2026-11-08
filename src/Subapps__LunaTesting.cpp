@@ -65,7 +65,7 @@ Apps::LunaTesting::LunaTesting() : SubApps("Luna Testing")
             {
                 ComponentModularity::removeChild(*appRoot, GG::playerEntity);
 
-                GG::playerEntity = newEntity();
+                GG::playerEntity = EntityRef();
 
                 GG::ManageEntityGarbage__WithPhysics();
 
@@ -377,6 +377,9 @@ void Apps::LunaTesting::clean()
 
     GrassGenerator::active = false;
     WaterGenerator::clear();
+
+    WorldEnvironementGenerator::reset();
+    WorldEnvironementGenerator::clear();
 
     GG::sun->shadowCameraSize = vec2(0, 0);
 }

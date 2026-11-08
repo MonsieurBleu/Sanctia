@@ -7,6 +7,9 @@
 int autoExposureDownscale = 16;
 int autoExposureDownscale2 = 16*4;
 
+ivec2 autoExposureRes = ivec2(256, 128);
+ivec2 autoExposureRes2 = ivec2(64, 32);
+
 DefferedBuffer::DefferedBuffer(const ivec2 *resolution) : RenderBuffer(resolution)
 {
 }
@@ -16,7 +19,7 @@ void DefferedBuffer::generate()
     // RenderBuffer::generate();
     unsortedDraws.doCopy = true;
     unsortedDraws.location = 16;
-    (*this).unsortedDraws.sortedDepthCopy = Texture2D() // DEPTH COPY
+    unsortedDraws.sortedDepthCopy = Texture2D() // DEPTH COPY
         .setResolution(*resolution)
         .setInternalFormat(GL_R32F)
         .setFormat(GL_RED)
@@ -27,6 +30,19 @@ void DefferedBuffer::generate()
         // .setAttachement(GL_DEPTH_ATTACHMENT)
         .generate()
         ;
+
+    unsortedDraws.sortedUserInfoCopy = Texture2D() // MATERIAL PROPERTY COPY
+        .setResolution(*resolution)
+        .setInternalFormat(GL_RGBA8_SNORM)
+        .setFormat(GL_RGBA)
+        .setPixelType(GL_BYTE)
+        .setFilter(GL_NEAREST)
+        .setWrapMode(GL_CLAMP_TO_EDGE)
+        // .setAttachement(GL_COLOR_ATTACHMENT5)
+        .generate()
+    ;
+
+    unsortedDraws.userInfoAttachement = GL_COLOR_ATTACHMENT5;
 
     (*this)
         .addTexture(
@@ -329,7 +345,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_1
         .addTexture(
             Texture2D()
-                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale)
+                .setResolution(autoExposureRes)
                 .setInternalFormat(GL_R8)
                 .setFormat(GL_RED)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -342,7 +358,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_2
         .addTexture(
             Texture2D() 
-                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale2)
+                .setResolution(autoExposureRes2)
                 .setInternalFormat(GL_R8)
                 .setFormat(GL_RED)
                 .setPixelType(GL_UNSIGNED_BYTE)
@@ -355,7 +371,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_3
         .addTexture(
             Texture2D() 
-                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale2)
+                .setResolution(autoExposureRes2)
                 .setInternalFormat(GL_R32F)
                 .setFormat(GL_RED)
                 .setPixelType(GL_FLOAT)
@@ -370,7 +386,7 @@ void PaintShaderPass::setup()
     FBO_Exposure_COPY
         .addTexture(
             Texture2D() 
-                .setResolution(defferedBuffer->getTexture(0).getResolution()/autoExposureDownscale2)
+                .setResolution(autoExposureRes2)
                 .setInternalFormat(GL_R32F)
                 .setFormat(GL_RED)
                 .setPixelType(GL_FLOAT)
@@ -400,10 +416,10 @@ void PaintShaderPass::render(Camera &camera)
         FBO_CopyAndDeform.resizeAll(defferedBuffer->getTexture(0).getResolution());
         FBO_AO.resizeAll(globals.windowSize()/4);
 
-        FBO_Exposure_1.resizeAll(globals.windowSize()/autoExposureDownscale);
-        FBO_Exposure_2.resizeAll(globals.windowSize()/autoExposureDownscale2);
-        FBO_Exposure_3.resizeAll(globals.windowSize()/autoExposureDownscale2);
-        FBO_Exposure_COPY.resizeAll(globals.windowSize()/autoExposureDownscale2);
+        // FBO_Exposure_1.resizeAll(globals.windowSize()/autoExposureDownscale);
+        // FBO_Exposure_2.resizeAll(globals.windowSize()/autoExposureDownscale2);
+        // FBO_Exposure_3.resizeAll(globals.windowSize()/autoExposureDownscale2);
+        // FBO_Exposure_COPY.resizeAll(globals.windowSize()/autoExposureDownscale2);
 
         glEnable(GL_FRAMEBUFFER_SRGB);
         glDisable(GL_DEPTH_TEST);
@@ -604,6 +620,9 @@ void PaintShaderPass::render(Camera &camera)
         FBO_Clouds.bindTexture(0, 8);
         // FBO_AO.bindTexture(0, 9);
         Loader<Texture2D>::get("Water Level").bind(10);
+        Loader<Texture2D>::get("Corruption").bind(11);
+
+        ShaderUniform(&PaintShaderPass::enableFog, 32).activate();
 
         globals.drawFullscreenQuad();
 

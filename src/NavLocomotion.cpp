@@ -46,6 +46,9 @@ constexpr float kCrowdHoldRadius = 4.0f;
 constexpr uint16_t kCrowdMinHoldFrames = 20;
 
 constexpr float kSteerSmoothing = 0.3f;
+
+constexpr float kEdgeRoomMin = 0.1f;
+constexpr float kEdgeRoomFull = 0.8f;
 constexpr float kLinkQueueDistance = 1.2f;
 
 constexpr float kDropSpeedScale = 0.5f;
@@ -267,6 +270,10 @@ float avoid(const AgentNavigation& nav, vec3 pos, vec3& dir, float speed, float&
     if (length(push) < 1e-4f)
         return follow;
 
+    const float sideways = dot(push, right);
+    const float room = sideways > 0.0f ? nav.detail.pathRoom.y : nav.detail.pathRoom.x;
+    push -= right * sideways * (1.0f - smoothstep(kEdgeRoomMin, kEdgeRoomFull, room));
+
     vec2 out = desired + push * kSeparationStrength;
     const float len = length(out);
     if (len < 1e-4f)
@@ -412,8 +419,10 @@ void UpdateNavLocomotion()
                 return;
             }
 
+            // smoothing lags behind turns, which on a narrow path carries us over the edge
             const vec2 wanted(dir.x, dir.z);
-            const vec2 blended = length(st.dir) > 0.0f ? mix(st.dir, wanted, kSteerSmoothing) : wanted;
+            const float smoothing = mix(kSteerSmoothing, 1.0f, PathNarrowness(nav));
+            const vec2 blended = length(st.dir) > 0.0f ? mix(st.dir, wanted, smoothing) : wanted;
             st.dir = length(blended) > 1e-3f ? normalize(blended) : wanted;
             dir = vec3(st.dir.x, 0.0f, st.dir.y);
             d.unstick.bent = dot(dir, desired) < kBentDot;

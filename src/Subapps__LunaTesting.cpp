@@ -299,8 +299,13 @@ void Apps::LunaTesting::init()
     globals.simulationTime.resume();
 
     WorldEnvironementGenerator::init();
-
     WorldEnvironementGenerator::reGenerate(vec2(-2048), vec2(2048));
+
+    GrassGenerator::init();
+    GrassGenerator::active = true;
+    
+    WaterGenerator::init();
+    WaterGenerator::generate();
 
 
     // testRecast();

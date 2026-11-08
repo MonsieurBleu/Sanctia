@@ -35,11 +35,44 @@
 #include <unordered_map>
 
 #include "Navigation/NavServer.hpp"
+#include "JoltIntegration/ClimbProbe.hpp"
 
 // JPH::AssertFailedFunction JPH::AssertFailed;
 
 namespace
 {
+// what the climb probe may climb onto: not ourselves, nothing dynamic
+class ClimbSurfaceFilter final : public JPH::BodyFilter
+{
+public:
+    explicit ClimbSurfaceFilter(JPH::BodyID self) : mSelf(self) {}
+
+    bool ShouldCollide(const JPH::BodyID& id) const override { return id != mSelf; }
+
+    bool ShouldCollideLocked(const JPH::Body& body) const override
+    {
+        if (body.GetMotionType() == JPH::EMotionType::Dynamic)
+            return false;
+        Entity* entity = (Entity*)body.GetUserData();
+        return !(entity && entity->has<DynamicState3D>());
+    }
+
+private:
+    JPH::BodyID mSelf;
+};
+
+class ClimbObstacleFilter final : public JPH::BodyFilter
+{
+public:
+    explicit ClimbObstacleFilter(JPH::BodyID self) : mSelf(self) {}
+
+    bool ShouldCollide(const JPH::BodyID& id) const override { return id != mSelf; }
+    bool ShouldCollideLocked(const JPH::Body& body) const override { return body.GetMotionType() != JPH::EMotionType::Dynamic; }
+
+private:
+    JPH::BodyID mSelf;
+};
+
 constexpr float kStepProbeLow    = 0.05f;
 constexpr float kStepMinHeight   = 0.03f;
 constexpr float kStepReachMargin = 0.15f;
@@ -557,166 +590,25 @@ void Game::physicsLoop2(std::stop_token stop_token)
 
 
             /*
-                Testing for closest edge
+                Testing for a climbable surface ahead
             */
-            class ShapeCollector : public JPH::CastShapeCollector
-            {
-                public :
-                vec3 dir2D;
-                vec3 playerPos;
-                vec3 farestPoint;
-                float highestDistance = 0.f;
-                ComplexMovements *move;
-                JPH::BodyID playerBody;
-
-                virtual void AddHit(const ResultType &inResult) override
-                {
-                    if(playerBody == inResult.mBodyID2) return;
-
-                    JPH::Body *bodyptr = nullptr;
-                    while (!bodyptr) 
-                        bodyptr = JoltVulpine::jPhysicsSystem->GetBodyLockInterface().TryGetBody(inResult.mBodyID2);
-                    
-                    if (bodyptr->GetMotionType() == JPH::EMotionType::Dynamic) return;
-                    
-                    Entity* ptr = ((Entity*)bodyptr->GetUserData());
-                    if (ptr != nullptr && ptr->has<DynamicState3D>()) return;
-
-                    Vvec3 point = Vvec3(inResult.mContactPointOn2) + dir2D*0.25f + vec3(0, 0.0, 0);
-                    Vvec3 normal = bodyptr->GetWorldSpaceSurfaceNormal(inResult.mSubShapeID2, point);
-
-                    if(normal.y > 0.75)
-                    {
-                        float d = distance(playerPos, point);
-                        // if(d > highestDistance)
-                        if(point.y > farestPoint.y)
-                        {
-                            highestDistance = d;
-                            farestPoint = point;
-                        }
-                    }
-                };
-            };
-
-            ShapeCollector collector;
             vec3 dir2D = normalize(depl.look.current*vec3(1, 0, 1));
-            collector.dir2D = dir2D;
-            collector.playerPos = state.position;
-            collector.farestPoint = state.position;
-            collector.move = &move;
-            collector.playerBody = body;
-            Vvec3 direction = Vvec3(0, -3, 0);
-
-            Vvec3 extents = Vvec3(1.0, 0.25, 0.25);
-            static auto box = JPH::RotatedTranslatedShapeSettings(
-                Vvec3(-extents*vec3(1, 1, 0)),
-
-                JPH::QuatArg::sIdentity(), 
-                JPH::BoxShapeSettings(extents).Create().Get()
-
-                // Vquat(glm::eulerAngleXYZ(0.f, 0.f, radians(90.f))),
-                // JPH::CapsuleShapeSettings(extents.x, extents.z).Create().Get()
-            ).Create().Get();
-
-            Vvec3 pos = state.position + dir2D*extents.x;
-            ModelState3D s;
-            s.setPosition(pos - direction + dir2D*0.25f)
-             .setRotation(vec3(0, -atan2(dir2D.z, dir2D.x), 0))
-             .forceUpdate();
-
-            Jmat4 origin = JPH::Mat44(Vvec4(s.modelMatrix[0]), Vvec4(s.modelMatrix[1]), Vvec4(s.modelMatrix[2]), Vvec4(s.modelMatrix[3]));
-            
-            JPH::RShapeCast cast(
-                // interface.GetShape(body),
-                box,
-                Vvec3(1.0, 1, 1.0),
-                origin,
-                direction
-            );
-
-            JPH::ShapeCastSettings settings;
-            settings.SetBackFaceMode(JPH::EBackFaceMode::IgnoreBackFaces);
-
-            /// Comment from Jolt source code VVVVV
-            // Indicates if we want to shrink the shape by the convex radius and then expand it again. 
-            // This speeds up collision detection and gives a more accurate normal at the cost of a 
-            // more 'rounded' shape.
-            settings.mUseShrunkenShapeAndConvexRadius = true;
 
             JoltVulpine::EnvironementCollideFilter layerFilter;
             JoltVulpine::BodyExcludeFilter bodyFilter(body);
+            ClimbSurfaceFilter surfaceFilter(body);
+            ClimbObstacleFilter obstacleFilter(body);
 
-            JoltVulpine::jPhysicsSystem->GetNarrowPhaseQuery().CastShape(
-                cast, 
-                settings, 
-                Vvec3(0), //RVec3Arg inBaseOffset, 
-                collector,
-                {}, layerFilter, bodyFilter
-            );
+            const JoltVulpine::Climb::ProbeWorld climbWorld{
+                JoltVulpine::jPhysicsSystem->GetNarrowPhaseQuery(),
+                JoltVulpine::jPhysicsSystem->GetBodyLockInterface(),
+                layerFilter, surfaceFilter, obstacleFilter};
 
-            /* Checking if path between edge & player is unobstructed */
-            if(collector.farestPoint.y > state.position.y)
-            {
-                auto aabb = JoltVulpine::jPhysicsSystem->GetBodyInterface().GetShape(body)->GetWorldSpaceBounds(Vmat4(1), Vvec3(1));
-                float r = aabb.GetSize().GetX()*0.125f;
-                float h = aabb.GetSize().GetY();
-                float d = distance(state.position*vec3(1, 0, 1), collector.farestPoint*vec3(1, 0, 1));
+            const vec3 bodySize = vec3(Vvec3(interface.GetShape(body)->GetLocalBounds().GetSize()));
+            const JoltVulpine::Climb::ProbeResult climbProbe = JoltVulpine::Climb::Probe(
+                climbWorld, state.position, dir2D, bodySize, depl.grounded.get());
 
-                static auto box2 = JPH::RotatedTranslatedShapeSettings(
-                    // Vvec3(vec3(-r-d/2.f, h/2.f, 0.f)),
-                    Vvec3(0),
-                    JPH::Quat::sIdentity(),
-                    JPH::BoxShapeSettings(Vvec3(0.5f*vec3(d + 4.f*r, h, r))).Create().Get()
-                ).Create().Get();
-
-                ModelState3D s2;
-                s2  .setPosition(collector.farestPoint - dir2D*(r+d/2.f) + vec3(0,  h/2.f + 0.25f, 0))
-                    .setRotation(vec3(0, -atan2(dir2D.z, dir2D.x), 0))
-                    .forceUpdate();
-                Jmat4 t = JPH::Mat44(Vvec4(s2.modelMatrix[0]), Vvec4(s2.modelMatrix[1]), Vvec4(s2.modelMatrix[2]), Vvec4(s2.modelMatrix[3]));
-
-                // GG::draw->drawBox(
-                //     Vvec3(box2->GetWorldSpaceBounds(t, Vvec3(1)).mMin), 
-                //     Vvec3(box2->GetWorldSpaceBounds(t, Vvec3(1)).mMax)
-                //     , 0.01f, 
-                //     // s2, 
-                //     ModelState3D(),
-                //     vec3(0, 1, 1)
-                // );
-                
-                JPH::CollideShapeSettings settings2;
-
-                class AnyCollide : public JPH::CollideShapeCollector
-                {
-                    public :
-                    bool anyHit = false;
-                    virtual void AddHit(const ResultType &inResult) override 
-                    {
-                        anyHit = true;
-
-                        // GG::draw->drawBox(
-                        //     Vvec3(inResult.mContactPointOn2)-0.25f,
-                        //     Vvec3(inResult.mContactPointOn2)+0.25f
-                        // );
-                    };
-                };
-
-                AnyCollide collector2;
-                JoltVulpine::jPhysicsSystem->GetNarrowPhaseQuery().CollideShape(
-                    box2, Vvec3(1), t, settings2, Vvec3(0), collector2, {}, layerFilter, bodyFilter
-                );
-
-                if(collector2.anyHit)
-                    move.closestSurface = state.position;
-                else
-                    move.closestSurface = collector.farestPoint;
-
-                // NOTIF_MESSAGE(PRINTVAR(r), PRINTVAR(h), PRINTVAR(d), PRINTVAR(collector2.anyHit))
-            }
-            else
-            {
-                move.closestSurface = state.position;
-            }
+            move.closestSurface = climbProbe.found ? climbProbe.surface : state.position;
 
             /*
                 Testing for closest wall
@@ -729,7 +621,6 @@ void Game::physicsLoop2(std::stop_token stop_token)
                 diag, diag*Vvec3(-1, 0, 1), diag*Vvec3(1, 0, -1), diag*Vvec3(-1, 0, -1)  
             };
             Vvec3 closestWall = state.position;
-            Vvec3 closestEdge = move.closestSurface;
             float closestWallDistance = 1e6;
             // bool frontFacing = true;
 
@@ -751,11 +642,13 @@ void Game::physicsLoop2(std::stop_token stop_token)
 
                 if(hit && !result.mBodyID.IsInvalid())
                 {
-                    JPH::Body *bodyptr = nullptr;
-                    while (!bodyptr) 
-                        bodyptr = JoltVulpine::jPhysicsSystem->GetBodyLockInterface().TryGetBody(result.mBodyID);
-                    
-                    const Vvec3 normal = bodyptr->GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
+                    Vvec3 normal(0, 1, 0);
+                    {
+                        JPH::BodyLockRead lock(JoltVulpine::jPhysicsSystem->GetBodyLockInterface(), result.mBodyID);
+                        if(!lock.Succeeded())
+                            continue;
+                        normal = lock.GetBody().GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
+                    }
 
                     // WARNING_MESSAGE(normal.y)
 
@@ -772,82 +665,25 @@ void Game::physicsLoop2(std::stop_token stop_token)
             }
 
             /*
-                Determining precise climbing positions, normal and type
+                Climbing positions, normal and type
             */
             move.closestWall = state.position;
 
-            Vvec3 edgeNormal = vec3(0);
-            float cnt = 0.f;
-            float plateformThickness = 0.f;
-
-            if(move.closestSurface != state.position)
+            if(climbProbe.found)
             {
-                const uint wallEdgeSteps = 8;
-                const float wallEdgeMaxOffset = 0.5f;
-                for(uint i = 0; i < wallEdgeSteps; i++)
+                move.closestEdge = climbProbe.edge;
+                move.closestEdgeNormal = climbProbe.edgeNormal;
+                switch(climbProbe.type)
                 {
-                    float a = wallEdgeMaxOffset*(1.f - (float)i/(float)(wallEdgeSteps-1));
-                    JPH::RRayCast ray;
-                    JPH::RayCastResult result;
-    
-                    ray.mOrigin = Vvec3(move.closestSurface - dir2D - vec3(0, a, 0));
-                    ray.mDirection = Vvec3(dir2D);
-
-                    bool hit = JoltVulpine::jPhysicsSystem->GetNarrowPhaseQuery().CastRay(
-                        ray, 
-                        result,
-                        JPH::BroadPhaseLayerFilter(),
-                        JoltVulpine::EnvironementCollideFilter(),
-                        JoltVulpine::BodyExcludeFilter(body)
-                    );
-
-                    if(hit && !result.mBodyID.IsInvalid())
-                    {
-                        JPH::Body *bodyptr = nullptr;
-                        while (!bodyptr) 
-                            bodyptr = JoltVulpine::jPhysicsSystem->GetBodyLockInterface().TryGetBody(result.mBodyID);
-
-                        const Vvec3 normal = bodyptr->GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
-                        const Vvec3 position = ray.mOrigin + result.mFraction*ray.mDirection;
-
-                        plateformThickness = max(plateformThickness, move.closestSurface.y - position.y);
-
-                        if(normal.y < cos(radians(35.f)))
-                        {
-                            const Vvec3 color = hsv2rgb(vec3(0.1 + a*0.5, 1, 1));
-                            // GG::draw->drawSphere(position, 0.05, 0.1f, ModelState3D(), color);
-                            // GG::draw->drawLine(position, position+normal*0.4f, 0.1f, ModelState3D(), color);
-
-                            closestEdge = position;
-                            cnt ++;
-                            edgeNormal = edgeNormal + normal;
-                        }
-
-                        if(!i and cnt == 0.f)
-                        {
-                            closestEdge = position;
-                            edgeNormal = normal;
-                            cnt ++;
-                        }
-                    }
-                }
-
-                move.closestEdge = closestEdge;
-                float edgeHeight = distance(move.closestSurface.y, state.position.y);
-                if(depl.grounded.get() and edgeHeight <= 1.5f)
-                {
-                    move.climbType = ComplexMovements::ClimbTypeEnum::Low;
-                    move.closestEdgeNormal = normalize(vec3(1,0,1)*(state.position-move.closestEdge));
-                }
-                else if(plateformThickness >= 0.4f)
-                {
-                    move.climbType = ComplexMovements::ClimbTypeEnum::High;
-                    move.closestEdgeNormal = cnt > 0.f ? normalize(edgeNormal/cnt) : normalize(vec3(1,0,1)*(state.position-move.closestEdge));
-                }
-                else
-                {
-                    move.climbType = ComplexMovements::ClimbTypeEnum::Platform;
-                    move.closestEdgeNormal = cnt > 0.f ? normalize(edgeNormal/cnt) : normalize(vec3(1,0,1)*(state.position-move.closestEdge));
+                    case JoltVulpine::Climb::Type::High :
+                        move.climbType = ComplexMovements::ClimbTypeEnum::High;
+                        break;
+                    case JoltVulpine::Climb::Type::Platform :
+                        move.climbType = ComplexMovements::ClimbTypeEnum::Platform;
+                        break;
+                    default :
+                        move.climbType = ComplexMovements::ClimbTypeEnum::Low;
+                        break;
                 }
             }
 
@@ -963,11 +799,12 @@ void Game::physicsLoop2(std::stop_token stop_token)
                 }
                 else
                 {
-                    JPH::Body *bodyptr = nullptr;
-                    while (!bodyptr) 
-                        bodyptr = JoltVulpine::jPhysicsSystem->GetBodyLockInterface().TryGetBody(result.mBodyID);
-                    
-                    const Vvec3 normal = bodyptr->GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
+                    Vvec3 normal(0, 1, 0);
+                    {
+                        JPH::BodyLockRead lock(JoltVulpine::jPhysicsSystem->GetBodyLockInterface(), result.mBodyID);
+                        if(lock.Succeeded())
+                            normal = lock.GetBody().GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
+                    }
                     slopeDir = normal.y;
 
                     const float tresholdAirborn = 0.60;

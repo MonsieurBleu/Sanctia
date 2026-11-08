@@ -298,6 +298,10 @@ void Apps::LunaTesting::init()
     JoltVulpine::enablePhysics = true;
     globals.simulationTime.resume();
 
+    WorldEnvironementGenerator::init();
+
+    WorldEnvironementGenerator::reGenerate(vec2(-2048), vec2(2048));
+
 
     // testRecast();
     // TestNavMeshInit();
@@ -342,7 +346,7 @@ void Apps::LunaTesting::update()
         nav.goalRadius = playerRadius + nav.profile.radius;
         nav.moveSpeed = 10.0f;
 
-        DebugDrawAgentNavigation<DrawLines::Line>(*GG::draw, nav, state3D.position);
+        // DebugDrawAgentNavigation<DrawLines::Line>(*GG::draw, nav, state3D.position);
     });
 
     static auto profile = GG::playerEntity->comp<AgentNavigation>().profile;

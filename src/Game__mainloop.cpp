@@ -1282,7 +1282,7 @@ void Game::mainloop()
         {
             if (!nav.detail.initialized) return;
 
-            VulpineNav::NavMesh::UpdateLoaderPosition(nav.detail.lastPos, state3D.position, nav.navmeshBuildPriority);
+            VulpineNav::NavMesh::UpdateLoaderPosition(nav.detail.lastPos, state3D.position, nav.navmeshBuildPriority, nav.detail.loaderRadius);
 
             nav.detail.lastPos = state3D.position;
 
